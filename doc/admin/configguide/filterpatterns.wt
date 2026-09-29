@@ -4,7 +4,7 @@
 
 {{{#!include ../../contentstart.html}}}
 
-[[Image(../../images/navprev.png,link=cron_userlist.html,vertical-align=middle)]] [cron_userlist.html cron_userlist] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [filterregex.html regex] [[Image(../../images/navnext.png,link=filterregex.html,vertical-align=middle)]]
+[[Image(../../images/navprev.png,link=secfiltering.html,vertical-align=middle)]] [secfiltering.html Query Filtering] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [filterregex.html regex] [[Image(../../images/navnext.png,link=filterregex.html,vertical-align=middle)]]
 
 [[br]][=#filterpatterns]
 = patterns =
@@ -45,7 +45,7 @@ But these queries would not be:
 
 ----
 
-[[Image(../../images/navprev.png,link=cron_userlist.html,vertical-align=middle)]] [cron_userlist.html cron_userlist] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [filterregex.html regex] [[Image(../../images/navnext.png,link=filterregex.html,vertical-align=middle)]]
+[[Image(../../images/navprev.png,link=secfiltering.html,vertical-align=middle)]] [secfiltering.html Query Filtering] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [filterregex.html regex] [[Image(../../images/navnext.png,link=filterregex.html,vertical-align=middle)]]
 
 {{{#!include ../../contentend.html}}}
 

@@ -4,7 +4,7 @@
 
 <!--#include virtual="../../contentstart.html"-->
 
-<p><a href="aes192.html"><img style="vertical-align: middle; " src="../../images/navprev.png"/></a> <a href="aes192.html">aes192</a> | <a href="index.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="index.html">Contents</a> | <a href="cron_userlist.html">cron_userlist</a> <a href="cron_userlist.html"><img style="vertical-align: middle; " src="../../images/navnext.png"/></a></p>
+<p><a href="aes192.html"><img style="vertical-align: middle; " src="../../images/navprev.png"/></a> <a href="aes192.html">aes192</a> | <a href="index.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="index.html">Contents</a> | <a href="secschedules.html">Connection Schedules</a> <a href="secschedules.html"><img style="vertical-align: middle; " src="../../images/navnext.png"/></a></p>
 
 <br/><a name="aes256"/><h1>aes256</h1>
 
@@ -42,7 +42,7 @@ http://www.gnu.org/software/src-highlite -->
 
 <hr/>
 
-<p><a href="aes192.html"><img style="vertical-align: middle; " src="../../images/navprev.png"/></a> <a href="aes192.html">aes192</a> | <a href="index.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="index.html">Contents</a> | <a href="cron_userlist.html">cron_userlist</a> <a href="cron_userlist.html"><img style="vertical-align: middle; " src="../../images/navnext.png"/></a></p>
+<p><a href="aes192.html"><img style="vertical-align: middle; " src="../../images/navprev.png"/></a> <a href="aes192.html">aes192</a> | <a href="index.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="index.html">Contents</a> | <a href="secschedules.html">Connection Schedules</a> <a href="secschedules.html"><img style="vertical-align: middle; " src="../../images/navnext.png"/></a></p>
 
 <!--#include virtual="../../contentend.html"-->
 

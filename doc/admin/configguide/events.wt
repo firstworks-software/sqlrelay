@@ -32,11 +32,11 @@ The '''events''' tag defines the set of events to listen for.  Valid events are:
 * '''db_error''' - A query generated an error.
 * '''db_warning''' - A query generated a warning.
 * '''query_executed''' - A query was executed.
-* '''filter_violation''' - A [security.html#filtering query filter module] prevented a query from being executed.
+* '''filter_violation''' - A [secfiltering.html query filter module] prevented a query from being executed.
 * '''internal_error''' - An internal error occurred.
 * '''internal_warning''' - An internal warning occurred.
 * '''debug_message''' - A debug message was generated.
-* '''schedule_violation''' - A [security.html#schedules connection schedule module] prevented a user from logging in to the SQL Relay server.
+* '''schedule_violation''' - A [secschedules.html connection schedule module] prevented a user from logging in to the SQL Relay server.
 * '''integrity_violation''' - A [routing.html#routing query routing module] is in use and a transaction control query (begin, commit, rollback, autocommit on, or autocommit off) succeeded on some of the back-ends but failed on others.
 
 Any number of events may be specified.  Each event must be specified in its own '''event''' tag.  The event tag supports the following attributes:

@@ -213,7 +213,7 @@ sqlrsh -id myinst -batch < script.sql
 
 <p>An -id run also picks up the instance's kerberos and TLS settings from the configuration.  Anything given on the command line wins over the configuration.</p>
 
-<p>If the instance's password is encrypted, sqlrsh decrypts it with the module named by the user's passwordencryptionid.  That only works for a two-way encryption.  A one-way encryption cannot decrypt anything, and a passwordencryptionid that no passwordencryption in the configuration matches has no module at all.  Either one is a usage error, reported by name, and sqlrsh exits 1.  Use -user and -password along with -id in that case.  See <a href="configguide/security.html#pwdenc">Password Encryptions</a> in the SQL Relay Configuration Guide.</p>
+<p>If the instance's password is encrypted, sqlrsh decrypts it with the module named by the user's passwordencryptionid.  That only works for a two-way encryption.  A one-way encryption cannot decrypt anything, and a passwordencryptionid that no passwordencryption in the configuration matches has no module at all.  Either one is a usage error, reported by name, and sqlrsh exits 1.  Use -user and -password along with -id in that case.  See <a href="configguide/secpwdenc.html">Password Encryptions</a> in the SQL Relay Configuration Guide.</p>
 
 <ul>
   <li><b>-krb</b> - use Kerberos authentication and encryption</li>

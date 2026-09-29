@@ -1,0 +1,28 @@
+<!--#include virtual="header.html"-->
+
+<!--#include virtual="projectheader.html"-->
+
+<!--#include virtual="../../contentstart.html"-->
+
+<p><a href="security.html"><img style="vertical-align: middle; " src="../../images/navprev.png"/></a> <a href="security.html">Security Features</a> | <a href="index.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="index.html">Contents</a> | <a href="secbackend.html">Back-End Encryption and Secure Authentication</a> <a href="secbackend.html"><img style="vertical-align: middle; " src="../../images/navnext.png"/></a></p>
+
+<br/><a name="frontendencryption"/><h1>Front-End Encryption and Secure Authentication</h1>
+
+<p>When configured to use the SQLRClient protocol (the default), SQL Relay supports <a href="sqlrclientprotocol.html#sqlrclientkrb">Kerberos and Active Directory Encryption and Authentication</a> and <a href="sqlrclientprotocol.html#sqlrclienttls">TLS/SSL Encryption and Authentication</a> between the client and SQL Relay server.</p>
+
+<p>When configured to use the MySQL protocol, SQL Relay supports <a href="mysqlprotocol.html#mysqltls">TLS/SSL Encryption and Authentication</a> between the client and SQL Relay server.</p>
+
+<p>When configured to use the PostgreSQL protocol, SQL Relay supports <a href="postgresqlprotocol.html#postgresqltls">TLS/SSL Encryption and Authentication</a> between the client and SQL Relay server.</p>
+
+<p>When configured to use the Firebird protocol, SQL Relay supports Firebird <a href="firebirdprotocol.html#firebirdwirecrypt">Wire Encryption</a> between the client and SQL Relay server.</p>
+
+<p>When configured to use the TDS protocol, SQL Relay supports <a href="tdsprotocol.html#tdstls">TLS/SSL Encryption and Authentication</a> between the client and SQL Relay server.</p>
+
+<hr/>
+
+<p><a href="security.html"><img style="vertical-align: middle; " src="../../images/navprev.png"/></a> <a href="security.html">Security Features</a> | <a href="index.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="index.html">Contents</a> | <a href="secbackend.html">Back-End Encryption and Secure Authentication</a> <a href="secbackend.html"><img style="vertical-align: middle; " src="../../images/navnext.png"/></a></p>
+
+<!--#include virtual="../../contentend.html"-->
+
+<!--#include virtual="footer.html"-->
+

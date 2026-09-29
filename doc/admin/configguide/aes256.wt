@@ -4,7 +4,7 @@
 
 {{{#!include ../../contentstart.html}}}
 
-[[Image(../../images/navprev.png,link=aes192.html,vertical-align=middle)]] [aes192.html aes192] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [cron_userlist.html cron_userlist] [[Image(../../images/navnext.png,link=cron_userlist.html,vertical-align=middle)]]
+[[Image(../../images/navprev.png,link=aes192.html,vertical-align=middle)]] [aes192.html aes192] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [secschedules.html Connection Schedules] [[Image(../../images/navnext.png,link=secschedules.html,vertical-align=middle)]]
 
 [[br]][=#aes256]
 = aes256 =
@@ -25,7 +25,7 @@ As with aes128, the first 128 bits (16 bytes) of the encrypted password are the 
 
 ----
 
-[[Image(../../images/navprev.png,link=aes192.html,vertical-align=middle)]] [aes192.html aes192] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [cron_userlist.html cron_userlist] [[Image(../../images/navnext.png,link=cron_userlist.html,vertical-align=middle)]]
+[[Image(../../images/navprev.png,link=aes192.html,vertical-align=middle)]] [aes192.html aes192] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [secschedules.html Connection Schedules] [[Image(../../images/navnext.png,link=secschedules.html,vertical-align=middle)]]
 
 {{{#!include ../../contentend.html}}}
 

@@ -1,0 +1,33 @@
+{{{#!include header.html}}}
+
+{{{#!include projectheader.html}}}
+
+{{{#!include ../../contentstart.html}}}
+
+[[Image(../../images/navprev.png,link=secrunas.html,vertical-align=middle)]] [secrunas.html Run-As User and Group] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [secpwdfiles.html Password Files] [[Image(../../images/navnext.png,link=secpwdfiles.html,vertical-align=middle)]]
+
+[[br]][=#deniedallowedips]
+= IP Filtering =
+
+By default, clients from any IP address are allowed to connect to the SQL Relay srever.  However, the deniedips and allowedips attributes can be used to restrict the set of IP addresses that clients can connect from.
+
+ [[Image(../../images/ip-filtering.png,nolink)]]
+
+The deniedips attribute can be configured with a [http://www.regular-expressions.info regular expression] indicating which IP address will be denied access.  The allowedips attribute can also be configured with a [http://www.regular-expressions.info regular expression] to override the deniedips attribute.
+
+For example, to deny all clients except clients connecting from the 192.168.2.0 and 64.45.22.0 networks:
+
+{{{#!blockquote
+{{{#!code
+@parts/sqlrelay-deniedallowedips.conf@
+}}}
+}}}
+
+
+----
+
+[[Image(../../images/navprev.png,link=secrunas.html,vertical-align=middle)]] [secrunas.html Run-As User and Group] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [secpwdfiles.html Password Files] [[Image(../../images/navnext.png,link=secpwdfiles.html,vertical-align=middle)]]
+
+{{{#!include ../../contentend.html}}}
+
+{{{#!include footer.html}}}

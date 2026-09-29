@@ -1,0 +1,41 @@
+<!--#include virtual="header.html"-->
+
+<!--#include virtual="projectheader.html"-->
+
+<!--#include virtual="../../contentstart.html"-->
+
+<p><a href="secrunas.html"><img style="vertical-align: middle; " src="../../images/navprev.png"/></a> <a href="secrunas.html">Run-As User and Group</a> | <a href="index.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="index.html">Contents</a> | <a href="secpwdfiles.html">Password Files</a> <a href="secpwdfiles.html"><img style="vertical-align: middle; " src="../../images/navnext.png"/></a></p>
+
+<br/><a name="deniedallowedips"/><h1>IP Filtering</h1>
+
+<p>By default, clients from any IP address are allowed to connect to the SQL Relay srever.  However, the deniedips and allowedips attributes can be used to restrict the set of IP addresses that clients can connect from.</p>
+
+<blockquote>
+<img src="../../images/ip-filtering.png"/>
+</blockquote>
+<p>The deniedips attribute can be configured with a <a target="_blank" href="http://www.regular-expressions.info">regular expression</a> indicating which IP address will be denied access.  The allowedips attribute can also be configured with a <a target="_blank" href="http://www.regular-expressions.info">regular expression</a> to override the deniedips attribute.</p>
+
+<p>For example, to deny all clients except clients connecting from the 192.168.2.0 and 64.45.22.0 networks:</p>
+
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt><b><font color="#000080">&lt;?xml</font></b> <font color="#009900">version</font><font color="#990000">=</font><font color="#FF0000">"1.0"</font><b><font color="#000080">?&gt;</font></b>
+<b><font color="#0000FF">&lt;instances&gt;</font></b>
+	<b><font color="#0000FF">&lt;instance</font></b> <font color="#009900">id</font><font color="#990000">=</font><font color="#FF0000">"example"</font> ... <font color="#009900">deniedips</font><font color="#990000">=</font><font color="#FF0000">".*"</font> <font color="#009900">allowedips</font><font color="#990000">=</font><font color="#FF0000">"(192\.168\.2\..*|64\.45\.22\..*)"</font> ...<b><font color="#0000FF">/&gt;</font></b>
+		...
+	<b><font color="#0000FF">&lt;/instance&gt;</font></b>
+<b><font color="#0000FF">&lt;/instances&gt;</font></b>
+</tt></pre>
+
+</blockquote>
+<br/><hr/>
+
+<p><a href="secrunas.html"><img style="vertical-align: middle; " src="../../images/navprev.png"/></a> <a href="secrunas.html">Run-As User and Group</a> | <a href="index.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="index.html">Contents</a> | <a href="secpwdfiles.html">Password Files</a> <a href="secpwdfiles.html"><img style="vertical-align: middle; " src="../../images/navnext.png"/></a></p>
+
+<!--#include virtual="../../contentend.html"-->
+
+<!--#include virtual="footer.html"-->
+

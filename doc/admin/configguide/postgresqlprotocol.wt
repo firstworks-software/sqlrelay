@@ -118,7 +118,7 @@ By default, the !PostgreSQL protocol module challenges a connecting client for a
 }}}
 }}}
 
-Cleartext passwords are required when a one-way password encryption module is used for a database user's password - see [security.html#pwdenc Password Encryption] for why - and sends the password over the network as typed, so it should only be used with TLS or on a trusted network.
+Cleartext passwords are required when a one-way password encryption module is used for a database user's password - see [secpwdenc.html Password Encryption] for why - and sends the password over the network as typed, so it should only be used with TLS or on a trusted network.
 
 [=#postgresqlconnectstringsauth]
 == Connect Strings Auth ==

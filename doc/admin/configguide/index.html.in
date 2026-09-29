@@ -178,19 +178,19 @@
 
   <li><a href="security.html">Security Features</a></li>
   <ul>
-    <li><a href="security.html#frontendencryption">Front-End Encryption and Secure Authentication</a></li>
-    <li><a href="security.html#backendencryption">Back-End Encryption and Secure Authentication</a></li>
+    <li><a href="secfrontend.html">Front-End Encryption and Secure Authentication</a></li>
+    <li><a href="secbackend.html">Back-End Encryption and Secure Authentication</a></li>
     <ul>
-      <li><a href="security.html#backendenc-oracle">Oracle</a></li>
-      <li><a href="security.html#backendenc-mssql-freetds">Microsoft SQL Server (via FreeTDS)</a></li>
-      <li><a href="security.html#backendenc-mysql">MySQL/MariaDB</a></li>
-      <li><a href="security.html#backendenc-postgresql">PostgreSQL</a></li>
+      <li><a href="secbackendoracle.html">Oracle</a></li>
+      <li><a href="secbackendmssql.html">Microsoft SQL Server (via FreeTDS)</a></li>
+      <li><a href="secbackendmysql.html">MySQL/MariaDB</a></li>
+      <li><a href="secbackendpostgresql.html">PostgreSQL</a></li>
     </ul>
 
-    <li><a href="security.html#runas">Run-As User and Group</a></li>
-    <li><a href="security.html#deniedallowedips">IP Filtering</a></li>
-    <li><a href="security.html#pwdfiles">Password Files</a></li>
-    <li><a href="security.html#pwdenc">Password Encryption</a></li>
+    <li><a href="secrunas.html">Run-As User and Group</a></li>
+    <li><a href="secipfiltering.html">IP Filtering</a></li>
+    <li><a href="secpwdfiles.html">Password Files</a></li>
+    <li><a href="secpwdenc.html">Password Encryption</a></li>
     <ul>
       <li><a href="rot.html">rot</a></li>
       <li><a href="md5.html">md5</a></li>
@@ -203,12 +203,12 @@
       <li><a href="aes256.html">aes256</a></li>
     </ul>
 
-    <li><a href="security.html#schedules">Connection Schedules</a></li>
+    <li><a href="secschedules.html">Connection Schedules</a></li>
     <ul>
       <li><a href="cron_userlist.html">cron_userlist</a></li>
     </ul>
 
-    <li><a href="security.html#filtering">Query Filtering</a></li>
+    <li><a href="secfiltering.html">Query Filtering</a></li>
     <ul>
       <li><a href="filterpatterns.html">patterns</a></li>
       <li><a href="filterregex.html">regex</a></li>

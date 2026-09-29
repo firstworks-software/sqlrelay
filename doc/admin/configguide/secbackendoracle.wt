@@ -1,0 +1,63 @@
+{{{#!include header.html}}}
+
+{{{#!include projectheader.html}}}
+
+{{{#!include ../../contentstart.html}}}
+
+[[Image(../../images/navprev.png,link=secbackend.html,vertical-align=middle)]] [secbackend.html Back-End Encryption and Secure Authentication] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [secbackendmssql.html Microsoft SQL Server (via FreeTDS)] [[Image(../../images/navnext.png,link=secbackendmssql.html,vertical-align=middle)]]
+
+[[br]][=#backendenc-oracle]
+= Oracle =
+
+Modern Oracle databases support the following TLS/SSL features:
+
+* Encryption
+* Certificate Validation
+* Distinguished Name Validation
+* Mutual Authentication
+
+Configuring SQL Relay to use TLS/SSL encryption and authentication with an Oracle database involves:
+
+* Configuring SQL*Net on the database server to support secure connections
+* Configuring SQL*Net on the SQL Relay server to support secure connections
+* Telling SQL Relay to use an oracle_sid that refers to a secure connection
+
+Most of the configuration on the SQL Relay server is done outside of SQL Relay itself.
+
+Configuring SQL*Net involves setting up Oracle Wallets, which is a relatively complex process.  See [http://software.firstworks.com/p/oracle-tlsssl-encryption-tutorials.html Oracle TLS/SSL Encryption Tutorials] for more information.  Once that is done though, the SQL Relay configuration is relatively simple.
+
+In this example, oratls refers to a TLS/SSL-secured entry in the tnsnames.ora file (usually $ORACLE_HOME/network/admin/tnsnames.ora):
+
+{{{#!blockquote
+{{{#!code
+@parts/sqlrelay-oracle-tls.conf@
+}}}
+}}}
+
+In this example, there is no tnsnames.ora file, so the oracle_sid is set directly to a tnsnames-style expression that describes a TLS/SSL-secured connection:
+
+{{{#!blockquote
+{{{#!code
+@parts/sqlrelay-oracle-sid-tls.conf@
+}}}
+}}}
+
+Note the TCPS protocol and port 2848.  Also note that the SERVICE_NAME is still set to ora1, rather than oratls.
+
+This example adds distinguished name validation:
+
+{{{#!blockquote
+{{{#!code
+@parts/sqlrelay-oracle-sid-tls-dn.conf@
+}}}
+}}}
+
+In this case, the database server's certificate is expected to present the distinguished name: CN=examplehost.yourdomain.com
+
+----
+
+[[Image(../../images/navprev.png,link=secbackend.html,vertical-align=middle)]] [secbackend.html Back-End Encryption and Secure Authentication] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [secbackendmssql.html Microsoft SQL Server (via FreeTDS)] [[Image(../../images/navnext.png,link=secbackendmssql.html,vertical-align=middle)]]
+
+{{{#!include ../../contentend.html}}}
+
+{{{#!include footer.html}}}

@@ -987,6 +987,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   separate mysql and postgresql paragraphs, shorter tls/ssl links)
 - split the high availability page of the configuration guide into one
   page per section
+- split the security features page of the configuration guide into one
+  page per section, and its back-end encryption page into one page per
+  database
 
 ### Removed
 - oracle protocol module: deleted cancel() (no wire input can reach it)

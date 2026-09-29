@@ -1,0 +1,38 @@
+{{{#!include header.html}}}
+
+{{{#!include projectheader.html}}}
+
+{{{#!include ../../contentstart.html}}}
+
+[[Image(../../images/navprev.png,link=secbackendpostgresql.html,vertical-align=middle)]] [secbackendpostgresql.html PostgreSQL] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [secipfiltering.html IP Filtering] [[Image(../../images/navnext.png,link=secipfiltering.html,vertical-align=middle)]]
+
+[[br]][=#runas]
+= Run-As User and Group =
+
+When a non-root user runs sqlr-start, the SQL Relay server runs as that user and as the primary group of that user.
+
+When root runs sqlr-start, the SQL Relay server runs as a more secure user and group, usually nobody/nobody when built from source, or sqlrelay/sqlrelay when installed from packages.
+
+However, the runasuser and runasgroup attributes can be used to control what user and group the SQL Relay server runs as.
+
+{{{#!blockquote
+{{{#!code
+@parts/sqlrelay-runas.conf@
+}}}
+}}}
+
+There are several important considerations when setting runasuser/runasgroup:
+
+* runasuser is only effective if sqlr-start runs as root.
+* runasgroup only effective if sqlr-start runs as a member of the group, or by root.
+* All SQL Relay configuration files, and any appropriate database configuration files (such as Oracle's tnsnames.ora and SAP/Sybase's interfaces file) must be readable by the runasuser/runasgroup.  Otherwise various things will fail, most notably, dynamic scaling.
+* SQL Relay must be able to write to "run" and "log" directories.  However, when installed from packages, the /var/run/sqlrelay and /var/log/sqlrelay directories are owned by sqlrelay/sqlrelay and have fairly restrictive 755 permissions.  Thus, the permissions on these directories must be manually changed if runasuser or runasgroup are set to any value other than "sqlrelay".  This is not an issue if SQL Relay is built from source, and is not an issue on Windows.
+
+
+----
+
+[[Image(../../images/navprev.png,link=secbackendpostgresql.html,vertical-align=middle)]] [secbackendpostgresql.html PostgreSQL] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [secipfiltering.html IP Filtering] [[Image(../../images/navnext.png,link=secipfiltering.html,vertical-align=middle)]]
+
+{{{#!include ../../contentend.html}}}
+
+{{{#!include footer.html}}}

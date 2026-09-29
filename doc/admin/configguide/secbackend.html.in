@@ -1,0 +1,29 @@
+<!--#include virtual="header.html"-->
+
+<!--#include virtual="projectheader.html"-->
+
+<!--#include virtual="../../contentstart.html"-->
+
+<p><a href="secfrontend.html"><img style="vertical-align: middle; " src="../../images/navprev.png"/></a> <a href="secfrontend.html">Front-End Encryption and Secure Authentication</a> | <a href="index.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="index.html">Contents</a> | <a href="secbackendoracle.html">Oracle</a> <a href="secbackendoracle.html"><img style="vertical-align: middle; " src="../../images/navnext.png"/></a></p>
+
+<br/><a name="backendencryption"/><h1>Back-End Encryption and Secure Authentication</h1>
+
+<p>SQL Relay also supports TLS/SSL Encryption and Authentication between the SQL Relay server and some databases.</p>
+
+<p>The configuration details differ between databases though.</p>
+
+<ul>
+  <li><a href="secbackendoracle.html">Oracle</a></li>
+  <li><a href="secbackendmssql.html">Microsoft SQL Server (via FreeTDS)</a></li>
+  <li><a href="secbackendmysql.html">MySQL/MariaDB</a></li>
+  <li><a href="secbackendpostgresql.html">PostgreSQL</a></li>
+</ul>
+
+<hr/>
+
+<p><a href="secfrontend.html"><img style="vertical-align: middle; " src="../../images/navprev.png"/></a> <a href="secfrontend.html">Front-End Encryption and Secure Authentication</a> | <a href="index.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="index.html">Contents</a> | <a href="secbackendoracle.html">Oracle</a> <a href="secbackendoracle.html"><img style="vertical-align: middle; " src="../../images/navnext.png"/></a></p>
+
+<!--#include virtual="../../contentend.html"-->
+
+<!--#include virtual="footer.html"-->
+

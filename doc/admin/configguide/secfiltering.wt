@@ -1,0 +1,68 @@
+{{{#!include header.html}}}
+
+{{{#!include projectheader.html}}}
+
+{{{#!include ../../contentstart.html}}}
+
+[[Image(../../images/navprev.png,link=cron_userlist.html,vertical-align=middle)]] [cron_userlist.html cron_userlist] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [filterpatterns.html patterns] [[Image(../../images/navnext.png,link=filterpatterns.html,vertical-align=middle)]]
+
+[[br]][=#filtering]
+= Query Filtering =
+
+Query Filter modules enable the SQL Relay server programs to accept some queries, and filter out other queries, not passing them along to the database.
+
+ [[Image(../../images/query-allowed.png,nolink)]][[br]]
+ [[Image(../../images/query-rejected.png,nolink)]]
+
+Query filters are implemented by loadable modules.  The //filters// section of the configuration file indicates which filter modules to load and what parameters to use when executing them.
+
+{{{#!blockquote
+{{{#!code
+@parts/sqlrelay-filters-regex.conf@
+}}}
+}}}
+
+The //module// attribute specifies which module to load.
+
+Module configurations may have attributes and/or nested tags.  How these are interpreted is module-specific.
+
+All filter modules have an //enabled// attribute, allowing the module to be temporarily disabled.  If enabled="no" is configured, then the module is disabled.  If set to any other value, or omitted, then the module is enabled.
+
+All filter modules have an //when// attribute as well, which determines when the filter is applied.  If set to "before" then the module is executed before any query translations are executed.  If set to "after", or omitted, then the module is executed  after all query translations have been executed.  See [querytranslation.html#querytranslation Query Translations] for more information.
+
+Filter modules can be "stacked".  Multiple different modules may be loaded and multiple instances of the same type of module, with different configurations, may also be loaded.
+
+{{{#!blockquote
+{{{#!code
+@parts/sqlrelay-filters-stacked.conf@
+}}}
+}}}
+
+At startup, the SQL Relay server creates instances of the specified filter modules and initializes them.  When a query is run, the server passes the query to each module, in the order that they were specified in the config file.  If a module filters out the query, then it isn't passed along to the next module, nor is it sent to the database, and the client program is told that the query failed.
+
+When using query filters, it is helpful to use the //normalize// query translation too:
+
+{{{#!blockquote
+{{{#!code
+@parts/sqlrelay-filters-regex-normalize.conf@
+}}}
+}}}
+
+Pattern matching is substantially more reliable and efficient if the query has been normalized first.  See [querytranslation.html#querytranslation Query Translations] and the [normalize.html#normalize normalize] translation for more information.
+
+Currently, the following filter modules are available in the standard SQL Relay distribution:
+
+* [filterpatterns.html#filterpatterns patterns]
+* [filterregex.html#filterregex regex]
+* [filterstring.html#filterstring string]
+* [filtertag.html#filtertag tag]
+
+Custom modules may also be developed.  For more information, please contact [mailto:dev@firstworks.com dev@firstworks.com].
+
+----
+
+[[Image(../../images/navprev.png,link=cron_userlist.html,vertical-align=middle)]] [cron_userlist.html cron_userlist] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [filterpatterns.html patterns] [[Image(../../images/navnext.png,link=filterpatterns.html,vertical-align=middle)]]
+
+{{{#!include ../../contentend.html}}}
+
+{{{#!include footer.html}}}

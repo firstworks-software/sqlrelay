@@ -1,0 +1,47 @@
+<!--#include virtual="header.html"-->
+
+<!--#include virtual="projectheader.html"-->
+
+<!--#include virtual="../../contentstart.html"-->
+
+<p><a href="secbackendpostgresql.html"><img style="vertical-align: middle; " src="../../images/navprev.png"/></a> <a href="secbackendpostgresql.html">PostgreSQL</a> | <a href="index.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="index.html">Contents</a> | <a href="secipfiltering.html">IP Filtering</a> <a href="secipfiltering.html"><img style="vertical-align: middle; " src="../../images/navnext.png"/></a></p>
+
+<br/><a name="runas"/><h1>Run-As User and Group</h1>
+
+<p>When a non-root user runs sqlr-start, the SQL Relay server runs as that user and as the primary group of that user.</p>
+
+<p>When root runs sqlr-start, the SQL Relay server runs as a more secure user and group, usually nobody/nobody when built from source, or sqlrelay/sqlrelay when installed from packages.</p>
+
+<p>However, the runasuser and runasgroup attributes can be used to control what user and group the SQL Relay server runs as.</p>
+
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt><b><font color="#000080">&lt;?xml</font></b> <font color="#009900">version</font><font color="#990000">=</font><font color="#FF0000">"1.0"</font><b><font color="#000080">?&gt;</font></b>
+<b><font color="#0000FF">&lt;instances&gt;</font></b>
+	<b><font color="#0000FF">&lt;instance</font></b> <font color="#009900">id</font><font color="#990000">=</font><font color="#FF0000">"example"</font> ... <font color="#009900">runasuser</font><font color="#990000">=</font><font color="#FF0000">"exampleuser"</font> <font color="#009900">runasgroup</font><font color="#990000">=</font><font color="#FF0000">"examplegroup"</font> ...<b><font color="#0000FF">&gt;</font></b>
+		...
+	<b><font color="#0000FF">&lt;/instance&gt;</font></b>
+<b><font color="#0000FF">&lt;/instances&gt;</font></b>
+</tt></pre>
+
+</blockquote>
+<p>There are several important considerations when setting runasuser/runasgroup:</p>
+
+<ul>
+  <li>runasuser is only effective if sqlr-start runs as root.</li>
+  <li>runasgroup only effective if sqlr-start runs as a member of the group, or by root.</li>
+  <li>All SQL Relay configuration files, and any appropriate database configuration files (such as Oracle's tnsnames.ora and SAP/Sybase's interfaces file) must be readable by the runasuser/runasgroup.  Otherwise various things will fail, most notably, dynamic scaling.</li>
+  <li>SQL Relay must be able to write to "run" and "log" directories.  However, when installed from packages, the /var/run/sqlrelay and /var/log/sqlrelay directories are owned by sqlrelay/sqlrelay and have fairly restrictive 755 permissions.  Thus, the permissions on these directories must be manually changed if runasuser or runasgroup are set to any value other than "sqlrelay".  This is not an issue if SQL Relay is built from source, and is not an issue on Windows.</li>
+</ul>
+
+<br/><hr/>
+
+<p><a href="secbackendpostgresql.html"><img style="vertical-align: middle; " src="../../images/navprev.png"/></a> <a href="secbackendpostgresql.html">PostgreSQL</a> | <a href="index.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="index.html">Contents</a> | <a href="secipfiltering.html">IP Filtering</a> <a href="secipfiltering.html"><img style="vertical-align: middle; " src="../../images/navnext.png"/></a></p>
+
+<!--#include virtual="../../contentend.html"-->
+
+<!--#include virtual="footer.html"-->
+

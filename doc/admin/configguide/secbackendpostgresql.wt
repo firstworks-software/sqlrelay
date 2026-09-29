@@ -1,0 +1,94 @@
+{{{#!include header.html}}}
+
+{{{#!include projectheader.html}}}
+
+{{{#!include ../../contentstart.html}}}
+
+[[Image(../../images/navprev.png,link=secbackendmysql.html,vertical-align=middle)]] [secbackendmysql.html MySQL/MariaDB] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [secrunas.html Run-As User and Group] [[Image(../../images/navnext.png,link=secrunas.html,vertical-align=middle)]]
+
+[[br]][=#backendenc-postgresql]
+= !PostgreSQL =
+
+Modern !PostgreSQL databases support the following TLS/SSL features:
+
+* Encryption
+* Certificate Validation
+* Common Name Validation
+* Mutual Authentication
+
+Configuring SQL Relay to use TLS/SSL encryption and authentication with a !PostgreSQL database involves:
+
+* Configuring the database server to support secure connections
+* Installing a certificate on the database server
+* Configuring the SQL Relay server to support secure connections
+* Installing a certificate on the SQL Relay server
+
+* Configuring the database server to support encryption and/or authentication
+* Installing certificate, key, CA certs, and revocation lists, as necessary, on the database server
+* Configuring the SQL Relay server to support encryption and/or authentication
+* Installing certificate, key, CA certs, and revocation lists, as necessary, on the SQL Relay server
+
+!PostgreSQL has supported TLS/SSL encryption and authentication since at least version 7.1.  Enabling encryption and/or authentication is straightforward.  See [https://www.postgresql.org/docs/9.6/static/ssl-tcp.html Secure TCP/IP Connections with SSL] for more information.
+
+On the SQL Relay server, most of the configuration is done by adding an '''sslmode''' parameter to the string attribute of the connection tag, in the SQL Relay configuration file.
+
+The following example requires an encrypted connection:
+
+{{{#!blockquote
+{{{#!code
+@parts/sqlrelay-postgresql-tls.conf@
+}}}
+}}}
+
+The following '''sslmode''' options are supported:
+
+* disable - Don't use an encrypted connection.
+* allow - Allow an encrypted connection if the database supports it.
+* prefer - Use an encrypted connection if the database supports it.
+* require - Require an encrypted connection.
+* verify-ca - Require an encrypted connection and validate the server's certificate.
+* verify-full - Require an encrypted connection, validate the server's certificate, and validate that the common name in the server's certificate matches the server's host name.
+
+If '''sslmode''' is set to any value other than disable, then certificate and key files must be present as:
+
+* ~/.postgresql/postgresql.crt
+* ~/.postgresql/postgresql.key
+
+(where ~/ refers to the home directory of the user that sqlrelay is configured to run as)
+
+If '''sslmode''' is set to verify-ca or verify-full then a CA cert file must be present as:
+
+* ~/.postgresql/root.crt
+
+Optionally, a certificate revocation list may also be present as:
+
+* ~/.postgresql/root.crl
+
+See [http://www.postgresql.org/docs/devel/static/libpq-ssl.html#LIBPQ-SSL-FILE-USAGE SSL Client File Usage] for more information about file names and locations.
+
+The following example also validates the database server's certificate (but does not validate the common name):
+
+{{{#!blockquote
+{{{#!code
+@parts/sqlrelay-postgresql-tls-verify-ca.conf@
+}}}
+}}}
+
+The following example also validates that the common name in the database server's certificate matches the database server's host name:
+
+{{{#!blockquote
+{{{#!code
+@parts/sqlrelay-postgresql-tls-verify-full.conf@
+}}}
+}}}
+
+Note that the host parameter has been updated to specify a fully qualified domain name.  This is the value that the common name will be compared to.
+
+
+----
+
+[[Image(../../images/navprev.png,link=secbackendmysql.html,vertical-align=middle)]] [secbackendmysql.html MySQL/MariaDB] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [secrunas.html Run-As User and Group] [[Image(../../images/navnext.png,link=secrunas.html,vertical-align=middle)]]
+
+{{{#!include ../../contentend.html}}}
+
+{{{#!include footer.html}}}

@@ -1,0 +1,181 @@
+<html>
+<head>
+	<title>firstworks: SQL Relay - sqlrelay persistent database connection pool pooling proxy load balance balancing odbc oracle mysql msql postgresql sybase db2 interbase sqlite access c++ perl DBD DBI python php PDO ruby tcl java jni unix linux persistant</title>
+
+	<link rel="stylesheet" href="../../css/style.css"/>
+	<script type="text/javascript">
+
+  var _gaq = _gaq || [];
+  _gaq.push(['_setAccount', 'UA-23306117-3']);
+  _gaq.push(['_trackPageview']);
+
+  (function() {
+    var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+    ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+    var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+  })();
+
+</script>
+
+	<script language="Javascript" src="../../js/button.js"></script>
+</head>
+<body onload="setButton();">
+
+
+<div style="position: fixed; top: 0px; left: 0px; width: 100%; z-index: 100;">
+
+<span id="firstworks">a <b><a href="http://www.firstworks.com">firstworks</a></b> project</span>
+
+<div id="projectbox"><a href="../../index.html"><img src="../../images/sqlrelay-icon.png"/><span id="name">SQL Relay</span></a></div>
+
+<table id="projectbuttons">
+<tr>
+<td style="width: 50%;"></td>
+<td class="button nonlastbutton"><a id="button-about" href="../../index.html">About</a></td>
+<td class="button nonlastbutton"><a id="button-documentation" href="../../documentation.html">Documentation</a></td>
+<td class="button nonlastbutton"><a id="button-faq" href="../../faq.html">FAQ</a></td>
+<td class="button nonlastbutton"><a id="button-download" href="../../download.html">Download</a></td>
+<td class="button nonlastbutton"><a id="button-license" href="../../license.html">Licensing</a></td>
+<td class="button nonlastbutton"><a id="button-support" href="../../support.html">Support</a></td>
+<td class="button lastbutton"><a id="button-news" target="_blank" href="http://software.firstworks.com">News</a></td>
+<td style="width: 50%;"></td>
+</tr>
+</table>
+
+</div>
+
+<div style="position: absolute; top: 89px; width: 100%;">
+
+
+<div id="content">
+
+
+<p><a href="secbackendmssql.html"><img style="vertical-align: middle; " src="../../images/navprev.png"/></a> <a href="secbackendmssql.html">Microsoft SQL Server (via FreeTDS)</a> | <a href="index.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="index.html">Contents</a> | <a href="secbackendpostgresql.html">PostgreSQL</a> <a href="secbackendpostgresql.html"><img style="vertical-align: middle; " src="../../images/navnext.png"/></a></p>
+
+<br/><a name="backendenc-mysql"/><h1>MySQL/MariaDB</h1>
+
+<p>Modern MySQL/MariaDB databases support the following TLS/SSL features:</p>
+
+<ul>
+  <li>Encryption</li>
+  <li>Certificate Validation</li>
+  <li>Common Name Validation</li>
+</ul>
+
+<p>MySQL/MariaDB does not support Mutual Authentication over TLS/SSL.</p>
+
+<p>Configuring SQL Relay to use TLS/SSL encryption and authentication with a MySQL/MariaDB database involves:</p>
+
+<ul>
+  <li>Installing a certificate and key on the database server</li>
+  <li>Configuring the SQL Relay server to support encryption and/or authentication</li>
+  <li>Installing CA certs and revocation lists, as necessary, on the SQL Relay server</li>
+</ul>
+
+<p>MySQL/MariaDB has supported TLS/SSL encryption and authentication since version 4.0, and encryption has been enabled by default since version 5.7.  Older versions require host configuration to enable encryption though, and a certificate must be installed on the database server to support authentication.  See <a target="_blank" href="https://dev.mysql.com/doc/refman/5.7/en/encrypted-connections.html">Using Encrypted Connections</a> for more information.</p>
+
+<p>On the SQL Relay server, most of the configuration is done in the SQL Relay configuration file, in the string attribute of the connection tag.</p>
+
+<p>The following example requires an encrypted connection:</p>
+
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt><b><font color="#000080">&lt;?xml</font></b> <font color="#009900">version</font><font color="#990000">=</font><font color="#FF0000">"1.0"</font><b><font color="#000080">?&gt;</font></b>
+<b><font color="#0000FF">&lt;instances&gt;</font></b>
+	<b><font color="#0000FF">&lt;instance</font></b> <font color="#009900">id</font><font color="#990000">=</font><font color="#FF0000">"example"</font> <font color="#009900">dbase</font><font color="#990000">=</font><font color="#FF0000">"mysql"</font><b><font color="#0000FF">&gt;</font></b>
+		<b><font color="#0000FF">&lt;connections&gt;</font></b>
+                        <b><font color="#0000FF">&lt;connection</font></b> <font color="#009900">string</font><font color="#990000">=</font><font color="#FF0000">"user=mysqluser;password=mysqlpassword;host=mysqlhost;db=mysqldb;sslmode=require"</font><b><font color="#0000FF">/&gt;</font></b>
+		<b><font color="#0000FF">&lt;/connections&gt;</font></b>
+	<b><font color="#0000FF">&lt;/instance&gt;</font></b>
+<b><font color="#0000FF">&lt;/instances&gt;</font></b>
+</tt></pre>
+
+</blockquote>
+<p>The following connection string options are supported:</p>
+
+<ul>
+  <li><b>sslmode</b> - The ssl mode of the connection.</li>
+  <ul>
+    <li>disable - Don't use an encrypted connection.</li>
+    <li>prefer - Use an encrypted connection if the database supports it.</li>
+    <li>require - Require an encrypted connection.</li>
+    <li>verify-ca - Require an encrypted connection and validate the server's certificate.</li>
+    <li>verify-full - Require an encrypted connection, validate the server's certificate, and validate that the common name in the server's certificate matches the server's host name.</li>
+  </ul>
+
+  <li><b>tlsversion</b> - the TLS version to use</li>
+  <ul>
+    <li>TLSv1</li>
+    <li>TLSv1.1</li>
+    <li>TLSv1.2</li>
+    <li>Any more recent version of TLS, as supported by and enabled in the underlying MySQL/MariaDB client/server.</li>
+    <li>If left blank or omitted, then the highest supported version is negotiated.</li>
+  </ul>
+
+  <li><b>sslkey</b> - The full path name of an ssl key file (eg. /etc/certs/key.pem).</li>
+  <li><b>sslcert</b> - The full path name of an ssl certificate file (eg. /etc/certs/cert.pem).</li>
+  <li><b>sslcipher</b> - A list of permissable ciphers to use for SSL encryption.  Only necessary if you want to restrict which cipers to use.</li>
+  <li><b>sslca</b> - The full path name of an SSL CA certificate to add to the list of trusted CA certificates to validate the host's certificate against (eg. /etc/certs/ca.pem).</li>
+  <li><b>sslcapath</b> - The full path name to a directory that contains a set of trusted SSL CA certificates to add to the list of trusted CA certificates to validate the host's certificate against (eg. /etc/certs/ca).</li>
+  <li><b>sslcrl</b> - The full path name of an SSL certificate revocation list (eg. /etc/certs/crl.pem).</li>
+  <li><b>sslcrlpath</b> - The full path name of a directory that contains a set of SSL certificate revocation lists (eg. /etc/certs/crl).</li>
+</ul>
+
+<p>The following example also validates the database server's certificate against the CA cert /etc/ca.pem (but does not validate the common name):</p>
+
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt><b><font color="#000080">&lt;?xml</font></b> <font color="#009900">version</font><font color="#990000">=</font><font color="#FF0000">"1.0"</font><b><font color="#000080">?&gt;</font></b>
+<b><font color="#0000FF">&lt;instances&gt;</font></b>
+	<b><font color="#0000FF">&lt;instance</font></b> <font color="#009900">id</font><font color="#990000">=</font><font color="#FF0000">"example"</font> <font color="#009900">dbase</font><font color="#990000">=</font><font color="#FF0000">"mysql"</font><b><font color="#0000FF">&gt;</font></b>
+		<b><font color="#0000FF">&lt;connections&gt;</font></b>
+                        <b><font color="#0000FF">&lt;connection</font></b> <font color="#009900">string</font><font color="#990000">=</font><font color="#FF0000">"user=mysqluser;password=mysqlpassword;host=mysqlhost;db=mysqldb;sslmode=verify-ca;sslca=/etc/ca.pem"</font><b><font color="#0000FF">/&gt;</font></b>
+		<b><font color="#0000FF">&lt;/connections&gt;</font></b>
+	<b><font color="#0000FF">&lt;/instance&gt;</font></b>
+<b><font color="#0000FF">&lt;/instances&gt;</font></b>
+</tt></pre>
+
+</blockquote>
+<p>The following example also validates that the common name in the database server's certificate matches the database server's host name:</p>
+
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt><b><font color="#000080">&lt;?xml</font></b> <font color="#009900">version</font><font color="#990000">=</font><font color="#FF0000">"1.0"</font><b><font color="#000080">?&gt;</font></b>
+<b><font color="#0000FF">&lt;instances&gt;</font></b>
+	<b><font color="#0000FF">&lt;instance</font></b> <font color="#009900">id</font><font color="#990000">=</font><font color="#FF0000">"example"</font> <font color="#009900">dbase</font><font color="#990000">=</font><font color="#FF0000">"mysql"</font><b><font color="#0000FF">&gt;</font></b>
+		<b><font color="#0000FF">&lt;connections&gt;</font></b>
+                        <b><font color="#0000FF">&lt;connection</font></b> <font color="#009900">string</font><font color="#990000">=</font><font color="#FF0000">"user=mysqluser;password=mysqlpassword;host=mysqlhost.yourdomain.com;db=mysqldb;sslmode=verify-full;sslca=/etc/ca.pem"</font><b><font color="#0000FF">/&gt;</font></b>
+		<b><font color="#0000FF">&lt;/connections&gt;</font></b>
+	<b><font color="#0000FF">&lt;/instance&gt;</font></b>
+<b><font color="#0000FF">&lt;/instances&gt;</font></b>
+</tt></pre>
+
+</blockquote>
+<p>Note that the host parameter has been updated to specify a fully qualified domain name.  This is the value that the common name will be compared to.</p>
+
+<hr/>
+
+<p><a href="secbackendmssql.html"><img style="vertical-align: middle; " src="../../images/navprev.png"/></a> <a href="secbackendmssql.html">Microsoft SQL Server (via FreeTDS)</a> | <a href="index.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="index.html">Contents</a> | <a href="secbackendpostgresql.html">PostgreSQL</a> <a href="secbackendpostgresql.html"><img style="vertical-align: middle; " src="../../images/navnext.png"/></a></p>
+
+</div> <!-- content -->
+
+
+<div id="copyrightbox">
+Copyright 2026 - David Muse - <a href="mailto:david.muse@firstworks.com">Contact</a>
+</div> <!-- copyrightbox -->
+
+</div>
+
+</body>
+</html>
+
+

@@ -1,0 +1,134 @@
+<!--#include virtual="header.html"-->
+
+<!--#include virtual="projectheader.html"-->
+
+<!--#include virtual="../../contentstart.html"-->
+
+<p><a href="secbackendmysql.html"><img style="vertical-align: middle; " src="../../images/navprev.png"/></a> <a href="secbackendmysql.html">MySQL/MariaDB</a> | <a href="index.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="index.html">Contents</a> | <a href="secrunas.html">Run-As User and Group</a> <a href="secrunas.html"><img style="vertical-align: middle; " src="../../images/navnext.png"/></a></p>
+
+<br/><a name="backendenc-postgresql"/><h1>PostgreSQL</h1>
+
+<p>Modern PostgreSQL databases support the following TLS/SSL features:</p>
+
+<ul>
+  <li>Encryption</li>
+  <li>Certificate Validation</li>
+  <li>Common Name Validation</li>
+  <li>Mutual Authentication</li>
+</ul>
+
+<p>Configuring SQL Relay to use TLS/SSL encryption and authentication with a PostgreSQL database involves:</p>
+
+<ul>
+  <li>Configuring the database server to support secure connections</li>
+  <li>Installing a certificate on the database server</li>
+  <li>Configuring the SQL Relay server to support secure connections</li>
+  <li>Installing a certificate on the SQL Relay server</li>
+  <li>Configuring the database server to support encryption and/or authentication</li>
+  <li>Installing certificate, key, CA certs, and revocation lists, as necessary, on the database server</li>
+  <li>Configuring the SQL Relay server to support encryption and/or authentication</li>
+  <li>Installing certificate, key, CA certs, and revocation lists, as necessary, on the SQL Relay server</li>
+</ul>
+
+<p>PostgreSQL has supported TLS/SSL encryption and authentication since at least version 7.1.  Enabling encryption and/or authentication is straightforward.  See <a target="_blank" href="https://www.postgresql.org/docs/9.6/static/ssl-tcp.html">Secure TCP/IP Connections with SSL</a> for more information.</p>
+
+<p>On the SQL Relay server, most of the configuration is done by adding an <b>sslmode</b> parameter to the string attribute of the connection tag, in the SQL Relay configuration file.</p>
+
+<p>The following example requires an encrypted connection:</p>
+
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt><b><font color="#000080">&lt;?xml</font></b> <font color="#009900">version</font><font color="#990000">=</font><font color="#FF0000">"1.0"</font><b><font color="#000080">?&gt;</font></b>
+<b><font color="#0000FF">&lt;instances&gt;</font></b>
+	<b><font color="#0000FF">&lt;instance</font></b> <font color="#009900">id</font><font color="#990000">=</font><font color="#FF0000">"example"</font> <font color="#009900">dbase</font><font color="#990000">=</font><font color="#FF0000">"postgresql"</font><b><font color="#0000FF">&gt;</font></b>
+		<b><font color="#0000FF">&lt;connections&gt;</font></b>
+                        <b><font color="#0000FF">&lt;connection</font></b> <font color="#009900">string</font><font color="#990000">=</font><font color="#FF0000">"user=postgresqluser;password=postgresqlpassword;host=postgresqlhost;db=postgresqldb;sslmode=require"</font><b><font color="#0000FF">/&gt;</font></b>
+		<b><font color="#0000FF">&lt;/connections&gt;</font></b>
+	<b><font color="#0000FF">&lt;/instance&gt;</font></b>
+<b><font color="#0000FF">&lt;/instances&gt;</font></b>
+</tt></pre>
+
+</blockquote>
+<p>The following <b>sslmode</b> options are supported:</p>
+
+<ul>
+  <li>disable - Don't use an encrypted connection.</li>
+  <li>allow - Allow an encrypted connection if the database supports it.</li>
+  <li>prefer - Use an encrypted connection if the database supports it.</li>
+  <li>require - Require an encrypted connection.</li>
+  <li>verify-ca - Require an encrypted connection and validate the server's certificate.</li>
+  <li>verify-full - Require an encrypted connection, validate the server's certificate, and validate that the common name in the server's certificate matches the server's host name.</li>
+</ul>
+
+<p>If <b>sslmode</b> is set to any value other than disable, then certificate and key files must be present as:</p>
+
+<ul>
+  <li>~/.postgresql/postgresql.crt</li>
+  <li>~/.postgresql/postgresql.key</li>
+</ul>
+
+<p>(where ~/ refers to the home directory of the user that sqlrelay is configured to run as)</p>
+
+<p>If <b>sslmode</b> is set to verify-ca or verify-full then a CA cert file must be present as:</p>
+
+<ul>
+  <li>~/.postgresql/root.crt</li>
+</ul>
+
+<p>Optionally, a certificate revocation list may also be present as:</p>
+
+<ul>
+  <li>~/.postgresql/root.crl</li>
+</ul>
+
+<p>See <a target="_blank" href="http://www.postgresql.org/docs/devel/static/libpq-ssl.html#LIBPQ-SSL-FILE-USAGE">SSL Client File Usage</a> for more information about file names and locations.</p>
+
+<p>The following example also validates the database server's certificate (but does not validate the common name):</p>
+
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt><b><font color="#000080">&lt;?xml</font></b> <font color="#009900">version</font><font color="#990000">=</font><font color="#FF0000">"1.0"</font><b><font color="#000080">?&gt;</font></b>
+<b><font color="#0000FF">&lt;instances&gt;</font></b>
+	<b><font color="#0000FF">&lt;instance</font></b> <font color="#009900">id</font><font color="#990000">=</font><font color="#FF0000">"example"</font> <font color="#009900">dbase</font><font color="#990000">=</font><font color="#FF0000">"postgresql"</font><b><font color="#0000FF">&gt;</font></b>
+		<b><font color="#0000FF">&lt;connections&gt;</font></b>
+                        <b><font color="#0000FF">&lt;connection</font></b> <font color="#009900">string</font><font color="#990000">=</font><font color="#FF0000">"user=postgresqluser;password=postgresqlpassword;host=postgresqlhost;db=postgresqldb;sslmode=verify-ca"</font><b><font color="#0000FF">/&gt;</font></b>
+		<b><font color="#0000FF">&lt;/connections&gt;</font></b>
+	<b><font color="#0000FF">&lt;/instance&gt;</font></b>
+<b><font color="#0000FF">&lt;/instances&gt;</font></b>
+</tt></pre>
+
+</blockquote>
+<p>The following example also validates that the common name in the database server's certificate matches the database server's host name:</p>
+
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt><b><font color="#000080">&lt;?xml</font></b> <font color="#009900">version</font><font color="#990000">=</font><font color="#FF0000">"1.0"</font><b><font color="#000080">?&gt;</font></b>
+<b><font color="#0000FF">&lt;instances&gt;</font></b>
+	<b><font color="#0000FF">&lt;instance</font></b> <font color="#009900">id</font><font color="#990000">=</font><font color="#FF0000">"example"</font> <font color="#009900">dbase</font><font color="#990000">=</font><font color="#FF0000">"postgresql"</font><b><font color="#0000FF">&gt;</font></b>
+		<b><font color="#0000FF">&lt;connections&gt;</font></b>
+                        <b><font color="#0000FF">&lt;connection</font></b> <font color="#009900">string</font><font color="#990000">=</font><font color="#FF0000">"user=postgresqluser;password=postgresqlpassword;host=postgresqlhost.yourdomain.com;db=postgresqldb;sslmode=verify-full"</font><b><font color="#0000FF">/&gt;</font></b>
+		<b><font color="#0000FF">&lt;/connections&gt;</font></b>
+	<b><font color="#0000FF">&lt;/instance&gt;</font></b>
+<b><font color="#0000FF">&lt;/instances&gt;</font></b>
+</tt></pre>
+
+</blockquote>
+<p>Note that the host parameter has been updated to specify a fully qualified domain name.  This is the value that the common name will be compared to.</p>
+
+<hr/>
+
+<p><a href="secbackendmysql.html"><img style="vertical-align: middle; " src="../../images/navprev.png"/></a> <a href="secbackendmysql.html">MySQL/MariaDB</a> | <a href="index.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="index.html">Contents</a> | <a href="secrunas.html">Run-As User and Group</a> <a href="secrunas.html"><img style="vertical-align: middle; " src="../../images/navnext.png"/></a></p>
+
+<!--#include virtual="../../contentend.html"-->
+
+<!--#include virtual="footer.html"-->
+

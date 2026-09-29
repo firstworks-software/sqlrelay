@@ -1,0 +1,54 @@
+{{{#!include header.html}}}
+
+{{{#!include projectheader.html}}}
+
+{{{#!include ../../contentstart.html}}}
+
+[[Image(../../images/navprev.png,link=aes256.html,vertical-align=middle)]] [aes256.html aes256] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [cron_userlist.html cron_userlist] [[Image(../../images/navnext.png,link=cron_userlist.html,vertical-align=middle)]]
+
+[[br]][=#schedules]
+= Connection Schedules =
+
+Connection schedules enable the SQL Relay server to control when users are allowed to access the database.
+
+ [[Image(../../images/dayshift.png,nolink)]]
+ [[Image(../../images/nightshift.png,nolink)]]
+
+Connection schedules are implemented by loadable modules.  The //schedules// section of the configuration file indicates which modules to load and what parameters to use when executing them.
+
+{{{#!blockquote
+{{{#!code
+@parts/sqlrelay-schedules-cron-deny.conf@
+}}}
+}}}
+
+The //module// attribute specifies which module to load.
+
+Module configurations may have attributes and/or nested tags.  How these are interpreted is module-specific.
+
+All schedule modules have an //enabled// attribute, allowing the module to be temporarily disabled.  If enabled="no" is configured, then the module is disabled.  If set to any other value, or omitted, then the module is enabled.
+
+Connection schedule modules can be "stacked".  Multiple different modules may be loaded, and multiple instances of the same type of module, with different configurations, may also be loaded.
+
+{{{#!blockquote
+{{{#!code
+@parts/sqlrelay-schedules-stacked.conf@
+}}}
+}}}
+
+At startup, the SQL Relay server creates instances of the specified schedule modules and initializes them.  When a client connects, the server passes the supplied credentials to each module, in the order that they were specified in the config file.  Each module applies its rules to the specified user.  If a module denies access to a user then the remaining modules are ignored.  If the user makes it through all modules without being denies access, then the user is allowed access.
+
+Currently, the following connection schedule module is available in the standard SQL Relay distribution:
+
+* [cron_userlist.html#cron_userlist cron_userlist]
+
+Custom modules may be developed though.  For more information, please contact [mailto:dev@firstworks.com dev@firstworks.com].
+
+
+----
+
+[[Image(../../images/navprev.png,link=aes256.html,vertical-align=middle)]] [aes256.html aes256] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [cron_userlist.html cron_userlist] [[Image(../../images/navnext.png,link=cron_userlist.html,vertical-align=middle)]]
+
+{{{#!include ../../contentend.html}}}
+
+{{{#!include footer.html}}}

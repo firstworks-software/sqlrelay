@@ -36,7 +36,7 @@ Would be translated to:
 }}}
 }}}
 
-Normalizing a query is useful when also using [security.html#filtering query filtering] as it simplifies the patterns that have to be searched for.
+Normalizing a query is useful when also using [secfiltering.html query filtering] as it simplifies the patterns that have to be searched for.
 
 The following attributes are currently supported:
 

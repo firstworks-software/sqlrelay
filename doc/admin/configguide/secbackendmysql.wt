@@ -1,0 +1,84 @@
+{{{#!include header.html}}}
+
+{{{#!include projectheader.html}}}
+
+{{{#!include ../../contentstart.html}}}
+
+[[Image(../../images/navprev.png,link=secbackendmssql.html,vertical-align=middle)]] [secbackendmssql.html Microsoft SQL Server (via FreeTDS)] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [secbackendpostgresql.html PostgreSQL] [[Image(../../images/navnext.png,link=secbackendpostgresql.html,vertical-align=middle)]]
+
+[[br]][=#backendenc-mysql]
+= !MySQL/MariaDB =
+
+Modern !MySQL/MariaDB databases support the following TLS/SSL features:
+
+* Encryption
+* Certificate Validation
+* Common Name Validation
+
+!MySQL/MariaDB does not support Mutual Authentication over TLS/SSL.
+
+Configuring SQL Relay to use TLS/SSL encryption and authentication with a !MySQL/MariaDB database involves:
+
+* Installing a certificate and key on the database server
+* Configuring the SQL Relay server to support encryption and/or authentication
+* Installing CA certs and revocation lists, as necessary, on the SQL Relay server
+
+!MySQL/MariaDB has supported TLS/SSL encryption and authentication since version 4.0, and encryption has been enabled by default since version 5.7.  Older versions require host configuration to enable encryption though, and a certificate must be installed on the database server to support authentication.  See [https://dev.mysql.com/doc/refman/5.7/en/encrypted-connections.html Using Encrypted Connections] for more information.
+
+On the SQL Relay server, most of the configuration is done in the SQL Relay configuration file, in the string attribute of the connection tag.
+
+The following example requires an encrypted connection:
+
+{{{#!blockquote
+{{{#!code
+@parts/sqlrelay-mysql-tls.conf@
+}}}
+}}}
+
+The following connection string options are supported:
+
+* '''sslmode''' - The ssl mode of the connection.
+ * disable - Don't use an encrypted connection.
+ * prefer - Use an encrypted connection if the database supports it.
+ * require - Require an encrypted connection.
+ * verify-ca - Require an encrypted connection and validate the server's certificate.
+ * verify-full - Require an encrypted connection, validate the server's certificate, and validate that the common name in the server's certificate matches the server's host name.
+* '''tlsversion''' - the TLS version to use
+ * TLSv1
+ * TLSv1.1
+ * TLSv1.2
+ * Any more recent version of TLS, as supported by and enabled in the underlying !MySQL/MariaDB client/server.
+ * If left blank or omitted, then the highest supported version is negotiated.
+* '''sslkey''' - The full path name of an ssl key file (eg. /etc/certs/key.pem).
+* '''sslcert''' - The full path name of an ssl certificate file (eg. /etc/certs/cert.pem).
+* '''sslcipher''' - A list of permissable ciphers to use for SSL encryption.  Only necessary if you want to restrict which cipers to use.
+* '''sslca''' - The full path name of an SSL CA certificate to add to the list of trusted CA certificates to validate the host's certificate against (eg. /etc/certs/ca.pem).
+* '''sslcapath''' - The full path name to a directory that contains a set of trusted SSL CA certificates to add to the list of trusted CA certificates to validate the host's certificate against (eg. /etc/certs/ca).
+* '''sslcrl''' - The full path name of an SSL certificate revocation list (eg. /etc/certs/crl.pem).
+* '''sslcrlpath''' - The full path name of a directory that contains a set of SSL certificate revocation lists (eg. /etc/certs/crl).
+
+The following example also validates the database server's certificate against the CA cert /etc/ca.pem (but does not validate the common name):
+
+{{{#!blockquote
+{{{#!code
+@parts/sqlrelay-mysql-tls-verify-ca.conf@
+}}}
+}}}
+
+The following example also validates that the common name in the database server's certificate matches the database server's host name:
+
+{{{#!blockquote
+{{{#!code
+@parts/sqlrelay-mysql-tls-verify-full.conf@
+}}}
+}}}
+
+Note that the host parameter has been updated to specify a fully qualified domain name.  This is the value that the common name will be compared to.
+
+----
+
+[[Image(../../images/navprev.png,link=secbackendmssql.html,vertical-align=middle)]] [secbackendmssql.html Microsoft SQL Server (via FreeTDS)] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [secbackendpostgresql.html PostgreSQL] [[Image(../../images/navnext.png,link=secbackendpostgresql.html,vertical-align=middle)]]
+
+{{{#!include ../../contentend.html}}}
+
+{{{#!include footer.html}}}

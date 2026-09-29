@@ -168,7 +168,7 @@ Below is a description of the attributes for each tag.
 For '''oracle''' databases, the connect string syntax is "user=USER;password=PASSWORD;oracle_sid=ORACLE_SID;tns_admin=TNS_ADMIN;oracle_home=ORACLE_HOME;nls_lang=NLS_LANG;date_to_text_format=DATE_TO_TEXT_FORMAT;lang=LANG;autocommit=yes/no/default;fetchatonce=FETCHATONCE;maxcolumncount=MAXCOLUMNCOUNT;maxfieldsize=MAXFIELDSIZE;droptemptables=yes/no;globaltemptables=TABLELIST;lastinsertidfunction=LASTINSERTIDFUNCTION;stmtcachesize=0;rejectduplicatebinds=yes/no;disablekeylookup=yes/no;dbtype=ID"
 
 * '''user''': The username SQL Relay should use to log into the database.  Required.
-* '''password''': The password SQL Relay should use to log into the database.  Required.  The password is generally stored in plain text but it is possible to encrypt the password using a loadable module.  See [configguide/security.html#pwdenc Password Encryption]
+* '''password''': The password SQL Relay should use to log into the database.  Required.  The password is generally stored in plain text but it is possible to encrypt the password using a loadable module.  See [configguide/secpwdenc.html Password Encryption]
 * '''oracle_sid''': Which Oracle SID to use.  Optional if the ORACLE_SID environment variable is set.  Overrides the ORACLE_SID environment variable.  This parameter can either be an SID name corresponding to an entry in the tnsnames.ora file such as:
 {{{#!blockquote
 //oracle_sid=ora1//
@@ -201,7 +201,7 @@ For '''freetds''' databases, the connect string syntax is "sybase=SYBASE;lang=LA
 * '''sybase''': The directory containing the "freetds.conf" file.  Optional if the SYBASE environment variable is set.  Overrides the SYBASE environment variable.
 * '''lang''': Sets/overrides the LANG environment variable and by extension, all locale-related variables.  Optional if the LANG environment variable is set.
 * '''user''': The username SQL Relay should use to log into the database.  Required.
-* '''password''': The password SQL Relay should use to log into the database.  Required.  Required.  The password is generally stored in plain text but it is possible to encrypt the password using a loadable module.  See [configguide/security.html#pwdenc Password Encryption]
+* '''password''': The password SQL Relay should use to log into the database.  Required.  Required.  The password is generally stored in plain text but it is possible to encrypt the password using a loadable module.  See [configguide/secpwdenc.html Password Encryption]
 * '''server''': The entry in the "interfaces" or "freetds.conf" file which specifies host, port and other database connection parameters.
 * '''db''': The database to log into.  Required.
 * '''autocommit''': If set to yes, then each insert, update, or delete is committed immediately.  If set to no, then each insert, update, or delete is only committed when a commit statement is executed.  If set to default then the default behavior (autocommit-on) is observed.  Optional, defaults to default.
@@ -222,7 +222,7 @@ For '''sap''' (or '''sybase''') databases, the connect string syntax is "sybase=
 * '''sybase''': The directory containing the "interfaces" file.  Optional if the SYBASE environment variable is set.  Overrides the SYBASE environment variable.  If SQL Relay was built to load the SAP/Sybase libraries at runtime, then the lib subdirectory of this directory will be searched for the SAP/Sybase client libraries.
 * '''lang''': Sets/overrides the LANG environment variable and by extension, all locale-related variables, including the character set that data coming out of the database is translated into.  For example, lang=en_US.UTF-8 selects utf8 and lang=en_US selects iso_1.  The '''charset''' variable overrides that.  Optional if the LANG environment variable is set.
 * '''user''': The username SQL Relay should use to log into the database.  Required.
-* '''password''': The password SQL Relay should use to log into the database.  Required.  Required.  The password is generally stored in plain text but it is possible to encrypt the password using a loadable module.  See [configguide/security.html#pwdenc Password Encryption]
+* '''password''': The password SQL Relay should use to log into the database.  Required.  Required.  The password is generally stored in plain text but it is possible to encrypt the password using a loadable module.  See [configguide/secpwdenc.html Password Encryption]
 * '''server''': The entry in the "interfaces" or "freetds.conf" file which specifies host, port and other database connection parameters.
 * '''db''': The database to log into.  Required.
 * '''autocommit''': If set to yes, then each insert, update, or delete is committed immediately.  If set to no, then each insert, update, or delete is only committed when a commit statement is executed.  If set to default then the default behavior (autocommit-on) is observed.  Optional, defaults to default.
@@ -243,7 +243,7 @@ For '''sap''' (or '''sybase''') databases, the connect string syntax is "sybase=
 For '''db2''' databases, the connect string syntax is "user=USER;password=PASSWORD;db=DB;lang=LANG;autocommit=yes/no/default;connecttimeout=CONNECTTIMEOUT;fetchatonce=FETCHATONCE;maxcolumncount=MAXCOLUMNCOUNT;maxfieldsize=MAXFIELDSIZE;maxoutlobbindsize=MAXOUTLOBBINDSIZE;dbtype=ID"
 
 * '''user''': The username SQL Relay should use to log into the database.  Required.
-* '''password''': The password SQL Relay should use to log into the database.  Required.  Required.  The password is generally stored in plain text but it is possible to encrypt the password using a loadable module.  See [configguide/security.html#pwdenc Password Encryption]
+* '''password''': The password SQL Relay should use to log into the database.  Required.  Required.  The password is generally stored in plain text but it is possible to encrypt the password using a loadable module.  See [configguide/secpwdenc.html Password Encryption]
 * '''db''': The server instance to connect to.
 * '''autocommit''': If set to yes, then each insert, update, or delete is committed immediately.  If set to no, then each insert, update, or delete is only committed when a commit statement is executed.  If set to default then the default behavior (autocommit-off) is observed.  Optional, defaults to default.
 * '''lang''': Sets/overrides the LANG environment variable and by extension, all locale-related variables.  Optional if the LANG environment variable is set.
@@ -260,7 +260,7 @@ For '''db2''' databases, the connect string syntax is "user=USER;password=PASSWO
 For '''informix''' databases, the connect string syntax is "user=USER;password=PASSWORD;informixdir=INFORMIXDIR;servername=SERVERNAME;db=DB;lang=LANG;autocommit=yes/no/default;connecttimeout=CONNECTTIMEOUT;fetchatonce=FETCHATONCE;maxcolumncount=MAXCOLUMNCOUNT;maxfieldsize=MAXFIELDSIZE;maxoutlobbindsize=MAXOUTLOBBINDSIZE;dbtype=ID"
 
 * '''user''': The username SQL Relay should use to log into the database.  Required.
-* '''password''': The password SQL Relay should use to log into the database.  Required.  Required.  The password is generally stored in plain text but it is possible to encrypt the password using a loadable module.  See [configguide/security.html#pwdenc Password Encryption]
+* '''password''': The password SQL Relay should use to log into the database.  Required.  Required.  The password is generally stored in plain text but it is possible to encrypt the password using a loadable module.  See [configguide/secpwdenc.html Password Encryption]
 * '''informixdir''': Specifies the path to the Informix instance that should be used.  This is used for locating the sqlhosts file and other dependencies.  If not specified, this defaults to the value of the INFORMIXDIR environment variable, if set.  If SQL Relay was built to load the Informix client libraries at runtime, then the lib/cli subdirectory of this directory will be searched for the client libraries.
 * '''servername''': The server to connect to, as defined in sqlhosts.  If not specified, this defaults to the value of the INFORMIXSERVER environment variable, if set.
 * '''db''': The database instance to connect to, on the specified server.
@@ -278,7 +278,7 @@ For '''informix''' databases, the connect string syntax is "user=USER;password=P
 For '''mysql''' databases, the connect string syntax is "user=USER;password=PASSWORD;db=DB;host=HOST;port=PORT;socket=SOCKET;lang=LANG;autocommit=yes/no/default;fakebinds=FAKEBINDS;maxcolumncount=MAXCOLUMNCOUNT;maxfieldsize=MAXFIELDSIZE;charset=CHARSET;sslmode=sslmode;tlsversion=tlsversion;sslkey=keyfile;sslcert=certfile;sslcipher=cipherlist;sslca=cafile;sslcapath=cafilepath;sslcrl=crlfile;sslcrlpath=crlfilepath;foundrows=yes/no;ignorespace=yes/no;dbtype=ID"
 
 * '''user''': The username SQL Relay should use to log into the database.  Required.
-* '''password''': The password SQL Relay should use to log into the database.  Required.  Required.  The password is generally stored in plain text but it is possible to encrypt the password using a loadable module.  See [configguide/security.html#pwdenc Password Encryption]
+* '''password''': The password SQL Relay should use to log into the database.  Required.  Required.  The password is generally stored in plain text but it is possible to encrypt the password using a loadable module.  See [configguide/secpwdenc.html Password Encryption]
 * '''db''': The database to log into.  Required.
 * '''host''': The host to connect to.  Required.
 * '''port''': The port to connect to on a remote host.  Optional, defaults to 3306.
@@ -307,7 +307,7 @@ For '''mysql''' databases, the connect string syntax is "user=USER;password=PASS
 For '''postgresql''' databases, the connect string syntax is "user=USER;password=PASSWORD;db=DB;host=HOST;port=PORT;sslmode=SSLMODE;options=OPTIONS;lang=LANG;autocommit=yes/no/default;typemangling=MANGLING;tablemangling=MANGLING;enablecolumnisnullable=yes/no;fakebinds=FAKEBINDS;charset=CHARSET;lastinsertidfunction=LASTINSERTDFUNCTION;fetchatonce=FETCHATONCE;decodeblobs=yes/no;dbtype=ID"
 
 * '''user''': The username SQL Relay should use to log into the database.  Required.
-* '''password''': The password SQL Relay should use to log into the database.  Required.  Required.  The password is generally stored in plain text but it is possible to encrypt the password using a loadable module.  See [configguide/security.html#pwdenc Password Encryption]
+* '''password''': The password SQL Relay should use to log into the database.  Required.  Required.  The password is generally stored in plain text but it is possible to encrypt the password using a loadable module.  See [configguide/secpwdenc.html Password Encryption]
 * '''db''': The database to log into.  Required.
 * '''host''': The host to connect to.  Required.  If host begins with a slash (/) then it is assumed to be the directory containing a unix socket starting with .s.PGSQL.
 * '''port''': The port to connect to on a remote host.  Optional, defaults to 5432.  If host refers to a unix socket, then port is the extension on the socket name (eg. /tmp/.s.PGSQL.5432).
@@ -330,7 +330,7 @@ For '''postgresql''' databases, the connect string syntax is "user=USER;password
 For '''firebird''' databases, the connect string syntax is "user=USER;password=PASSWORD;db=DATABASE;dialect=DIALECT;lang=LANG;autocommit=yes/no/default;maxcolumncount=MAXCOLUMNCOUNT;maxfieldsize=MAXFIELDSIZE;charset=CHARSET;droptemptables=yes/no;globaltemptables=TABLELIST;lastinsertidfunction=LASTINSERTIDFUNCTION;dbtype=ID"
 
 * '''user''': The username SQL Relay should use to log into the database.  Required.
-* '''password''': The password SQL Relay should use to log into the database.  Required.  Required.  The password is generally stored in plain text but it is possible to encrypt the password using a loadable module.  See [configguide/security.html#pwdenc Password Encryption]
+* '''password''': The password SQL Relay should use to log into the database.  Required.  Required.  The password is generally stored in plain text but it is possible to encrypt the password using a loadable module.  See [configguide/secpwdenc.html Password Encryption]
 * '''db''': The filename of the database open.  Required.
 * '''dialect''': The database dialect to use.  Optional, defaults to 3.
 * '''lang''': Sets/overrides the LANG environment variable and by extension, all locale-related variables.  Optional if the LANG environment variable is set.
@@ -358,7 +358,7 @@ For '''sqlite''' databases, the connect string syntax is "db=DB;dbtype=ID;lang=L
 For '''odbc''' databases, the connect string syntax is "user=USER;password=PASSWORD;dsn=DSN;lang=LANG;autocommit=yes/no/default;connecttimeout=CONNECTTIMEOUT;odbcversion=ODBCVERSION;ncharencoding=NCHARENCODING;maxcolumncount=MAXCOLUMNCOUNT;maxfieldsize=MAXFIELDSIZE;maxoutlobbindsize=MAXOUTLOBBINDSIZE;dbtype=ID;mars=yes/no;trace=yes/no/default;tracefile=TRACEFILE;detachbeforelogin=yes/no;overrideschema=SCHEMA;binarylobbind=yes/no"
 
 * '''user''': The username SQL Relay should use to log into the database.  Required.
-* '''password''': The password SQL Relay should use to log into the database.  Required.  Required.  The password is generally stored in plain text but it is possible to encrypt the password using a loadable module.  See [configguide/security.html#pwdenc Password Encryption]
+* '''password''': The password SQL Relay should use to log into the database.  Required.  Required.  The password is generally stored in plain text but it is possible to encrypt the password using a loadable module.  See [configguide/secpwdenc.html Password Encryption]
 * '''dsn''': The entry in the the odbcinst.ini which specifies host, port and other database connection parameters.
 * '''lang''': Sets/overrides the LANG environment variable and by extension, all locale-related variables.  Optional if the LANG environment variable is set.
 * '''autocommit''': If set to yes, then each insert, update, or delete is committed immediately.  If set to no, then each insert, update, or delete is only committed when a commit statement is executed.  If set to default then the default behavior for the database is observed.  Optional, defaults to default.

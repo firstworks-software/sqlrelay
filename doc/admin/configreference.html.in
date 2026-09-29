@@ -262,7 +262,7 @@ http://www.gnu.org/software/src-highlite -->
 
 <ul>
   <li><b>user</b>: The username SQL Relay should use to log into the database.  Required.</li>
-  <li><b>password</b>: The password SQL Relay should use to log into the database.  Required.  The password is generally stored in plain text but it is possible to encrypt the password using a loadable module.  See <a href="configguide/security.html#pwdenc">Password Encryption</a></li>
+  <li><b>password</b>: The password SQL Relay should use to log into the database.  Required.  The password is generally stored in plain text but it is possible to encrypt the password using a loadable module.  See <a href="configguide/secpwdenc.html">Password Encryption</a></li>
   <li><b>oracle_sid</b>: Which Oracle SID to use.  Optional if the ORACLE_SID environment variable is set.  Overrides the ORACLE_SID environment variable.  This parameter can either be an SID name corresponding to an entry in the tnsnames.ora file such as:
   <blockquote>
 <i>oracle_sid=ora1</i>
@@ -297,7 +297,7 @@ or a tnsnames-style expression such as:
   <li><b>sybase</b>: The directory containing the "freetds.conf" file.  Optional if the SYBASE environment variable is set.  Overrides the SYBASE environment variable.</li>
   <li><b>lang</b>: Sets/overrides the LANG environment variable and by extension, all locale-related variables.  Optional if the LANG environment variable is set.</li>
   <li><b>user</b>: The username SQL Relay should use to log into the database.  Required.</li>
-  <li><b>password</b>: The password SQL Relay should use to log into the database.  Required.  Required.  The password is generally stored in plain text but it is possible to encrypt the password using a loadable module.  See <a href="configguide/security.html#pwdenc">Password Encryption</a></li>
+  <li><b>password</b>: The password SQL Relay should use to log into the database.  Required.  Required.  The password is generally stored in plain text but it is possible to encrypt the password using a loadable module.  See <a href="configguide/secpwdenc.html">Password Encryption</a></li>
   <li><b>server</b>: The entry in the "interfaces" or "freetds.conf" file which specifies host, port and other database connection parameters.</li>
   <li><b>db</b>: The database to log into.  Required.</li>
   <li><b>autocommit</b>: If set to yes, then each insert, update, or delete is committed immediately.  If set to no, then each insert, update, or delete is only committed when a commit statement is executed.  If set to default then the default behavior (autocommit-on) is observed.  Optional, defaults to default.</li>
@@ -318,7 +318,7 @@ or a tnsnames-style expression such as:
   <li><b>sybase</b>: The directory containing the "interfaces" file.  Optional if the SYBASE environment variable is set.  Overrides the SYBASE environment variable.  If SQL Relay was built to load the SAP/Sybase libraries at runtime, then the lib subdirectory of this directory will be searched for the SAP/Sybase client libraries.</li>
   <li><b>lang</b>: Sets/overrides the LANG environment variable and by extension, all locale-related variables, including the character set that data coming out of the database is translated into.  For example, lang=en_US.UTF-8 selects utf8 and lang=en_US selects iso_1.  The <b>charset</b> variable overrides that.  Optional if the LANG environment variable is set.</li>
   <li><b>user</b>: The username SQL Relay should use to log into the database.  Required.</li>
-  <li><b>password</b>: The password SQL Relay should use to log into the database.  Required.  Required.  The password is generally stored in plain text but it is possible to encrypt the password using a loadable module.  See <a href="configguide/security.html#pwdenc">Password Encryption</a></li>
+  <li><b>password</b>: The password SQL Relay should use to log into the database.  Required.  Required.  The password is generally stored in plain text but it is possible to encrypt the password using a loadable module.  See <a href="configguide/secpwdenc.html">Password Encryption</a></li>
   <li><b>server</b>: The entry in the "interfaces" or "freetds.conf" file which specifies host, port and other database connection parameters.</li>
   <li><b>db</b>: The database to log into.  Required.</li>
   <li><b>autocommit</b>: If set to yes, then each insert, update, or delete is committed immediately.  If set to no, then each insert, update, or delete is only committed when a commit statement is executed.  If set to default then the default behavior (autocommit-on) is observed.  Optional, defaults to default.</li>
@@ -339,7 +339,7 @@ or a tnsnames-style expression such as:
 
 <ul>
   <li><b>user</b>: The username SQL Relay should use to log into the database.  Required.</li>
-  <li><b>password</b>: The password SQL Relay should use to log into the database.  Required.  Required.  The password is generally stored in plain text but it is possible to encrypt the password using a loadable module.  See <a href="configguide/security.html#pwdenc">Password Encryption</a></li>
+  <li><b>password</b>: The password SQL Relay should use to log into the database.  Required.  Required.  The password is generally stored in plain text but it is possible to encrypt the password using a loadable module.  See <a href="configguide/secpwdenc.html">Password Encryption</a></li>
   <li><b>db</b>: The server instance to connect to.</li>
   <li><b>autocommit</b>: If set to yes, then each insert, update, or delete is committed immediately.  If set to no, then each insert, update, or delete is only committed when a commit statement is executed.  If set to default then the default behavior (autocommit-off) is observed.  Optional, defaults to default.</li>
   <li><b>lang</b>: Sets/overrides the LANG environment variable and by extension, all locale-related variables.  Optional if the LANG environment variable is set.</li>
@@ -356,7 +356,7 @@ or a tnsnames-style expression such as:
 
 <ul>
   <li><b>user</b>: The username SQL Relay should use to log into the database.  Required.</li>
-  <li><b>password</b>: The password SQL Relay should use to log into the database.  Required.  Required.  The password is generally stored in plain text but it is possible to encrypt the password using a loadable module.  See <a href="configguide/security.html#pwdenc">Password Encryption</a></li>
+  <li><b>password</b>: The password SQL Relay should use to log into the database.  Required.  Required.  The password is generally stored in plain text but it is possible to encrypt the password using a loadable module.  See <a href="configguide/secpwdenc.html">Password Encryption</a></li>
   <li><b>informixdir</b>: Specifies the path to the Informix instance that should be used.  This is used for locating the sqlhosts file and other dependencies.  If not specified, this defaults to the value of the INFORMIXDIR environment variable, if set.  If SQL Relay was built to load the Informix client libraries at runtime, then the lib/cli subdirectory of this directory will be searched for the client libraries.</li>
   <li><b>servername</b>: The server to connect to, as defined in sqlhosts.  If not specified, this defaults to the value of the INFORMIXSERVER environment variable, if set.</li>
   <li><b>db</b>: The database instance to connect to, on the specified server.</li>
@@ -374,7 +374,7 @@ or a tnsnames-style expression such as:
 
 <ul>
   <li><b>user</b>: The username SQL Relay should use to log into the database.  Required.</li>
-  <li><b>password</b>: The password SQL Relay should use to log into the database.  Required.  Required.  The password is generally stored in plain text but it is possible to encrypt the password using a loadable module.  See <a href="configguide/security.html#pwdenc">Password Encryption</a></li>
+  <li><b>password</b>: The password SQL Relay should use to log into the database.  Required.  Required.  The password is generally stored in plain text but it is possible to encrypt the password using a loadable module.  See <a href="configguide/secpwdenc.html">Password Encryption</a></li>
   <li><b>db</b>: The database to log into.  Required.</li>
   <li><b>host</b>: The host to connect to.  Required.</li>
   <li><b>port</b>: The port to connect to on a remote host.  Optional, defaults to 3306.</li>
@@ -403,7 +403,7 @@ or a tnsnames-style expression such as:
 
 <ul>
   <li><b>user</b>: The username SQL Relay should use to log into the database.  Required.</li>
-  <li><b>password</b>: The password SQL Relay should use to log into the database.  Required.  Required.  The password is generally stored in plain text but it is possible to encrypt the password using a loadable module.  See <a href="configguide/security.html#pwdenc">Password Encryption</a></li>
+  <li><b>password</b>: The password SQL Relay should use to log into the database.  Required.  Required.  The password is generally stored in plain text but it is possible to encrypt the password using a loadable module.  See <a href="configguide/secpwdenc.html">Password Encryption</a></li>
   <li><b>db</b>: The database to log into.  Required.</li>
   <li><b>host</b>: The host to connect to.  Required.  If host begins with a slash (/) then it is assumed to be the directory containing a unix socket starting with .s.PGSQL.</li>
   <li><b>port</b>: The port to connect to on a remote host.  Optional, defaults to 5432.  If host refers to a unix socket, then port is the extension on the socket name (eg. /tmp/.s.PGSQL.5432).</li>
@@ -426,7 +426,7 @@ or a tnsnames-style expression such as:
 
 <ul>
   <li><b>user</b>: The username SQL Relay should use to log into the database.  Required.</li>
-  <li><b>password</b>: The password SQL Relay should use to log into the database.  Required.  Required.  The password is generally stored in plain text but it is possible to encrypt the password using a loadable module.  See <a href="configguide/security.html#pwdenc">Password Encryption</a></li>
+  <li><b>password</b>: The password SQL Relay should use to log into the database.  Required.  Required.  The password is generally stored in plain text but it is possible to encrypt the password using a loadable module.  See <a href="configguide/secpwdenc.html">Password Encryption</a></li>
   <li><b>db</b>: The filename of the database open.  Required.</li>
   <li><b>dialect</b>: The database dialect to use.  Optional, defaults to 3.</li>
   <li><b>lang</b>: Sets/overrides the LANG environment variable and by extension, all locale-related variables.  Optional if the LANG environment variable is set.</li>
@@ -454,7 +454,7 @@ or a tnsnames-style expression such as:
 
 <ul>
   <li><b>user</b>: The username SQL Relay should use to log into the database.  Required.</li>
-  <li><b>password</b>: The password SQL Relay should use to log into the database.  Required.  Required.  The password is generally stored in plain text but it is possible to encrypt the password using a loadable module.  See <a href="configguide/security.html#pwdenc">Password Encryption</a></li>
+  <li><b>password</b>: The password SQL Relay should use to log into the database.  Required.  Required.  The password is generally stored in plain text but it is possible to encrypt the password using a loadable module.  See <a href="configguide/secpwdenc.html">Password Encryption</a></li>
   <li><b>dsn</b>: The entry in the the odbcinst.ini which specifies host, port and other database connection parameters.</li>
   <li><b>lang</b>: Sets/overrides the LANG environment variable and by extension, all locale-related variables.  Optional if the LANG environment variable is set.</li>
   <li><b>autocommit</b>: If set to yes, then each insert, update, or delete is committed immediately.  If set to no, then each insert, update, or delete is only committed when a commit statement is executed.  If set to default then the default behavior for the database is observed.  Optional, defaults to default.</li>

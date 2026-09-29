@@ -1,0 +1,181 @@
+<html>
+<head>
+	<title>firstworks: SQL Relay - sqlrelay persistent database connection pool pooling proxy load balance balancing odbc oracle mysql msql postgresql sybase db2 interbase sqlite access c++ perl DBD DBI python php PDO ruby tcl java jni unix linux persistant</title>
+
+	<link rel="stylesheet" href="../../css/style.css"/>
+	<script type="text/javascript">
+
+  var _gaq = _gaq || [];
+  _gaq.push(['_setAccount', 'UA-23306117-3']);
+  _gaq.push(['_trackPageview']);
+
+  (function() {
+    var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+    ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+    var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+  })();
+
+</script>
+
+	<script language="Javascript" src="../../js/button.js"></script>
+</head>
+<body onload="setButton();">
+
+
+<div style="position: fixed; top: 0px; left: 0px; width: 100%; z-index: 100;">
+
+<span id="firstworks">a <b><a href="http://www.firstworks.com">firstworks</a></b> project</span>
+
+<div id="projectbox"><a href="../../index.html"><img src="../../images/sqlrelay-icon.png"/><span id="name">SQL Relay</span></a></div>
+
+<table id="projectbuttons">
+<tr>
+<td style="width: 50%;"></td>
+<td class="button nonlastbutton"><a id="button-about" href="../../index.html">About</a></td>
+<td class="button nonlastbutton"><a id="button-documentation" href="../../documentation.html">Documentation</a></td>
+<td class="button nonlastbutton"><a id="button-faq" href="../../faq.html">FAQ</a></td>
+<td class="button nonlastbutton"><a id="button-download" href="../../download.html">Download</a></td>
+<td class="button nonlastbutton"><a id="button-license" href="../../license.html">Licensing</a></td>
+<td class="button nonlastbutton"><a id="button-support" href="../../support.html">Support</a></td>
+<td class="button lastbutton"><a id="button-news" target="_blank" href="http://software.firstworks.com">News</a></td>
+<td style="width: 50%;"></td>
+</tr>
+</table>
+
+</div>
+
+<div style="position: absolute; top: 89px; width: 100%;">
+
+
+<div id="content">
+
+
+<p><a href="secbackendoracle.html"><img style="vertical-align: middle; " src="../../images/navprev.png"/></a> <a href="secbackendoracle.html">Oracle</a> | <a href="index.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="index.html">Contents</a> | <a href="secbackendmysql.html">MySQL/MariaDB</a> <a href="secbackendmysql.html"><img style="vertical-align: middle; " src="../../images/navnext.png"/></a></p>
+
+<br/><a name="backendenc-mssql-freetds"/><h1>Microsoft SQL Server (via FreeTDS)</h1>
+
+<p>Modern Microsoft SQL Server databases support the following TLS/SSL features:</p>
+
+<ul>
+  <li>Encryption</li>
+  <li>Certificate Validation</li>
+  <li>Common Name Validation</li>
+</ul>
+
+<p>Microsoft SQL Server does not support Mutual Authentication over TLS/SSL.</p>
+
+<p>Configuring SQL Relay to use TLS/SSL encryption and authentication with a Microsoft SQL Server database via FreeTDS involves:</p>
+
+<ul>
+  <li>Installing a certificate and key on the database server</li>
+  <li>Configuring FreeTDS on the SQL Relay server to support secure connections</li>
+  <li>Telling SQL Relay to use a FreeTDS server entry that refers to a secure connection</li>
+</ul>
+
+<p>Modern Microsoft SQL Server databases support encryption by default, and enable it upon request.  However, a certificate must be installed on the database server to support authentication.  This process can be tricky because SQL Server places some specific requirements on the certificate:</p>
+
+<ul>
+  <li>The common name MUST match the fully qualified domain name of the database server (host name + primary DNS suffix).</li>
+  <ul>
+    <li>...but Windows servers are commonly configured without a primary DNS suffix.</li>
+  </ul>
+
+  <li>The Enhanced Key Usage property MUST include Server Authentication.</li>
+  <ul>
+    <li>Or, in openssl terms: the extendedKeyUsage extension must include serverAuth in the extfile used to generate the certificate signing request.</li>
+  </ul>
+
+</ul>
+
+<p>See <a target="_blank" href="http://software.firstworks.com/p/tlsssl-encryption-with-ms-sql-server.html">TLS/SSL Encryption with MS SQL Server and FreeTDS</a> for more information.</p>
+
+<p>Most of the configuration on the SQL Relay server is done outside of SQL Relay itself, in the freetds.conf file (usually /etc/freetds.conf or /usr/local/etc/freetds.conf).</p>
+
+<p>In this example, FreeTDS is configured to require an encrypted connection to the database:</p>
+
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt><font color="#990000">[</font>FREETDSSERVER<font color="#990000">]</font>
+	host <font color="#990000">=</font> examplehost
+	port <font color="#990000">=</font> <font color="#993399">1433</font>
+	<font color="#008080">tds</font> version <font color="#990000">=</font> <font color="#993399">7.1</font>
+	<font color="#008080">client</font> charset <font color="#990000">=</font> UTF<font color="#990000">-</font><font color="#993399">8</font>
+	encryption <font color="#990000">=</font> require</tt></pre>
+
+</blockquote>
+<p>Note that the tds version is 7.1 or higher.  Version 7.0 doesn't support encryption.</p>
+
+<p>In this example, FreeTDS is also configured to validate the database server's certificate against the CA cert /etc/ca.pem (but does not validate the common name):</p>
+
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt><font color="#990000">[</font>FREETDSSERVER<font color="#990000">]</font>
+	host <font color="#990000">=</font> examplehost
+	port <font color="#990000">=</font> <font color="#993399">1433</font>
+	<font color="#008080">tds</font> version <font color="#990000">=</font> <font color="#993399">7.1</font>
+	<font color="#008080">client</font> charset <font color="#990000">=</font> UTF<font color="#990000">-</font><font color="#993399">8</font>
+	encryption <font color="#990000">=</font> require
+	<font color="#008080">ca</font> file <font color="#990000">=</font> <font color="#990000">/</font>etc<font color="#990000">/</font>ca<font color="#990000">.</font>pem
+	check <font color="#008080">certificate</font> hostname <font color="#990000">=</font> no</tt></pre>
+
+</blockquote>
+<p>In this example, FreeTDS is also configured to validate that the common name in the database server's certificate matches the database server's host name:</p>
+
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt><font color="#990000">[</font>FREETDSSERVER<font color="#990000">]</font>
+	host <font color="#990000">=</font> examplehost<font color="#990000">.</font>yourdomain<font color="#990000">.</font>com
+	port <font color="#990000">=</font> <font color="#993399">1433</font>
+	<font color="#008080">tds</font> version <font color="#990000">=</font> <font color="#993399">7.1</font>
+	<font color="#008080">client</font> charset <font color="#990000">=</font> UTF<font color="#990000">-</font><font color="#993399">8</font>
+	encryption <font color="#990000">=</font> require
+	<font color="#008080">ca</font> file <font color="#990000">=</font> <font color="#990000">/</font>etc<font color="#990000">/</font>ca<font color="#990000">.</font>pem
+	check <font color="#008080">certificate</font> hostname <font color="#990000">=</font> yes</tt></pre>
+
+</blockquote>
+<p>Note that the host parameter has been updated to specify a fully qualified domain name.  This is the value that the common name will be compared to.</p>
+
+<p>The SQL Relay configuration is no different than the configuration for an insecure connection.  In this example, FREETDSSERVER refers to the FreeTDS FREETDSSERVER entry configured above:</p>
+
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt><b><font color="#000080">&lt;?xml</font></b> <font color="#009900">version</font><font color="#990000">=</font><font color="#FF0000">"1.0"</font><b><font color="#000080">?&gt;</font></b>
+<b><font color="#0000FF">&lt;instances&gt;</font></b>
+	<b><font color="#0000FF">&lt;instance</font></b> <font color="#009900">id</font><font color="#990000">=</font><font color="#FF0000">"example"</font> <font color="#009900">dbase</font><font color="#990000">=</font><font color="#FF0000">"freetds"</font><b><font color="#0000FF">&gt;</font></b>
+		<b><font color="#0000FF">&lt;connections&gt;</font></b>
+                        <b><font color="#0000FF">&lt;connection</font></b> <font color="#009900">string</font><font color="#990000">=</font><font color="#FF0000">"server=FREETDSSERVER;user=freetdsuser;password=freetdspassword;db=freetdsdb"</font><b><font color="#0000FF">/&gt;</font></b>
+		<b><font color="#0000FF">&lt;/connections&gt;</font></b>
+	<b><font color="#0000FF">&lt;/instance&gt;</font></b>
+<b><font color="#0000FF">&lt;/instances&gt;</font></b>
+</tt></pre>
+
+</blockquote>
+<br/><hr/>
+
+<p><a href="secbackendoracle.html"><img style="vertical-align: middle; " src="../../images/navprev.png"/></a> <a href="secbackendoracle.html">Oracle</a> | <a href="index.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="index.html">Contents</a> | <a href="secbackendmysql.html">MySQL/MariaDB</a> <a href="secbackendmysql.html"><img style="vertical-align: middle; " src="../../images/navnext.png"/></a></p>
+
+</div> <!-- content -->
+
+
+<div id="copyrightbox">
+Copyright 2026 - David Muse - <a href="mailto:david.muse@firstworks.com">Contact</a>
+</div> <!-- copyrightbox -->
+
+</div>
+
+</body>
+</html>
+
+

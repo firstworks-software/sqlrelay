@@ -1,0 +1,28 @@
+{{{#!include header.html}}}
+
+{{{#!include projectheader.html}}}
+
+{{{#!include ../../contentstart.html}}}
+
+[[Image(../../images/navprev.png,link=security.html,vertical-align=middle)]] [security.html Security Features] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [secbackend.html Back-End Encryption and Secure Authentication] [[Image(../../images/navnext.png,link=secbackend.html,vertical-align=middle)]]
+
+[[br]][=#frontendencryption]
+= Front-End Encryption and Secure Authentication =
+
+When configured to use the SQLRClient protocol (the default), SQL Relay supports [sqlrclientprotocol.html#sqlrclientkrb Kerberos and Active Directory Encryption and Authentication] and [sqlrclientprotocol.html#sqlrclienttls TLS/SSL Encryption and Authentication] between the client and SQL Relay server.
+
+When configured to use the !MySQL protocol, SQL Relay supports [mysqlprotocol.html#mysqltls TLS/SSL Encryption and Authentication] between the client and SQL Relay server.
+
+When configured to use the !PostgreSQL protocol, SQL Relay supports [postgresqlprotocol.html#postgresqltls TLS/SSL Encryption and Authentication] between the client and SQL Relay server.
+
+When configured to use the Firebird protocol, SQL Relay supports Firebird [firebirdprotocol.html#firebirdwirecrypt Wire Encryption] between the client and SQL Relay server.
+
+When configured to use the TDS protocol, SQL Relay supports [tdsprotocol.html#tdstls TLS/SSL Encryption and Authentication] between the client and SQL Relay server.
+
+----
+
+[[Image(../../images/navprev.png,link=security.html,vertical-align=middle)]] [security.html Security Features] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [secbackend.html Back-End Encryption and Secure Authentication] [[Image(../../images/navnext.png,link=secbackend.html,vertical-align=middle)]]
+
+{{{#!include ../../contentend.html}}}
+
+{{{#!include footer.html}}}

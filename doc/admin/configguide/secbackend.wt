@@ -1,0 +1,27 @@
+{{{#!include header.html}}}
+
+{{{#!include projectheader.html}}}
+
+{{{#!include ../../contentstart.html}}}
+
+[[Image(../../images/navprev.png,link=secfrontend.html,vertical-align=middle)]] [secfrontend.html Front-End Encryption and Secure Authentication] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [secbackendoracle.html Oracle] [[Image(../../images/navnext.png,link=secbackendoracle.html,vertical-align=middle)]]
+
+[[br]][=#backendencryption]
+= Back-End Encryption and Secure Authentication =
+
+SQL Relay also supports TLS/SSL Encryption and Authentication between the SQL Relay server and some databases.
+
+The configuration details differ between databases though.
+
+* [secbackendoracle.html Oracle]
+* [secbackendmssql.html Microsoft SQL Server (via FreeTDS)]
+* [secbackendmysql.html MySQL/MariaDB]
+* [secbackendpostgresql.html PostgreSQL]
+
+----
+
+[[Image(../../images/navprev.png,link=secfrontend.html,vertical-align=middle)]] [secfrontend.html Front-End Encryption and Secure Authentication] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [secbackendoracle.html Oracle] [[Image(../../images/navnext.png,link=secbackendoracle.html,vertical-align=middle)]]
+
+{{{#!include ../../contentend.html}}}
+
+{{{#!include footer.html}}}

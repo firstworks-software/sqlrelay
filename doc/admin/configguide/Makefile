@@ -47,6 +47,16 @@ SRCS = index.wt \
 	hamasterslave.wt \
 	hafrontendlb.wt \
 	security.wt \
+	secfrontend.wt \
+	secbackend.wt \
+	secbackendoracle.wt \
+	secbackendmssql.wt \
+	secbackendmysql.wt \
+	secbackendpostgresql.wt \
+	secrunas.wt \
+	secipfiltering.wt \
+	secpwdfiles.wt \
+	secpwdenc.wt \
 	rot.wt \
 	md5.wt \
 	sha1.wt \
@@ -56,7 +66,9 @@ SRCS = index.wt \
 	aes128.wt \
 	aes192.wt \
 	aes256.wt \
+	secschedules.wt \
 	cron_userlist.wt \
+	secfiltering.wt \
 	filterpatterns.wt \
 	filterregex.wt \
 	filterstring.wt \
@@ -152,6 +164,16 @@ INS = index.html.in \
 	hamasterslave.html.in \
 	hafrontendlb.html.in \
 	security.html.in \
+	secfrontend.html.in \
+	secbackend.html.in \
+	secbackendoracle.html.in \
+	secbackendmssql.html.in \
+	secbackendmysql.html.in \
+	secbackendpostgresql.html.in \
+	secrunas.html.in \
+	secipfiltering.html.in \
+	secpwdfiles.html.in \
+	secpwdenc.html.in \
 	rot.html.in \
 	md5.html.in \
 	sha1.html.in \
@@ -161,7 +183,9 @@ INS = index.html.in \
 	aes128.html.in \
 	aes192.html.in \
 	aes256.html.in \
+	secschedules.html.in \
 	cron_userlist.html.in \
+	secfiltering.html.in \
 	filterpatterns.html.in \
 	filterregex.html.in \
 	filterstring.html.in \
@@ -259,6 +283,16 @@ WTOBJS = index.html.in \
 	hamasterslave.html.in \
 	hafrontendlb.html.in \
 	security.html.in \
+	secfrontend.html.in \
+	secbackend.html.in \
+	secbackendoracle.html.in \
+	secbackendmssql.html.in \
+	secbackendmysql.html.in \
+	secbackendpostgresql.html.in \
+	secrunas.html.in \
+	secipfiltering.html.in \
+	secpwdfiles.html.in \
+	secpwdenc.html.in \
 	rot.html.in \
 	md5.html.in \
 	sha1.html.in \
@@ -268,7 +302,9 @@ WTOBJS = index.html.in \
 	aes128.html.in \
 	aes192.html.in \
 	aes256.html.in \
+	secschedules.html.in \
 	cron_userlist.html.in \
+	secfiltering.html.in \
 	filterpatterns.html.in \
 	filterregex.html.in \
 	filterstring.html.in \
@@ -364,6 +400,16 @@ OBJS = index.html \
 	hamasterslave.html \
 	hafrontendlb.html \
 	security.html \
+	secfrontend.html \
+	secbackend.html \
+	secbackendoracle.html \
+	secbackendmssql.html \
+	secbackendmysql.html \
+	secbackendpostgresql.html \
+	secrunas.html \
+	secipfiltering.html \
+	secpwdfiles.html \
+	secpwdenc.html \
 	rot.html \
 	md5.html \
 	sha1.html \
@@ -373,7 +419,9 @@ OBJS = index.html \
 	aes128.html \
 	aes192.html \
 	aes256.html \
+	secschedules.html \
 	cron_userlist.html \
+	secfiltering.html \
 	filterpatterns.html \
 	filterregex.html \
 	filterstring.html \
