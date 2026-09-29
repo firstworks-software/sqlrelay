@@ -15,8 +15,6 @@ SQL Relay can be configured to speak the native Oracle protocol, enabling client
 
 If an instance speaks the Oracle client-server protocol, then any client that wishes to use it must also speak the Oracle client-server protocol.  This means that most software written using the Oracle API, or written using a database abstraction layer which loads a driver for Oracle can access this instance.  However, it also means that SQL Relay's standard sqlrsh client program and client programs for other databases (eg. the psql, and mysql command line programs, !MySQL Workbench, SQL Server Management Studio, etc.) cannot access this instance.
 
-The Oracle protocol module is still under development.  Some of the sections below - SID / Service Name, Login Attempts, Server Version, Password Verifier Type, and Character Set Options - decide which clients can connect to the instance at all, and whether a client that connects is able to read a result set; see [oracleprotolimitations.html Limitations] for what still isn't supported.
-
 * [oracleprotoconfiguration.html Basic Configuration]
 * [oracleprotolistener.html Listener Options]
 * [oracleprotosid.html SID / Service Name]

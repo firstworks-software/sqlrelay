@@ -15,10 +15,6 @@ SQL Relay can be configured to speak the native TDS protocol, enabling client pr
 
 If an instance speaks the TDS client-server protocol, then any client that wishes to use it must also speak the TDS client-server protocol.  This means that most software written using the !FreeTDS or Microsoft SQL Server APIs, or written using a database abstraction layer which loads a driver for Microsoft SQL Server or SAP/Sybase can access this instance.  However, it also means that SQL Relay's standard sqlrsh client program and client programs for other databases (eg. the mysql, psql, and sqlplus command line programs, !MySQL Workbench, Oracle SQL Developer, etc.) cannot access this instance.
 
-Unlike the Oracle protocol module, the TDS protocol module is complete for query execution, including TLS/SSL encryption and authentication.  Clients log in, run queries, and read result sets, and most of the module's configuration doesn't need documenting because the defaults work.  The sections below cover the options that do - notably the version and packet size that the module negotiates, which is what compatibility with a particular client usually turns on.
-
-Compatibility has been verified in SQL Relay's own test suite against !FreeTDS, using both its ct-lib API and its tsql command line program, and separately against SAP/Sybase's own Open Client (ct-lib), which is how the pre-TDS7 (TDS 5.0) login path is exercised.  Since TDS is a standard protocol, other MS-TDS-speaking clients and drivers - isql, sqlcmd, jTDS, and similar - should also work, but they haven't been tested in-tree.
-
 * [tdsprotoconfiguration.html Basic Configuration]
 * [tdsprotolistener.html Listener Options]
 * [tdsprotoversion.html TDS Version]
