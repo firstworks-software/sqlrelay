@@ -176,33 +176,110 @@ Savepoints module<br/>
 
 <table class="presentation">
 <tr>
-<td>
+<td style="width: 40%;">
 
-<a href="features/security.html">
+<a href="features/frontends.html">
 <div style="float: right;  margin-right: 20px;">
-<p><span class="title">Enhanced Database Security</span><br/>
-Secure your database with TLS and Kerberos auth on front and<br/>
-back ends, IP filtering, Connection Schedules, and Query Filtering.</p>
+<p><span class="title">Front-End Compatiblity</span><br/>
+SQL Relay speaks several native database front-end<br/>
+protocols, and its own SQLRClient protocol.</p>
 
-<img style="margin-top: 15px; margin-left: 25px;" src="images/secure.png"/>
-
-<br/>
-
-<img style="margin-top: 15px; margin-left: 50px;" src="images/query-rejected.png"/>
+<table>
+<tr>
+<td>
+<ul>
+<li><b>MySQL</b></li>
+<li><b>PostgreSQL</b></li>
+<li><b>Firebird</b></li>
+<li><b>TDS (MSSQL/SAP)</b></li>
+<li><b>Oracle</b></li>
+<li><b>SQLRClient</b></li>
+</ul>
+</td>
+<td>
+<img src="images/protocols.png">
+</td>
+</tr>
+</table>
 
 </div>
 </a>
 
 </td>
 <td style="width: 1px; background-color: #F0F0F0; padding: 1px;"></td>
-<td>
+<td style="width: 20%;">
 
-<a href="features/notifications.html">
+<a href="features/backends.html">
+<div style="width: 420px;  margin: auto;">
+<p><span class="title">Back-End Compatiblity</span><br/>
+SQL Relay supports most popular commercial and open-source<br/>
+database back-ends.</p>
+
+<ul style="float: left;">
+<li><b>Oracle</b></li>
+<li><b>MSSQL</b></li>
+<li><b>SAP/Sybase</b></li>
+<li><b>IBM DB2</b></li>
+<li><b>MySQL</b></li>
+<li><b>PostgreSQL</b></li>
+<li><b>Firebird</b></li>
+<li><b>SQLite</b></li>
+<li><b>ODBC</b></li>
+</ul>
+
+<table style="border: 0px; margin: 0px; padding: 0px;">
+<tr style="border: 0px; margin: 0px; padding: 0px;">
+<td style="border: 0px; margin: 0px; padding: 0px;">
+<img style="margin-left: 20px; margin-right: 0px; border-right: 0px;" src="images/sqlrelay-bare.png"/>
+</td>
+<td style="border: 0px; margin: 0px; padding: 0px;">
+<img class="backend" style="vertical-align: top; margin-top: 46px; margin-left: 5px; margin-right: 0px; border-left: 0px; border-right: 0px;"  src="images/oracle.png"/>
+<img class="backend hidden" style="vertical-align: top; margin-top: 18px; margin-left: 5px; border-left: 0px;"  src="images/mssql.png"/>
+<img class="backend hidden" style="vertical-align: top; margin-top: 35px; margin-left: 5px; border-left: 0px;"  src="images/sap.png"/>
+<img class="backend hidden" style="vertical-align: top; margin-top: 25px; margin-left: 5px; border-left: 0px;"  src="images/db2.png"/>
+<img class="backend hidden" style="vertical-align: top; margin-top: 10px; margin-left: 5px; border-left: 0px;"  src="images/mysql.png"/>
+<img class="backend hidden" style="vertical-align: top; margin-top: 20px; margin-left: 5px; border-left: 0px;"  src="images/postgresql.png"/>
+<img class="backend hidden" style="vertical-align: top; margin-top: 28px; margin-left: 5px; border-left: 0px;"  src="images/firebird.png"/>
+<img class="backend hidden" style="vertical-align: top; margin-top: 33px; margin-left: 5px; border-left: 0px;"  src="images/sqlite.png"/>
+<img class="backend hidden" style="vertical-align: top; margin-top: 38px; margin-left: 5px; border-left: 0px;" src="images/odbc.png"/>
+</td>
+</tr>
+</table>
+
+</div>
+</a>
+
+</td>
+<td style="width: 1px; background-color: #F0F0F0; padding: 1px;"></td>
+<td style="width: 40%;">
+
+<a href="features/platforms.html">
 <div style="float: left;  margin-left: 20px;">
-<p><span class="title">Notifications</span><br/>
-Receive notifications when various events occur.</p>
+<p><span class="title">Platform Compatibility</span><br/>
+SQL Relay supports Linux, Unix, and Windows platforms, independent of<br/>
+architecture and provides database access from platforms unsupported by<br/>
+the database vendor.</p>
 
-<img style="margin-top: 15px; margin-left: 50px;" src="images/notifications.png"/>
+<table>
+<tr>
+<td>
+<ul>
+<li><b>Linux</b></li>
+<li><b>FreeBSD</b></li>
+<li><b>NetBSD</b></li>
+<li><b>OpenBSD</b></li>
+<li><b>Windows</b></li>
+<li><b>x86-64</b></li>
+<li><b>ARM</b></li>
+<li><b>MIPS</b></li>
+<li><b>PowerPC</b></li>
+</ul>
+</td>
+<td>
+<img src="images/proxying.png"/>
+</td>
+</tr>
+</table>
 
 </div>
 </a>
@@ -331,110 +408,33 @@ Distribute database traffic over clustered or replicated databases for scalabili
 
 <table class="presentation">
 <tr>
-<td style="width: 40%;">
+<td>
 
-<a href="features/frontends.html">
+<a href="features/security.html">
 <div style="float: right;  margin-right: 20px;">
-<p><span class="title">Front-End Compatiblity</span><br/>
-SQL Relay speaks several native database front-end<br/>
-protocols, and its own SQLRClient protocol.</p>
+<p><span class="title">Enhanced Database Security</span><br/>
+Secure your database with TLS and Kerberos auth on front and<br/>
+back ends, IP filtering, Connection Schedules, and Query Filtering.</p>
 
-<table>
-<tr>
-<td>
-<ul>
-<li><b>MySQL</b></li>
-<li><b>PostgreSQL</b></li>
-<li><b>Firebird</b></li>
-<li><b>TDS (MSSQL/SAP)</b></li>
-<li><b>Oracle</b></li>
-<li><b>SQLRClient</b></li>
-</ul>
-</td>
-<td>
-<img src="images/protocols.png">
-</td>
-</tr>
-</table>
+<img style="margin-top: 15px; margin-left: 25px;" src="images/secure.png"/>
+
+<br/>
+
+<img style="margin-top: 15px; margin-left: 50px;" src="images/query-rejected.png"/>
 
 </div>
 </a>
 
 </td>
 <td style="width: 1px; background-color: #F0F0F0; padding: 1px;"></td>
-<td style="width: 20%;">
+<td>
 
-<a href="features/backends.html">
-<div style="width: 420px;  margin: auto;">
-<p><span class="title">Back-End Compatiblity</span><br/>
-SQL Relay supports most popular commercial and open-source<br/>
-database back-ends.</p>
-
-<ul style="float: left;">
-<li><b>Oracle</b></li>
-<li><b>MSSQL</b></li>
-<li><b>SAP/Sybase</b></li>
-<li><b>IBM DB2</b></li>
-<li><b>MySQL</b></li>
-<li><b>PostgreSQL</b></li>
-<li><b>Firebird</b></li>
-<li><b>SQLite</b></li>
-<li><b>ODBC</b></li>
-</ul>
-
-<table style="border: 0px; margin: 0px; padding: 0px;">
-<tr style="border: 0px; margin: 0px; padding: 0px;">
-<td style="border: 0px; margin: 0px; padding: 0px;">
-<img style="margin-left: 20px; margin-right: 0px; border-right: 0px;" src="images/sqlrelay-bare.png"/>
-</td>
-<td style="border: 0px; margin: 0px; padding: 0px;">
-<img class="backend" style="vertical-align: top; margin-top: 46px; margin-left: 5px; margin-right: 0px; border-left: 0px; border-right: 0px;"  src="images/oracle.png"/>
-<img class="backend hidden" style="vertical-align: top; margin-top: 18px; margin-left: 5px; border-left: 0px;"  src="images/mssql.png"/>
-<img class="backend hidden" style="vertical-align: top; margin-top: 35px; margin-left: 5px; border-left: 0px;"  src="images/sap.png"/>
-<img class="backend hidden" style="vertical-align: top; margin-top: 25px; margin-left: 5px; border-left: 0px;"  src="images/db2.png"/>
-<img class="backend hidden" style="vertical-align: top; margin-top: 10px; margin-left: 5px; border-left: 0px;"  src="images/mysql.png"/>
-<img class="backend hidden" style="vertical-align: top; margin-top: 20px; margin-left: 5px; border-left: 0px;"  src="images/postgresql.png"/>
-<img class="backend hidden" style="vertical-align: top; margin-top: 28px; margin-left: 5px; border-left: 0px;"  src="images/firebird.png"/>
-<img class="backend hidden" style="vertical-align: top; margin-top: 33px; margin-left: 5px; border-left: 0px;"  src="images/sqlite.png"/>
-<img class="backend hidden" style="vertical-align: top; margin-top: 38px; margin-left: 5px; border-left: 0px;" src="images/odbc.png"/>
-</td>
-</tr>
-</table>
-
-</div>
-</a>
-
-</td>
-<td style="width: 1px; background-color: #F0F0F0; padding: 1px;"></td>
-<td style="width: 40%;">
-
-<a href="features/platforms.html">
+<a href="features/notifications.html">
 <div style="float: left;  margin-left: 20px;">
-<p><span class="title">Platform Compatibility</span><br/>
-SQL Relay supports Linux, Unix, and Windows platforms, independent of<br/>
-architecture and provides database access from platforms unsupported by<br/>
-the database vendor.</p>
+<p><span class="title">Notifications</span><br/>
+Receive notifications when various events occur.</p>
 
-<table>
-<tr>
-<td>
-<ul>
-<li><b>Linux</b></li>
-<li><b>FreeBSD</b></li>
-<li><b>NetBSD</b></li>
-<li><b>OpenBSD</b></li>
-<li><b>Windows</b></li>
-<li><b>x86-64</b></li>
-<li><b>ARM</b></li>
-<li><b>MIPS</b></li>
-<li><b>PowerPC</b></li>
-</ul>
-</td>
-<td>
-<img src="images/proxying.png"/>
-</td>
-</tr>
-</table>
+<img style="margin-top: 15px; margin-left: 50px;" src="images/notifications.png"/>
 
 </div>
 </a>
