@@ -17,7 +17,7 @@
 
 <ul>
   <li><b>disabled</b> - never encrypt.</li>
-  <li><b>enabled</b> - encrypt if the client is willing to.  This is the module's default.  (It matches a stock Firebird client's own default; a stock Firebird <i>server</i> instead defaults to <b>required</b>.)</li>
+  <li><b>enabled</b> - encrypt if the client is willing to.  The default.</li>
   <li><b>required</b> - refuse any client that won't encrypt.</li>
 </ul>
 

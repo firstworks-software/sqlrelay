@@ -16,7 +16,7 @@ Firebird 3 and later encrypt the traffic between client and server with their ow
 The //wirecrypt// attribute on the listener tag sets the level of encryption that SQL Relay asks for:
 
 * '''disabled''' - never encrypt.
-* '''enabled''' - encrypt if the client is willing to.  This is the module's default.  (It matches a stock Firebird client's own default; a stock Firebird //server// instead defaults to '''required'''.)
+* '''enabled''' - encrypt if the client is willing to.  The default.
 * '''required''' - refuse any client that won't encrypt.
 
 The client has a level of its own (the !WireCrypt setting in its firebird.conf), and the two are combined:
