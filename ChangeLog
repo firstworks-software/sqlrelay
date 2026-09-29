@@ -924,14 +924,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - added firebird, tds, and oracle protocol diagrams to the client protocol
   options and front-end compatibility pages
 - simplified the native protocol text on the front-end compatibility page
-- updated the front-end compatibility card on the home page and its
-  diagram to list all native protocols
 - documentation lists Microsoft SQL Server before SAP/Sybase now
 - documentation says SAP/Sybase instead of Sybase alone now
 - updated the Configuration Guide
 - added the JDBC diagram to the database abstraction layers images on the
   documentation page
-- reordered the feature cards on the home page
+- reorganized the index page of the documentation
 
 ### Removed
 - oracle protocol module: deleted cancel() (no wire input can reach it)
