@@ -42,6 +42,10 @@ SRCS = index.wt \
 	oracleprotocol.wt \
 	multipleprotocols.wt \
 	highavailability.wt \
+	hacluster.wt \
+	harac.wt \
+	hamasterslave.wt \
+	hafrontendlb.wt \
 	security.wt \
 	rot.wt \
 	md5.wt \
@@ -143,6 +147,10 @@ INS = index.html.in \
 	oracleprotocol.html.in \
 	multipleprotocols.html.in \
 	highavailability.html.in \
+	hacluster.html.in \
+	harac.html.in \
+	hamasterslave.html.in \
+	hafrontendlb.html.in \
 	security.html.in \
 	rot.html.in \
 	md5.html.in \
@@ -246,6 +254,10 @@ WTOBJS = index.html.in \
 	oracleprotocol.html.in \
 	multipleprotocols.html.in \
 	highavailability.html.in \
+	hacluster.html.in \
+	harac.html.in \
+	hamasterslave.html.in \
+	hafrontendlb.html.in \
 	security.html.in \
 	rot.html.in \
 	md5.html.in \
@@ -347,6 +359,10 @@ OBJS = index.html \
 	oracleprotocol.html \
 	multipleprotocols.html \
 	highavailability.html \
+	hacluster.html \
+	harac.html \
+	hamasterslave.html \
+	hafrontendlb.html \
 	security.html \
 	rot.html \
 	md5.html \

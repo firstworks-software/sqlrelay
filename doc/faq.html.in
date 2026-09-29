@@ -313,13 +313,13 @@ through the connection maintained by that daemon.</p>
 
 <br/><a name="routing"/><h3>Can I use SQL Relay to send all insert/update/delete's to a master database and distribute select's over a set of slaves?</h3>
 
-<p>Yes, see <a href="admin/configguide/highavailability.html#masterslave">Master-Slave Query Routing</a>.</p>
+<p>Yes, see <a href="admin/configguide/hamasterslave.html">Master-Slave Query Routing</a>.</p>
 
 <br/><a name="mysqlrouting"/><h3>Can I use SQL Relay to make my existing MySQL/MariaDB, PostgreSQL, Firebird, TDS or Oracle app send all insert/update/delete's to a master database and distribute select's over a set of slaves?</h3>
 
 <p>Probably.  You'll need to set up SQL Relay to route queries, and configure it to speak whichever front-end protocol your app already uses - MySQL/MariaDB, PostgreSQL, Firebird, TDS, or Oracle - to redirect your app to use SQL Relay without modification.</p>
 
-<p>See <a href="admin/configguide/highavailability.html#masterslave">Master-Slave Query Routing</a> for details on how to set up SQL Relay as a query router.</p>
+<p>See <a href="admin/configguide/hamasterslave.html">Master-Slave Query Routing</a> for details on how to set up SQL Relay as a query router.</p>
 
 <p>See <a href="admin/configguide/clientprotocoloptions.html#protocoloptions">Client Protocol Options</a> in the configuration guide for details about how to configure SQL Relay to speak the MySQL/MariaDB, PostgreSQL, Firebird, TDS and Oracle protocols.</p>
 

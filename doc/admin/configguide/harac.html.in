@@ -1,0 +1,42 @@
+<!--#include virtual="header.html"-->
+
+<!--#include virtual="projectheader.html"-->
+
+<!--#include virtual="../../contentstart.html"-->
+
+<p><a href="hacluster.html"><img style="vertical-align: middle; " src="../../images/navprev.png"/></a> <a href="hacluster.html">Load Balancing and Failover With Replicated Databases or Database Clusters</a> | <a href="index.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="index.html">Contents</a> | <a href="hamasterslave.html">Master-Slave Query Routing</a> <a href="hamasterslave.html"><img style="vertical-align: middle; " src="../../images/navnext.png"/></a></p>
+
+<br/><a name="rac"/><h1>Already-Load Balanced Databases</h1>
+
+<p>In a typical database cluster or replicated environment, the nodes are identifiable as separate hosts.  However, when the nodes are located behind a load balancing appliance or running on an application cluster, such as Oracle RAC, SQL Relay cannot identity an individual node.</p>
+
+<p>In these environments, if a node goes down, SQL Relay will attempt to re-establish the connection, but rather than failing until the node comes back up, the new connection will more likely just succeed to a different node in the cluster.  Over time, this can lead to disproportionate load balancing, with a bias toward nodes that have never gone down.</p>
+
+<p>SQL Relay manages this by "shuffling" the connections periodically.  Every so often, each database connection is re-established, giving that connection a chance to be re-established to a node that may have gone down but is now back up.</p>
+
+<p>To indicate to SQL Relay that the nodes are already-load balanced, and need to be "shuffled" periodically, only one connection tag should be used, with the behindloadbalancer attribute set to "yes".</p>
+
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt><b><font color="#000080">&lt;?xml</font></b> <font color="#009900">version</font><font color="#990000">=</font><font color="#FF0000">"1.0"</font><b><font color="#000080">?&gt;</font></b>
+<b><font color="#0000FF">&lt;instances&gt;</font></b>
+	<b><font color="#0000FF">&lt;instance</font></b> <font color="#009900">id</font><font color="#990000">=</font><font color="#FF0000">"example"</font><b><font color="#0000FF">&gt;</font></b>
+		<b><font color="#0000FF">&lt;connections&gt;</font></b>
+                        <b><font color="#0000FF">&lt;connection</font></b> <font color="#009900">string</font><font color="#990000">=</font><font color="#FF0000">"user=scott;password=tiger;oracle_sid=orarac"</font> <font color="#009900">behindloadbalancer</font><font color="#990000">=</font><font color="#FF0000">"yes"</font><b><font color="#0000FF">/&gt;</font></b>
+		<b><font color="#0000FF">&lt;/connections&gt;</font></b>
+	<b><font color="#0000FF">&lt;/instance&gt;</font></b>
+<b><font color="#0000FF">&lt;/instances&gt;</font></b>
+</tt></pre>
+
+</blockquote>
+<hr/>
+
+<p><a href="hacluster.html"><img style="vertical-align: middle; " src="../../images/navprev.png"/></a> <a href="hacluster.html">Load Balancing and Failover With Replicated Databases or Database Clusters</a> | <a href="index.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="index.html">Contents</a> | <a href="hamasterslave.html">Master-Slave Query Routing</a> <a href="hamasterslave.html"><img style="vertical-align: middle; " src="../../images/navnext.png"/></a></p>
+
+<!--#include virtual="../../contentend.html"-->
+
+<!--#include virtual="footer.html"-->
+

@@ -10,7 +10,7 @@
 
 <p>The <b>regex</b> module routes queries by matching them against regular expressions.</p>
 
-<p>A classic <a href="highavailability.html#masterslave">Master-Slave Query Routing</a> configuration follows.</p>
+<p>A classic <a href="hamasterslave.html">Master-Slave Query Routing</a> configuration follows.</p>
 
 <blockquote>
 <!-- Generator: GNU source-highlight 3.1.9

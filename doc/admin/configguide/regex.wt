@@ -11,7 +11,7 @@
 
 The '''regex''' module routes queries by matching them against regular expressions.
 
-A classic [highavailability.html#masterslave Master-Slave Query Routing] configuration follows.
+A classic [hamasterslave.html Master-Slave Query Routing] configuration follows.
 
 {{{#!blockquote
 {{{#!code

@@ -1,0 +1,96 @@
+<!--#include virtual="header.html"-->
+
+<!--#include virtual="projectheader.html"-->
+
+<!--#include virtual="../../contentstart.html"-->
+
+<p><a href="hamasterslave.html"><img style="vertical-align: middle; " src="../../images/navprev.png"/></a> <a href="hamasterslave.html">Master-Slave Query Routing</a> | <a href="index.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="index.html">Contents</a> | <a href="security.html">Security Features</a> <a href="security.html"><img style="vertical-align: middle; " src="../../images/navnext.png"/></a></p>
+
+<br/><a name="frontendlb"/><h1>Front-End Load Balancing and Failover</h1>
+
+<p>If you are building out a high availability environment, or if your pool of application servers is just sufficiently large, you might want to set up a pool of SQL Relay servers between your application servers and the database, and distribute client applications over the pool using host randomization, a load balancing appliance, or round-robin DNS.</p>
+
+<br/><a name="hostrand"/><h2>Host Randomization</h2>
+
+<p>Since version 2.0.1, host randomization can be used to distribute SQL Relay client sessions over a pool of SQL Relay hosts.</p>
+
+<blockquote>
+<img src="../../images/hostrand.png"/>
+</blockquote>
+<p>Any application which uses one of the SQL Relay Native APIs, including applications which use the SQL Relay driver for a database abstraction layer, can be configured to connect to a set of servers instead of just a single server by specifying the host or server parameter as a comma-separated set of hosts.  Internally, the API will attempt to connect to a random host in the set, until the attempt succeeds, or there are no more hosts left to try.</p>
+
+<br/><p>For example, the sqlrsh command line tool can be configured to connect to sqlr01, sqlr02, and sqlr03 as follows:</p>
+
+<blockquote>
+  <pre>sqlrsh -host sqlr01,sqlr02,sqlr03 -user scott -password tiger
+</pre>
+
+</blockquote>
+<p>Other SQL Relay command line tools can be configured similarly.</p>
+
+<br/><p>A program written using the SQL Relay Native API for C++ can be configured to connect to the same set of hosts as follows:</p>
+
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt>	<font color="#008080">sqlrconnection</font>	<font color="#990000">*</font>con<font color="#990000">=</font><b><font color="#0000FF">new</font></b> <b><font color="#000000">sqlrconnection</font></b><font color="#990000">(</font><font color="#FF0000">"sqlr01,sqlr02,sqlr03"</font><font color="#990000">,</font><font color="#993399">9000</font><font color="#990000">,</font>NULL<font color="#990000">,</font><font color="#FF0000">"scott"</font><font color="#990000">,</font><font color="#FF0000">"tiger"</font><font color="#990000">,</font><font color="#993399">0</font><font color="#990000">,</font><font color="#993399">1</font><font color="#990000">);</font></tt></pre>
+
+</blockquote>
+<p>Other SQL Relay Native APIs can be configured similarly.</p>
+
+<br/><p>A program that uses the SQL Relay driver for ODBC can be configured as follows:</p>
+
+<blockquote>
+  <pre>[sqlrexample]
+Description=Connection to SQL Relay Pool
+Driver=SQLRelay
+Server=sqlr01,sqlr02,sqlr03
+Port=9000
+Socket=
+User=scott
+Password=tiger
+</pre>
+
+</blockquote>
+<p>A program that uses the SQL Relay driver for PHP PDO can be configured as follows:</p>
+
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt>my $dbh<font color="#990000">=</font>DBI<font color="#990000">-&gt;</font><b><font color="#000000">connect</font></b><font color="#990000">(</font><font color="#FF0000">"DBI:SQLRelay:host=sqlr01,sqlr02,sqlr03;port=9000"</font><font color="#990000">,</font><font color="#FF0000">"scott"</font><font color="#990000">,</font><font color="#FF0000">"tiger"</font><font color="#990000">);</font></tt></pre>
+
+</blockquote>
+<p>Programs that use SQL Relay drivers for other database abstraction layers can be configured similarly.</p>
+
+<br/><a name="lbapp"/><h2>Load Balancing Appliance</h2>
+
+<p>Multiple instances of SQL Relay can be placed behind a load balancing appliance.</p>
+
+<blockquote>
+<img src="../../images/loadbalancer.png"/>
+</blockquote>
+<p>In this illustration, the load balancing appliance is shown as a single machine, but in a true HA environment, there would be 2 or more appliances sharing a virtual IP.  Alternatively, rather than using an appliance, SQL Relay can be run on an application server cluster such as Linux Virtual Server.</p>
+
+<br/><a name="rrdns"/><h2>Round-Robin DNS</h2>
+
+<p><a target="_blank" href="http://en.wikipedia.org/wiki/Round-robin_DNS">Round-robin DNS</a> can be also be used to distribute clients over multiple SQL Relay servers.</p>
+
+<blockquote>
+<img src="../../images/rrdns.png"/>
+</blockquote>
+<p>In a round-robin DNS scenario, multiple IP addresses are assigned to the same host name.  The SQL Relay client is then configured to connect to that host.  When it requests the IP addresses for the host, the client receives all of the IP addresses assigned to it, rather than just a single address.</p>
+
+<p>Round-robin DNS is so-called because, traditionally, the order of the IP addresses returned on successive requests alternated reliably, in round-robin fashion.  This behavior persists in many environments, but it is no longer guaranteed, as many modern DNS resolvers sort the list and return the IP addresses in the same order, every time.  SQL Relay clients randomize the list though, and try to connect to each of the IP addresses, one-at-a-time, until they succeed.  Doing so provides both load balancing and failover without requiring an appliance or application server cluster.</p>
+
+<hr/>
+
+<p><a href="hamasterslave.html"><img style="vertical-align: middle; " src="../../images/navprev.png"/></a> <a href="hamasterslave.html">Master-Slave Query Routing</a> | <a href="index.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="index.html">Contents</a> | <a href="security.html">Security Features</a> <a href="security.html"><img style="vertical-align: middle; " src="../../images/navnext.png"/></a></p>
+
+<!--#include virtual="../../contentend.html"-->
+
+<!--#include virtual="footer.html"-->
+

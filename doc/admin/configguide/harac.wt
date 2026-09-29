@@ -1,0 +1,32 @@
+{{{#!include header.html}}}
+
+{{{#!include projectheader.html}}}
+
+{{{#!include ../../contentstart.html}}}
+
+[[Image(../../images/navprev.png,link=hacluster.html,vertical-align=middle)]] [hacluster.html Load Balancing and Failover With Replicated Databases or Database Clusters] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [hamasterslave.html Master-Slave Query Routing] [[Image(../../images/navnext.png,link=hamasterslave.html,vertical-align=middle)]]
+
+[[br]][=#rac]
+= Already-Load Balanced Databases =
+
+In a typical database cluster or replicated environment, the nodes are identifiable as separate hosts.  However, when the nodes are located behind a load balancing appliance or running on an application cluster, such as Oracle RAC, SQL Relay cannot identity an individual node.
+
+In these environments, if a node goes down, SQL Relay will attempt to re-establish the connection, but rather than failing until the node comes back up, the new connection will more likely just succeed to a different node in the cluster.  Over time, this can lead to disproportionate load balancing, with a bias toward nodes that have never gone down.
+
+SQL Relay manages this by "shuffling" the connections periodically.  Every so often, each database connection is re-established, giving that connection a chance to be re-established to a node that may have gone down but is now back up.
+
+To indicate to SQL Relay that the nodes are already-load balanced, and need to be "shuffled" periodically, only one connection tag should be used, with the behindloadbalancer attribute set to "yes".
+
+{{{#!blockquote
+{{{#!code
+@parts/sqlrelay-rac.conf@
+}}}
+}}}
+
+----
+
+[[Image(../../images/navprev.png,link=hacluster.html,vertical-align=middle)]] [hacluster.html Load Balancing and Failover With Replicated Databases or Database Clusters] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [hamasterslave.html Master-Slave Query Routing] [[Image(../../images/navnext.png,link=hamasterslave.html,vertical-align=middle)]]
+
+{{{#!include ../../contentend.html}}}
+
+{{{#!include footer.html}}}

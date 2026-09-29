@@ -19,7 +19,7 @@ A typical use case is to configure one instance of SQL Relay to maintain connect
 
  [[Image(../../images/router.png,nolink)]]
 
-This is such a common case, that it is also described in it's own section: [highavailability.html#masterslave Master-Slave Query Routing].
+This is such a common case, that it is also described in it's own section: [hamasterslave.html Master-Slave Query Routing].
 
 There are other possiblities as well though.
 

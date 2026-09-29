@@ -1,0 +1,62 @@
+{{{#!include header.html}}}
+
+{{{#!include projectheader.html}}}
+
+{{{#!include ../../contentstart.html}}}
+
+[[Image(../../images/navprev.png,link=harac.html,vertical-align=middle)]] [harac.html Already-Load Balanced Databases] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [hafrontendlb.html Front-End Load Balancing and Failover] [[Image(../../images/navnext.png,link=hafrontendlb.html,vertical-align=middle)]]
+
+[[br]][=#masterslave]
+= Master-Slave Query Routing =
+
+The load balancing scenarios described above all assume that master-master replication is being used.  SQL Relay supports master-slave replication as well.
+
+In a master-slave replication environment, SQL Relay can be configured to route DML and DDL queries to the master and distribute selects over the slaves.
+
+ [[Image(../../images/router.png,nolink)]]
+
+This actually requires 3 instances of SQL Relay.  One to connect to the master, one to connect to the slaves, and a third to route queries to the first two.
+
+{{{#!blockquote
+{{{#!code
+@parts/sqlrelay-routers-regex.conf@
+}}}
+}}}
+
+The first two instances use familiar configuration options, but the third uses a dbtype of "router" and uses router tags to define query routing rules.
+
+(Note the //module// attribute of the router tag.  SQL Relay is highly modular, and many advanced features, including query routing, are implemented by loadable modules.)
+
+(Note also the use of a notifications tag.  See [notifications.html#notifications Notifications] for more information.)
+
+Each router tag defines a connectionid to send the query to and a set of regular expression patterns to match.  Queries that match the set of patterns defined in the pattern tags are sent to the instance of SQL Relay designated by the connectionid in the router tag.
+
+The three instances can be started using:
+
+{{{#!blockquote
+{{{
+sqlr-start -id master
+sqlr-start -id slave
+sqlr-start -id router
+}}}
+}}}
+
+{{{#!blockquote
+( '''NOTE:''' When installed from packages, SQL Relay may have to be started and stopped as root.)
+}}}
+
+Client applications should connect to the router instance rather than the master or slave instances.
+
+{{{#!blockquote
+{{{
+sqlrsh -host sqlrserver -user routeruser -password routerpassword
+}}}
+}}}
+
+----
+
+[[Image(../../images/navprev.png,link=harac.html,vertical-align=middle)]] [harac.html Already-Load Balanced Databases] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [hafrontendlb.html Front-End Load Balancing and Failover] [[Image(../../images/navnext.png,link=hafrontendlb.html,vertical-align=middle)]]
+
+{{{#!include ../../contentend.html}}}
+
+{{{#!include footer.html}}}

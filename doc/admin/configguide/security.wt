@@ -4,7 +4,7 @@
 
 {{{#!include ../../contentstart.html}}}
 
-[[Image(../../images/navprev.png,link=highavailability.html,vertical-align=middle)]] [highavailability.html High Availability] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [rot.html rot] [[Image(../../images/navnext.png,link=rot.html,vertical-align=middle)]]
+[[Image(../../images/navprev.png,link=hafrontendlb.html,vertical-align=middle)]] [hafrontendlb.html Front-End Load Balancing and Failover] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [rot.html rot] [[Image(../../images/navnext.png,link=rot.html,vertical-align=middle)]]
 
 [[br]][=#security]
 = Security Features =
@@ -631,7 +631,7 @@ Custom modules may also be developed.  For more information, please contact [mai
 
 ----
 
-[[Image(../../images/navprev.png,link=highavailability.html,vertical-align=middle)]] [highavailability.html High Availability] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [rot.html rot] [[Image(../../images/navnext.png,link=rot.html,vertical-align=middle)]]
+[[Image(../../images/navprev.png,link=hafrontendlb.html,vertical-align=middle)]] [hafrontendlb.html Front-End Load Balancing and Failover] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [rot.html rot] [[Image(../../images/navnext.png,link=rot.html,vertical-align=middle)]]
 
 {{{#!include ../../contentend.html}}}
 

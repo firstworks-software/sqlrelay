@@ -328,14 +328,14 @@ Oracle allows a process that is connected to the database to switch users withou
 [[br]][=#routing]
 === Can I use SQL Relay to send all insert/update/delete's to a master database and distribute select's over a set of slaves? ===
 
-Yes, see [admin/configguide/highavailability.html#masterslave Master-Slave Query Routing].
+Yes, see [admin/configguide/hamasterslave.html Master-Slave Query Routing].
 
 [[br]][=#mysqlrouting]
 === Can I use SQL Relay to make my existing !MySQL/MariaDB, !PostgreSQL, Firebird, TDS or Oracle app send all insert/update/delete's to a master database and distribute select's over a set of slaves? ===
 
 Probably.  You'll need to set up SQL Relay to route queries, and configure it to speak whichever front-end protocol your app already uses - !MySQL/MariaDB, !PostgreSQL, Firebird, TDS, or Oracle - to redirect your app to use SQL Relay without modification.
 
-See [admin/configguide/highavailability.html#masterslave Master-Slave Query Routing] for details on how to set up SQL Relay as a query router.
+See [admin/configguide/hamasterslave.html Master-Slave Query Routing] for details on how to set up SQL Relay as a query router.
 
 See [admin/configguide/clientprotocoloptions.html#protocoloptions Client Protocol Options] in the configuration guide for details about how to configure SQL Relay to speak the !MySQL/MariaDB, !PostgreSQL, Firebird, TDS and Oracle protocols.
 

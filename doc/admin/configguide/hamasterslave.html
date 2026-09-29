@@ -1,0 +1,178 @@
+<html>
+<head>
+	<title>firstworks: SQL Relay - sqlrelay persistent database connection pool pooling proxy load balance balancing odbc oracle mysql msql postgresql sybase db2 interbase sqlite access c++ perl DBD DBI python php PDO ruby tcl java jni unix linux persistant</title>
+
+	<link rel="stylesheet" href="../../css/style.css"/>
+	<script type="text/javascript">
+
+  var _gaq = _gaq || [];
+  _gaq.push(['_setAccount', 'UA-23306117-3']);
+  _gaq.push(['_trackPageview']);
+
+  (function() {
+    var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+    ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+    var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+  })();
+
+</script>
+
+	<script language="Javascript" src="../../js/button.js"></script>
+</head>
+<body onload="setButton();">
+
+
+<div style="position: fixed; top: 0px; left: 0px; width: 100%; z-index: 100;">
+
+<span id="firstworks">a <b><a href="http://www.firstworks.com">firstworks</a></b> project</span>
+
+<div id="projectbox"><a href="../../index.html"><img src="../../images/sqlrelay-icon.png"/><span id="name">SQL Relay</span></a></div>
+
+<table id="projectbuttons">
+<tr>
+<td style="width: 50%;"></td>
+<td class="button nonlastbutton"><a id="button-about" href="../../index.html">About</a></td>
+<td class="button nonlastbutton"><a id="button-documentation" href="../../documentation.html">Documentation</a></td>
+<td class="button nonlastbutton"><a id="button-faq" href="../../faq.html">FAQ</a></td>
+<td class="button nonlastbutton"><a id="button-download" href="../../download.html">Download</a></td>
+<td class="button nonlastbutton"><a id="button-license" href="../../license.html">Licensing</a></td>
+<td class="button nonlastbutton"><a id="button-support" href="../../support.html">Support</a></td>
+<td class="button lastbutton"><a id="button-news" target="_blank" href="http://software.firstworks.com">News</a></td>
+<td style="width: 50%;"></td>
+</tr>
+</table>
+
+</div>
+
+<div style="position: absolute; top: 89px; width: 100%;">
+
+
+<div id="content">
+
+
+<p><a href="harac.html"><img style="vertical-align: middle; " src="../../images/navprev.png"/></a> <a href="harac.html">Already-Load Balanced Databases</a> | <a href="index.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="index.html">Contents</a> | <a href="hafrontendlb.html">Front-End Load Balancing and Failover</a> <a href="hafrontendlb.html"><img style="vertical-align: middle; " src="../../images/navnext.png"/></a></p>
+
+<br/><a name="masterslave"/><h1>Master-Slave Query Routing</h1>
+
+<p>The load balancing scenarios described above all assume that master-master replication is being used.  SQL Relay supports master-slave replication as well.</p>
+
+<p>In a master-slave replication environment, SQL Relay can be configured to route DML and DDL queries to the master and distribute selects over the slaves.</p>
+
+<blockquote>
+<img src="../../images/router.png"/>
+</blockquote>
+<p>This actually requires 3 instances of SQL Relay.  One to connect to the master, one to connect to the slaves, and a third to route queries to the first two.</p>
+
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt><b><font color="#000080">&lt;?xml</font></b> <font color="#009900">version</font><font color="#990000">=</font><font color="#FF0000">"1.0"</font><b><font color="#000080">?&gt;</font></b>
+<b><font color="#0000FF">&lt;instances&gt;</font></b>
+
+        <i><font color="#9A1900">&lt;!-- This instance maintains connections to the "master" MySQL database</font></i>
+<i><font color="#9A1900">                on the masterdb machine.  This instance only listens on the</font></i>
+<i><font color="#9A1900">                unix socket /tmp/master.socket and thus cannot be connected to</font></i>
+<i><font color="#9A1900">                by clients from another machine. --&gt;</font></i>
+        <b><font color="#0000FF">&lt;instance</font></b> <font color="#009900">id</font><font color="#990000">=</font><font color="#FF0000">"master"</font> <font color="#009900">socket</font><font color="#990000">=</font><font color="#FF0000">"/tmp/master.socket"</font> <font color="#009900">dbase</font><font color="#990000">=</font><font color="#FF0000">"mysql"</font><b><font color="#0000FF">&gt;</font></b>
+                <b><font color="#0000FF">&lt;connections&gt;</font></b>
+                        <b><font color="#0000FF">&lt;connection</font></b> <font color="#009900">string</font><font color="#990000">=</font><font color="#FF0000">"user=masteruser;password=masterpassword;host=masterdb;db=master;"</font><b><font color="#0000FF">/&gt;</font></b>
+                <b><font color="#0000FF">&lt;/connections&gt;</font></b>
+        <b><font color="#0000FF">&lt;/instance&gt;</font></b>
+
+
+        <i><font color="#9A1900">&lt;!-- This instance maintains connections to 4 "slave" MySQL databases</font></i>
+<i><font color="#9A1900">                on 4 slave machines.  This instance only listens on the unix</font></i>
+<i><font color="#9A1900">                socket /tmp/slave.socket and thus cannot be connected to by</font></i>
+<i><font color="#9A1900">                clients from another machine. --&gt;</font></i>
+        <b><font color="#0000FF">&lt;instance</font></b> <font color="#009900">id</font><font color="#990000">=</font><font color="#FF0000">"slave"</font> <font color="#009900">socket</font><font color="#990000">=</font><font color="#FF0000">"/tmp/slave.socket"</font> <font color="#009900">dbase</font><font color="#990000">=</font><font color="#FF0000">"mysql"</font><b><font color="#0000FF">&gt;</font></b>
+                <b><font color="#0000FF">&lt;connections&gt;</font></b>
+                        <b><font color="#0000FF">&lt;connection</font></b> <font color="#009900">string</font><font color="#990000">=</font><font color="#FF0000">"user=slaveuser;password=slavepassword;host=slavedb1;db=slave;"</font><b><font color="#0000FF">/&gt;</font></b>
+                        <b><font color="#0000FF">&lt;connection</font></b> <font color="#009900">string</font><font color="#990000">=</font><font color="#FF0000">"user=slaveuser;password=slavepassword;host=slavedb2;db=slave;"</font><b><font color="#0000FF">/&gt;</font></b>
+                        <b><font color="#0000FF">&lt;connection</font></b> <font color="#009900">string</font><font color="#990000">=</font><font color="#FF0000">"user=slaveuser;password=slavepassword;host=slavedb3;db=slave;"</font><b><font color="#0000FF">/&gt;</font></b>
+                        <b><font color="#0000FF">&lt;connection</font></b> <font color="#009900">string</font><font color="#990000">=</font><font color="#FF0000">"user=slaveuser;password=slavepassword;host=slavedb3;db=slave;"</font><b><font color="#0000FF">/&gt;</font></b>
+                <b><font color="#0000FF">&lt;/connections&gt;</font></b>
+        <b><font color="#0000FF">&lt;/instance&gt;</font></b>
+
+
+        <i><font color="#9A1900">&lt;!-- This instance sends DML (insert,update,delete) and</font></i>
+<i><font color="#9A1900">                DDL (create/delete) queries to the "master" SQL Relay instance</font></i>
+<i><font color="#9A1900">                which, in turn, sends them to the "master" database.</font></i>
+<i><font color="#9A1900">                This instance sends any other queries to the "slave" SQL Relay</font></i>
+<i><font color="#9A1900">                instance which, in turn, distributes them over the "slave"</font></i>
+<i><font color="#9A1900">                databases. --&gt;</font></i>
+        <b><font color="#0000FF">&lt;instance</font></b> <font color="#009900">id</font><font color="#990000">=</font><font color="#FF0000">"router"</font> <font color="#009900">dbase</font><font color="#990000">=</font><font color="#FF0000">"router"</font><b><font color="#0000FF">&gt;</font></b>
+		<b><font color="#0000FF">&lt;auths&gt;</font></b>
+			<b><font color="#0000FF">&lt;auth</font></b> <font color="#009900">module</font><font color="#990000">=</font><font color="#FF0000">"sqlrclient_userlist"</font><b><font color="#0000FF">&gt;</font></b>
+                        	<b><font color="#0000FF">&lt;user</font></b> <font color="#009900">user</font><font color="#990000">=</font><font color="#FF0000">"routeruser"</font> <font color="#009900">password</font><font color="#990000">=</font><font color="#FF0000">"routerpassword"</font><b><font color="#0000FF">/&gt;</font></b>
+			<b><font color="#0000FF">&lt;/auth&gt;</font></b>
+		<b><font color="#0000FF">&lt;/auths&gt;</font></b>
+		<b><font color="#0000FF">&lt;routers&gt;</font></b>
+                        <i><font color="#9A1900">&lt;!-- send all DML/DDL queries to "master"  --&gt;</font></i>
+			<b><font color="#0000FF">&lt;router</font></b> <font color="#009900">module</font><font color="#990000">=</font><font color="#FF0000">"regex"</font> <font color="#009900">connectionid</font><font color="#990000">=</font><font color="#FF0000">"master"</font><b><font color="#0000FF">&gt;</font></b>
+				<b><font color="#0000FF">&lt;pattern</font></b> <font color="#009900">pattern</font><font color="#990000">=</font><font color="#FF0000">"^drop "</font><b><font color="#0000FF">/&gt;</font></b>
+				<b><font color="#0000FF">&lt;pattern</font></b> <font color="#009900">pattern</font><font color="#990000">=</font><font color="#FF0000">"^create "</font><b><font color="#0000FF">/&gt;</font></b>
+				<b><font color="#0000FF">&lt;pattern</font></b> <font color="#009900">pattern</font><font color="#990000">=</font><font color="#FF0000">"^insert "</font><b><font color="#0000FF">/&gt;</font></b>
+				<b><font color="#0000FF">&lt;pattern</font></b> <font color="#009900">pattern</font><font color="#990000">=</font><font color="#FF0000">"^update "</font><b><font color="#0000FF">/&gt;</font></b>
+				<b><font color="#0000FF">&lt;pattern</font></b> <font color="#009900">pattern</font><font color="#990000">=</font><font color="#FF0000">"^delete "</font><b><font color="#0000FF">/&gt;</font></b>
+			<b><font color="#0000FF">&lt;/router&gt;</font></b>
+                        <i><font color="#9A1900">&lt;!-- send all other queries to "slave" --&gt;</font></i>
+			<b><font color="#0000FF">&lt;router</font></b> <font color="#009900">module</font><font color="#990000">=</font><font color="#FF0000">"regex"</font> <font color="#009900">connectionid</font><font color="#990000">=</font><font color="#FF0000">"slave"</font><b><font color="#0000FF">&gt;</font></b>
+				<b><font color="#0000FF">&lt;pattern</font></b> <font color="#009900">pattern</font><font color="#990000">=</font><font color="#FF0000">".*"</font><b><font color="#0000FF">/&gt;</font></b>
+			<b><font color="#0000FF">&lt;/router&gt;</font></b>
+		<b><font color="#0000FF">&lt;/routers&gt;</font></b>
+		<b><font color="#0000FF">&lt;connections&gt;</font></b>
+			<b><font color="#0000FF">&lt;connection</font></b> <font color="#009900">connectionid</font><font color="#990000">=</font><font color="#FF0000">"master"</font> <font color="#009900">string</font><font color="#990000">=</font><font color="#FF0000">"socket=/tmp/master.socket;user=masteruser;password=masterpassword"</font><b><font color="#0000FF">/&gt;</font></b>
+			<b><font color="#0000FF">&lt;connection</font></b> <font color="#009900">connectionid</font><font color="#990000">=</font><font color="#FF0000">"slave"</font> <font color="#009900">string</font><font color="#990000">=</font><font color="#FF0000">"socket=/tmp/slave.socket;user=slaveuser;password=slavepassword"</font><b><font color="#0000FF">/&gt;</font></b>
+		<b><font color="#0000FF">&lt;/connections&gt;</font></b>
+        <b><font color="#0000FF">&lt;/instance&gt;</font></b>
+
+<b><font color="#0000FF">&lt;/instances&gt;</font></b>
+</tt></pre>
+
+</blockquote>
+<p>The first two instances use familiar configuration options, but the third uses a dbtype of "router" and uses router tags to define query routing rules.</p>
+
+<p>(Note the <i>module</i> attribute of the router tag.  SQL Relay is highly modular, and many advanced features, including query routing, are implemented by loadable modules.)</p>
+
+<p>(Note also the use of a notifications tag.  See <a href="notifications.html#notifications">Notifications</a> for more information.)</p>
+
+<p>Each router tag defines a connectionid to send the query to and a set of regular expression patterns to match.  Queries that match the set of patterns defined in the pattern tags are sent to the instance of SQL Relay designated by the connectionid in the router tag.</p>
+
+<p>The three instances can be started using:</p>
+
+<blockquote>
+  <pre>sqlr-start -id master
+sqlr-start -id slave
+sqlr-start -id router
+</pre>
+
+</blockquote>
+<blockquote>
+( <b>NOTE:</b> When installed from packages, SQL Relay may have to be started and stopped as root.)
+</blockquote>
+<p>Client applications should connect to the router instance rather than the master or slave instances.</p>
+
+<blockquote>
+  <pre>sqlrsh -host sqlrserver -user routeruser -password routerpassword
+</pre>
+
+</blockquote>
+<hr/>
+
+<p><a href="harac.html"><img style="vertical-align: middle; " src="../../images/navprev.png"/></a> <a href="harac.html">Already-Load Balanced Databases</a> | <a href="index.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="index.html">Contents</a> | <a href="hafrontendlb.html">Front-End Load Balancing and Failover</a> <a href="hafrontendlb.html"><img style="vertical-align: middle; " src="../../images/navnext.png"/></a></p>
+
+</div> <!-- content -->
+
+
+<div id="copyrightbox">
+Copyright 2026 - David Muse - <a href="mailto:david.muse@firstworks.com">Contact</a>
+</div> <!-- copyrightbox -->
+
+</div>
+
+</body>
+</html>
+
+
