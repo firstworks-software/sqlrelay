@@ -41,7 +41,7 @@ http://www.gnu.org/software/src-highlite -->
 
 <p>The trigger should be configured with <i>when="all"</i>, since it takes a savepoint before each query and rolls back or releases it after, and needs to wrap both the prepare and execute phases.  Wrapping prepare is essential for PostgreSQL and similar databases that parse and resolve references during prepare - reference-related failures occur at prepare time there, not execute time, and without a savepoint bracketing the prepare the entire transaction is poisoned.  Configurations that omit any of the four phases are honored but may not accomplish anything useful.</p>
 
-<p>The default savepoint, rollback, and release syntax is standard SQL and works for PostgreSQL, <a href="MySQL">MySQL</a>/MariaDB, Oracle, DB2, Firebird, and other databases that follow the SQL standard.  For databases with non-standard savepoint syntax (e.g. Microsoft SQL Server, SAP/Sybase ASE), the syntax templates are configurable:</p>
+<p>The default savepoint, rollback, and release syntax is standard SQL and works for PostgreSQL, MySQL/MariaDB, Oracle, DB2, Firebird, and other databases that follow the SQL standard.  For databases with non-standard savepoint syntax (e.g. Microsoft SQL Server, SAP/Sybase ASE), the syntax templates are configurable:</p>
 
 <blockquote>
 <!-- Generator: GNU source-highlight 3.1.9
