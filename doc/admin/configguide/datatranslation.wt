@@ -9,7 +9,7 @@
 [[br]][=#translation]
 = Data Translation =
 
-SQL Relay offers features for parsing and translating queries, and translating result sets.
+SQL Relay offers features for parsing and translating queries, translating bind variables, translating result sets, and translating errors.
 
  [[Image(../../images/translation-query.png,nolink)]]
  [[Image(../../images/translation-resultset.png,padding-left=40px,nolink)]]
