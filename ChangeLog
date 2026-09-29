@@ -931,7 +931,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - updated the Configuration Guide
 - added the JDBC diagram to the database abstraction layers images on the
   documentation page
-- reordered the rows of feature cards on the home page
+- reordered the feature cards on the home page
 
 ### Removed
 - oracle protocol module: deleted cancel() (no wire input can reach it)
