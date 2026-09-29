@@ -543,7 +543,7 @@ http://www.gnu.org/software/src-highlite -->
 
 <p>When passing a floating point number as a bind variable, ODBC handles the precision and scale through the SQL type specification.  See <a href="precisionscale.html">this page</a> for a discussion of precision and scale.</p>
 
-<p>Note that ODBC requires question marks (?) as parameter markers, but most databases use other formats natively (eg. :name for Oracle, @name for MSSQL/Sybase, $1 for PostgreSQL).  For ODBC bind variables to work against those databases, SQL Relay must be configured to translate them by setting translatebindvariables="yes" in the sqlrelay.conf file for the instance you're using.  See the <a href="../admin/configreference.html">SQL Relay Configuration Reference</a> for more information on this parameter.</p>
+<p>Note that ODBC requires question marks (?) as parameter markers, but most databases use other formats natively (eg. :name for Oracle, @name for MSSQL/SAP/Sybase, $1 for PostgreSQL).  For ODBC bind variables to work against those databases, SQL Relay must be configured to translate them by setting translatebindvariables="yes" in the sqlrelay.conf file for the instance you're using.  See the <a href="../admin/configreference.html">SQL Relay Configuration Reference</a> for more information on this parameter.</p>
 
 <blockquote>
 <!-- Generator: GNU source-highlight 3.1.9
@@ -1201,7 +1201,7 @@ http://www.gnu.org/software/src-highlite -->
 </tt></pre>
 
 </blockquote>
-<br/><h4>Microsoft SQL Server and Sybase</h4>
+<br/><h4>Microsoft SQL Server and SAP/Sybase</h4>
 
 <p>To create the stored procedure, run a query like the following.</p>
 
@@ -1585,9 +1585,9 @@ http://www.gnu.org/software/src-highlite -->
 </tt></pre>
 
 </blockquote>
-<br/><h4>Microsoft SQL Server and Sybase</h4>
+<br/><h4>Microsoft SQL Server and SAP/Sybase</h4>
 
-<p>In Microsoft SQL Server and Sybase, stored procedures return values through output parameters rather than as return values of the procedure itself.</p>
+<p>In Microsoft SQL Server and SAP/Sybase, stored procedures return values through output parameters rather than as return values of the procedure itself.</p>
 
 <p>To create the stored procedure, run a query like the following.</p>
 
@@ -2037,7 +2037,7 @@ http://www.gnu.org/software/src-highlite -->
 </tt></pre>
 
 </blockquote>
-<br/><h4>Microsoft SQL Server and Sybase</h4>
+<br/><h4>Microsoft SQL Server and SAP/Sybase</h4>
 
 <p>To create the stored procedure, run a query like the following.</p>
 
@@ -2484,7 +2484,7 @@ drop package types
 </tt></pre>
 
 </blockquote>
-<br/><h4>Microsoft SQL Server and Sybase</h4>
+<br/><h4>Microsoft SQL Server and SAP/Sybase</h4>
 
 <p>To create the stored procedure, run a query like the following.</p>
 

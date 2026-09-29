@@ -56,7 +56,7 @@ http://www.gnu.org/software/src-highlite -->
 
 <p>On Windows platforms, the server option refers to a similar entry created in an opaque location with the Open Client Directory Services Editor (dsedit).</p>
 
-<p>The lang option sets the language to a value that is known to be supported by Sybase.  This may not be necessary on all platforms.  See <a href="../../faq.html#sqlserver">the FAQ</a> for more info.</p>
+<p>The lang option sets the language to a value that is known to be supported by SAP/Sybase.  This may not be necessary on all platforms.  See <a href="../../faq.html#sqlserver">the FAQ</a> for more info.</p>
 
 <p>See the <a href="../configreference.html#sap">SQL Relay Configuration Reference</a> for other valid SAP/Sybase connect string options.</p>
 

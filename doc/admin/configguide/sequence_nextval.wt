@@ -15,7 +15,7 @@ The module recognizes the following three syntaxes:
 
 * //seqname.nextval// - used by Oracle and DB2
 * //nextval('seqname')// - used by !PostgreSQL
-* //next value for seqname// - used by SQL Server, Sybase, Firebird, and DB2
+* //next value for seqname// - used by SQL Server, SAP/Sybase, Firebird, and DB2
 
 It rewrites any of these that it finds into the single target syntax selected by the '''style''' attribute.  The sequence name, including any schema or owner prefix (eg. //myschema.myseq//), is preserved.
 
@@ -48,7 +48,7 @@ The following attribute is supported, in addition to the standard '''module''', 
 * '''style''' - The target syntax to convert sequence-nextval expressions to.  Options include:
  * //.nextval// - eg. //myseq.nextval// (Oracle, DB2)
  * //nextval()// - eg. //nextval('myseq')// (PostgreSQL)
- * //next value for// - eg. //next value for myseq// (SQL Server, Sybase, Firebird, DB2)
+ * //next value for// - eg. //next value for myseq// (SQL Server, SAP/Sybase, Firebird, DB2)
  * If omitted or set to an unrecognized value, queries are passed through untranslated.
 
 Sequence references inside string literals are left alone.

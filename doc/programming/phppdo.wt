@@ -134,7 +134,7 @@ The following connect string variables control attributes of the connection:
 * '''lazyconnectautocommit''' - When you call $pdo->getAttribute(PDO::ATTR_AUTOCOMMIT), PDO doesn't query the backend, it just returns a local variable that the driver must keep updated when autocommit it set on or off.  When '''autocommit''' is set to '''-1''' (leave it up to the backend), the SQL Relay driver generally queries the backend after connect to initialize this local variable.  However, when '''lazyconnect''' is set to '''1''' (the default), this would force a connection immediately, and defeat lazy connect.  So, when '''autocommit''' is set to '''-1''' and '''lazyconnect''' is set to '''1''', the local variable is initialized to the value of '''lazyconnectautocommit'''.  May be set to '''1''' or '''0'''.  Defaults to '''1''', since most backends autocommit by default.  Has no effect unless '''autocommit''' is '''-1''' and '''lazyconnect''' is '''1'''.
 * '''transactionmodel''' - Sets the transaction model that the driver will use, overriding the database's native model.  May be set to '''native''' (the database's native transaction model), '''none''' (no transactions), '''implicit''' (in a transaction when the session begins; commit/rollback implicitly starts a new transaction; autocommit on/off take effect immediately), '''explicit''' (not in a transaction when the session begins; begin required to start a new transaction; commit/rollback does not start a new transaction; autocommit on/off take effect immediately), '''explicit-deferred''' (like explicit, but while in a begin-initiated transaction, autocommit on takes effect at the next commit/rollback (deferred); while in an autocommit-off-initiated transaction, autocommit on takes effect immediately), or '''explicit-error''' (like explicit, but while in a transaction, autocommit on/off throw an error).  If left empty or omitted then the database's native transaction model is used.  Defaults to empty.
 * '''bindvariabledelimiters''' - Specifies which characters are recognized as bind variable delimiters.  Valid delimiters are '''?''', '''\:''', '''@''', and '''$'''.  Any combination may be given, with no separator between them.  Defaults to '''?:@$''' (all four).
-* '''emulatepreparesunicodestrings''' - When set to '''1''', and prepares are being emulated (see [#bindvars Bind Variables] below), string and LOB bind values are quoted with a leading '''N''' (e.g. N'value'), the syntax some databases such as Microsoft SQL Server and Sybase require for unicode string literals.  When set to '''0''', they're quoted without the leading '''N'''.  Defaults to '''0'''.
+* '''emulatepreparesunicodestrings''' - When set to '''1''', and prepares are being emulated (see [#bindvars Bind Variables] below), string and LOB bind values are quoted with a leading '''N''' (e.g. N'value'), the syntax some databases such as Microsoft SQL Server and SAP/Sybase require for unicode string literals.  When set to '''0''', they're quoted without the leading '''N'''.  Defaults to '''0'''.
 
 In addition, the following connect string variables can be used to establish Kerberos or Active Directory encryption and authentication with the server:
 
@@ -378,7 +378,7 @@ insert into exampletable values (:1,:2,:3,:4)
 }}}
 }}}
 
-With MS SQL Server and Sybase:
+With MS SQL Server and SAP/Sybase:
 
 {{{#!blockquote
 {{{#!code
@@ -607,7 +607,7 @@ To drop the stored procedure, run a query like the following.
 }}}
 
 
-==== Microsoft SQL Server and Sybase ====
+==== Microsoft SQL Server and SAP/Sybase ====
 
 To create the stored procedure, run a query like the following.
 
@@ -812,9 +812,9 @@ To drop the stored procedure, run a query like the following.
 }}}
 
 
-==== Microsoft SQL Server and Sybase ====
+==== Microsoft SQL Server and SAP/Sybase ====
 
-In Microsoft SQL Server and Sybase, stored procedures return values
+In Microsoft SQL Server and SAP/Sybase, stored procedures return values
 through output parameters rather than as return values of the procedure
 itself.
 
@@ -1067,7 +1067,7 @@ To drop the stored procedure, run a query like the following.
 }}}
 
 
-==== Microsoft SQL Server and Sybase ====
+==== Microsoft SQL Server and SAP/Sybase ====
 
 To create the stored procedure, run a query like the following.
 
@@ -1248,7 +1248,7 @@ each database that SQL Relay supports.
 
 In Oracle, for a result set to be fetched from a stored procedure, the result set must be bound to an output parameter of type cursor. PDO had a PDO: :PARAM_STMT type that could theoretically be used to get one of these but it is currently unimplemented by any driver, including the SQL Relay driver. Quirks in the implementation of PDO itself make it impossible (or at least very difficult) to implement. Specifically, there's no obvious way of creating an instance of the PDO statement type to set the bound parameter to. Hopefully this will be remedied in a future version of PDO.
 
-==== Microsoft SQL Server and Sybase ====
+==== Microsoft SQL Server and SAP/Sybase ====
 
 To create the stored procedure, run a query like the following.
 

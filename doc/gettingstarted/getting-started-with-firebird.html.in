@@ -73,7 +73,7 @@ http://www.gnu.org/software/src-highlite -->
 </blockquote>
 <a name="creating"/><h2>Setting Up Your Environment</h2>
 
-<p>At this point, you should set up your environment. The Firebird client is called <i>isql-fb</i> in some distributions, but in others, it is just called <i>isql</i>. Note that <i>unixODBC</i> and <i>Sybase</i> have a client called <i>isql</i> as well which could be installed in /usr/bin, /usr/local/bin, /opt/sybase*/bin or some other path. If you have <i>unixODBC</i> or <i>Sybase</i> installed, you'll have to decide which client you want the <i>isql</i> command to run. If you want <i>isql</i> to run the Firebird client, follow the instructions below. Otherwise, you'll have to run the Firebird <i>isql</i> client by its full pathname.</p>
+<p>At this point, you should set up your environment. The Firebird client is called <i>isql-fb</i> in some distributions, but in others, it is just called <i>isql</i>. Note that <i>unixODBC</i> and <i>SAP/Sybase</i> have a client called <i>isql</i> as well which could be installed in /usr/bin, /usr/local/bin, /opt/sybase*/bin or some other path. If you have <i>unixODBC</i> or <i>SAP/Sybase</i> installed, you'll have to decide which client you want the <i>isql</i> command to run. If you want <i>isql</i> to run the Firebird client, follow the instructions below. Otherwise, you'll have to run the Firebird <i>isql</i> client by its full pathname.</p>
 
 <p>If you are using Firebird prior to version 1.5, in the configuration script for your shell, add <i>/opt/interbase/bin</i> to your PATH environment variable. If you are using Firebird version 1.5 or higher, add <i>/opt/firebird/bin</i> to your PATH environment variable. You can add the paths as follows.</p>
 

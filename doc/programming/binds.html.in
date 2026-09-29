@@ -57,9 +57,9 @@ END<font color="#990000">;</font>
 
 <h2>Bind Variable Syntax</h2>
 
-<p>Different databases have different syntax for bind variables.  Oracle bind variables are names preceded by a colon.  In <a href="MySQL">MySQL</a>/MariaDB, DB2 and Firebird, bind variables are represented by question marks.  In MS SQL Server and Sybase, bind variables are names preceded by an @ sign.  In <a href="PostgreSQL">PostgreSQL</a>, bind variables are numbers preceded by a $ sign.</p>
+<p>Different databases have different syntax for bind variables.  Oracle bind variables are names preceded by a colon.  In <a href="MySQL">MySQL</a>/MariaDB, DB2 and Firebird, bind variables are represented by question marks.  In MS SQL Server and SAP/Sybase, bind variables are names preceded by an @ sign.  In <a href="PostgreSQL">PostgreSQL</a>, bind variables are numbers preceded by a $ sign.</p>
 
-<p>When using SQL Relay bind functions, to refer to an Oracle, MS SQL Server or Sybase bind variable, you should use its name without the preceding colon.  To refer to bind variables when using other databases, you should use the bind variable's position number.</p>
+<p>When using SQL Relay bind functions, to refer to an Oracle, MS SQL Server or SAP/Sybase bind variable, you should use its name without the preceding colon.  To refer to bind variables when using other databases, you should use the bind variable's position number.</p>
 
 <p>For example...</p>
 

@@ -43,7 +43,7 @@ SAPSERVER
 
 On Windows platforms, the server option refers to a similar entry created in an opaque location with the Open Client Directory Services Editor (dsedit).
 
-The lang option sets the language to a value that is known to be supported by Sybase.  This may not be necessary on all platforms.  See [../../faq.html#sqlserver the FAQ] for more info.
+The lang option sets the language to a value that is known to be supported by SAP/Sybase.  This may not be necessary on all platforms.  See [../../faq.html#sqlserver the FAQ] for more info.
 
 See the [../configreference.html#sap SQL Relay Configuration Reference] for other valid SAP/Sybase connect string options.
 

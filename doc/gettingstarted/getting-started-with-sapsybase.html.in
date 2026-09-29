@@ -332,7 +332,7 @@ go</tt></pre>
 
 <p>If you are installing ASE 15.0.2 or older, check the LANG environment variable first and set it to something simple like en_US as opposed to en_US.iso885915.</p>
 
-<p>The first step in accessing a ASE database is setting up your environment. The SYBASE environment variable must be set to the directory that sybase was intalled in.</p>
+<p>The first step in accessing a ASE database is setting up your environment. The SYBASE environment variable must be set to the directory that SAP/Sybase was intalled in.</p>
 
 <p>In the configuration script for whatever shell you use, create an environment variable called SYBASE containing the directory you intalled ASE in. In these examples, /opt/sybase is used, but your instance of ASE may be installed elsewhere.</p>
 

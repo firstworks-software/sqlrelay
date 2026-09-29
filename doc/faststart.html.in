@@ -13,7 +13,7 @@
 </tr>
 </table>
 
-<p>The VM provides running instances of MySQL, PostgreSQL, Firebird, SQLite and MS Access databases and running instances of SQL Relay, pre-configured to talk to them.  There are also instances of SQL Relay pre-configured to talk to Oracle and MS SQL Server or Sybase databases.  All you have to do is plug in a hostname and start them up.</p>
+<p>The VM provides running instances of MySQL, PostgreSQL, Firebird, SQLite and MS Access databases and running instances of SQL Relay, pre-configured to talk to them.  There are also instances of SQL Relay pre-configured to talk to Oracle and MS SQL Server or SAP/Sybase databases.  All you have to do is plug in a hostname and start them up.</p>
 
 <p>Just download the image, point VMWare Player or Workstation at it, log in as <b>sqlrelay</b> with password <b>sqlrelay</b> and follow the instructions in the browser window.</p>
 

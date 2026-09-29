@@ -15,7 +15,7 @@
 <ul>
   <li><i>seqname.nextval</i> - used by Oracle and DB2</li>
   <li><i>nextval('seqname')</i> - used by PostgreSQL</li>
-  <li><i>next value for seqname</i> - used by SQL Server, Sybase, Firebird, and DB2</li>
+  <li><i>next value for seqname</i> - used by SQL Server, SAP/Sybase, Firebird, and DB2</li>
 </ul>
 
 <p>It rewrites any of these that it finds into the single target syntax selected by the <b>style</b> attribute.  The sequence name, including any schema or owner prefix (eg. <i>myschema.myseq</i>), is preserved.</p>
@@ -70,7 +70,7 @@ http://www.gnu.org/software/src-highlite -->
   <ul>
     <li><i>.nextval</i> - eg. <i>myseq.nextval</i> (Oracle, DB2)</li>
     <li><i>nextval()</i> - eg. <i>nextval('myseq')</i> (PostgreSQL)</li>
-    <li><i>next value for</i> - eg. <i>next value for myseq</i> (SQL Server, Sybase, Firebird, DB2)</li>
+    <li><i>next value for</i> - eg. <i>next value for myseq</i> (SQL Server, SAP/Sybase, Firebird, DB2)</li>
     <li>If omitted or set to an unrecognized value, queries are passed through untranslated.</li>
   </ul>
 

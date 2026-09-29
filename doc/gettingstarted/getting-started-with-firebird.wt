@@ -67,7 +67,7 @@ yum install compat-libstdc++-33
 
 == Setting Up Your Environment ==
 
-At this point, you should set up your environment. The Firebird client is called //isql-fb// in some distributions, but in others, it is just called //isql//. Note that //unixODBC// and //Sybase// have a client called //isql// as well which could be installed in /usr/bin, /usr/local/bin, /opt/sybase*/bin or some other path. If you have //unixODBC// or //Sybase// installed, you'll have to decide which client you want the //isql// command to run. If you want //isql// to run the Firebird client, follow the instructions below. Otherwise, you'll have to run the Firebird //isql// client by its full pathname.
+At this point, you should set up your environment. The Firebird client is called //isql-fb// in some distributions, but in others, it is just called //isql//. Note that //unixODBC// and //SAP/Sybase// have a client called //isql// as well which could be installed in /usr/bin, /usr/local/bin, /opt/sybase*/bin or some other path. If you have //unixODBC// or //SAP/Sybase// installed, you'll have to decide which client you want the //isql// command to run. If you want //isql// to run the Firebird client, follow the instructions below. Otherwise, you'll have to run the Firebird //isql// client by its full pathname.
 
 If you are using Firebird prior to version 1.5, in the configuration script for your shell, add ///opt/interbase/bin// to your PATH environment variable. If you are using Firebird version 1.5 or higher, add ///opt/firebird/bin// to your PATH environment variable. You can add the paths as follows.
 

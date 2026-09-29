@@ -334,7 +334,7 @@ ODBC provides SQLBindParameter() for binding values to parameter markers (?) in 
 
 When passing a floating point number as a bind variable, ODBC handles the precision and scale through the SQL type specification.  See [precisionscale.html this page] for a discussion of precision and scale.
 
-Note that ODBC requires question marks (?) as parameter markers, but most databases use other formats natively (eg. :name for Oracle, @name for MSSQL/Sybase, $1 for !PostgreSQL).  For ODBC bind variables to work against those databases, SQL Relay must be configured to translate them by setting translatebindvariables="yes" in the sqlrelay.conf file for the instance you're using.  See the [../admin/configreference.html SQL Relay Configuration Reference] for more information on this parameter.
+Note that ODBC requires question marks (?) as parameter markers, but most databases use other formats natively (eg. :name for Oracle, @name for MSSQL/SAP/Sybase, $1 for !PostgreSQL).  For ODBC bind variables to work against those databases, SQL Relay must be configured to translate them by setting translatebindvariables="yes" in the sqlrelay.conf file for the instance you're using.  See the [../admin/configreference.html SQL Relay Configuration Reference] for more information on this parameter.
 
 {{{#!blockquote
 {{{#!code
@@ -466,7 +466,7 @@ To drop the stored procedure, run a query like the following.
 }}}
 
 
-==== Microsoft SQL Server and Sybase ====
+==== Microsoft SQL Server and SAP/Sybase ====
 
 To create the stored procedure, run a query like the following.
 
@@ -659,9 +659,9 @@ To drop the stored procedure, run a query like the following.
 }}}
 
 
-==== Microsoft SQL Server and Sybase ====
+==== Microsoft SQL Server and SAP/Sybase ====
 
-In Microsoft SQL Server and Sybase, stored procedures return values through output parameters rather than as return values of the procedure itself.
+In Microsoft SQL Server and SAP/Sybase, stored procedures return values through output parameters rather than as return values of the procedure itself.
 
 To create the stored procedure, run a query like the following.
 
@@ -885,7 +885,7 @@ To drop the stored procedure, run a query like the following.
 }}}
 
 
-==== Microsoft SQL Server and Sybase ====
+==== Microsoft SQL Server and SAP/Sybase ====
 
 To create the stored procedure, run a query like the following.
 
@@ -1079,7 +1079,7 @@ To drop the stored procedure, run a query like the following.
 }}}
 
 
-==== Microsoft SQL Server and Sybase ====
+==== Microsoft SQL Server and SAP/Sybase ====
 
 To create the stored procedure, run a query like the following.
 

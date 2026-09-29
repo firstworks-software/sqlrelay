@@ -38,9 +38,9 @@ Substitution variables may appear anywhere in the query.  They are frequently us
 
 == Bind Variable Syntax ==
 
-Different databases have different syntax for bind variables.  Oracle bind variables are names preceded by a colon.  In MySQL/MariaDB, DB2 and Firebird, bind variables are represented by question marks.  In MS SQL Server and Sybase, bind variables are names preceded by an @ sign.  In PostgreSQL, bind variables are numbers preceded by a $ sign.
+Different databases have different syntax for bind variables.  Oracle bind variables are names preceded by a colon.  In MySQL/MariaDB, DB2 and Firebird, bind variables are represented by question marks.  In MS SQL Server and SAP/Sybase, bind variables are names preceded by an @ sign.  In PostgreSQL, bind variables are numbers preceded by a $ sign.
 
-When using SQL Relay bind functions, to refer to an Oracle, MS SQL Server or Sybase bind variable, you should use its name without the preceding colon.  To refer to bind variables when using other databases, you should use the bind variable's position number.
+When using SQL Relay bind functions, to refer to an Oracle, MS SQL Server or SAP/Sybase bind variable, you should use its name without the preceding colon.  To refer to bind variables when using other databases, you should use the bind variable's position number.
 
 For example...
 
