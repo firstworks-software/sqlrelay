@@ -944,6 +944,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   pages
 - removed the duplicated debugging section from each database-specific
   configuration guide page
+- removed the duplicated debug-attribute paragraph from each protocol
+  configuration guide page
 
 ### Removed
 - oracle protocol module: deleted cancel() (no wire input can reach it)

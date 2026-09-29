@@ -199,8 +199,6 @@ http://www.gnu.org/software/src-highlite -->
 
 <p>If the socket option is specified but the port option is not, then SQL Relay will only listen on the socket.  If port and socket options are both specified then it listens on both.</p>
 
-<p>The Firebird protocol module also has a <i>debug</i> attribute.  If debug="yes" is configured in the individual listener tag (not in the listeners tag), then debugging information about the protocol is written to the destination of the debug logger module (if one is defined, see <a href="debug.html#debug">the debug logger module</a>), or otherwise, to standard output.  If debug="no" is configured, or if the <i>debug</i> attribute is omitted, then no debugging information is written.</p>
-
 <a name="firebirdprotocolversion"/><h2>Protocol Version</h2>
 
 <p>When a Firebird client connects, it offers a list of the protocol versions it can speak, and the server picks one.  Each version adds features, so client and server have to agree on which ones are in use.</p>
