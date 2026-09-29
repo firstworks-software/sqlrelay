@@ -960,6 +960,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   scaling page of the configuration guide
 - added firebird, tds, and oracle protocol diagrams to the client protocol
   options and front-end compatibility pages
+- reworded the client protocol options page of the configuration guide to
+  cover all native protocols
 
 ### Removed
 - oracle protocol module: deleted cancel() (no wire input can reach it)

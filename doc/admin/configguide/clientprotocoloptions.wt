@@ -13,7 +13,7 @@ Whether written using the native SQL Relay API, or a connector of some sort, SQL
 
  [[Image(../../images/sqlrelaynativeprotocol.png,nolink)]]
 
-However, SQL Relay also supports the !MySQL, !PostgreSQL, Firebird, TDS (Microsoft SQL Server and SAP/Sybase), and Oracle client-server protocols.  When SQL Relay is configured to use one of these, it allows !MySQL/MariaDB, !PostgreSQL, Firebird, Microsoft SQL Server/SAP/Sybase, and Oracle apps to communicate directly with SQL Relay without modification, without having to install any software on the client.
+However, SQL Relay also supports the !MySQL, !PostgreSQL, Firebird, TDS (Microsoft SQL Server and SAP/Sybase), and Oracle client-server protocols.  When SQL Relay is configured to use one of these, it allows native applications to communicate directly with SQL Relay without modification, and without having to install any software on the client.
 
  [[Image(../../images/sqlrelaymysqlprotocol.png,nolink)]]
 
@@ -25,7 +25,7 @@ However, SQL Relay also supports the !MySQL, !PostgreSQL, Firebird, TDS (Microso
 
  [[Image(../../images/sqlrelayoracleprotocol.png,nolink)]]
 
-In these configurations, SQL Relay becomes a transparent proxy.  !MySQL/MariaDB or !PostgreSQL apps aimed at SQL Relay still think that they're talking to a !MySQL/MariaDB or !PostgreSQL database, but in fact, are talking to SQL Relay.
+In these configurations, SQL Relay becomes a transparent proxy.  Applications aimed at SQL Relay think that they're talking to their native database, but in fact, are talking to SQL Relay.
 
 * [sqlrclientprotocol.html SQLRClient Protocol]
 * [mysqlprotocol.html MySQL Protocol]
