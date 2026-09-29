@@ -16,7 +16,9 @@ SQL Relay offers several features to enhance security.
 
 When configured to use the SQLRClient protocol (the default), SQL Relay supports [sqlrclientprotocol.html#sqlrclientkrb Kerberos and Active Directory Encryption and Authentication] and [sqlrclientprotocol.html#sqlrclienttls TLS/SSL Encryption and Authentication] between the client and SQL Relay server.
 
-When configured to use the !MySQL or !PostgreSQL protocols, SQL Relay supports TLS/SSL encryption and authentication between the client and SQL Relay server.  See [mysqlprotocol.html#mysqltls MySQL TLS/SSL Encryption and Authentication] and [postgresqlprotocol.html#postgresqltls PostgreSQL TLS/SSL Encryption and Authentication] for details.
+When configured to use the !MySQL protocol, SQL Relay supports TLS/SSL encryption and authentication between the client and SQL Relay server.  See [mysqlprotocol.html#mysqltls MySQL TLS/SSL Encryption and Authentication] for details.
+
+When configured to use the !PostgreSQL protocol, SQL Relay supports TLS/SSL encryption and authentication between the client and SQL Relay server.  See [postgresqlprotocol.html#postgresqltls PostgreSQL TLS/SSL Encryption and Authentication] for details.
 
 When configured to use the Firebird protocol, SQL Relay supports Firebird [firebirdprotocol.html#firebirdwirecrypt Wire Encryption] between the client and SQL Relay server.
 
