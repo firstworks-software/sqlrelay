@@ -32,12 +32,10 @@ sqlr-start -abs-max-connections
 The command above also returns the "shmmax requirement" for the configuration.  "shmmax" refers to the maximum size of a single shared memory segment, a tunable kernel parameter on most systems.  The default shmmax requirement is about 5mb.  On modern systems, shmmax defaults to at least 32mb, but on older systems it commonly defaulted to 512k.  In any case, if the shmmax requirement exceeds the value of your system's shmmax parameter, then you will have to reconfigure the parameter before SQL Relay will start successfully.   This may be done at runtime on most modern systems, but on older systems you may have to reconfigure and rebuild the kernel, and reboot.)
 }}}
 
-[=#dbconnections-performance]
 === For Performance ===
 
 In a performance-oriented configuration, a good rule of thumb is to open as many connections as you can.  That number is usually environment-specific, and dictated by database, system and network resources.
 
-[=#dbconnections-throttling]
 === For Throttling ===
 
 If you intend to [../../features/throttling.html throttle] database access to a particular application, then you may intentionally configure a small number of connections.

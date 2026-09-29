@@ -972,6 +972,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   configuration guide
 - removed the file="yes" example from the debug page of the
   configuration guide
+- removed the for performance and for throttling entries from the
+  configuration guide table of contents
 
 ### Fixed
 - fixed several make install bugs (missing tds protocol module, doc/ on a

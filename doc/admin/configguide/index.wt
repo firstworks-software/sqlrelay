@@ -33,8 +33,6 @@ This guide is split across the pages listed below - start with Quick Start for a
   * [athenaconfiguration.html#db-odbc-athena Amazon Athena (via ODBC)]
   * [odbcconfiguration.html#db-odbc Generic ODBC]
  * [databaseconnectioncount.html#dbconnections Database Connection Count]
-  * [databaseconnectioncount.html#dbconnections-performance For Performance]
-  * [databaseconnectioncount.html#dbconnections-throttling For Throttling]
  * [databasecursorcount.html#dbcursors Database Cursor Count]
  * [dynamicscaling.html#dynamicscaling Dynamic Scaling]
  * [listenerconfiguration.html#listener Listener Configuration]
