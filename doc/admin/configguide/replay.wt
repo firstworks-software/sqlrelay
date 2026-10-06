@@ -64,12 +64,9 @@ The '''condition''' tag supports the following attributes:
  * if numeric: the condition is true if the error code matches
  * if string: the condition is true if the error string contains the string
 * '''sqlstate'''
- * an alternative to '''error''', not an addition to it - if set on a tag, the condition matches on the SQLSTATE alone, and that tag's '''error''' attribute (if also present) is ignored
- * "set" means non-empty - '''sqlstate=""''' (present but empty) is treated the same as leaving it off, and the tag falls back to '''error'''; this is different from the globaltemptables trigger's '''alreadyexists''' tag, where an empty '''sqlstate''' explicitly disables a built-in default - the replay trigger has no built-in default to disable
- * compared case-insensitively against the SQLSTATE the database reported for the error
- * SQLSTATE codes are standardized and locale-independent, unlike error text, and aren't backend-specific magic numbers, unlike error codes on some backends
- * if the backend didn't report a SQLSTATE for the error, there's nothing to compare, so the condition can't match on '''sqlstate''' - this is never treated as a mismatch, it's simply skipped
- * '''sqlstate''' and '''error''' are alternatives on a single '''condition''' tag, not combined on one - a site that wants to react to either a particular SQLSTATE or a particular error should configure two separate '''condition''' tags, one using each attribute
+ * the condition is true if the SQLSTATE the database reported for the error matches, without regard to case.  Unlike error text and numbers, SQLSTATE codes are standard and don't vary by database or locale.
+ * if set, '''error''' is ignored on the same tag.  To match either one, use two '''condition''' tags.
+ * an empty value is the same as leaving it out.  If the database doesn't report a SQLSTATE for an error, the condition can't match on it.
 * '''scope'''
  * transaction - replay the entire transaction if this condition occurs
  * query - replay the previous query if this condition occurs

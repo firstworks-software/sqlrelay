@@ -122,12 +122,9 @@ http://www.gnu.org/software/src-highlite -->
 
   <li><b>sqlstate</b></li>
   <ul>
-    <li>an alternative to <b>error</b>, not an addition to it - if set on a tag, the condition matches on the SQLSTATE alone, and that tag's <b>error</b> attribute (if also present) is ignored</li>
-    <li>"set" means non-empty - <b>sqlstate=""</b> (present but empty) is treated the same as leaving it off, and the tag falls back to <b>error</b>; this is different from the globaltemptables trigger's <b>alreadyexists</b> tag, where an empty <b>sqlstate</b> explicitly disables a built-in default - the replay trigger has no built-in default to disable</li>
-    <li>compared case-insensitively against the SQLSTATE the database reported for the error</li>
-    <li>SQLSTATE codes are standardized and locale-independent, unlike error text, and aren't backend-specific magic numbers, unlike error codes on some backends</li>
-    <li>if the backend didn't report a SQLSTATE for the error, there's nothing to compare, so the condition can't match on <b>sqlstate</b> - this is never treated as a mismatch, it's simply skipped</li>
-    <li><b>sqlstate</b> and <b>error</b> are alternatives on a single <b>condition</b> tag, not combined on one - a site that wants to react to either a particular SQLSTATE or a particular error should configure two separate <b>condition</b> tags, one using each attribute</li>
+    <li>the condition is true if the SQLSTATE the database reported for the error matches, without regard to case.  Unlike error text and numbers, SQLSTATE codes are standard and don't vary by database or locale.</li>
+    <li>if set, <b>error</b> is ignored on the same tag.  To match either one, use two <b>condition</b> tags.</li>
+    <li>an empty value is the same as leaving it out.  If the database doesn't report a SQLSTATE for an error, the condition can't match on it.</li>
   </ul>
 
   <li><b>scope</b></li>
