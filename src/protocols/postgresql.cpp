@@ -1020,9 +1020,9 @@ bool sqlrprotocol_postgresql::sendStartupParameterStatuses() {
 	if (!sv.getSize()) {
 
 		// get the dbversion
-		const char	*dbtype=cont->getDbType();
+		const char	*dbtype=cont->getNativeDbType();
 		const char	*dbversion=cont->getDbVersion();
-		debugWrite("dbtype: %s",dbtype);
+		debugWrite("native dbtype: %s",dbtype);
 		debugWrite("dbversion: %s",dbversion);
 		if (!charstring::compare(dbtype,"postgresql")) {
 
@@ -2192,9 +2192,9 @@ bool sqlrprotocol_postgresql::blobAlreadyHex() {
 
 	debugStart("blobAlreadyHex");
 
-	const char	*dbtype=cont->getDbType();
+	const char	*dbtype=cont->getNativeDbType();
 	const char	*decodeblobs=cont->getConnectStringValue("decodeblobs");
-	debugWrite("dbtype: %s",(dbtype)?dbtype:"");
+	debugWrite("native dbtype: %s",(dbtype)?dbtype:"");
 	debugWrite("decodeblobs: %s",(decodeblobs)?decodeblobs:"");
 
 	// the postgresql backend's own getField() already hands back a hex
