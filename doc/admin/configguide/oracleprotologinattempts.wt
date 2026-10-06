@@ -9,9 +9,13 @@
 [=#oracleloginattempts]
 = Login Attempts =
 
-A real Oracle server lets a client retry a failed login on the same connection - the wrong-password-then-correct-password flow OCI clients and sqlplus expect - up to a limit before it drops the connection.
+After a failed login, the Oracle protocol module lets the client retry on the same connection, as a real Oracle server does.  The //maxloginattempts// option sets how many attempts a connection gets before it is dropped.  If unset or 0, it defaults to 3, matching Oracle's SEC_MAX_FAILED_LOGIN_ATTEMPTS default.
 
-The Oracle protocol module does the same.  After a failed login it sends the error and waits for another attempt on the same connection, rather than tearing the connection down.  The //maxloginattempts// option sets how many attempts one connection gets before the module gives up and drops it; it defaults to 3, matching a real server's default SEC_MAX_FAILED_LOGIN_ATTEMPTS.
+{{{#!blockquote
+{{{#!code
+@parts/sqlrelay-oraclefeloginattempts.conf@
+}}}
+}}}
 
 ----
 

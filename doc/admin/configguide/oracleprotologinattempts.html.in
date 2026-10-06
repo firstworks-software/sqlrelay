@@ -8,10 +8,27 @@
 
 <a name="oracleloginattempts"/><h1>Login Attempts</h1>
 
-<p>A real Oracle server lets a client retry a failed login on the same connection - the wrong-password-then-correct-password flow OCI clients and sqlplus expect - up to a limit before it drops the connection.</p>
+<p>After a failed login, the Oracle protocol module lets the client retry on the same connection, as a real Oracle server does.  The <i>maxloginattempts</i> option sets how many attempts a connection gets before it is dropped.  If unset or 0, it defaults to 3, matching Oracle's SEC_MAX_FAILED_LOGIN_ATTEMPTS default.</p>
 
-<p>The Oracle protocol module does the same.  After a failed login it sends the error and waits for another attempt on the same connection, rather than tearing the connection down.  The <i>maxloginattempts</i> option sets how many attempts one connection gets before the module gives up and drops it; it defaults to 3, matching a real server's default SEC_MAX_FAILED_LOGIN_ATTEMPTS.</p>
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt><b><font color="#000080">&lt;?xml</font></b> <font color="#009900">version</font><font color="#990000">=</font><font color="#FF0000">"1.0"</font><b><font color="#000080">?&gt;</font></b>
+<b><font color="#0000FF">&lt;instances&gt;</font></b>
+	<b><font color="#0000FF">&lt;instance</font></b> <font color="#009900">id</font><font color="#990000">=</font><font color="#FF0000">"example"</font> <font color="#009900">dbase</font><font color="#990000">=</font><font color="#FF0000">"oracle"</font><b><font color="#0000FF">&gt;</font></b>
+		<b><font color="#0000FF">&lt;listeners&gt;</font></b>
+			<b><font color="#0000FF">&lt;listener</font></b> <font color="#009900">protocol</font><font color="#990000">=</font><font color="#FF0000">"oracle"</font> <font color="#009900">port</font><font color="#990000">=</font><font color="#FF0000">"1521"</font> <font color="#009900">maxloginattempts</font><font color="#990000">=</font><font color="#FF0000">"5"</font><b><font color="#0000FF">/&gt;</font></b>
+		<b><font color="#0000FF">&lt;/listeners&gt;</font></b>
+		<b><font color="#0000FF">&lt;connections&gt;</font></b>
+			<b><font color="#0000FF">&lt;connection</font></b> <font color="#009900">string</font><font color="#990000">=</font><font color="#FF0000">"user=scott;password=tiger;oracle_home=/u01/app/oracle/product/12.1.0;oracle_sid=ora1"</font><b><font color="#0000FF">/&gt;</font></b>
+		<b><font color="#0000FF">&lt;/connections&gt;</font></b>
+	<b><font color="#0000FF">&lt;/instance&gt;</font></b>
+<b><font color="#0000FF">&lt;/instances&gt;</font></b>
+</tt></pre>
 
+</blockquote>
 <hr/>
 
 <p><a href="index.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="index.html">Contents</a>&nbsp;&nbsp;&nbsp;<a href="oracleprotosid.html"><img style="vertical-align: middle; " src="../../images/navprev.png"/></a> <a href="oracleprotosid.html">Oracle SID / Service Name</a> | <a href="oracleprotocol.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="oracleprotocol.html">Oracle Protocol</a> | <a href="oracleprotoserverversion.html">Oracle Server Version</a> <a href="oracleprotoserverversion.html"><img style="vertical-align: middle; " src="../../images/navnext.png"/></a></p>
