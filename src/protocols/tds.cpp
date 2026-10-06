@@ -14824,6 +14824,14 @@ bool sqlrprotocol_tds::preTds7ParamsWrite(const tds5paramfmt *fmts,
 	return true;
 }
 
+static uint32_t threeHundredthsSince12AM(uint32_t secs, int32_t usec) {
+
+	// round to the nearest tick, but stay within the day
+	uint64_t	ticks=(uint64_t)secs*300+
+				((uint64_t)(usec<0?0:usec)*3+5000)/10000;
+	return (ticks>25919999)?25919999:(uint32_t)ticks;
+}
+
 void sqlrprotocol_tds::preTds7ParamValueWrite(const tds5paramfmt *fmt,
 						sqlrserverbindvar *bv) {
 
@@ -15103,7 +15111,7 @@ void sqlrprotocol_tds::preTds7ParamValueWrite(const tds5paramfmt *fmt,
 							year,month,day)-
 						(int32_t)daysSince1(1900,1,1));
 				} else {
-					data=secs*300+usec*3/10000;
+					data=threeHundredthsSince12AM(secs,usec);
 				}
 				if (fmt->tds5type==TDS5_TYPE_DATEN ||
 					fmt->tds5type==TDS5_TYPE_TIMEN) {
@@ -15493,7 +15501,8 @@ void sqlrprotocol_tds::dateTime(const char *datetime,
 	// FIXME: there's got to be a less iterative way to do leap years
 
 	// calculate three-hundredths of a second since 12AM
-	*threehundredths=((hour*60*60+minute*60+second)*300)+(usec*3/10000);
+	*threehundredths=threeHundredthsSince12AM(
+				(uint32_t)(hour*60*60+minute*60+second),usec);
 
 	debugStart("datetime");
 	debugWrite("string: %s",datetime);

@@ -172,6 +172,9 @@ class SQLRSERVER_DLLSPEC sapconnection : public sqlrserverconnection {
 		// charset expansion factor - see deflateColumnSize()
 		uint32_t	csexpansion;
 
+		// whether the server accepts bigdatetime parameters
+		bool		bigdatetime;
+
 		char		*dbversion;
 
 		static	stringbuffer	errorstring;
@@ -231,6 +234,8 @@ struct datebind {
         int32_t         *microsecond;
         const char      **tz;
 	bool		*isnegative;
+	CS_INT		datatype;
+	CS_INT		datasize;
 };
 
 class SQLRSERVER_DLLSPEC sapcursor : public sqlrservercursor {
@@ -473,6 +478,7 @@ sapconnection::sapconnection(sqlrservercontroller *cont) :
 					sqlrserverconnection(cont) {
 	dbused=false;
 	csexpansion=1;
+	bigdatetime=false;
 	dbversion=NULL;
 	initDatabaseFeatures();
 }
@@ -1299,6 +1305,20 @@ bool sapconnection::logIn(const char **error, const char **warning) {
 		*error=logInError("Failed to connect to the database",6);
 		return false;
 	}
+
+	// Date output binds are declared as bigdatetime when the server
+	// accepts it, so they keep their microseconds.  The capability is
+	// only reported once the connection is open, and only at
+	// CS_VERSION_155 and later.
+	bigdatetime=false;
+	#if defined(CS_BIGDATETIME_TYPE) && defined(CS_DATA_BIGDATETIME)
+	CS_BOOL	bigdatetimecap=CS_FALSE;
+	if (ct_capability(dbconn,CS_GET,CS_CAP_REQUEST,CS_DATA_BIGDATETIME,
+				(CS_VOID *)&bigdatetimecap)==CS_SUCCEED &&
+				bigdatetimecap==CS_TRUE) {
+		bigdatetime=true;
+	}
+	#endif
 
 	// If the password has expired then the db may allow the login
 	// but every query will fail.  "ping" the db here to see if we get
@@ -4147,7 +4167,23 @@ bool sapcursor::outputBind(const char *variable,
 	// see sapcursor::outputBind(...,char *value,...) for why this matters
 	bool	isreturnvalue=(hasreturnvalue && !outbindindex);
 
+	// The server converts the output value to the declared type, and
+	// datetime would round it to 1/300 of a second, so use bigdatetime
+	// if the server supports it.  The value must be fetched as the same
+	// type it was declared as.
+	CS_INT	datatype=CS_DATETIME_TYPE;
+	CS_INT	datasize=sizeof(CS_DATETIME);
+	#if defined(CS_BIGDATETIME_TYPE) && defined(CS_DATA_BIGDATETIME)
+	if (sapconn->bigdatetime) {
+		datatype=CS_BIGDATETIME_TYPE;
+		datasize=sizeof(CS_BIGDATETIME);
+	}
+	#endif
+
+	// outbindtype marks this as a date bind, whichever type is declared
 	outbindtype[outbindindex]=CS_DATETIME_TYPE;
+	outbinddates[outbindindex].datatype=datatype;
+	outbinddates[outbindindex].datasize=datasize;
 	outbinddates[outbindindex].year=year;
 	outbinddates[outbindindex].month=month;
 	outbinddates[outbindindex].day=day;
@@ -4165,7 +4201,7 @@ bool sapcursor::outputBind(const char *variable,
 	}
 
 	setParameterName(variable,variablesize);
-	parameter[paramindex].datatype=CS_DATETIME_TYPE;
+	parameter[paramindex].datatype=datatype;
 	parameter[paramindex].maxlength=CS_UNUSED;
 	parameter[paramindex].status=CS_RETURN;
 	parameter[paramindex].locale=NULL;
@@ -4619,13 +4655,14 @@ bool sapcursor::fetchOutputParams() {
 		paramcolumn[i].count=1;
 
 		// if the stored procedure returns dates, then use the
-		// datetime type instead of the template's char type
+		// type that the date was declared as instead of the
+		// template's char type
 		CS_INT	outidx=i+outbindoffset;
 		if (outidx<(CS_INT)outbindindex &&
 			outbindtype[outidx]==CS_DATETIME_TYPE) {
-			paramcolumn[i].datatype=CS_DATETIME_TYPE;
+			paramcolumn[i].datatype=outbinddates[outidx].datatype;
 			paramcolumn[i].format=CS_FMT_UNUSED;
-			paramcolumn[i].maxlength=sizeof(CS_DATETIME);
+			paramcolumn[i].maxlength=outbinddates[outidx].datasize;
 		}
 
 		if (ct_bind(cmd,i+1,&paramcolumn[i],
@@ -4710,20 +4747,30 @@ bool sapcursor::fetchOutputParams() {
 			} else if (outbindtype[outidx]==CS_DATETIME_TYPE) {
 
 				// convert to a CS_DATEREC
+				datebind	*db=&outbinddates[outidx];
 				CS_DATEREC	dr;
 				bytestring::zero(&dr,sizeof(CS_DATEREC));
 				cs_dt_crack(sapconn->context,
-						CS_DATETIME_TYPE,
+						db->datatype,
 						(CS_VOID *)paramdata[i],&dr);
 
-				datebind	*db=&outbinddates[outidx];
+				// datetime cracks to milliseconds,
+				// bigdatetime to fractions of datesecprec
+				int64_t	usec=(int64_t)dr.datemsecond*1000;
+				if (db->datatype!=CS_DATETIME_TYPE &&
+							dr.datesecprec>0) {
+					usec=(int64_t)dr.datesecfrac*
+							1000000/
+							dr.datesecprec;
+				}
+
 				*(db->year)=dr.dateyear;
 				*(db->month)=dr.datemonth+1;
 				*(db->day)=dr.datedmonth;
 				*(db->hour)=dr.datehour;
 				*(db->minute)=dr.dateminute;
 				*(db->second)=dr.datesecond;
-				*(db->microsecond)=dr.datesecfrac;
+				*(db->microsecond)=(int32_t)usec;
 				*(db->tz)=NULL;
 				*(db->isnegative)=false;
 			}

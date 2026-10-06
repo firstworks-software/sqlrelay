@@ -10989,9 +10989,10 @@ int main(int argc, char **argv) {
 	// bigdatetime or bigtime, and through sqlrelay only, since a native
 	// ase answers sap's ct-lib at CS_VERSION_100 with error 7737 for a
 	// bigdatetime and fails the all-null call.  The expected values are
-	// what a native ase sends at CS_VERSION_160.  Bound as CS_CHAR a
-	// value displays to the minute, so the seconds and fractions are not
-	// checked here.
+	// what a native ase sends at CS_VERSION_160.  Each is bound as its
+	// own type and checked raw, so the seconds and fractions are checked
+	// too (#10523): a time is in 1/300 s ticks, and .123 and .999 are
+	// not multiples of 3 ticks.
 	if (tds5 && issybase && issqlrelay) {
 
 		const char	*binddateprocs[2]={"binddateproc",
@@ -11013,19 +11014,27 @@ int main(int argc, char **argv) {
 			"create procedure binddateproc "
 				"@pd date output, @pt time output, "
 				"@pbdt bigdatetime output, "
-				"@pbt bigtime output as "
+				"@pbt bigtime output, "
+				"@pt2 time output, "
+				"@pt3 time output as "
 				"select @pd = '2001-02-03' "
 				"select @pt = '13:14:15.500' "
 				"select @pbdt = '2001-02-03 04:05:06.123456' "
-				"select @pbt = '07:08:09.654321'",
+				"select @pbt = '07:08:09.654321' "
+				"select @pt2 = '13:14:15.123' "
+				"select @pt3 = '23:59:59.999'",
 			"create procedure binddatenullproc "
 				"@pd date output, @pt time output, "
 				"@pbdt bigdatetime output, "
-				"@pbt bigtime output as "
+				"@pbt bigtime output, "
+				"@pt2 time output, "
+				"@pt3 time output as "
 				"select @pd = null "
 				"select @pt = null "
 				"select @pbdt = null "
-				"select @pbt = null"
+				"select @pbt = null "
+				"select @pt2 = null "
+				"select @pt3 = null"
 		};
 		for (CS_INT i=0; i<2; i++) {
 			assertEquals(ct_command(cmd,CS_LANG_CMD,
@@ -11047,21 +11056,27 @@ int main(int argc, char **argv) {
 		}
 		stdoutput.printf("\n");
 
-		CS_DATAFMT	binddatefmt[4];
-		const char	*binddatename[4]={"@pd","@pt","@pbdt","@pbt"};
-		CS_INT		binddatetype[4]={
+		CS_DATAFMT	binddatefmt[6];
+		const char	*binddatename[6]={
+					"@pd","@pt","@pbdt","@pbt","@pt2","@pt3"};
+		CS_INT		binddatetype[6]={
 					CS_DATE_TYPE,CS_TIME_TYPE,
-					CS_BIGDATETIME_TYPE,CS_BIGTIME_TYPE};
-		CS_INT		binddatemaxlength[4]={4,4,8,8};
-		CS_INT		binddatescale[4]={0,0,6,6};
-		CS_INT		binddatestatus[4]={
+					CS_BIGDATETIME_TYPE,CS_BIGTIME_TYPE,
+					CS_TIME_TYPE,CS_TIME_TYPE};
+		CS_INT		binddatemaxlength[6]={4,4,8,8,4,4};
+		CS_INT		binddatescale[6]={0,0,6,6,0,0};
+		CS_INT		binddatestatus[6]={
 					CS_RETURN,CS_RETURN,
 					CS_RETURN|CS_CANBENULL,
-					CS_RETURN|CS_CANBENULL};
-		const char	*binddatevalue[4]={
-					"Feb  3 2001"," 1:14PM",
-					"Feb  3 2001  4:05AM"," 7:08AM"};
-		CS_INT		binddatevaluelen[4]={12,8,20,8};
+					CS_RETURN|CS_CANBENULL,
+					CS_RETURN,CS_RETURN};
+
+		// days since 1900-01-01, 1/300 s since midnight, microseconds
+		// since 0000-01-01 and microseconds since midnight
+		const char	*binddatevalue[6]={
+					"36923","14296650",
+					"63148392306123456","25689654321",
+					"14296537","25919999"};
 
 		// the input side of each output parameter - 1900-01-01 and
 		// midnight, so that sqlrelay gets a valid value to bind
@@ -11069,11 +11084,28 @@ int main(int argc, char **argv) {
 		CS_TIME		bindtimein=0;
 		CS_BIGDATETIME	bindbigdatetimein=59958230400000000ULL;
 		CS_BIGTIME	bindbigtimein=0;
-		CS_VOID		*binddatein4[4]={
+		CS_VOID		*binddatein6[6]={
 					(CS_VOID *)&binddatein,
 					(CS_VOID *)&bindtimein,
 					(CS_VOID *)&bindbigdatetimein,
-					(CS_VOID *)&bindbigtimein};
+					(CS_VOID *)&bindbigtimein,
+					(CS_VOID *)&bindtimein,
+					(CS_VOID *)&bindtimein};
+
+		// the output side - bound raw
+		CS_DATE		binddateout=0;
+		CS_TIME		bindtimeout=0;
+		CS_BIGDATETIME	bindbigdatetimeout=0;
+		CS_BIGTIME	bindbigtimeout=0;
+		CS_TIME		bindtime2out=0;
+		CS_TIME		bindtime3out=0;
+		CS_VOID		*binddateout6[6]={
+					(CS_VOID *)&binddateout,
+					(CS_VOID *)&bindtimeout,
+					(CS_VOID *)&bindbigdatetimeout,
+					(CS_VOID *)&bindbigtimeout,
+					(CS_VOID *)&bindtime2out,
+					(CS_VOID *)&bindtime3out};
 
 		for (CS_INT p=0; p<2; p++) {
 
@@ -11084,7 +11116,13 @@ int main(int argc, char **argv) {
 			assertEquals(ct_command(cmd,CS_RPC_CMD,
 					(CS_CHAR *)binddateprocs[p],
 					CS_NULLTERM,CS_UNUSED),CS_SUCCEED);
-			for (CS_INT i=0; i<4; i++) {
+			binddateout=0;
+			bindtimeout=0;
+			bindbigdatetimeout=0;
+			bindbigtimeout=0;
+			bindtime2out=0;
+			bindtime3out=0;
+			for (CS_INT i=0; i<6; i++) {
 				bytestring::zero(&(binddatefmt[i]),
 							sizeof(CS_DATAFMT));
 				binddatefmt[i].datatype=binddatetype[i];
@@ -11096,7 +11134,7 @@ int main(int argc, char **argv) {
 				binddatefmt[i].namelen=
 					charstring::getLength(binddatename[i]);
 				assertEquals(ct_param(cmd,&(binddatefmt[i]),
-						binddatein4[i],
+						binddatein6[i],
 						binddatemaxlength[i],0),
 						CS_SUCCEED);
 			}
@@ -11123,11 +11161,10 @@ int main(int argc, char **argv) {
 			assertEquals(ct_res_info(cmd,CS_NUMDATA,
 						(CS_VOID *)&ncols,CS_UNUSED,
 						(CS_INT *)NULL),CS_SUCCEED);
-			assertEquals(ncols,4);
-			char		binddatedata[4][256];
-			CS_INT		binddatedatalength[4];
-			CS_SMALLINT	binddatedataindicator[4];
-			for (CS_INT i=0; i<ncols && i<4; i++) {
+			assertEquals(ncols,6);
+			CS_INT		binddatedatalength[6];
+			CS_SMALLINT	binddatedataindicator[6];
+			for (CS_INT i=0; i<ncols && i<6; i++) {
 				bytestring::zero(&(binddatefmt[i]),
 							sizeof(CS_DATAFMT));
 				assertEquals(ct_describe(cmd,i+1,
@@ -11144,12 +11181,16 @@ int main(int argc, char **argv) {
 						(isnull)?(CS_RETURN|CS_CANBENULL):
 							binddatestatus[i]);
 				assertEquals(binddatefmt[i].usertype,0);
-				bytestring::zero(binddatedata[i],
-						sizeof(binddatedata[i]));
 				binddatedatalength[i]=-1;
 				binddatedataindicator[i]=-99;
-				assertEquals(ct_bind(cmd,i+1,&bindoutreadfmt,
-						(CS_VOID *)binddatedata[i],
+				CS_DATAFMT	rawfmt;
+				bytestring::zero(&rawfmt,sizeof(CS_DATAFMT));
+				rawfmt.datatype=binddatetype[i];
+				rawfmt.format=CS_FMT_UNUSED;
+				rawfmt.maxlength=binddatemaxlength[i];
+				rawfmt.count=1;
+				assertEquals(ct_bind(cmd,i+1,&rawfmt,
+						binddateout6[i],
 						&(binddatedatalength[i]),
 						&(binddatedataindicator[i])),
 						CS_SUCCEED);
@@ -11157,12 +11198,19 @@ int main(int argc, char **argv) {
 			assertEquals(ct_fetch(cmd,CS_UNUSED,CS_UNUSED,
 						CS_UNUSED,&rowsread),CS_SUCCEED);
 			assertEquals(rowsread,1);
-			for (CS_INT i=0; i<ncols && i<4; i++) {
-				assertEquals(binddatedata[i],
-						(isnull)?"":binddatevalue[i]);
+			for (CS_INT i=0; i<ncols && i<6; i++) {
+				stringbuffer	got;
+				if (binddatemaxlength[i]==4) {
+					got.append((uint64_t)(uint32_t)
+						*(CS_INT *)binddateout6[i]);
+				} else {
+					got.append((uint64_t)
+						*(CS_UBIGINT *)binddateout6[i]);
+				}
+				assertEquals(got.getString(),
+						(isnull)?"0":binddatevalue[i]);
 				assertEquals(binddatedatalength[i],
-						(isnull)?nulltermnulllength:
-							binddatevaluelen[i]);
+						binddatemaxlength[i]);
 				assertEquals(binddatedataindicator[i],
 						(isnull)?-1:0);
 			}
