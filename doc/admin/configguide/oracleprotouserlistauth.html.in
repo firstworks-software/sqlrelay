@@ -44,8 +44,6 @@ http://www.gnu.org/software/src-highlite -->
 
 <p>Oracle JDBC (ojdbc) uppercases an unquoted username before it puts it on the wire.  The <i>oracle_userlist</i> module compares usernames case-sensitively, so a user list entry only matches a login sent in the exact same case.  A username that ojdbc clients will use must be configured in the case ojdbc sends it, or configured twice, once in each case, so that both an ojdbc client and a client that sends the username as typed can log in.</p>
 
-<p>There is also an <i>oracle_database</i> auth module, structurally similar to <i>mysql_database</i>, but it only supports the <i>oracle_clear_password</i> method, and no protocol module SQL Relay ships ever selects that method for Oracle-protocol clients - they always authenticate with O5LOGON instead (see <a href="oracleprotolimitations.html">Limitations</a>).  As a result, database auth isn't currently reachable through the Oracle protocol listener, unlike with the MySQL and PostgreSQL protocols.</p>
-
 <hr/>
 
 <p><a href="index.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="index.html">Contents</a>&nbsp;&nbsp;&nbsp;<a href="oracleprotoconnectstringsauth.html"><img style="vertical-align: middle; " src="../../images/navprev.png"/></a> <a href="oracleprotoconnectstringsauth.html">Oracle Connect Strings Auth</a> | <a href="oracleprotoauth.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="oracleprotoauth.html">Oracle Authentication/Encryption Options</a> | <a href="oracleprotoforeignbackend.html">Oracle Foreign Backend</a> <a href="oracleprotoforeignbackend.html"><img style="vertical-align: middle; " src="../../images/navnext.png"/></a></p>
