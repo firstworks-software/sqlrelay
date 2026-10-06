@@ -54,11 +54,7 @@
 
 <a name="oracledateformat"/><h1>Date Format</h1>
 
-<p>A native Oracle client expects a DATE column to carry a time of day, not just a date.  Without any special handling, that time of day is lost before the Oracle protocol module ever sees the value: DATE columns are fetched using the connection's session-level NLS_DATE_FORMAT, which is typically DD-MON-RR, and that format has no time component.</p>
-
-<p>The fix is the <i>date_to_text_format</i> connect string parameter on the <b>connection</b> tag, not a listener attribute - see <a href="../configreference.html#oracle">SQL Relay Configuration Reference</a> for the full set of Oracle connect string options.  Setting it fetches DATE columns as Oracle's binary date type and converts them to text on the client side, in the given format, so the time of day survives.  It has no effect on the session, and it does not change how Oracle parses date literals going the other way, in inserts or where clauses.  It applies to DATE columns only; TIMESTAMP columns are unaffected.</p>
-
-<p>When an instance speaks the Oracle protocol, setting <i>date_to_text_format</i> on its connection is recommended, for example:</p>
+<p>Oracle clients expect DATE columns to include the time of day, but an Oracle back-end's default date format usually drops it.  To keep it, set the <i>date_to_text_format</i> parameter in the connection tag's connect string (see the <a href="../configreference.html#oracle">Configuration Reference</a>), for example:</p>
 
 <blockquote>
 <!-- Generator: GNU source-highlight 3.1.9
@@ -68,9 +64,7 @@ http://www.gnu.org/software/src-highlite -->
 <pre><tt><font color="#990000">&lt;</font><font color="#008080">connection</font> string<font color="#990000">=</font><font color="#FF0000">"user=exampleuser;password=examplepassword;oracle_sid=ora1;date_to_text_format=YYYY-MM-DD HH24:MI:SS"</font><font color="#990000">/&gt;</font></tt></pre>
 
 </blockquote>
-<p>( <b>WARNING:</b> Whatever format is chosen, the result is text that other code then has to parse back apart.  The Oracle protocol module parses it to build the binary date it sends to the client, and so do the C++ client API, the ODBC driver, and the server itself when it needs the parts of a date.  All of them look for one of a fixed set of delimiters, and the sets differ - the ODBC driver, for example, accepts /, - and : but not a dot.  So an exotic date_to_text_format could format cleanly in Oracle and still parse incorrectly downstream.  Stick to /, - and :, and use a numeric, fixed-width format, such as the one above.)</p>
-
-<p>Also note that if the connection's <i>maxfieldsize</i> is set small, it truncates the formatted date text the same way it truncates any other field, since the server truncates any field longer than <i>maxfieldsize</i>.</p>
+<p>DATE columns are then returned in that format.  TIMESTAMP columns, and how dates in queries are parsed, are unaffected.  Use a numeric, fixed-width format, with only /, - and : as delimiters, like the one above, or the date may not be parsed correctly.  Also make sure <i>maxfieldsize</i>, if set, is large enough not to truncate it.</p>
 
 <hr/>
 
