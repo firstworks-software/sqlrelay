@@ -1125,12 +1125,13 @@ sqlrprotocol_teradata::sqlrprotocol_teradata(sqlrservercontroller *cont,
 	if (!charstring::compare(
 		parameters->getAttributeValue("passthrough"),"enabled")) {
 
-		if (!charstring::compare(cont->getDbType(),"teradata")) {
+		if (!charstring::compare(
+					cont->getNativeDbType(),"teradata")) {
 			passthroughmode=PASSTHROUGHMODE_ENABLED;
 			debugWrite("enabled...");
 		} else {
 			passthroughmode=PASSTHROUGHMODE_HYBRID;
-			debugWrite("disabled (db!=teradata)...");
+			debugWrite("disabled (native db!=teradata)...");
 		}
 
 	} else if (!charstring::compare(
