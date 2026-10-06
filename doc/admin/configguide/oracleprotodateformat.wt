@@ -17,7 +17,7 @@ Oracle clients expect DATE columns to include the time of day, but an Oracle bac
 }}}
 }}}
 
-DATE columns are then returned in that format.  TIMESTAMP columns, and how dates in queries are parsed, are unaffected.  Use a numeric, fixed-width format, with only /, - and : as delimiters, like the one above, or the date may not be parsed correctly.  Also make sure //maxfieldsize//, if set, is large enough not to truncate it.
+DATE columns are then returned in that format.  TIMESTAMP columns, and how dates in queries are parsed, are unaffected.  Use a numeric, fixed-width format, with only /, - and : as delimiters, like the one above, or the date may not be parsed correctly.
 
 ----
 
