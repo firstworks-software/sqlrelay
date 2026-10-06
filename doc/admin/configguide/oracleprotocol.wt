@@ -21,7 +21,7 @@ If an instance speaks the Oracle client-server protocol, then any client that wi
 * [oracleprotologinattempts.html Login Attempts]
 * [oracleprotoserverversion.html Server Version]
 * [oracleprotoverifiertype.html Password Verifier Type]
-* [oracleprotobigchunkclr.html Big Chunk CLR Framing]
+* [oracleprotobigchunkclr.html Big Chunks]
 * [oracleprotocharsets.html Character Set Options]
 * [oracleprotodateformat.html Date Format]
 * [oracleprotoauth.html Authentication/Encryption Options]
