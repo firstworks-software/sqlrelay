@@ -168,7 +168,7 @@ http://www.gnu.org/software/src-highlite -->
 
   <li><b>sqlstate</b></li>
   <ul>
-    <li>the condition is true if the SQLSTATE the database reported for the error matches, without regard to case.  Unlike error text and numbers, SQLSTATE codes are standard and don't vary by database or locale.</li>
+    <li>the condition is true if the SQLSTATE the database reported for the error matches, without regard to case.  Unlike error text, SQLSTATE codes are standardized and don't vary by locale.</li>
     <li>if set, <b>error</b> is ignored on the same tag.  To match either one, use two <b>condition</b> tags.</li>
     <li>an empty value is the same as leaving it out.  If the database doesn't report a SQLSTATE for an error, the condition can't match on it.</li>
   </ul>

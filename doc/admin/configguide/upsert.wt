@@ -84,7 +84,7 @@ You can specify the error by number instead of by string:
 
 Note that in this example, the normalize query translation is loaded prior to the upsert trigger.  Pattern matching is substantially more reliable and efficient if the query has been normalized first.  See the [normalize.html#normalize normalize] query translation for more information.
 
-You can also specify the error by SQLSTATE, using a '''sqlstate''' attribute on the '''error''' tag.  '''sqlstate''' is independent of '''string''' and '''number''', the same way those two are independent of each other - if any one of the three matches, the insert is converted to an update.  Unlike error text, a SQLSTATE is locale-independent - a German-locale !PostgreSQL reporting a unique constraint violation still reports the same SQLSTATE, //23505//, that an English-locale one does.  And unlike error numbers on some backends, SQLSTATE codes aren't backend-specific magic numbers - they're standardized.  '''sqlstate''' is matched case-insensitively against the SQLSTATE the database reported for the error.  There's no built-in default; if the backend doesn't report a SQLSTATE for a given error, the '''sqlstate''' check simply has nothing to compare against and is skipped - never treated as a mismatch - and matching falls back to whatever '''string''' and/or '''number''' attributes are also configured, exactly as before.
+You can also specify the error by SQLSTATE, using a '''sqlstate''' attribute on the '''error''' tag.  If any one of '''string''', '''number''' or '''sqlstate''' matches, the insert is converted to an update.  Unlike error text, SQLSTATE codes are standardized and don't vary by locale (eg. a unique constraint violation is 23505 on !PostgreSQL in any language).  '''sqlstate''' is matched without regard to case.  If the database doesn't report a SQLSTATE for an error, only '''string''' and '''number''' are checked.
 
 If, for some reason, the trigger is unable to identify the primary key of the table, you can manually specify the primary key:
 
@@ -116,8 +116,8 @@ There are some considerations that need to be taken into account when using the 
 
 As noted in [triggers.html#triggers Triggers], above, trigger modules run in the order that they're listed in the config file.  When upsert is combined with the replay or savepoints module on the same connection, upsert must be listed after both of them:
 
-* replay must be listed before upsert.  Upsert clears the cursor error when it converts a failed insert into an update.  If replay is listed after upsert, it sees no error, and it can splice a stale last insert id into the insert that it logs.  The log also comes out in the wrong order, with the converted update ahead of the insert that provoked it, since upsert runs its update before replay has logged anything.
-* savepoints must be listed before upsert.  On !PostgreSQL, a failed insert leaves the transaction in an aborted state, and every later statement on that session fails until something rolls back.  Upsert's converted update is one of those statements, so it fails too.  If savepoints runs first, its after-execute rolls back to the savepoint, which clears the aborted state, and upsert's update then succeeds.  If upsert runs first, its after-execute fails and the trigger chain stops there, so savepoints never gets a chance to roll back.
+* replay must be listed before upsert, or replay may log the wrong last insert id, and log the converted update ahead of the insert.
+* savepoints must be listed before upsert, or, on !PostgreSQL, the converted update fails because the failed insert left the transaction in an aborted state.
 
 ----
 

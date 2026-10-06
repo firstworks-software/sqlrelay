@@ -64,7 +64,7 @@ The '''condition''' tag supports the following attributes:
  * if numeric: the condition is true if the error code matches
  * if string: the condition is true if the error string contains the string
 * '''sqlstate'''
- * the condition is true if the SQLSTATE the database reported for the error matches, without regard to case.  Unlike error text and numbers, SQLSTATE codes are standard and don't vary by database or locale.
+ * the condition is true if the SQLSTATE the database reported for the error matches, without regard to case.  Unlike error text, SQLSTATE codes are standardized and don't vary by locale.
  * if set, '''error''' is ignored on the same tag.  To match either one, use two '''condition''' tags.
  * an empty value is the same as leaving it out.  If the database doesn't report a SQLSTATE for an error, the condition can't match on it.
 * '''scope'''

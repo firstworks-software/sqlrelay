@@ -145,7 +145,7 @@ http://www.gnu.org/software/src-highlite -->
 </blockquote>
 <p>Note that in this example, the normalize query translation is loaded prior to the upsert trigger.  Pattern matching is substantially more reliable and efficient if the query has been normalized first.  See the <a href="normalize.html#normalize">normalize</a> query translation for more information.</p>
 
-<p>You can also specify the error by SQLSTATE, using a <b>sqlstate</b> attribute on the <b>error</b> tag.  <b>sqlstate</b> is independent of <b>string</b> and <b>number</b>, the same way those two are independent of each other - if any one of the three matches, the insert is converted to an update.  Unlike error text, a SQLSTATE is locale-independent - a German-locale PostgreSQL reporting a unique constraint violation still reports the same SQLSTATE, <i>23505</i>, that an English-locale one does.  And unlike error numbers on some backends, SQLSTATE codes aren't backend-specific magic numbers - they're standardized.  <b>sqlstate</b> is matched case-insensitively against the SQLSTATE the database reported for the error.  There's no built-in default; if the backend doesn't report a SQLSTATE for a given error, the <b>sqlstate</b> check simply has nothing to compare against and is skipped - never treated as a mismatch - and matching falls back to whatever <b>string</b> and/or <b>number</b> attributes are also configured, exactly as before.</p>
+<p>You can also specify the error by SQLSTATE, using a <b>sqlstate</b> attribute on the <b>error</b> tag.  If any one of <b>string</b>, <b>number</b> or <b>sqlstate</b> matches, the insert is converted to an update.  Unlike error text, SQLSTATE codes are standardized and don't vary by locale (eg. a unique constraint violation is 23505 on PostgreSQL in any language).  <b>sqlstate</b> is matched without regard to case.  If the database doesn't report a SQLSTATE for an error, only <b>string</b> and <b>number</b> are checked.</p>
 
 <p>If, for some reason, the trigger is unable to identify the primary key of the table, you can manually specify the primary key:</p>
 
@@ -245,8 +245,8 @@ http://www.gnu.org/software/src-highlite -->
 <p>As noted in <a href="triggers.html#triggers">Triggers</a>, above, trigger modules run in the order that they're listed in the config file.  When upsert is combined with the replay or savepoints module on the same connection, upsert must be listed after both of them:</p>
 
 <ul>
-  <li>replay must be listed before upsert.  Upsert clears the cursor error when it converts a failed insert into an update.  If replay is listed after upsert, it sees no error, and it can splice a stale last insert id into the insert that it logs.  The log also comes out in the wrong order, with the converted update ahead of the insert that provoked it, since upsert runs its update before replay has logged anything.</li>
-  <li>savepoints must be listed before upsert.  On PostgreSQL, a failed insert leaves the transaction in an aborted state, and every later statement on that session fails until something rolls back.  Upsert's converted update is one of those statements, so it fails too.  If savepoints runs first, its after-execute rolls back to the savepoint, which clears the aborted state, and upsert's update then succeeds.  If upsert runs first, its after-execute fails and the trigger chain stops there, so savepoints never gets a chance to roll back.</li>
+  <li>replay must be listed before upsert, or replay may log the wrong last insert id, and log the converted update ahead of the insert.</li>
+  <li>savepoints must be listed before upsert, or, on PostgreSQL, the converted update fails because the failed insert left the transaction in an aborted state.</li>
 </ul>
 
 <hr/>
