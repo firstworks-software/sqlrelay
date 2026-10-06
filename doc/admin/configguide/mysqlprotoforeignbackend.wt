@@ -40,7 +40,7 @@ Depending on the back-end, it might also be necessary to make some other configu
 * use [sessionqueries.html#sessionqueries Session Queries]
 * use one of the [mysqlprotospecialpurpose.html Special-Purpose Options]
 
-In your app, it might stil be necessary to modify some queries to use the syntax of the foreign database, or even update some code, but a full rewrite of the app should not be necessary.
+In your app, it might still be necessary to modify some queries to use the syntax of the foreign database, or even update some code, but a full rewrite of the app should not be necessary.
 
 ----
 
