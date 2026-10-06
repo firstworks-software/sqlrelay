@@ -9,17 +9,13 @@
 [=#mysqlclientprotocol]
 = Client Protocol Flags =
 
-Separately from the handshake packet version, the handshake also advertises a set of capability flags that tell the client what the server can do.  Two of those flags - CLIENT_PROTOCOL_41 (the 4.1-and-later wire format) and CLIENT_PLUGIN_AUTH (pluggable authentication methods) - are controlled by the //clientprotocol// attribute on the listener tag.
-
-Setting //clientprotocol// to "41" (the default) advertises both flags, which is what every currently supported !MySQL/MariaDB client expects.  Setting it to any other explicit value clears both flags, for a client too old to speak the 4.1 protocol at all.  Leaving it unset, or setting it to 0 or to something that isn't a number, is the same as setting it to 41.
+The //clientprotocol// option sets which client protocol the !MySQL protocol module offers.  It defaults to 41, which is what every currently supported !MySQL/MariaDB client expects.  Set it to anything else (eg. 9) only for clients older than !MySQL 4.1.  0, or anything that isn't a number, is the same as leaving it out.  It has no effect when //handshake// is set to 9 (see [mysqlprotohandshake.html Handshake Protocol Version]).
 
 {{{#!blockquote
 {{{#!code
 @parts/sqlrelay-mysqlfeclientprotocol.conf@
 }}}
 }}}
-
-As with //handshake// (see [mysqlprotohandshake.html Handshake Protocol Version]), there is normally no reason to set this.  It exists only for a client old enough to predate the 4.1 protocol.  It has no effect when //handshake// is also set to send the legacy protocol 9 packet, which carries no capability flags at all.
 
 ----
 

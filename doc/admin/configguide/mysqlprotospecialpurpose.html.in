@@ -10,13 +10,7 @@
 
 <h2>Mapping zero-scale DECIMAL to BIGINT</h2>
 
-<p>When targeting a foreign back-end...</p>
-
-<p>Some back-end databases, like Oracle, don't have integer types.  An integer type is really just a DECIMAL with a scale of 0.</p>
-
-<p>By default, the MySQL protocol module maps zero-scale DECIMAL types to the MySQL DECIMAL type.  But you might want to map them to the MySQL BIGINT type instead.</p>
-
-<p>The <i>zeroscaledecimaltobigint</i> option instructs the module to do this mapping.</p>
+<p>Some back-end databases (eg. Oracle) have no integer types, and store integers as DECIMALs with a scale of 0.  By default, the MySQL protocol module reports these to the client as DECIMAL.  The <i>zeroscaledecimaltobigint</i> option makes it report them as BIGINT instead.</p>
 
 <blockquote>
 <!-- Generator: GNU source-highlight 3.1.9
@@ -39,13 +33,7 @@ http://www.gnu.org/software/src-highlite -->
 </blockquote>
 <h2>Mapping DATE to DATETIME</h2>
 
-<p>When targeting a foreign back-end...</p>
-
-<p>Some back-end databases, like Oracle, don't have separate DATE and DATETIME types.  Instead, they just have a DATE type, which can store date and time parts, and which parts are returned depend on a parameter like NLS_DATE_FORMAT.</p>
-
-<p>By default, the MySQL protocol module maps the DATE type to the MySQL DATE type.  But, if you are using DATE type fields to store date/times and have the database configured to return date and time parts, then you might want the DATE type mapped to the MySQL DATETIME type.</p>
-
-<p>The <i>datetodatetime</i> option instructs the module to do this mapping.</p>
+<p>Some back-end databases (eg. Oracle) have a single DATE type that can store both a date and a time.  By default, the MySQL protocol module reports it to the client as DATE.  If the back-end returns times in DATE columns, the <i>datetodatetime</i> option makes the module report them as DATETIME instead.</p>
 
 <blockquote>
 <!-- Generator: GNU source-highlight 3.1.9
@@ -68,11 +56,7 @@ http://www.gnu.org/software/src-highlite -->
 </blockquote>
 <h2>Supporting Older MariaDB JDBC Drivers</h2>
 
-<p>Older MariaDB JDBC drivers had a bug related to fetching the server's capability flags, and would reliably throw a NullPointerException when attempting to connect.</p>
-
-<p>(I'm not sure exactly what versions this bug is present in.  It's present in version 1.4.6, but fixed by 2.1.1.)</p>
-
-<p>The <i>oldmariadbjdbcservercapabilitieshack</i> option instructs the module to return server capability flags that don't upset the old driver.</p>
+<p>Older MariaDB JDBC drivers (eg. 1.4.6) throw a NullPointerException when connecting.  The <i>oldmariadbjdbcservercapabilitieshack</i> option works around this.</p>
 
 <blockquote>
 <!-- Generator: GNU source-highlight 3.1.9

@@ -54,9 +54,7 @@
 
 <a name="mysqlclientprotocol"/><h1>Client Protocol Flags</h1>
 
-<p>Separately from the handshake packet version, the handshake also advertises a set of capability flags that tell the client what the server can do.  Two of those flags - CLIENT_PROTOCOL_41 (the 4.1-and-later wire format) and CLIENT_PLUGIN_AUTH (pluggable authentication methods) - are controlled by the <i>clientprotocol</i> attribute on the listener tag.</p>
-
-<p>Setting <i>clientprotocol</i> to "41" (the default) advertises both flags, which is what every currently supported MySQL/MariaDB client expects.  Setting it to any other explicit value clears both flags, for a client too old to speak the 4.1 protocol at all.  Leaving it unset, or setting it to 0 or to something that isn't a number, is the same as setting it to 41.</p>
+<p>The <i>clientprotocol</i> option sets which client protocol the MySQL protocol module offers.  It defaults to 41, which is what every currently supported MySQL/MariaDB client expects.  Set it to anything else (eg. 9) only for clients older than MySQL 4.1.  0, or anything that isn't a number, is the same as leaving it out.  It has no effect when <i>handshake</i> is set to 9 (see <a href="mysqlprotohandshake.html">Handshake Protocol Version</a>).</p>
 
 <blockquote>
 <!-- Generator: GNU source-highlight 3.1.9
@@ -77,8 +75,6 @@ http://www.gnu.org/software/src-highlite -->
 </tt></pre>
 
 </blockquote>
-<p>As with <i>handshake</i> (see <a href="mysqlprotohandshake.html">Handshake Protocol Version</a>), there is normally no reason to set this.  It exists only for a client old enough to predate the 4.1 protocol.  It has no effect when <i>handshake</i> is also set to send the legacy protocol 9 packet, which carries no capability flags at all.</p>
-
 <hr/>
 
 <p><a href="index.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="index.html">Contents</a>&nbsp;&nbsp;&nbsp;<a href="mysqlprotohandshake.html"><img style="vertical-align: middle; " src="../../images/navprev.png"/></a> <a href="mysqlprotohandshake.html">MySQL Handshake Protocol Version</a> | <a href="mysqlprotocol.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="mysqlprotocol.html">MySQL Protocol</a> | <a href="mysqlprotoauth.html">MySQL Authentication/Encryption Options</a> <a href="mysqlprotoauth.html"><img style="vertical-align: middle; " src="../../images/navnext.png"/></a></p>

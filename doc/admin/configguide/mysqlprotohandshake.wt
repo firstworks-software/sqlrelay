@@ -9,17 +9,13 @@
 [=#mysqlhandshake]
 = Handshake Protocol Version =
 
-Before a connecting client sends anything, the !MySQL protocol module speaks first: it sends a handshake packet announcing which version of the wire protocol it supports.  Clients read that packet to decide how to format everything that follows.  Modern clients expect the modern handshake packet, known as protocol version 10.  Only a client too old to have ever supported !MySQL 4.1's authentication still expects the legacy handshake packet, protocol version 9.
-
-The //handshake// attribute on the listener tag chooses which one the module sends.  Setting it to anything other than 10 sends the legacy protocol version 9 handshake instead; 9 is the conventional value to use.  Leaving it out, or setting it to 0 or to something that isn't a number, is the same as setting it to 10.
+The //handshake// option sets which version of the initial handshake the !MySQL protocol module sends to clients.  It defaults to 10, which is what modern clients expect.  Set it to 9 only for clients older than !MySQL 4.1.  Any other number is treated as 9, except 0, which is the same as leaving it out, as is anything that isn't a number.  Modern clients can't connect when it is set to 9.
 
 {{{#!blockquote
 {{{#!code
 @parts/sqlrelay-mysqlfehandshake.conf@
 }}}
 }}}
-
-There is normally no reason to set this.  It exists only for a client old enough to require the legacy handshake, and switching it on for a modern client doesn't degrade gracefully - the client simply fails to understand the packet.
 
 ----
 
