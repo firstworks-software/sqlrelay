@@ -27,9 +27,7 @@ Note that this is not a setting about the back-end database.  It describes only 
 }}}
 }}}
 
-An instance with a 9i listener needs one more thing: a back-end database of its own.  A client old enough to speak OCI7 is too old to authenticate to the same modern database the other verifiertype settings talk to, so a 9i listener can't share a connections tag with an 11g or 12c one.  Give it a separate instance, with its own connections tag pointing at a database old enough for the client to log in to.
-
-The shape of that instance is otherwise ordinary: a listener tag with verifiertype="9i", and a connections tag pointing at the older backend, as shown below.
+A 9i listener can share an instance, and its back-end database, with a modern one.  Just give it its own port, as shown below.
 
 {{{#!blockquote
 {{{#!code
