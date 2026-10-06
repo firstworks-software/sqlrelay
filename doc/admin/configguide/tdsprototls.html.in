@@ -55,19 +55,19 @@ http://www.gnu.org/software/src-highlite -->
 
 </ul>
 
-<p>TDS negotiates encryption in the PRELOGIN exchange, before the login is sent, and the module answers with what the client asked for:</p>
+<p>How much of the session is encrypted depends on the client:</p>
 
 <ul>
   <li>A client that requires encryption gets the whole session encrypted.</li>
-  <li>A client that is merely willing to encrypt gets only its login encrypted.  The rest of the session runs in the clear.  This is what a Microsoft SQL Server does by default, and what most TDS clients ask for unless they are configured otherwise.</li>
-  <li>A client that says it doesn't support encryption, or that omits the encryption option entirely, isn't pushed into a handshake it never offered.  Its login is refused with a "TLS required" error instead.</li>
+  <li>A client that is only willing to encrypt (the default for most clients) gets only its login encrypted.</li>
+  <li>A client that doesn't support encryption is refused with a "TLS required" error.</li>
 </ul>
 
-<p>Which of these a client asks for is a client-side setting.  With freetds, for example, it is the <i>encryption</i> setting in freetds.conf, and a client that validates the server's certificate also needs a <i>ca file</i> there.</p>
+<p>Which of these a client asks for is set on the client (eg. the <i>encryption</i> setting in freetds.conf).</p>
 
 <h2>Mutual Authentication</h2>
 
-<p>The <b>tlsvalidate</b> and <b>tlsca</b> attributes described for the <a href="sqlrclientprototls.html">SQLRClient</a>, <a href="mysqlprototls.html">MySQL</a>, and <a href="postgresqlprototls.html">PostgreSQL</a> protocols are honored by the TDS module as well, and enable mutual authentication - the server requests and validates a certificate from the client.  Note, though, that the freetds client cannot present a client certificate, so mutual authentication can only be used with clients that can.</p>
+<p>The <b>tlsvalidate</b> and <b>tlsca</b> attributes described for the <a href="sqlrclientprototls.html">SQLRClient</a>, <a href="mysqlprototls.html">MySQL</a>, and <a href="postgresqlprototls.html">PostgreSQL</a> protocols are honored by the TDS module as well, and enable mutual authentication - the server requests and validates a certificate from the client.  Not all clients can present a client certificate (eg. FreeTDS).</p>
 
 <h2>Performance Considerations</h2>
 
