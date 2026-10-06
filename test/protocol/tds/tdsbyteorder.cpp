@@ -55,6 +55,14 @@ static const unsigned char	TOKEN_ROWFMT=0xEE;
 // the datatype byte pretds7typemap[] maps an integer column to
 static const unsigned char	TDS5_TYPE_INTN=0x26;
 
+// the tokens and type a unitext parameter is sent with - see
+// preTds7ParamFmtRead(), preTds7ParamsRead() and preTds7ParamValueRead()
+// in src/protocols/tds.cpp
+static const unsigned char	TDS5_TOKEN_PARAMFMT=0xEC;
+static const unsigned char	TDS5_TOKEN_PARAMS=0xD7;
+static const unsigned char	TDS5_TYPE_UNITEXT=0xAE;
+static const unsigned char	TDS5_LANGUAGE_PARAMS=0x01;
+
 // pre-tds7 login record field sizes - see the PRE_TDS7_*_SIZE defines and
 // preTds7Login() in src/protocols/tds.cpp
 static const size_t	NAME_SIZE=30;
@@ -99,6 +107,17 @@ static const unsigned char	BE_TYPE_FLAGS[TYPE_FLAGS_SIZE]=
 // name so both connections get a rowfmt of the same length.
 static const char	*QUERY="select convert(int,258) as intcol";
 static const uint32_t	EXPECTED_VALUE=258;
+
+// the unitext query, and what it returns when the parameter arrived as
+// "abc".  The parameter is compared rather than selected because ase
+// allows a ? only in a where clause or a values list, and returning a
+// literal that the compare picked keeps the check independent of how the
+// backend types a bound string.  The text is plain ascii, so every utf-16
+// code unit is a zero byte and a letter - the order of the two is the
+// byte order, and a session that read a big-endian "abc" as little-endian
+// would compare U+6100 U+6200 U+6300 instead.
+static const char	*UNITEXT_QUERY="select 'matched' where ? = 'abc'";
+static const char	*UNITEXT_EXPECTED="matched";
 
 // a response is expected within this long; used on every read below so a
 // server that hangs instead of answering fails the test instead of hanging
@@ -250,6 +269,55 @@ static void buildLanguageToken(bytebuffer *body,
 	body->append((const unsigned char *)sql,sqllen);
 }
 
+// lay a 16-bit value out in the byte order the login declared
+static void appendUint16(bytebuffer *body, uint16_t value, bool bigendian) {
+	unsigned char	hi=(unsigned char)((value>>8)&0xff);
+	unsigned char	lo=(unsigned char)(value&0xff);
+	body->append((bigendian)?hi:lo);
+	body->append((bigendian)?lo:hi);
+}
+
+// build a tds 5.0 language token with one unitext parameter - the
+// language token with its params status bit set, then a paramfmt (0xEC)
+// token and a params (0xD7) token.  "value" is the parameter's bytes
+// exactly as they go on the wire, already in the declared byte order.
+// ct-lib refuses a unitext parameter (ct_param error 48), so no real
+// client can send this; see preTds7ParamFmtRead() and preTds7ParamsRead()
+// in src/protocols/tds.cpp for the layouts.
+//
+// The paramfmt is one parameter: a name length of 0, a status byte, a
+// 32-bit usertype, the datatype, a 32-bit size (unitext is varint 4) and
+// a locale length of 0.  The params token carries no length of its own;
+// a varint 4 value is a 32-bit length and the bytes.
+static void buildUnitextLanguageToken(bytebuffer *body,
+					const char *sql,
+					const unsigned char *value,
+					size_t valuesize,
+					bool bigendian) {
+
+	size_t	sqllen=charstring::getLength(sql);
+
+	body->append((unsigned char)TDS5_TOKEN_LANGUAGE);
+	appendUint32(body,(uint32_t)(sqllen+1),bigendian);
+	body->append((unsigned char)TDS5_LANGUAGE_PARAMS);
+	body->append((const unsigned char *)sql,sqllen);
+
+	body->append((unsigned char)TDS5_TOKEN_PARAMFMT);
+	// count, name length, status, usertype, datatype, size, locale
+	appendUint16(body,2+1+1+4+1+4+1,bigendian);
+	appendUint16(body,1,bigendian);
+	body->append((unsigned char)0);
+	body->append((unsigned char)0);
+	appendUint32(body,0,bigendian);
+	body->append((unsigned char)TDS5_TYPE_UNITEXT);
+	appendUint32(body,(uint32_t)valuesize,bigendian);
+	body->append((unsigned char)0);
+
+	body->append((unsigned char)TDS5_TOKEN_PARAMS);
+	appendUint32(body,(uint32_t)valuesize,bigendian);
+	body->append(value,valuesize);
+}
+
 // write one tds packet: an 8 byte header (type, status, big-endian size,
 // spid, packet id, window) followed by "datasize" bytes of payload - see
 // sqlrprotocol_tds::sendPacket()/recvPacket().  The header's size field
@@ -333,9 +401,14 @@ static bool readTdsResponse(inetsocketclient *sock,
 // response.  "bigendian" picks which typeflags block the login declares
 // and which order the language token's length field goes out in - nothing
 // else about the session differs between the two calls.
+//
+// When "unitext" isn't NULL the query is UNITEXT_QUERY, with the
+// "unitextsize" bytes at "unitext" sent as its unitext parameter instead.
 static bool runSession(const char *host, uint16_t port,
 				const char *user, const char *password,
-				bool bigendian, bytebuffer *response) {
+				bool bigendian, bytebuffer *response,
+				const unsigned char *unitext=NULL,
+				size_t unitextsize=0) {
 
 	const char	*label=(bigendian)?"big-endian":"little-endian";
 
@@ -383,7 +456,12 @@ static bool runSession(const char *host, uint16_t port,
 	}
 
 	bytebuffer	querybody;
-	buildLanguageToken(&querybody,QUERY,bigendian);
+	if (unitext) {
+		buildUnitextLanguageToken(&querybody,UNITEXT_QUERY,
+					unitext,unitextsize,bigendian);
+	} else {
+		buildLanguageToken(&querybody,QUERY,bigendian);
+	}
 	if (!sendTdsPacket(&sock,PRE_TDS7_NORMAL,
 				(const unsigned char *)querybody.getBuffer(),
 				querybody.getSize())) {
@@ -659,6 +737,79 @@ static void reportIdentical(const char *label,
 	}
 }
 
+// does "response" hold "needle"?
+static bool contains(bytebuffer *response, const char *needle) {
+	size_t			needlesize=charstring::getLength(needle);
+	const unsigned char	*rp=(const unsigned char *)response->getBuffer();
+	size_t			size=response->getSize();
+	for (size_t i=0; i+needlesize<=size; i++) {
+		if (!bytestring::compare(rp+i,needle,needlesize)) {
+			return true;
+		}
+	}
+	return false;
+}
+
+// A unitext parameter is utf-16 in the byte order the login declared, so
+// "abc" has to arrive as "abc" in both sessions, and an odd number of
+// bytes can't be utf-16 in either one and has to be refused.  The
+// response isn't parsed - its column type is whatever the backend makes
+// of a literal - so the literal is looked for in the raw bytes, which is
+// enough: a session that mis-decoded the parameter doesn't produce it.
+static void unitextTests(const char *host, uint16_t port,
+				const char *user, const char *password) {
+
+	stdoutput.printf("\n====== #10521 pre-tds7 unitext parameter "
+				"byte order ======\n\n");
+
+	// "abc" as utf-16, little-endian then big-endian
+	static const unsigned char	leabc[]={'a',0,'b',0,'c',0};
+	static const unsigned char	beabc[]={0,'a',0,'b',0,'c'};
+
+	// five bytes: two and a half code units
+	static const unsigned char	odd[]={'a',0,'b',0,'c'};
+
+	for (int be=0; be<2; be++) {
+
+		const char	*label=(be)?"big-endian":"little-endian";
+		bool		bigendian=(be!=0);
+		stdoutput.printf("%s:\n",label);
+
+		bytebuffer	response;
+		bool	ok=runSession(host,port,user,password,bigendian,
+					&response,
+					(bigendian)?beabc:leabc,
+					sizeof(leabc));
+		report("  unitext session",ok);
+		if (ok) {
+			bool	decoded=contains(&response,UNITEXT_EXPECTED);
+			report("  unitext value decoded",decoded);
+			if (!decoded) {
+				dump("response",(const unsigned char *)
+							response.getBuffer(),
+							response.getSize());
+			}
+		}
+
+		bytebuffer	oddresponse;
+		ok=runSession(host,port,user,password,bigendian,
+					&oddresponse,odd,sizeof(odd));
+		report("  odd-size unitext session",ok);
+		if (ok) {
+			bool	refused=(contains(&oddresponse,
+					"Illegal byte sequence encountered "
+					"in Unicode data.") &&
+				!contains(&oddresponse,UNITEXT_EXPECTED));
+			report("  odd-size unitext refused",refused);
+			if (!refused) {
+				dump("response",(const unsigned char *)
+							oddresponse.getBuffer(),
+							oddresponse.getSize());
+			}
+		}
+	}
+}
+
 int main(int argc, char **argv) {
 
 	stdoutput.printf("\n====== #9476 pre-tds7 byte order ======\n\n");
@@ -758,6 +909,8 @@ int main(int argc, char **argv) {
 	// left out, since a nonzero one would have to be reversed instead
 	reportIdentical("usertype identical (always 0)",
 			le.usertype,be.usertype,sizeof(le.usertype));
+
+	unitextTests(host,port,user,password);
 
 	if (status==0) {
 		stdoutput.printf("\n\033[34mAll tests succeeded\033[0m\n");

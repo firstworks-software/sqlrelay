@@ -14517,13 +14517,29 @@ bool sqlrprotocol_tds::preTds7ParamValueRead(const byte_t **rpinout,
 
 		case TDS5_TYPE_UNITEXT:
 			{
-			// utf-16, so it needs converting rather than copying.
-			// the copy is because the value isn't necessarily
-			// aligned for a ucs2_t read.
-			size_t	length=size/sizeof(ucs2_t);
-			ucs2_t	*value16=new ucs2_t[length+1];
-			bytestring::copy(value16,value,
-						length*sizeof(ucs2_t));
+			// utf-16 code units in the byte order the login
+			// declared, so an odd count of bytes can't be one.
+			// The value has already been stepped over, so the
+			// walk goes on and preTds7Params() refuses the
+			// command.
+			if (size%sizeof(uint16_t)) {
+				debugWrite("odd unitext size: %d",size);
+				pretds7paramerrnumber=2433;
+				pretds7paramerr="Illegal byte sequence "
+					"encountered in Unicode data.";
+				break;
+			}
+			// ucs2ToUtf8() reads utf-16le, and the value isn't
+			// necessarily aligned for a ucs2_t read, so decode
+			// it a unit at a time
+			size_t		length=size/sizeof(uint16_t);
+			ucs2_t		*value16=new ucs2_t[length+1];
+			const byte_t	*vp=value;
+			for (size_t i=0; i<length; i++) {
+				uint16_t	unit=0;
+				read(vp,&unit,&vp);
+				value16[i]=hostToLE(unit);
+			}
 			value16[length]=0;
 			size_t	value8size=0;
 			char	*value8=ucs2ToUtf8(value16,length,&value8size);
