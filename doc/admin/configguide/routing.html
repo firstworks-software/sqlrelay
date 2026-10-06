@@ -145,9 +145,9 @@ database it was routed to.</p>
 
 <h3>Metadata/Catalog Introspection</h3>
 
-<p>A router-backed instance doesn't implement any of the calls a client uses to list catalogs, schemas, tables, columns, procedures, or keys and indexes (getColumnList(), getTableList(), and similar, in the native client API's).  A client that calls one of them - including sqlrsh's "describe" command, and the metadata calls ODBC and JDBC drivers make - gets a "not implemented" error, rather than being routed to one of the downstream connections.</p>
+<p>A router-backed instance doesn't support listing catalogs, schemas, tables, columns, procedures, keys or indexes.  Clients that try (eg. sqlrsh's "describe" command, or ODBC and JDBC metadata calls) get a "not implemented" error.</p>
 
-<p>A router-backed connection also doesn't report some backend-specific feature flags, since which features are actually available depends on which downstream database a given query ends up routed to.  For example, a client speaking the Firebird wire protocol to a router-backed instance won't get the close-and-re-execute handling that the Firebird protocol module otherwise provides for a cursor.</p>
+<p>A router-backed instance also doesn't report some database-specific features to clients, since they depend on which database each query is routed to.</p>
 
 <h3>Parallel Transactions</h3>
 
@@ -166,18 +166,7 @@ commit or rollback to each of the databases.  Similarly, if the client turns
 auto-commit on or off, the router turns auto-commit on or off on each of the
 databases.</p>
 
-<p>There are scenarios where a commit, rollback or auto-commit on/off command
-could succeed on some of the databases and fail on others.  Some databases
-have a 2-phase commit feature to handle these scenarios.  With 2-phase commit,
-you can roll back a commit until you do second commit.  Many databases don't
-support 2-phase commit though.  At present, SQL Relay doesn't currently support
-2-phase commit for any database.  So, currently, to handle this situation,
-SQL Relay returns an error, disables the instance doing the query routing, and
-raises an integrity_violation event.  If a notification is configured to notify
-a DBA when an integrity_violation is raised, then the DBA will receive an
-email about the problem.  Unfortunately, there is no standard way to solve
-the problem.  The DBA must determine the cause, resolve it manually, and restart
-SQL Relay.</p>
+<p>Some of these commands could succeed on some databases and fail on others.  SQL Relay doesn't support two-phase commit, so when this happens, it returns an error, disables the instance doing the routing, and raises an integrity_violation event, which can be used to notify a DBA (see <a href="notifications.html#notifications">Notifications</a>).  The DBA must then resolve the problem manually and restart SQL Relay.</p>
 
 <p><b>Transaction Model</b></p>
 
