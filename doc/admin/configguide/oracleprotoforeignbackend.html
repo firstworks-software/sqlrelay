@@ -110,8 +110,6 @@ http://www.gnu.org/software/src-highlite -->
 
 <p>If <a href="querytranslation.html#querytranslation">Query Translations</a> aren't sufficient, then it might still be necessary to modify some queries to use the syntax of the foreign database, or even update some code, but a full rewrite of the app should not be necessary.</p>
 
-<p><b>identity=</b> impersonation also affects how numeric result-set columns are reported: when it overrides a non-Oracle backend to identify as Oracle, integer columns and <i>numeric</i> columns are reported to the client as Oracle's <i>NUMBER</i> type - precision 38, scale 0, unless the column already declares a scale - the same as a real Oracle server would report, instead of the backend's native integer or numeric type.  This matters for ODBC (or other API) clients written against Oracle-specific drivers, which may not understand another backend's native integer types and can mishandle them.</p>
-
 <hr/>
 
 <p><a href="index.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="index.html">Contents</a>&nbsp;&nbsp;&nbsp;<a href="oracleprotouserlistauth.html"><img style="vertical-align: middle; " src="../../images/navprev.png"/></a> <a href="oracleprotouserlistauth.html">Oracle User List Auth</a> | <a href="oracleprotocol.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="oracleprotocol.html">Oracle Protocol</a> | <a href="oracleprotolimitations.html">Oracle Limitations</a> <a href="oracleprotolimitations.html"><img style="vertical-align: middle; " src="../../images/navnext.png"/></a></p>
