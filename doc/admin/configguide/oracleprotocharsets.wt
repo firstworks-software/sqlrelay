@@ -19,8 +19,6 @@ A listener with //verifiertype="9i"// defaults to 31 instead, which is WE8ISO885
 
 The //nationalcharset// option sets the national character set id.  It defaults to 2000, which is AL16UTF16.  That is the only national character set modern Oracle databases use, so there is rarely a reason to set it at all.
 
-Prior to version 2.3.0, SQL Relay always reported character set 1, which is US7ASCII, and some clients take that literally.  python-oracledb, for example, maps character set 1 to Python's ascii codec, which raises an exception on any byte of 0x80 or higher.  Such a client cannot read a result set containing any non-ASCII data at all.
-
 If a client still fails to decode a result set, try setting //charset// to 178, which is WE8MSWIN1252.  Every byte value decodes under cp1252, so decoding never fails, though bytes that aren't really cp1252 will decode to the wrong characters.
 
 {{{#!blockquote
