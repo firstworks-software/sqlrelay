@@ -6,7 +6,7 @@
 
 [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents]&nbsp;&nbsp;&nbsp;[[Image(../../images/navprev.png,link=oracleprotoverifiertype.html,vertical-align=middle)]] [oracleprotoverifiertype.html Oracle Password Verifier Type] | [[Image(../../images/navtop.png,link=oracleprotocol.html,vertical-align=middle)]] [oracleprotocol.html Oracle Protocol] | [oracleprotocharsets.html Oracle Character Set Options] [[Image(../../images/navnext.png,link=oracleprotocharsets.html,vertical-align=middle)]]
 
-[=#oraclebigchunkclr]
+[=#oraclebigchunks]
 = Big Chunks =
 
 Oracle clients and servers split long values into pieces, and there are two ways of encoding each piece's length: an older one, limited to 255 bytes per piece, and a newer "big chunk" one.  At login, the Oracle protocol module tells the client that it supports big chunks, and then uses them only if the client says it does too.  The //bigchunkclr// option overrides this:

@@ -101,7 +101,7 @@ This guide is split across the pages listed below - start with Quick Start for a
   * [oracleprotologinattempts.html Login Attempts]
   * [oracleprotoserverversion.html Server Version]
   * [oracleprotoverifiertype.html Password Verifier Type]
-  * [oracleprotobigchunkclr.html Big Chunks]
+  * [oracleprotobigchunks.html Big Chunks]
   * [oracleprotocharsets.html Character Set Options]
   * [oracleprotodateformat.html Date Format]
   * [oracleprotoauth.html Authentication/Encryption Options]

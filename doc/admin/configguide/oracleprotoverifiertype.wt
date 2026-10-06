@@ -4,7 +4,7 @@
 
 {{{#!include ../../contentstart.html}}}
 
-[[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents]&nbsp;&nbsp;&nbsp;[[Image(../../images/navprev.png,link=oracleprotoserverversion.html,vertical-align=middle)]] [oracleprotoserverversion.html Oracle Server Version] | [[Image(../../images/navtop.png,link=oracleprotocol.html,vertical-align=middle)]] [oracleprotocol.html Oracle Protocol] | [oracleprotobigchunkclr.html Oracle Big Chunks] [[Image(../../images/navnext.png,link=oracleprotobigchunkclr.html,vertical-align=middle)]]
+[[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents]&nbsp;&nbsp;&nbsp;[[Image(../../images/navprev.png,link=oracleprotoserverversion.html,vertical-align=middle)]] [oracleprotoserverversion.html Oracle Server Version] | [[Image(../../images/navtop.png,link=oracleprotocol.html,vertical-align=middle)]] [oracleprotocol.html Oracle Protocol] | [oracleprotobigchunks.html Oracle Big Chunks] [[Image(../../images/navnext.png,link=oracleprotobigchunks.html,vertical-align=middle)]]
 
 [=#oracleverifiertype]
 = Password Verifier Type =
@@ -27,7 +27,7 @@ Clients older than Oracle 10g, such as OCI7 apps, can only log in with 9i, and m
 
 ----
 
-[[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents]&nbsp;&nbsp;&nbsp;[[Image(../../images/navprev.png,link=oracleprotoserverversion.html,vertical-align=middle)]] [oracleprotoserverversion.html Oracle Server Version] | [[Image(../../images/navtop.png,link=oracleprotocol.html,vertical-align=middle)]] [oracleprotocol.html Oracle Protocol] | [oracleprotobigchunkclr.html Oracle Big Chunks] [[Image(../../images/navnext.png,link=oracleprotobigchunkclr.html,vertical-align=middle)]]
+[[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents]&nbsp;&nbsp;&nbsp;[[Image(../../images/navprev.png,link=oracleprotoserverversion.html,vertical-align=middle)]] [oracleprotoserverversion.html Oracle Server Version] | [[Image(../../images/navtop.png,link=oracleprotocol.html,vertical-align=middle)]] [oracleprotocol.html Oracle Protocol] | [oracleprotobigchunks.html Oracle Big Chunks] [[Image(../../images/navnext.png,link=oracleprotobigchunks.html,vertical-align=middle)]]
 
 {{{#!include ../../contentend.html}}}
 

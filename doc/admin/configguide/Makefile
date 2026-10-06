@@ -96,7 +96,7 @@ SRCS = index.wt \
 	oracleprotologinattempts.wt \
 	oracleprotoserverversion.wt \
 	oracleprotoverifiertype.wt \
-	oracleprotobigchunkclr.wt \
+	oracleprotobigchunks.wt \
 	oracleprotocharsets.wt \
 	oracleprotodateformat.wt \
 	oracleprotoauth.wt \
@@ -277,7 +277,7 @@ INS = index.html.in \
 	oracleprotologinattempts.html.in \
 	oracleprotoserverversion.html.in \
 	oracleprotoverifiertype.html.in \
-	oracleprotobigchunkclr.html.in \
+	oracleprotobigchunks.html.in \
 	oracleprotocharsets.html.in \
 	oracleprotodateformat.html.in \
 	oracleprotoauth.html.in \
@@ -460,7 +460,7 @@ WTOBJS = index.html.in \
 	oracleprotologinattempts.html.in \
 	oracleprotoserverversion.html.in \
 	oracleprotoverifiertype.html.in \
-	oracleprotobigchunkclr.html.in \
+	oracleprotobigchunks.html.in \
 	oracleprotocharsets.html.in \
 	oracleprotodateformat.html.in \
 	oracleprotoauth.html.in \
@@ -641,7 +641,7 @@ OBJS = index.html \
 	oracleprotologinattempts.html \
 	oracleprotoserverversion.html \
 	oracleprotoverifiertype.html \
-	oracleprotobigchunkclr.html \
+	oracleprotobigchunks.html \
 	oracleprotocharsets.html \
 	oracleprotodateformat.html \
 	oracleprotoauth.html \
