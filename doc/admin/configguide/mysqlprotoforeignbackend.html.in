@@ -60,7 +60,7 @@ http://www.gnu.org/software/src-highlite -->
   <li>use one of the <a href="mysqlprotospecialpurpose.html">Special-Purpose Options</a></li>
 </ul>
 
-<p>If Query Translations aren't sufficient, then it might still be necessary to modify some queries to use the syntax of the foreign database, or even update some code, but a full rewrite of the app should not be necessary.</p>
+<p>If <a href="querytranslation.html#querytranslation">Query Translations</a> aren't sufficient, then it might still be necessary to modify some queries to use the syntax of the foreign database, or even update some code, but a full rewrite of the app should not be necessary.</p>
 
 <hr/>
 
