@@ -8,9 +8,7 @@
 
 <a name="savepoints"/><h1>savepoints</h1>
 
-<p>The savepoints module wraps each query in a database savepoint, and rolls back to that savepoint if the query fails.  This contains the failure to just the failed query, rather than letting it abort the surrounding transaction.</p>
-
-<p>This is most useful with databases (notably PostgreSQL) that mark the entire transaction as aborted as soon as any query in it fails.  Without intervention, every subsequent query in the transaction fails until the application issues a rollback - even queries that are otherwise unrelated to the one that failed.  With this trigger, the failed query is rolled back to the savepoint taken just before it ran, leaving the rest of the transaction intact and the connection ready to accept the next query.</p>
+<p>The savepoints module wraps each query in a database savepoint, and rolls back to it if the query fails, so the failure doesn't abort the surrounding transaction.  This is most useful with databases (eg. PostgreSQL) where a failed query otherwise causes every later query in the transaction to fail until the transaction is rolled back.</p>
 
 <p>The trigger only takes savepoints inside a transaction.  Queries run in autocommit mode are passed through untouched, since a savepoint outside a transaction has no effect.  begin, commit, rollback, and autocommit-toggle queries are also passed through untouched.</p>
 
@@ -39,7 +37,7 @@ http://www.gnu.org/software/src-highlite -->
 </blockquote>
 <p>In this example, before every non-transaction-control query that runs inside a transaction, the trigger runs <i>savepoint sqlrspN</i> (where <i>N</i> is an auto-incrementing counter).  If the user's query succeeds, the trigger runs <i>release savepoint sqlrspN</i> to keep the savepoint stack bounded.  If the user's query fails, the trigger runs <i>rollback to savepoint sqlrspN</i> to undo the failed query.  Either way, the user's error (if any) is preserved and reported back to the client - the trigger contains the failure but doesn't hide it.</p>
 
-<p>The trigger should be configured with <i>when="all"</i>, since it takes a savepoint before each query and rolls back or releases it after, and needs to wrap both the prepare and execute phases.  Wrapping prepare is essential for PostgreSQL and similar databases that parse and resolve references during prepare - reference-related failures occur at prepare time there, not execute time, and without a savepoint bracketing the prepare the entire transaction is poisoned.  Configurations that omit any of the four phases are honored but may not accomplish anything useful.</p>
+<p>The trigger should be configured with <i>when="all"</i>, so it wraps both the prepare and execute phases.  Some databases (eg. PostgreSQL) report errors like a missing table when the query is prepared, not when it runs.</p>
 
 <p>The default savepoint, rollback, and release syntax is standard SQL and works for PostgreSQL, MySQL/MariaDB, Oracle, DB2, Firebird, and other databases that follow the SQL standard.  For databases with non-standard savepoint syntax (e.g. Microsoft SQL Server, SAP/Sybase ASE), the syntax templates are configurable:</p>
 
@@ -102,8 +100,6 @@ http://www.gnu.org/software/src-highlite -->
 <p>There is a performance cost.  Every query inside a transaction generates two extra round-trips to the database (savepoint before, release or rollback after).  For workloads with short transactions or high query rates, this overhead can be significant.</p>
 
 <p>The trigger does not retry the failed query.  After rolling back to the savepoint, the original error is still reported to the client; it's up to the application (or another trigger like <i>replay</i>) to decide whether to retry.</p>
-
-<p>The trigger only acts inside a transaction.  Failures of queries run in autocommit mode are passed through unchanged.</p>
 
 <hr/>
 
