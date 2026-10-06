@@ -9,7 +9,7 @@
 [=#oraclesid]
 = SID / Service Name =
 
-The //sid// option restricts clients to the specified SID/SERVICE_NAME, or to the comma-separated list of them.  Others are refused with ORA-12514.  If unset or an empty string, any SID/SERVICE_NAME is accepted.
+The //sid// option restricts clients to the specified SID/SERVICE_NAME, or comma-separated list of them.  Others are refused with ORA-12514.  If unset or an empty string, any SID/SERVICE_NAME is accepted.
 
 {{{#!blockquote
 {{{#!code
