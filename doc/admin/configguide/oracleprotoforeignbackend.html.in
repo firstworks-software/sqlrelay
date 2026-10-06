@@ -47,10 +47,13 @@ http://www.gnu.org/software/src-highlite -->
   <ul>
     <li>set autocommit=yes or autocommit=no</li>
     <li>set the identity parameter to override the database type</li>
+    <ul>
+      <li>setting identity=oracle causes integer types to be returned as NUMBER(38)</li>
+    </ul>
+
     <li>set ignorespace=yes</li>
     <li>set the overrideschema parameter</li>
     <li>set the typemangling and/or tablemangling parameters - when using a PostgreSQL back-end</li>
-    <li>set identity=oracle - causes integer types to be returned as NUMBER(38)</li>
   </ul>
 
   <li>use <a href="querytranslation.html#querytranslation">Query Translation</a> modules</li>

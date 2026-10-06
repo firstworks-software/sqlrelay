@@ -30,10 +30,10 @@ Depending on the back-end, it might also be necessary to make some other configu
 * In the string attribute of the connection tag:
  * set autocommit=yes or autocommit=no
  * set the identity parameter to override the database type
+  * setting identity=oracle causes integer types to be returned as NUMBER(38)
  * set ignorespace=yes
  * set the overrideschema parameter
  * set the typemangling and/or tablemangling parameters - when using a !PostgreSQL back-end
- * set identity=oracle - causes integer types to be returned as NUMBER(38)
 * use [querytranslation.html#querytranslation Query Translation] modules
 * use [resultsettranslation.html#resultsettranslation Result Set Translation] modules
 * use [errortranslation.html#errortranslation Error Translation] modules
