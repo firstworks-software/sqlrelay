@@ -556,7 +556,17 @@ bool sqlrtrigger_upsert::convertInsertToUpdate(
 	// identity override to say what's really behind them, and any
 	// unrecognized db type - is left unquoted, since we can't verify
 	// that any delimiter would work there.
-	const char	*dbtype=cont->getDbType();
+	//
+	// The delimiter is about the real backend's syntax, so use
+	// getNativeDbType(), not getDbType() - identity= can make a backend
+	// impersonate another database.  odbc and router only report
+	// "odbc"/"router" natively, so for those the identity is the only
+	// hint about what's really behind them.
+	const char	*dbtype=cont->getNativeDbType();
+	if (!charstring::compareIgnoringCase(dbtype,"odbc") ||
+			!charstring::compareIgnoringCase(dbtype,"router")) {
+		dbtype=cont->getDbType();
+	}
 	char		openquote='\0';
 	char		closequote='\0';
 	const char	*unquotedchars=".$#@";

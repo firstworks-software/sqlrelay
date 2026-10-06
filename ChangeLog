@@ -132,7 +132,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   rewrite oracle's max/min(x) keep (dense_rank first/last order
   by y) into a plain postgresql aggregate
 - added sqlrservercontroller::getNativeDbType(), and fixed the
-  globaltemptables, normalize, and singlestep modules and the
+  globaltemptables, normalize, singlestep, and upsert modules and the
   teradata protocol module's passthrough check to use it
   instead of getDbType() where they were deciding how to talk to
   the real backend - getDbType() follows an identity= override, a
