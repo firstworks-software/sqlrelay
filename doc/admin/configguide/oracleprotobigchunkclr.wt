@@ -12,7 +12,7 @@
 Oracle clients and servers split long values into pieces, and there are two ways of encoding each piece's length: an older one, limited to 255 bytes per piece, and a newer "big chunk" one.  At login, the Oracle protocol module tells the client that it supports big chunks, and then uses them only if the client says it does too.  The //bigchunkclr// option overrides this:
 
 * auto - use big chunks only with clients that say they support them.  This is the default.
-* off (or no, false or 0) - never use big chunks, or tell clients they are supported.  This is for clients that say they support big chunks, but don't (eg. go-ora v1).
+* off - never use big chunks, or tell clients they are supported.  This is for clients that say they support big chunks, but don't (eg. go-ora v1).
 * on (or yes, true or 1) - use big chunks with every client new enough to support them, even if the client doesn't say so.
 
 Any other value is the same as auto.
