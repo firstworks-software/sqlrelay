@@ -71,6 +71,7 @@ ub4		authhda[256];
 
 const char	*sid=NULL;
 const char	*badsid=NULL;
+const char	*nosid=NULL;
 const char	*user="testuser";
 const char	*password="testpassword";
 
@@ -430,6 +431,21 @@ static void runAuthenticationSection(bool issqlrelay) {
 	stdoutput.printf("\n\n");
 
 
+	stdoutput.printf("olog - no SID/SERVICE_NAME\n");
+	bytestring::zero(&badlda,sizeof(badlda));
+	bytestring::zero(badhda,sizeof(badhda));
+	assertTrue(olog(&badlda,(ub1 *)badhda,
+				(text *)user,(sword)-1,
+				(text *)password,(sword)-1,
+				(text *)nosid,(sword)-1,
+				(ub4)OCI_LM_DEF)!=0);
+	// ORA-12504, the listener was not given a SERVICE_NAME in
+	// CONNECT_DATA.  The listener has sid set, and like a real one
+	// it refuses a descriptor that names none.
+	assertEquals(errorCode(&badlda),12504);
+	stdoutput.printf("\n\n");
+
+
 	stdoutput.printf("olog - no such alias\n");
 	bytestring::zero(&badlda,sizeof(badlda));
 	bytestring::zero(badhda,sizeof(badhda));
@@ -603,15 +619,19 @@ int main(int argc, char **argv) {
 	if (target && !charstring::compare(target,"sqlrelay11g")) {
 		sid="sqlrelay11g";
 		badsid="sqlrelay11gbad";
+		nosid="sqlrelay11gnosid";
 	} else if (target && !charstring::compare(target,"sqlrelay12c")) {
 		sid="sqlrelay12c";
 		badsid="sqlrelay12cbad";
+		nosid="sqlrelay12cnosid";
 	} else if (target && !charstring::compare(target,"sqlrelayconnectstrings")) {
 		sid="sqlrelayconnectstrings";
 		badsid="sqlrelayconnectstringsbad";
+		nosid="sqlrelayconnectstringsnosid";
 	} else if (target && !charstring::compare(target,"sqlrelayfetchatonce")) {
 		sid="sqlrelayfetchatonce";
 		badsid="sqlrelayfetchatoncebad";
+		nosid="sqlrelayfetchatoncenosid";
 		isfetchatonce=true;
 	} else if (target && !charstring::compare(target,"sqlrelayoci7")) {
 		// the oracleprotocoloci7 instance has its own backend (#9654) -
@@ -619,9 +639,11 @@ int main(int argc, char **argv) {
 		// same modern backend the other sqlrelay* instances use
 		sid="sqlrelayoci7";
 		badsid="sqlrelayoci7bad";
+		nosid="sqlrelayoci7nosid";
 	} else {
 		sid=(issqlrelay)?"sqlrelay":"ora1";
 		badsid=(issqlrelay)?"sqlrelaybad":"ora1bad";
+		nosid=(issqlrelay)?"sqlrelaynosid":"ora1nosid";
 	}
 
 	environment::setValue("ORACLE_SID",sid);

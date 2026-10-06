@@ -933,6 +933,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - renamed the dbtype connect string parameter to identity, dbtype still
   works
 - replaced master/slave with primary/replica in the documentation
+- oracle protocol module refuses a client that names no SID/SERVICE_NAME
+  with ORA-12504 when sid is set now
 
 ### Removed
 - oracle protocol module: deleted cancel() (no wire input can reach it)

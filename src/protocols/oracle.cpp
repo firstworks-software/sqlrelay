@@ -386,6 +386,10 @@
 // CONNECT_DATA names a SID/SERVICE_NAME the listener isn't configured for
 #define TNS_NO_SUCH_SERVICE		12514
 
+// what a real listener refuses an attach with, when the client's
+// CONNECT_DATA names no SID or SERVICE_NAME at all
+#define TNS_NO_SERVICE_NAME		12504
+
 // the vsnnum both refuse message texts carry - oracle 11.2.0.1.0,
 // 0x0b200100.  it is fixed at 11.2 whatever the serverversion attribute
 // says, and it duplicates SERVER_VERSION_NO_11_2 below.
@@ -2171,7 +2175,8 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_oracle : public sqlrprotocol {
 		uint32_t	verifiertype;
 
 		// the SID/SERVICE_NAME(s) this listener answers to, from the "sid"
-		// listener attribute, comma-separated; NULL means accept anything
+		// listener attribute, comma-separated; NULL means accept anything.
+		// when set, a client that names none is refused too
 		char		*sids;
 
 		// how many logins one connection may fail before it's
@@ -3902,9 +3907,16 @@ bool sqlrprotocol_oracle::connect() {
 		return false;
 	}
 
-	// a client naming a SID/SERVICE_NAME this listener isn't configured
-	// for gets refused here, the same way a real listener would, rather
-	// than being let through to whatever backend connection is on hand
+	// when sid is set, a client naming no SID/SERVICE_NAME, or one this
+	// listener isn't configured for, gets refused here, the same way a
+	// real listener would, rather than being let through to whatever
+	// backend connection is on hand
+	if (sids && !requestedservice) {
+		debugWrite("no requested service, refusing");
+		debugEnd();
+		sendRefuse(TNS_NO_SERVICE_NAME);
+		return false;
+	}
 	if (!requestedServiceKnown()) {
 		debugWrite("requested service unknown, refusing");
 		debugEnd();
@@ -3927,10 +3939,10 @@ bool sqlrprotocol_oracle::requestedServiceKnown() {
 		return true;
 	}
 
-	// the client's descriptor didn't name a SID/SERVICE_NAME at all -
-	// nothing to compare, so let it through
+	// the client's descriptor didn't name a SID/SERVICE_NAME at all.
+	// the caller refuses that with TNS_NO_SERVICE_NAME before asking
 	if (!requestedservice) {
-		return true;
+		return false;
 	}
 
 	char		**sidlist=NULL;
@@ -4328,7 +4340,14 @@ bool sqlrprotocol_oracle::sendRefuse(uint32_t tnserror) {
 	message.append(tnserror);
 	message.append(")(ERROR_STACK=(ERROR=(CODE=");
 	message.append(tnserror);
-	message.append(")(EMFI=4))))");
+	message.append(")(EMFI=4))");
+	// a real listener stacks the error twice for this one
+	if (tnserror==TNS_NO_SERVICE_NAME) {
+		message.append("(ERROR=(CODE=");
+		message.append(tnserror);
+		message.append(")(EMFI=4))");
+	}
+	message.append("))");
 
 	uint16_t	messagesize=(uint16_t)message.getStringLength();
 
@@ -4338,6 +4357,8 @@ bool sqlrprotocol_oracle::sendRefuse(uint32_t tnserror) {
 	debugWrite("meaning: %s",
 		(tnserror==TNS_NO_SUCH_SERVICE)?
 			"no such service/sid" :
+		(tnserror==TNS_NO_SERVICE_NAME)?
+			"no service/sid given" :
 		(tnserror==TNS_CONNECTION_REFUSED)?
 			"connection refused" :
 			"unknown");

@@ -110,3 +110,48 @@ sqlrelayoci7bad =
     (ADDRESS = (PROTOCOL= TCP)(Host= localhost)(Port= @ORACLEPROTOCOLPORT7@))
     (CONNECT_DATA = (SID = nosuchsid))
   )
+
+# the same again, naming no SID/SERVICE_NAME at all, for the authentication
+# section's no-service attach failure case (ORA-12504)
+
+ora1nosid =
+  (DESCRIPTION =
+    (ADDRESS = (PROTOCOL = TCP)(HOST = oracle)(PORT = 1521))
+    (CONNECT_DATA = (SERVER = DEDICATED))
+  )
+
+sqlrelaynosid =
+  (DESCRIPTION =
+    (ADDRESS = (PROTOCOL= TCP)(Host= localhost)(Port= @ORACLEPROTOCOLPORT1@))
+    (CONNECT_DATA = (SERVER = DEDICATED))
+  )
+
+sqlrelay11gnosid =
+  (DESCRIPTION =
+    (ADDRESS = (PROTOCOL= TCP)(Host= localhost)(Port= @ORACLEPROTOCOLPORT2@))
+    (CONNECT_DATA = (SERVER = DEDICATED))
+  )
+
+sqlrelay12cnosid =
+  (DESCRIPTION =
+    (ADDRESS = (PROTOCOL= TCP)(Host= localhost)(Port= @ORACLEPROTOCOLPORT3@))
+    (CONNECT_DATA = (SERVER = DEDICATED))
+  )
+
+sqlrelayconnectstringsnosid =
+  (DESCRIPTION =
+    (ADDRESS = (PROTOCOL= TCP)(Host= localhost)(Port= @ORACLEPROTOCOLPORT4@))
+    (CONNECT_DATA = (SERVER = DEDICATED))
+  )
+
+sqlrelayfetchatoncenosid =
+  (DESCRIPTION =
+    (ADDRESS = (PROTOCOL= TCP)(Host= localhost)(Port= @ORACLEPROTOCOLPORT5@))
+    (CONNECT_DATA = (SERVER = DEDICATED))
+  )
+
+sqlrelayoci7nosid =
+  (DESCRIPTION =
+    (ADDRESS = (PROTOCOL= TCP)(Host= localhost)(Port= @ORACLEPROTOCOLPORT7@))
+    (CONNECT_DATA = (SERVER = DEDICATED))
+  )

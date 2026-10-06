@@ -24,6 +24,7 @@ OCITrans	*trans=NULL;
 
 const char	*sid=NULL;
 const char	*badsid=NULL;
+const char	*nosid=NULL;
 const char	*user="testuser";
 const char	*password="testpassword";
 
@@ -205,19 +206,24 @@ int main(int argc, char **argv) {
 	if (argc==2 && !charstring::compare(argv[1],"sqlrelay11g")) {
 		sid="sqlrelay11g";
 		badsid="sqlrelay11gbad";
+		nosid="sqlrelay11gnosid";
 	} else if (argc==2 && !charstring::compare(argv[1],"sqlrelay12c")) {
 		sid="sqlrelay12c";
 		badsid="sqlrelay12cbad";
+		nosid="sqlrelay12cnosid";
 	} else if (argc==2 && !charstring::compare(argv[1],"sqlrelayconnectstrings")) {
 		sid="sqlrelayconnectstrings";
 		badsid="sqlrelayconnectstringsbad";
+		nosid="sqlrelayconnectstringsnosid";
 	} else if (argc==2 && !charstring::compare(argv[1],"sqlrelayfetchatonce")) {
 		sid="sqlrelayfetchatonce";
 		badsid="sqlrelayfetchatoncebad";
+		nosid="sqlrelayfetchatoncenosid";
 		isfetchatonce=true;
 	} else {
 		sid=(issqlrelay)?"sqlrelay":"ora1";
 		badsid=(issqlrelay)?"sqlrelaybad":"ora1bad";
+		nosid=(issqlrelay)?"sqlrelaynosid":"ora1nosid";
 	}
 
 	environment::setValue("ORACLE_SID",sid);
@@ -368,6 +374,23 @@ int main(int argc, char **argv) {
 	// instead.
 	assertEquals((int)errorCode(),12514);
 	assertEquals(OCIHandleFree(badsrv,OCI_HTYPE_SERVER),OCI_SUCCESS);
+	stdoutput.printf("\n\n");
+
+
+	stdoutput.printf("OCIServerAttach - no SID/SERVICE_NAME\n");
+	OCIServer	*nosidsrv=NULL;
+	assertEquals(
+		OCIHandleAlloc(env,(void **)&nosidsrv,OCI_HTYPE_SERVER,0,NULL),
+		OCI_SUCCESS);
+	assertEquals(
+		OCIServerAttach(nosidsrv,err,(text *)nosid,
+				charstring::getLength(nosid),0),
+		OCI_ERROR);
+	// ORA-12504, the listener was not given a SERVICE_NAME in
+	// CONNECT_DATA.  The listener has sid set, and like a real one
+	// it refuses a descriptor that names none.
+	assertEquals((int)errorCode(),12504);
+	assertEquals(OCIHandleFree(nosidsrv,OCI_HTYPE_SERVER),OCI_SUCCESS);
 	stdoutput.printf("\n\n");
 
 
