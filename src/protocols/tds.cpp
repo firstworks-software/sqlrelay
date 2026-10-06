@@ -3181,7 +3181,8 @@ sqlrprotocol_tds::sqlrprotocol_tds(sqlrservercontroller *cont,
 
 	querysqlstate[0]='\0';
 
-	const char	*dbtype=cont->getDbType();
+	// the real backend, not the identity= override
+	const char	*dbtype=cont->getNativeDbType();
 	dbistds=(!charstring::compare(dbtype,"freetds") ||
 			!charstring::compare(dbtype,"sap"));
 

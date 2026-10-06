@@ -133,7 +133,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   by y) into a plain postgresql aggregate
 - added sqlrservercontroller::getNativeDbType(), and fixed the
   globaltemptables, normalize, singlestep, and upsert modules and the
-  teradata and postgresql protocol modules to use it
+  teradata, postgresql, and tds protocol modules to use it
   instead of getDbType() where they were deciding how to talk to
   the real backend - getDbType() follows an identity= override, a
   normal thing to set during a migration to make one database
