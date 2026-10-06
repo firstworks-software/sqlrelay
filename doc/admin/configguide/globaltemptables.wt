@@ -11,9 +11,7 @@
 
 The globaltemptables module simulates Oracle/DB2-style global temporary tables on databases (notably !PostgreSQL) that only support session-local temporary tables.
 
-In databases that support global temporary tables, the table definition is persistent and visible to every session, but each session sees its own private set of rows.  In databases that only support session-local temporary tables, the table itself only exists for the life of the session that created it, so an application that expects a global temp table to already be there will fail with a //relation does not exist// (or similar) error at prepare time.
-
-This module bridges that gap.  For each configured table, the module watches for any query that references that table at prepare time, and the first time it sees one in the current backend session, it issues the configured //create// statement on that session.  Once created, the table persists for the rest of the backend session, which - given the sqlr-connection process model, where one backend session is multiplexed across many client sessions - lets it appear to behave like a global temporary table.
+In databases with global temporary tables, the table definition is permanent and visible to every session, but each session sees only its own rows.  In databases with only session-local temporary tables, each session has to create the table itself, so an app that expects it to already exist fails.  For each configured table, this module runs the table's create statement the first time a query references the table in each back-end session, so the table appears to be a global temporary table.
 
 An example configuration:
 
@@ -25,32 +23,24 @@ An example configuration:
 
 In this example...
 
-The trigger is configured to run before the query has been prepared.  This is the only valid configuration for the globaltemptables trigger - the create statement has to run before the database tries to resolve the table reference during prepare, or the prepare itself will fail.  Configurations with any other //when// value will not accomplish anything useful.
+The trigger runs before the query is prepared.  This is the only useful setting for //when//, since the table has to exist before the database prepares a query that uses it.
 
-Two tables are configured, //gtttest1// and //gtttest2//.  The first time either one is referenced in a given backend session - by an insert, a select, an update, a delete, or the table name turning up in a join or subquery - the corresponding //create temp table ...// statement is run on that session.  Subsequent references in the same session skip the create step.
+Two tables are configured, //gtttest1// and //gtttest2//.  The first time either one is referenced in a back-end session, by any kind of query, its create statement is run.
 
-The first time the create is attempted, it may fail because the table already exists - another agent (e.g. another sqlr-connection process, or the application itself) may have created it already, or the modules own state may believe the table is gone when it isn't (see Considerations below).  The '''alreadyexists''' tag lets the module recognize that situation and treat it as success.  It supports two attributes, '''error''' and '''sqlstate''', either or both of which may be set; if either one matches, the create is treated as success.
+The create may fail because the table already exists.  The '''alreadyexists''' tag tells the module which errors mean that, so they can be treated as success.  It supports two attributes, '''error''' and '''sqlstate'''.  If either one matches, the create is treated as success.
 
 The '''error''' attribute may be set to either:
 
 * a numeric value - matched against the database error number
 * a string - matched as a substring against the database error text
 
-Error text is locale-dependent - a German-locale !PostgreSQL reports //existiert bereits// for a duplicate table, not //already exists// - so a substring match tuned for one locale silently stops working under another.  Some databases also give the error number no useful meaning at all - !PostgreSQL's connection module reports error number 1 for literally every error, so a numeric '''error=''' match against it would match every failure, not just an already-exists.
-
-The '''sqlstate''' attribute addresses both problems.  It's a 5-character SQLSTATE code, compared case-insensitively for an exact match against the SQLSTATE the database reported for the failed create.  SQLSTATE codes are standardized and locale-independent, so the same value works regardless of what language the backend is reporting errors in.  The '''sqlstate''' check runs first, as a fast path, and only falls through to the '''error=''' check above if it doesn't match, or if there's nothing to compare (no '''sqlstate=''' configured and no built-in default, or the database didn't report a SQLSTATE for this error) - '''sqlstate''' is checked //in addition to// '''error=''', not instead of it.
-
-If '''sqlstate=''' isn't configured at all, a built-in default is used, based on the real database module in use: !PostgreSQL defaults to //42P07//, the duplicate_table SQLSTATE; !MySQL and !MariaDB default to //42S01//, the base-table-or-view-already-exists SQLSTATE.  No other database gets a built-in default.  A site that wants no sqlstate check at all - relying purely on '''error=''' - can set '''sqlstate=""''' (present, but empty) to explicitly disable the built-in default.
-
-Not every database reports a SQLSTATE for a given error, and most connection modules besides !PostgreSQL, !MySQL/MariaDB, Firebird, DB2, Informix, ODBC, and SAP don't report one at all.  On those, the '''sqlstate''' check simply has nothing to compare against and is skipped, and '''alreadyexists''' behaves exactly as it did before this attribute existed, matching on '''error=''' alone.
+Error text varies with the database's locale, and some databases (eg. !PostgreSQL) report the same error number for every error, so '''sqlstate''' is usually more reliable.  It is a 5-character SQLSTATE code, matched exactly but without regard to case, and is checked before '''error'''.  If it isn't set, it defaults to 42P07 for !PostgreSQL and 42S01 for !MySQL/MariaDB.  Other databases have no default.  Set it to an empty string to disable the default.  Not every database reports a SQLSTATE.  For those, only '''error''' is checked.
 
 If the create fails and neither the '''sqlstate''' nor the '''error''' check matches, that error is reported back to the client as if the user's query had failed.
 
-On a database where transactions abort on any statement error (eg. !PostgreSQL), a create that fails - even one the '''alreadyexists''' handling recognizes and reports as success back to the client - has already put the surrounding transaction into an aborted state, and nothing about that success at the trigger level undoes that.  Every subsequent statement in the same transaction is then refused until the transaction is rolled back, which the client sees as an unrelated later query failing for no apparent reason.  A create that never errors in the first place avoids the problem entirely, so when the target database is !PostgreSQL, the module automatically inserts //if not exists// into the create statement, unless it's already there.  //IF NOT EXISTS// is not universally available - eg. Oracle's //CREATE GLOBAL TEMPORARY TABLE// does not support it - so this is deliberately specific to !PostgreSQL, and the '''alreadyexists''' handling remains necessary, and is still used, for every other database.
+On !PostgreSQL, the module also adds //if not exists// to the create statement, unless it's already there.  Otherwise, a failed create would abort the surrounding transaction, even if '''alreadyexists''' treats it as success.  This is based on the real back-end database, not on the //identity// connect string parameter.
 
-This decision is based on the real database module in use, not on an '''identity=''' setting a migration may have made in the connection string to make the backend impersonate a different database for the client's benefit - the create statement reaching a real !PostgreSQL backend gets //if not exists// inserted regardless of what the client believes it's talking to.
-
-The trigger matches the configured table name, as a whole word, anywhere in the query text, and assumes that text has already been normalized (lowercased, whitespace collapsed, etc.).  Without normalize, a query with unusual capitalization or spacing will not be recognized and the create will not fire.
+The trigger matches the table name as a whole word anywhere in the query, and assumes the query has already been normalized.
 
 Note that in this example, the normalize query translation is loaded prior to the globaltemptables trigger.  Pattern matching is substantially more reliable and efficient if the query has been normalized first.  See the [normalize.html#normalize normalize] query translation for more information.
 
@@ -68,11 +58,11 @@ The body of the '''table''' tag may also use the //&#91;...filename...]// syntax
 
 == Considerations ==
 
-The trigger matches the configured table name as a whole word anywhere in the normalized query text, not just in an insert - so a delete, select, update, or a table name turning up in a join or subquery all cause the table to be created if it hasn't been already.  This can over-fire - a query that only mentions the name inside a string literal or a comment will also trigger an early create - but that's harmless: the table starts out empty either way, and it's only created once per backend session.
+Because the table name is matched anywhere in the query, a query that only mentions it in a string literal or comment also causes the table to be created.  This is harmless.
 
-Once a table has been created, the module remembers that and skips the create on subsequent matches - until one of three things happens, at which point it forgets and re-creates on the next reference: the sqlr-connection process is recycled; the client session that referenced the table ends (the create statement may target an object that's scoped to the backend session rather than the sqlr-connection process, eg. !PostgreSQL's //create temporary table//, and the sqlr-connection process outlives any one client session); or the surrounding transaction is rolled back (the create is DDL, and a rollback can undo it on a transactional database, even though the module has no other way to detect that).  In none of these cases does the trigger actively drop the table - it just stops assuming it's still there, and lets the next reference re-create it (or discover, via '''alreadyexists''', that it is still there after all).
+After creating a table, the module assumes it exists until the sqlr-connection process is recycled, the client session ends, or the transaction is rolled back.  After that, it runs the create statement again the next time the table is referenced.
 
-Different sqlr-connection processes in the same instance each maintain their own copy of the temp table (since each holds its own backend session).  The data in one is not visible from another, which matches the per-session-private-rows semantics of a real global temporary table.
+Each sqlr-connection process has its own copy of the table, so rows inserted through one aren't visible through another, just as with a real global temporary table.
 
 ----
 
