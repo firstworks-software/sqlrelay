@@ -54,13 +54,7 @@
 
 <a name="oraclesid"/><h1>SID / Service Name</h1>
 
-<p>An Oracle client's connect descriptor names a SID or SERVICE_NAME - either is just an alias for the database it wants, taken from its tnsnames.ora entry or built into its connect string.  A real Oracle listener checks that name against the services it knows about and refuses the connection with ORA-12514 if it doesn't recognize it.</p>
-
-<p>The <i>sid</i> option gives the Oracle protocol module the same check.  Set it to the SID/SERVICE_NAME (or a comma-separated list of them) this instance should accept; a client naming anything else is refused with ORA-12514 before it gets as far as a login prompt.  Matching is case-insensitive, and either CONNECT_DATA key - SID or SERVICE_NAME - is accepted from the client, since a client only ever sends whichever one its own connect descriptor used.</p>
-
-<p>Leaving <i>sid</i> unset accepts any SID/SERVICE_NAME a client asks for, which is the default.</p>
-
-<p>A connect descriptor that names no SID or SERVICE_NAME at all is let through even when <i>sid</i> is set, since there's nothing to check it against.</p>
+<p>The <i>sid</i> option restricts clients to the given SID/SERVICE_NAME, or comma-separated list of them.  Others are refused with ORA-12514.  If unset, any are accepted.</p>
 
 <blockquote>
 <!-- Generator: GNU source-highlight 3.1.9
