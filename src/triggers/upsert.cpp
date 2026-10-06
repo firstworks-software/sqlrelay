@@ -552,8 +552,8 @@ bool sqlrtrigger_upsert::convertInsertToUpdate(
 	// freetds/sap - ms sql server and sybase ase 15+ honor brackets
 	// regardless of QUOTED_IDENTIFIER, but honor the double quote only
 	// when it's on, which isn't guaranteed.  Everything else - informix
-	// (whose double quote needs DELIMIDENT), odbc/router with no dbtype
-	// or identity override to say what's really behind them, and any
+	// (whose double quote needs DELIMIDENT), odbc/router with no
+	// identity override to say what's really behind them, and any
 	// unrecognized db type - is left unquoted, since we can't verify
 	// that any delimiter would work there.
 	const char	*dbtype=cont->getDbType();
