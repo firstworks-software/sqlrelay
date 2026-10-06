@@ -184,10 +184,10 @@ void sqlrserverconnection::handleConnectString() {
 	pvt->_decodeblobs=!charstring::isNo(
 				cont->getConnectStringValue("decodeblobs"));
 
-	// database type
-	const char	*dbtype=cont->getConnectStringValue("dbtype");
+	// database type (dbtype is the legacy name for identity)
+	const char	*dbtype=cont->getConnectStringValue("identity");
 	if (!dbtype) {
-		dbtype=cont->getConnectStringValue("identity");
+		dbtype=cont->getConnectStringValue("dbtype");
 	}
 	cont->setDbType(dbtype);
 

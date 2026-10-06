@@ -126,7 +126,7 @@ sqlrquerytranslation_normalize::sqlrquerytranslation_normalize(
 	// its closing quote consumed as if escaped, silently swallowing the
 	// rest of the query as string content.  Default slashescape to the
 	// real backend's own behavior instead of unconditionally "on" - not
-	// the client-facing dbtype= identity a migration may have configured
+	// the client-facing identity= setting a migration may have configured
 	// the backend to impersonate, since this is about how the actual
 	// database engine parses the literal, not what the client believes
 	// it's talking to.  An explicit attribute still overrides the

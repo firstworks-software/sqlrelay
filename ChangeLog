@@ -134,7 +134,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - added sqlrservercontroller::getNativeDbType(), and fixed the
   globaltemptables, normalize, and singlestep modules to use it
   instead of getDbType() where they were deciding how to talk to
-  the real backend - getDbType() follows a dbtype= override, a
+  the real backend - getDbType() follows an identity= override, a
   normal thing to set during a migration to make one database
   impersonate another for the client's benefit, and following
   that override for a backend-behavior decision silently picks
@@ -930,6 +930,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - added the JDBC diagram to the database abstraction layers images on the
   documentation page
 - reorganized the index page of the documentation
+- renamed the dbtype connect string parameter to identity, dbtype still
+  works
 
 ### Removed
 - oracle protocol module: deleted cancel() (no wire input can reach it)
@@ -2858,7 +2860,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   size (#10163)
 - fixed the ODBC driver ignoring SQL_ATTR_PARAMSET_SIZE and executing
   array-bound parameters only once (#10176)
-- fixed instances impersonating oracle via dbtype= reporting integer and
+- fixed instances impersonating oracle via identity= reporting integer and
   numeric result-set columns using the real backend's native types
   instead of oracle NUMBER (#10179)
 - fixed the ODBC driver leaving autocommit off, rather than on as the

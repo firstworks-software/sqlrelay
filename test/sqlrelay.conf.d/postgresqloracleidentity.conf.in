@@ -6,7 +6,7 @@
 			<listener port="9044" socket="/tmp/postgresqloracleidentity.socket"/>
 		</listeners>
 		<connections>
-			<connection string="host=postgresql;user=testuser;password=testpassword;db=@HOSTNAME@;dbtype=Oracle;typemangling=lookup;tablemangling=lookup"/>
+			<connection string="host=postgresql;user=testuser;password=testpassword;db=@HOSTNAME@;identity=Oracle;typemangling=lookup;tablemangling=lookup"/>
 		</connections>
 	</instance>
 

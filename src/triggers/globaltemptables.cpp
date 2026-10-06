@@ -352,7 +352,7 @@ void sqlrtrigger_globaltemptables::buildCreateStatement(uint64_t i,
 	// applied unconditionally.
 	//
 	// Use getNativeDbType(), not getDbType() - a migration commonly sets
-	// dbtype= to make the real backend impersonate a different database
+	// identity= to make the real backend impersonate a different database
 	// for the client's benefit, and this decision has to be based on
 	// what the backend actually is, not what it's pretending to be.
 	if (!charstring::compareIgnoringCase(

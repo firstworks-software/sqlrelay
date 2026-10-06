@@ -328,7 +328,7 @@ class SQLRSERVER_DLLSPEC sqlrservercontroller : public sqlrserverbase {
 		 *  value returned by the connection module.
 		 * 
 		 *  During initialization of the sqlr-connection, this is set
-		 *  to the value of the "dbtype" parameter, of the string
+		 *  to the value of the "identity" parameter, of the string
 		 *  attribute, of the connection tag, in the config file,
 		 *  if present. */
 		void	setDbType(const char *dbtype);
@@ -455,7 +455,7 @@ class SQLRSERVER_DLLSPEC sqlrservercontroller : public sqlrserverbase {
 
 		/** Returns the type of database: oracle, mysql, postgresql,
 		 *  odbc, etc. as reported by the connection module, or as
-		 *  overridden by a call to setDbType() or by the "dbtype"
+		 *  overridden by a call to setDbType() or by the "identity"
 		 *  parameter, of the string attribute, of the connection tag,
 		 *  in the config file.
 		 *
@@ -469,7 +469,7 @@ class SQLRSERVER_DLLSPEC sqlrservercontroller : public sqlrserverbase {
 
 		/** Returns the type of database the connection module
 		 *  actually is: oracle, mysql, postgresql, odbc, etc. -
-		 *  never overridden by setDbType() or the "dbtype"
+		 *  never overridden by setDbType() or the "identity"
 		 *  parameter.  Use this for any decision that depends on the
 		 *  real backend's own behavior; use getDbType() for anything
 		 *  that should follow the identity the client was told to
