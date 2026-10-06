@@ -6115,6 +6115,197 @@ int main(int argc, char **argv) {
 	}
 
 
+	// sp_cursorprepare is a tds 7 construct too, so a native ASE
+	// connection answers it not found with -6.  Through sqlrelay it
+	// runs, and answers with a return status of 0 and three output
+	// parameters - the handle, then the scroll and concurrency options
+	// it settled on.  The handle is good for sp_cursorunprepare, and
+	// only that over tds 5.0, where sp_cursorexecute is still refused.
+	// A native mssql server is left out, since what it answers a char
+	// @params with is unverified here.
+	if (nativease || issqlrelay) {
+
+		stdoutput.printf("ct_command: rpc sp_cursorprepare\n");
+		assertEquals(ct_command(cmd,CS_RPC_CMD,
+				(CS_CHAR *)"sp_cursorprepare",CS_NULLTERM,
+				CS_UNUSED),CS_SUCCEED);
+		bytestring::zero(&(dynparam[0]),sizeof(CS_DATAFMT));
+		dynparam[0].datatype=CS_INT_TYPE;
+		dynparam[0].maxlength=4;
+		dynparam[0].count=1;
+		dynparam[0].status=CS_RETURN;
+		dynintvalue[0]=0;
+		assertEquals(ct_param(cmd,&(dynparam[0]),
+					(CS_VOID *)&(dynintvalue[0]),
+					sizeof(CS_INT),0),CS_SUCCEED);
+		bytestring::zero(&(dynparam[1]),sizeof(CS_DATAFMT));
+		dynparam[1].datatype=CS_CHAR_TYPE;
+		dynparam[1].maxlength=64;
+		dynparam[1].count=1;
+		dynparam[1].status=CS_INPUTVALUE;
+		const char	*cursprepstmt="select 1 as cursval";
+		assertEquals(ct_param(cmd,&(dynparam[1]),
+					(CS_VOID *)dynrpcparams,
+					charstring::getLength(dynrpcparams),
+					0),CS_SUCCEED);
+		assertEquals(ct_param(cmd,&(dynparam[1]),
+					(CS_VOID *)cursprepstmt,
+					charstring::getLength(cursprepstmt),
+					0),CS_SUCCEED);
+		bytestring::zero(&(dynparam[2]),sizeof(CS_DATAFMT));
+		dynparam[2].datatype=CS_INT_TYPE;
+		dynparam[2].maxlength=4;
+		dynparam[2].count=1;
+		dynparam[2].status=CS_INPUTVALUE;
+		dynintvalue[2]=1;
+		assertEquals(ct_param(cmd,&(dynparam[2]),
+					(CS_VOID *)&(dynintvalue[2]),
+					sizeof(CS_INT),0),CS_SUCCEED);
+		assertEquals(ct_send(cmd),CS_SUCCEED);
+		results=ct_results(cmd,&resultstype);
+		assertEquals(results,CS_SUCCEED);
+		assertEquals(resultstype,CS_STATUS_RESULT);
+		bytestring::zero(dyndata[0],1024);
+		assertEquals(ct_bind(cmd,1,&(dynfmt[0]),
+					(CS_VOID *)dyndata[0],
+					&(dyndatalength[0]),
+					&(dynnullindicator[0])),CS_SUCCEED);
+		assertEquals(ct_fetch(cmd,CS_UNUSED,CS_UNUSED,
+					CS_UNUSED,&rowsread),CS_SUCCEED);
+		assertEquals((CS_INT)charstring::convertToInteger(dyndata[0]),
+						(nativease)?-6:0);
+		assertEquals(ct_fetch(cmd,CS_UNUSED,CS_UNUSED,
+					CS_UNUSED,&rowsread),CS_END_DATA);
+		CS_INT	cursprephandle=0;
+		if (!nativease) {
+			results=ct_results(cmd,&resultstype);
+			assertEquals(results,CS_SUCCEED);
+			assertEquals(resultstype,CS_PARAM_RESULT);
+			ncols=-1;
+			assertEquals(ct_res_info(cmd,CS_NUMDATA,
+					(CS_VOID *)&ncols,CS_UNUSED,
+					(CS_INT *)NULL),CS_SUCCEED);
+			assertEquals(ncols,3);
+			for (CS_INT i=0; i<3; i++) {
+				bytestring::zero(dyndata[i],1024);
+				assertEquals(ct_bind(cmd,i+1,&(dynfmt[i]),
+					(CS_VOID *)dyndata[i],
+					&(dyndatalength[i]),
+					&(dynnullindicator[i])),CS_SUCCEED);
+			}
+			assertEquals(ct_fetch(cmd,CS_UNUSED,CS_UNUSED,
+					CS_UNUSED,&rowsread),CS_SUCCEED);
+
+			// the server picks the handle, so only that it is
+			// usable is asserted, never what it equals
+			cursprephandle=charstring::convertToInteger(dyndata[0]);
+			assertTrue(cursprephandle>0);
+			assertEquals(dynnullindicator[0],0);
+
+			// forward only, read only
+			assertEquals(dyndata[1],"4");
+			assertEquals(dynnullindicator[1],0);
+			assertEquals(dyndata[2],"1");
+			assertEquals(dynnullindicator[2],0);
+			assertEquals(ct_fetch(cmd,CS_UNUSED,CS_UNUSED,
+					CS_UNUSED,&rowsread),CS_END_DATA);
+		}
+		results=ct_results(cmd,&resultstype);
+		assertEquals(results,CS_SUCCEED);
+		assertEquals(resultstype,
+			(nativease)?CS_CMD_FAIL:CS_CMD_SUCCEED);
+		results=ct_results(cmd,&resultstype);
+		assertEquals(results,CS_SUCCEED);
+		assertEquals(resultstype,CS_CMD_DONE);
+		results=ct_results(cmd,&resultstype);
+		assertEquals(results,CS_END_RESULTS);
+		assertEquals(ct_cancel(NULL,cmd,CS_CANCEL_ALL),CS_SUCCEED);
+		stdoutput.printf("\n");
+
+
+		// the first call releases the handle, so the second finds
+		// nothing to release
+		// to release
+		stdoutput.printf("ct_command: rpc sp_cursorunprepare\n");
+		for (CS_INT i=0; i<2; i++) {
+
+			assertEquals(ct_command(cmd,CS_RPC_CMD,
+				(CS_CHAR *)"sp_cursorunprepare",CS_NULLTERM,
+				CS_UNUSED),CS_SUCCEED);
+			bytestring::zero(&(dynparam[0]),sizeof(CS_DATAFMT));
+			dynparam[0].datatype=CS_INT_TYPE;
+			dynparam[0].maxlength=4;
+			dynparam[0].count=1;
+			dynparam[0].status=CS_INPUTVALUE;
+			dynintvalue[0]=(nativease)?1:cursprephandle;
+			assertEquals(ct_param(cmd,&(dynparam[0]),
+						(CS_VOID *)&(dynintvalue[0]),
+						sizeof(CS_INT),0),CS_SUCCEED);
+			assertEquals(ct_send(cmd),CS_SUCCEED);
+			results=ct_results(cmd,&resultstype);
+			assertEquals(results,CS_SUCCEED);
+			assertEquals(resultstype,CS_STATUS_RESULT);
+			bytestring::zero(dyndata[0],1024);
+			assertEquals(ct_bind(cmd,1,&(dynfmt[0]),
+					(CS_VOID *)dyndata[0],
+					&(dyndatalength[0]),
+					&(dynnullindicator[0])),CS_SUCCEED);
+			assertEquals(ct_fetch(cmd,CS_UNUSED,CS_UNUSED,
+					CS_UNUSED,&rowsread),CS_SUCCEED);
+			assertEquals((CS_INT)charstring::convertToInteger(
+							dyndata[0]),
+					(nativease)?-6:((i)?8179:0));
+			assertEquals(ct_fetch(cmd,CS_UNUSED,CS_UNUSED,
+					CS_UNUSED,&rowsread),CS_END_DATA);
+			results=ct_results(cmd,&resultstype);
+			assertEquals(results,CS_SUCCEED);
+			assertEquals(resultstype,
+				(nativease || i)?CS_CMD_FAIL:CS_CMD_SUCCEED);
+			results=ct_results(cmd,&resultstype);
+			assertEquals(results,CS_SUCCEED);
+			assertEquals(resultstype,CS_CMD_DONE);
+			results=ct_results(cmd,&resultstype);
+			assertEquals(results,CS_END_RESULTS);
+			assertEquals(ct_cancel(NULL,cmd,CS_CANCEL_ALL),
+								CS_SUCCEED);
+		}
+		stdoutput.printf("\n");
+
+
+		// the other four numbered cursor procs reply with a result
+		// set the way ms-tds does, which tds 5.0 cannot carry, so the
+		// call fails rather than running
+		if (tds5 && issqlrelay) {
+			stdoutput.printf("ct_command: rpc sp_cursorexecute\n");
+			assertEquals(ct_command(cmd,CS_RPC_CMD,
+				(CS_CHAR *)"sp_cursorexecute",CS_NULLTERM,
+				CS_UNUSED),CS_SUCCEED);
+			bytestring::zero(&(dynparam[0]),sizeof(CS_DATAFMT));
+			dynparam[0].datatype=CS_INT_TYPE;
+			dynparam[0].maxlength=4;
+			dynparam[0].count=1;
+			dynparam[0].status=CS_INPUTVALUE;
+			dynintvalue[0]=1;
+			assertEquals(ct_param(cmd,&(dynparam[0]),
+						(CS_VOID *)&(dynintvalue[0]),
+						sizeof(CS_INT),0),CS_SUCCEED);
+			assertEquals(ct_send(cmd),CS_SUCCEED);
+			results=ct_results(cmd,&resultstype);
+			assertEquals(results,CS_SUCCEED);
+			assertEquals(resultstype,CS_CMD_FAIL);
+			results=ct_results(cmd,&resultstype);
+			assertEquals(results,CS_SUCCEED);
+			assertEquals(resultstype,CS_CMD_DONE);
+			results=ct_results(cmd,&resultstype);
+			assertEquals(results,CS_END_RESULTS);
+			assertEquals(ct_cancel(NULL,cmd,CS_CANCEL_ALL),
+								CS_SUCCEED);
+			stdoutput.printf("\n");
+		}
+
+	}
+
+
 	// ASE answers an rpc for a procedure that does not exist with a
 	// status result before the CS_CMD_FAIL, -6 for the severity 16
 	// error, and sqlrelay answers the same way for an ASE backend.  mssql

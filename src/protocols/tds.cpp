@@ -8393,16 +8393,16 @@ bool sqlrprotocol_tds::preTds7DbRpc(const byte_t **rpinout,
 		debugProcId(procid);
 	}
 
-	// the numbered cursor procs.  Their cores are wire-neutral, but all
-	// but sp_cursorprepare write colmetadata (0x81) and rows (0xD1)
-	// straight out rather than going through rpcResultSet().  Answering
-	// one of those would desynchronize the client rather than fail it,
-	// and 0x81 is the cursor-delete token here.  sp_cursorprepare has no
-	// such tail, but has never been run over this dialect.  A ct-lib
-	// client has cursor tokens of its own and never sends these.
+	// the numbered cursor procs.  Their cores are wire-neutral, but
+	// these four write colmetadata (0x81) and rows (0xD1) straight out
+	// rather than going through rpcResultSet().  Answering one would
+	// desynchronize the client rather than fail it, and 0x81 is the
+	// cursor-delete token here.  sp_cursorprepare and sp_cursorunprepare
+	// write only a return status and return values, so they run.  A
+	// ct-lib client has cursor tokens of its own and never sends these.
 	// FIXME: give these a pre-tds7 reply tail along with the tds 5.0
 	// cursor tokens
-	if (procid==SP_CURSOR_PREPARE || procid==SP_CURSOR_OPEN ||
+	if (procid==SP_CURSOR_OPEN ||
 				procid==SP_CURSOR_EXECUTE ||
 				procid==SP_CURSOR_PREP_EXEC ||
 				procid==SP_CURSOR_FETCH) {
@@ -22996,7 +22996,8 @@ void sqlrprotocol_tds::preTds7ReturnValueInteger(int32_t value,
 	bv.variable=NULL;
 	bv.variablesize=0;
 	bv.valuesize=0;
-	bv.isnull=cont->getNullBindValue();
+	bv.isnull=(isnull)?cont->getNullBindValue():
+				cont->getNonNullBindValue();
 	if (isnull) {
 		bv.type=SQLRSERVERBINDVARTYPE_NULL;
 		bv.value.stringval=NULL;
