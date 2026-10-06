@@ -15032,6 +15032,74 @@ void sqlrprotocol_tds::preTds7ParamValueWrite(const tds5paramfmt *fmt,
 			}
 			break;
 
+		// date and time are 4 bytes, alone or after a size byte,
+		// bigdatetime and bigtime are 8 bytes after a size byte
+		case TDS5_TYPE_DATE:
+		case TDS5_TYPE_DATEN:
+		case TDS5_TYPE_TIME:
+		case TDS5_TYPE_TIMEN:
+		case TDS5_TYPE_SYB5BIGDATETIME:
+		case TDS5_TYPE_SYB5BIGTIME:
+			{
+			int16_t	year;
+			int16_t	month;
+			int16_t	day;
+			int16_t	hour;
+			int16_t	minute;
+			int16_t	second;
+			int32_t	usec;
+			int16_t	tzoffset;
+			if (!parseDateTime(field,&year,&month,&day,
+						&hour,&minute,&second,
+						&usec,&tzoffset)) {
+				debugWrite("unparseable datetime: %s",field);
+			}
+			uint32_t	secs=hour*3600+minute*60+second;
+
+			if (fmt->tds5type==TDS5_TYPE_SYB5BIGDATETIME ||
+				fmt->tds5type==TDS5_TYPE_SYB5BIGTIME) {
+
+				// microseconds, since 0000-01-01 for a
+				// bigdatetime - 366 days ahead of 0001-01-01
+				// - and since midnight for a bigtime
+				uint64_t	data=((uint64_t)secs)*1000000+usec;
+				if (fmt->tds5type==
+						TDS5_TYPE_SYB5BIGDATETIME) {
+					data+=((uint64_t)daysSince1(
+							year,month,day)+366)*
+							86400000000ULL;
+				}
+				write(&resppacket,(byte_t)8);
+				write(&resppacket,data);
+				debugWrite("size: 8");
+				debugWrite("data: %lld",(long long)data);
+
+			} else {
+
+				// days since 1900-01-01 for a date,
+				// three-hundredths of a second since midnight
+				// for a time
+				uint32_t	data=0;
+				if (fmt->tds5type==TDS5_TYPE_DATE ||
+					fmt->tds5type==TDS5_TYPE_DATEN) {
+					data=(uint32_t)(
+						(int32_t)daysSince1(
+							year,month,day)-
+						(int32_t)daysSince1(1900,1,1));
+				} else {
+					data=secs*300+usec*3/10000;
+				}
+				if (fmt->tds5type==TDS5_TYPE_DATEN ||
+					fmt->tds5type==TDS5_TYPE_TIMEN) {
+					write(&resppacket,(byte_t)4);
+					debugWrite("size: 4");
+				}
+				write(&resppacket,data);
+				debugWrite("data: %d",(int32_t)data);
+			}
+			}
+			break;
+
 		case TDS5_TYPE_DECN:
 		case TDS5_TYPE_NUMN:
 			{
@@ -15177,12 +15245,10 @@ void sqlrprotocol_tds::preTds7ParamValueWrite(const tds5paramfmt *fmt,
 			break;
 
 		default:
-			// void, and the date and time types other than
-			// datetime and smalldatetime.  Write the null form
-			// rather than nothing at all, so a type added later
-			// without a case here costs one value rather than the
-			// whole token.
-			// FIXME: implement date, time, bigdatetime and bigtime
+			// void, and anything else without a case above.  Write
+			// the null form rather than nothing at all, so a type
+			// added later without a case here costs one value
+			// rather than the whole token.
 			debugWrite("unhandled type - writing null");
 			preTds7ParamNullWrite(fmt);
 			break;
@@ -23034,6 +23100,10 @@ byte_t sqlrprotocol_tds::preTds7FixedType(byte_t tds5type, uint32_t size) {
 			return (size==4)?TDS5_TYPE_SHORTMONEY:TDS5_TYPE_MONEY;
 		case TDS5_TYPE_DATETIMEN:
 			return (size==4)?TDS5_TYPE_SHORTDATE:TDS5_TYPE_DATETIME;
+		case TDS5_TYPE_DATEN:
+			return TDS5_TYPE_DATE;
+		case TDS5_TYPE_TIMEN:
+			return TDS5_TYPE_TIME;
 	}
 	return tds5type;
 }

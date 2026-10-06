@@ -988,8 +988,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - tds protocol module: fixed cursor/result-set leaks, sp_execute extra
   parameter handling, DONE_ERROR reporting, longbinary rpc
   parameters, missing and failed-procedure return status, null
-  integer/float output parameters, and numeric/decimal output
-  parameter precision
+  integer/float and date/time output parameters, and
+  numeric/decimal output parameter precision
 - fixed sqlrservercursor::getError() returning the connection's error
   instead of its own
 - fixed the firebird protocol module's keepReading() debugging aid

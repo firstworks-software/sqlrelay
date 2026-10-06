@@ -10984,6 +10984,228 @@ int main(int argc, char **argv) {
 	stdoutput.printf("\n");
 
 
+	// #10520 - date, time, bigdatetime and bigtime output parameters,
+	// with values and null.  Sap's ct-lib only, since mssql has no
+	// bigdatetime or bigtime, and through sqlrelay only, since a native
+	// ase answers sap's ct-lib at CS_VERSION_100 with error 7737 for a
+	// bigdatetime and fails the all-null call.  The expected values are
+	// what a native ase sends at CS_VERSION_160.  Bound as CS_CHAR a
+	// value displays to the minute, so the seconds and fractions are not
+	// checked here.
+	if (tds5 && issybase && issqlrelay) {
+
+		const char	*binddateprocs[2]={"binddateproc",
+							"binddatenullproc"};
+		for (CS_INT i=0; i<2; i++) {
+			stringbuffer	dropq;
+			dropq.append("drop procedure ")->
+						append(binddateprocs[i]);
+			ct_command(cmd,CS_LANG_CMD,
+					(CS_CHAR *)dropq.getString(),
+					dropq.getStringLength(),CS_UNUSED);
+			ct_send(cmd);
+			while (ct_results(cmd,&resultstype)==CS_SUCCEED) {}
+			ct_cancel(NULL,cmd,CS_CANCEL_ALL);
+		}
+
+		stdoutput.printf("ct_command: create date/time procedures\n");
+		const char	*binddatecreates[2]={
+			"create procedure binddateproc "
+				"@pd date output, @pt time output, "
+				"@pbdt bigdatetime output, "
+				"@pbt bigtime output as "
+				"select @pd = '2001-02-03' "
+				"select @pt = '13:14:15.500' "
+				"select @pbdt = '2001-02-03 04:05:06.123456' "
+				"select @pbt = '07:08:09.654321'",
+			"create procedure binddatenullproc "
+				"@pd date output, @pt time output, "
+				"@pbdt bigdatetime output, "
+				"@pbt bigtime output as "
+				"select @pd = null "
+				"select @pt = null "
+				"select @pbdt = null "
+				"select @pbt = null"
+		};
+		for (CS_INT i=0; i<2; i++) {
+			assertEquals(ct_command(cmd,CS_LANG_CMD,
+					(CS_CHAR *)binddatecreates[i],
+					charstring::getLength(
+						binddatecreates[i]),
+					CS_UNUSED),CS_SUCCEED);
+			assertEquals(ct_send(cmd),CS_SUCCEED);
+			results=ct_results(cmd,&resultstype);
+			assertEquals(results,CS_SUCCEED);
+			assertEquals(resultstype,CS_CMD_SUCCEED);
+			results=ct_results(cmd,&resultstype);
+			assertEquals(results,CS_SUCCEED);
+			assertEquals(resultstype,CS_CMD_DONE);
+			results=ct_results(cmd,&resultstype);
+			assertEquals(results,CS_END_RESULTS);
+			assertEquals(ct_cancel(NULL,cmd,CS_CANCEL_ALL),
+								CS_SUCCEED);
+		}
+		stdoutput.printf("\n");
+
+		CS_DATAFMT	binddatefmt[4];
+		const char	*binddatename[4]={"@pd","@pt","@pbdt","@pbt"};
+		CS_INT		binddatetype[4]={
+					CS_DATE_TYPE,CS_TIME_TYPE,
+					CS_BIGDATETIME_TYPE,CS_BIGTIME_TYPE};
+		CS_INT		binddatemaxlength[4]={4,4,8,8};
+		CS_INT		binddatescale[4]={0,0,6,6};
+		CS_INT		binddatestatus[4]={
+					CS_RETURN,CS_RETURN,
+					CS_RETURN|CS_CANBENULL,
+					CS_RETURN|CS_CANBENULL};
+		const char	*binddatevalue[4]={
+					"Feb  3 2001"," 1:14PM",
+					"Feb  3 2001  4:05AM"," 7:08AM"};
+		CS_INT		binddatevaluelen[4]={12,8,20,8};
+
+		// the input side of each output parameter - 1900-01-01 and
+		// midnight, so that sqlrelay gets a valid value to bind
+		CS_DATE		binddatein=0;
+		CS_TIME		bindtimein=0;
+		CS_BIGDATETIME	bindbigdatetimein=59958230400000000ULL;
+		CS_BIGTIME	bindbigtimein=0;
+		CS_VOID		*binddatein4[4]={
+					(CS_VOID *)&binddatein,
+					(CS_VOID *)&bindtimein,
+					(CS_VOID *)&bindbigdatetimein,
+					(CS_VOID *)&bindbigtimein};
+
+		for (CS_INT p=0; p<2; p++) {
+
+			bool	isnull=(p==1);
+
+			stdoutput.printf("ct_command: rpc with %sdate/time "
+					"output params\n",(isnull)?"null ":"");
+			assertEquals(ct_command(cmd,CS_RPC_CMD,
+					(CS_CHAR *)binddateprocs[p],
+					CS_NULLTERM,CS_UNUSED),CS_SUCCEED);
+			for (CS_INT i=0; i<4; i++) {
+				bytestring::zero(&(binddatefmt[i]),
+							sizeof(CS_DATAFMT));
+				binddatefmt[i].datatype=binddatetype[i];
+				binddatefmt[i].maxlength=binddatemaxlength[i];
+				binddatefmt[i].count=1;
+				binddatefmt[i].status=CS_RETURN;
+				charstring::copy(binddatefmt[i].name,
+							binddatename[i]);
+				binddatefmt[i].namelen=
+					charstring::getLength(binddatename[i]);
+				assertEquals(ct_param(cmd,&(binddatefmt[i]),
+						binddatein4[i],
+						binddatemaxlength[i],0),
+						CS_SUCCEED);
+			}
+			assertEquals(ct_send(cmd),CS_SUCCEED);
+
+			results=ct_results(cmd,&resultstype);
+			assertEquals(results,CS_SUCCEED);
+			assertEquals(resultstype,CS_STATUS_RESULT);
+			bytestring::zero(bindreaddata,sizeof(bindreaddata));
+			assertEquals(ct_bind(cmd,1,&bindreadfmt,
+						(CS_VOID *)bindreaddata,
+						&bindreadlength,
+						&bindreadindicator),CS_SUCCEED);
+			assertEquals(ct_fetch(cmd,CS_UNUSED,CS_UNUSED,
+						CS_UNUSED,&rowsread),CS_SUCCEED);
+			assertEquals(bindreaddata,"0");
+			assertEquals(ct_fetch(cmd,CS_UNUSED,CS_UNUSED,
+						CS_UNUSED,&rowsread),CS_END_DATA);
+
+			results=ct_results(cmd,&resultstype);
+			assertEquals(results,CS_SUCCEED);
+			assertEquals(resultstype,CS_PARAM_RESULT);
+			ncols=-1;
+			assertEquals(ct_res_info(cmd,CS_NUMDATA,
+						(CS_VOID *)&ncols,CS_UNUSED,
+						(CS_INT *)NULL),CS_SUCCEED);
+			assertEquals(ncols,4);
+			char		binddatedata[4][256];
+			CS_INT		binddatedatalength[4];
+			CS_SMALLINT	binddatedataindicator[4];
+			for (CS_INT i=0; i<ncols && i<4; i++) {
+				bytestring::zero(&(binddatefmt[i]),
+							sizeof(CS_DATAFMT));
+				assertEquals(ct_describe(cmd,i+1,
+						&(binddatefmt[i])),CS_SUCCEED);
+				assertEquals(binddatefmt[i].name,
+							binddatename[i]);
+				assertEquals(binddatefmt[i].datatype,
+							binddatetype[i]);
+				assertEquals(binddatefmt[i].maxlength,
+							binddatemaxlength[i]);
+				assertEquals(binddatefmt[i].scale,
+							binddatescale[i]);
+				assertEquals(binddatefmt[i].status,
+						(isnull)?(CS_RETURN|CS_CANBENULL):
+							binddatestatus[i]);
+				assertEquals(binddatefmt[i].usertype,0);
+				bytestring::zero(binddatedata[i],
+						sizeof(binddatedata[i]));
+				binddatedatalength[i]=-1;
+				binddatedataindicator[i]=-99;
+				assertEquals(ct_bind(cmd,i+1,&bindoutreadfmt,
+						(CS_VOID *)binddatedata[i],
+						&(binddatedatalength[i]),
+						&(binddatedataindicator[i])),
+						CS_SUCCEED);
+			}
+			assertEquals(ct_fetch(cmd,CS_UNUSED,CS_UNUSED,
+						CS_UNUSED,&rowsread),CS_SUCCEED);
+			assertEquals(rowsread,1);
+			for (CS_INT i=0; i<ncols && i<4; i++) {
+				assertEquals(binddatedata[i],
+						(isnull)?"":binddatevalue[i]);
+				assertEquals(binddatedatalength[i],
+						(isnull)?nulltermnulllength:
+							binddatevaluelen[i]);
+				assertEquals(binddatedataindicator[i],
+						(isnull)?-1:0);
+			}
+			assertEquals(ct_fetch(cmd,CS_UNUSED,CS_UNUSED,
+						CS_UNUSED,&rowsread),CS_END_DATA);
+			results=ct_results(cmd,&resultstype);
+			assertEquals(results,CS_SUCCEED);
+			assertEquals(resultstype,CS_CMD_SUCCEED);
+			results=ct_results(cmd,&resultstype);
+			assertEquals(results,CS_SUCCEED);
+			assertEquals(resultstype,CS_CMD_DONE);
+			results=ct_results(cmd,&resultstype);
+			assertEquals(results,CS_END_RESULTS);
+			assertEquals(ct_cancel(NULL,cmd,CS_CANCEL_ALL),
+								CS_SUCCEED);
+			stdoutput.printf("\n");
+		}
+
+		stdoutput.printf("ct_command: drop date/time procedures\n");
+		for (CS_INT i=0; i<2; i++) {
+			stringbuffer	dropq;
+			dropq.append("drop procedure ")->
+						append(binddateprocs[i]);
+			assertEquals(ct_command(cmd,CS_LANG_CMD,
+					(CS_CHAR *)dropq.getString(),
+					dropq.getStringLength(),
+					CS_UNUSED),CS_SUCCEED);
+			assertEquals(ct_send(cmd),CS_SUCCEED);
+			results=ct_results(cmd,&resultstype);
+			assertEquals(results,CS_SUCCEED);
+			assertEquals(resultstype,CS_CMD_SUCCEED);
+			results=ct_results(cmd,&resultstype);
+			assertEquals(results,CS_SUCCEED);
+			assertEquals(resultstype,CS_CMD_DONE);
+			results=ct_results(cmd,&resultstype);
+			assertEquals(results,CS_END_RESULTS);
+			assertEquals(ct_cancel(NULL,cmd,CS_CANCEL_ALL),
+								CS_SUCCEED);
+		}
+		stdoutput.printf("\n");
+	}
+
+
 	// CS_NUMERIC_TYPE goes in as an input parameter on both servers,
 	// but mssql refuses it as an output parameter - 8016, 'Parameter 2
 	// ("@pnum"): Data type 0x6C has an invalid data length or metadata
