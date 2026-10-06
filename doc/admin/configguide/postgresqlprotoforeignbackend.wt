@@ -32,7 +32,6 @@ Depending on the back-end, it might also be necessary to make some other configu
  * set the identity parameter to override the database type
  * set ignorespace=yes
  * set the overrideschema parameter
- * set the typemangling and/or tablemangling parameters - when using a !PostgreSQL back-end
 * use [querytranslation.html#querytranslation Query Translation] modules
 * use [resultsettranslation.html#resultsettranslation Result Set Translation] modules
 * use [errortranslation.html#errortranslation Error Translation] modules
