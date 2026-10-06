@@ -15,7 +15,7 @@ When targeting a foreign back-end...
 
 Some back-end databases, like Oracle, don't have integer types.  An integer type is really just a DECIMAL with a scale of 0.
 
-By default, the !MySQL protocol module maps zero-scale DECIMAL types to the !MySQL DECIMAL type.  Buy you might want to map them to the !MySQL BIGINT type instead.
+By default, the !MySQL protocol module maps zero-scale DECIMAL types to the !MySQL DECIMAL type.  But you might want to map them to the !MySQL BIGINT type instead.
 
 The //zeroscaledecimaltobigint// option instructs the module to do this mapping.
 

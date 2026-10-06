@@ -12,7 +12,7 @@
 
 <p>When connect strings authentication is used, a user is authenticated against the set of user/password combinations that SQL Relay is configured to use to access the database.  That is, they are the values of the user and password parameters of the string attribute of the connection tag.</p>
 
-<p>In the following example, SQL Relay is configured to access the database using postgresqlsuer/postgresqlpassword credentials.</p>
+<p>In the following example, SQL Relay is configured to access the database using postgresqluser/postgresqlpassword credentials.</p>
 
 <blockquote>
 <!-- Generator: GNU source-highlight 3.1.9

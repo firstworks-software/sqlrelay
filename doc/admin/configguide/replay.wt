@@ -54,7 +54,7 @@ In addition to the '''module''' and '''when''' attributes, the '''trigger''' tag
 * '''includeselects'''
  * If set to "no" (the default) - select queries are not logged or replayed
  * If set to "yes" - select queries are logged and replayed
- * Use care when disabling this, as the query log will be larger and replay operations can take much longer.
+ * Use care when enabling this, as the query log will be larger and replay operations can take much longer.
 * '''maxretries'''
  * It's possible to encounter another replay condition while replaying a query or transaction.  If this happens, the module retries.  This attribute limits the total number of retries.  If it is exceeded, then whatever error occurred on the last retry is returned to the application.
 
@@ -72,7 +72,7 @@ The '''condition''' tag supports the following attributes:
  * '''sqlstate''' and '''error''' are alternatives on a single '''condition''' tag, not combined on one - a site that wants to react to either a particular SQLSTATE or a particular error should configure two separate '''condition''' tags, one using each attribute
 * '''scope'''
  * transaction - replay the entire transaction if this condition occurs
- * transaction - replay the previous query if this condition occurs
+ * query - replay the previous query if this condition occurs
 
 The '''log''' tag supports the following attributes:
 

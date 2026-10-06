@@ -161,7 +161,7 @@ http://www.gnu.org/software/src-highlite -->
 
 <h2>Mutual Authentication</h2>
 
-<p>For an even more secure session, the server may also request a certificate from the client, validate the certificate, and optionally authenticate the client based on the host name provided by the certificate.</p>
+<p>For an even more secure session, the server may also request a certificate from the client and validate the certificate.</p>
 
 <p>The following configuration enables these checks for an instance of SQL Relay:</p>
 
@@ -195,12 +195,9 @@ http://www.gnu.org/software/src-highlite -->
     <li>(a .pem file is specified in this example, but on Windows systems, a .pfx file or Windows Certificate Store reference must be used. See <a href="../tlsca.html">The tlsca Parameter</a> for details.)</li>
   </ul>
 
-  <li>User list authentication is also used.</li>
 </ul>
 
-<p>Note that no passwords are required in the user list.  In this configuration, the Subject Alternative Names in the client's certificate (or Common Name if no SAN's are present) are authenticated against the list of valid names.</p>
-
-<p>Note also that when <b>tlsvalidate</b> is set to "yes", database and proxied authentication cannot currently be used.  This is because database and proxied authentication both require a user name and password but the client certificate doesn't provide either.</p>
+<p>Note that when <b>tlsvalidate</b> is set to "yes", database and proxied authentication cannot currently be used.  This is because database and proxied authentication both require a user name and password but the client certificate doesn't provide either.</p>
 
 <p>To access the instance, the client must provide, at minimum, a certificate chain file (containing the client's certificate, private key, and signing certificates, as appropriate), as follows:</p>
 

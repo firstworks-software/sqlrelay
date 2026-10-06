@@ -54,7 +54,7 @@ Password=tiger
 </pre>
 
 </blockquote>
-<p>A program that uses the SQL Relay driver for PHP PDO can be configured as follows:</p>
+<p>A program that uses the SQL Relay driver for Perl DBI can be configured as follows:</p>
 
 <blockquote>
 <!-- Generator: GNU source-highlight 3.1.9

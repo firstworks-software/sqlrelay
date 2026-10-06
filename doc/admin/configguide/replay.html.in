@@ -101,7 +101,7 @@ http://www.gnu.org/software/src-highlite -->
   <ul>
     <li>If set to "no" (the default) - select queries are not logged or replayed</li>
     <li>If set to "yes" - select queries are logged and replayed</li>
-    <li>Use care when disabling this, as the query log will be larger and replay operations can take much longer.</li>
+    <li>Use care when enabling this, as the query log will be larger and replay operations can take much longer.</li>
   </ul>
 
   <li><b>maxretries</b></li>
@@ -133,7 +133,7 @@ http://www.gnu.org/software/src-highlite -->
   <li><b>scope</b></li>
   <ul>
     <li>transaction - replay the entire transaction if this condition occurs</li>
-    <li>transaction - replay the previous query if this condition occurs</li>
+    <li>query - replay the previous query if this condition occurs</li>
   </ul>
 
 </ul>

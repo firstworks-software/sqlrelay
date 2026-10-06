@@ -56,7 +56,7 @@ Jul 10 2015 05:17:55:717PM
 Into:
 
 {{{#!blockquote
-07/10/2015 17:18:55
+07/10/2015 17:17:55
 }}}
 
 Note that '''dateddmm''' and '''dateyyyyddmm''' should usually be set to the same thing.  There are very specific cases where these two attributes need to be set differently from one another.  You'll know if you need to.

@@ -58,7 +58,7 @@ Password=tiger
 }}}
 }}}
 
-A program that uses the SQL Relay driver for PHP PDO can be configured as follows:
+A program that uses the SQL Relay driver for Perl DBI can be configured as follows:
 
 {{{#!blockquote
 {{{#!code

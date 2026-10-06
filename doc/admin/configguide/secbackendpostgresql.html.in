@@ -20,10 +20,6 @@
 <p>Configuring SQL Relay to use TLS/SSL encryption and authentication with a PostgreSQL database involves:</p>
 
 <ul>
-  <li>Configuring the database server to support secure connections</li>
-  <li>Installing a certificate on the database server</li>
-  <li>Configuring the SQL Relay server to support secure connections</li>
-  <li>Installing a certificate on the SQL Relay server</li>
   <li>Configuring the database server to support encryption and/or authentication</li>
   <li>Installing certificate, key, CA certs, and revocation lists, as necessary, on the database server</li>
   <li>Configuring the SQL Relay server to support encryption and/or authentication</li>

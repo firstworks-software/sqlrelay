@@ -103,7 +103,7 @@ The !PostgreSQL client only appears to support fully qualified host name validat
 
 == Mutual Authentication ==
 
-For an even more secure session, the server may also request a certificate from the client, validate the certificate, and optionally authenticate the client based on the host name provided by the certificate.
+For an even more secure session, the server may also request a certificate from the client and validate the certificate.
 
 The following configuration enables these checks for an instance of SQL Relay:
 
@@ -116,11 +116,8 @@ The following configuration enables these checks for an instance of SQL Relay:
 * The '''tlsvalidate''' attribute enables (or disables) validation that client's certificate was signed by a trusted certificate authority, known to the system, or as provided by the tlsca attribute.
 * The '''tlsca''' attribute specifies a certificate authority to include when validating the client's certificate.  This is useful when validating self-signed certificates.
  * (a .pem file is specified in this example, but on Windows systems, a .pfx file or Windows Certificate Store reference must be used. See [../tlsca.html The tlsca Parameter] for details.)
-* User list authentication is also used.
 
-Note that no passwords are required in the user list.  In this configuration, the Subject Alternative Names in the client's certificate (or Common Name if no SAN's are present) are authenticated against the list of valid names.
-
-Note also that when '''tlsvalidate''' is set to "yes", database and proxied authentication cannot currently be used.  This is because database and proxied authentication both require a user name and password but the client certificate doesn't provide either.
+Note that when '''tlsvalidate''' is set to "yes", database and proxied authentication cannot currently be used.  This is because database and proxied authentication both require a user name and password but the client certificate doesn't provide either.
 
 To access the instance, the client must provide, at minimum, a certificate chain file (containing the client's certificate, private key, and signing certificates, as appropriate), as follows:
 

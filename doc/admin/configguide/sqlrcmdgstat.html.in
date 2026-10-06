@@ -99,22 +99,22 @@ module_compiled        Oct 24 2019 22:20:05
   <li>qpm_1 - queries-per-minute, for the previous minute</li>
   <li>qpm_5 - queries-per-minute, averaged over the previous 5 minutes</li>
   <li>qpm_15 - queries-per-minute, averaged over the previous 15 minutes</li>
-  <li>select_1 - selects-per-minute, averaged over total instance uptime</li>
+  <li>select_1 - selects-per-minute, for the previous minute</li>
   <li>select_5 - selects-per-minute, averaged over the previous 5 minutes</li>
-  <li>seelct_15 - selects-per-minute, averaged over the previous 15 minutes</li>
-  <li>insert_1 - inserts-per-minute, averaged over the total instance uptime</li>
+  <li>select_15 - selects-per-minute, averaged over the previous 15 minutes</li>
+  <li>insert_1 - inserts-per-minute, for the previous minute</li>
   <li>insert_5 - inserts-per-minute, averaged over the previous 5 minutes</li>
   <li>insert_15 - inserts-per-minute, averaged over the previous 15 minutes</li>
-  <li>update_1 - updates-per-minute, averaged over the total instance uptime</li>
+  <li>update_1 - updates-per-minute, for the previous minute</li>
   <li>update_5 - updates-per-minute, averaged over the previous 5 minutes</li>
   <li>update_15 - updates-per-minute, averaged over the previous 15 minutes</li>
-  <li>delete_1 - deletes-per-minute, averaged over the total instance uptime</li>
+  <li>delete_1 - deletes-per-minute, for the previous minute</li>
   <li>delete_5 - deletes-per-minute, averaged over the previous 5 minutes</li>
   <li>delete_15 - deletes-per-minute, averaged over the previous 15 minutes</li>
-  <li>etc_1 - other queries-per-minute, averaged over the total instance uptime</li>
+  <li>etc_1 - other queries-per-minute, for the previous minute</li>
   <li>etc_5 - other queries-per-minute, averaged over the previous 5 minutes</li>
   <li>etc_15 - other queries-per-minute, averaged over the previous 15 minutes</li>
-  <li>sqlrcmd_1 - sqlrcmds-per-minute, averaged over the total instance uptime</li>
+  <li>sqlrcmd_1 - sqlrcmds-per-minute, for the previous minute</li>
   <li>sqlrcmd_5 - sqlrcmds-per-minute, averaged over the previous 5 minutes</li>
   <li>sqlrcmd_15 - sqlrcmds-per-minute, averaged over the previous 15 minutes</li>
   <li>max_listener - value of the maxlisteners attribute of the instance tag for this instance (configured or default)</li>

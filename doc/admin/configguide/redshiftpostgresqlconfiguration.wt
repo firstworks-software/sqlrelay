@@ -27,7 +27,7 @@ The port option in the string attribute of the connection tag instructs SQL Rela
 
 The typemangling and tablemangling options in the string attribute of the connection tag instruct SQL Relay to return data type and table names rather than data type and table object ID's (the default for !PostgreSQL)
 
-See the [../configreference.html#odbc SQL Relay Configuration Reference] for other valid !PostgreSQL connect string options.
+See the [../configreference.html#postgresql SQL Relay Configuration Reference] for other valid !PostgreSQL connect string options.
 
 ----
 

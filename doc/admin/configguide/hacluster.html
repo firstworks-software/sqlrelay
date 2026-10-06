@@ -109,7 +109,7 @@ http://www.gnu.org/software/src-highlite -->
 </blockquote>
 <p>The metric attribute doesn't specify the number of connections to open to each node, but the higher the metric relative to the other metrics, the more connections to that node will be opened and maintained.  For example, if the metric for the first node is twice as large as the metric for the second node, then SQL Relay will open twice as many connections to the first node as the second.</p>
 
-<p>In the example above, 15 is 3 times 5, so 3 times as many connections will be opened to ora3 as to ora1.  30 is 6 times 5, so 6 times as many connections will be opened to ora3 as ora1.  Since a total of 10 connections will be opened, 1 will be opened to ora1, 3 to ora2, and 6 to ora2.</p>
+<p>In the example above, 15 is 3 times 5, so 3 times as many connections will be opened to ora2 as to ora1.  30 is 6 times 5, so 6 times as many connections will be opened to ora3 as ora1.  Since a total of 10 connections will be opened, 1 will be opened to ora1, 3 to ora2, and 6 to ora3.</p>
 
 <hr/>
 

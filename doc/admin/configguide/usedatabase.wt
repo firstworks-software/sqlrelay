@@ -28,7 +28,7 @@ A !MySQL/MariaDB instance that hosts 3 databases:
 
 If you configure an instance of SQL Relay to access the !MySQL/MariaDB instance, then a SQL Relay client can run queries like "use mydb1" or "use mydb2" to select the database.
 
-Similarly, if you configure an instance of SQL Relay to access the !PostgreSQL instance, then a SQL Relay client can run queries like "use pbdb1" or "use pbdb2" to select the database.
+Similarly, if you configure an instance of SQL Relay to access the !PostgreSQL instance, then a SQL Relay client can run queries like "use pgdb1" or "use pgdb2" to select the database.
 
 The '''usedatabase''' module enables a client connected to a single instance of SQL Relay to select the database across both instances.  For example, "use mydb1" would set the current database to the mydb1 database hosted by the !MySQL/MariaDB instance, and "use pgdb2" would set the current database to the pgdb2 database hosted by the !PostgreSQL instance.
 

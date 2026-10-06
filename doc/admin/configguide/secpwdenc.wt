@@ -41,7 +41,7 @@ Password encryption modules may be "stacked".  It is possible to load multiple m
 
 Encryption modules may be either two-way or one-way.  Two-way encryption modules can both encrypt and decrypt a password.  One-way encryption modules can only encrypt a password, not decrypt it.
 
-As such, SQL Relay can use either one-way or two-way encryption to encrypt passwords for SQL Relay users.  However, only two-way encryption can only be used to encrypt passwords for database users.
+As such, SQL Relay can use either one-way or two-way encryption to encrypt passwords for SQL Relay users.  However, only two-way encryption can be used to encrypt passwords for database users.
 
 There is a further restriction when a client speaks one of the database protocols that authenticates with a challenge and a response.  Those clients never send the password.  They send a hash of it, computed with a salt the server supplied.  To check that hash, SQL Relay has to compute the same hash from the configured password, which means it needs the configured password itself, and a one-way module cannot give it back.  So a one-way password encryption cannot be used with a challenge/response method, and a listener configured that way will not authenticate anyone at all.
 
