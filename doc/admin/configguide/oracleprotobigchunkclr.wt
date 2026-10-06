@@ -13,7 +13,7 @@ Oracle clients and servers split long values into pieces, and there are two ways
 
 * auto - use big chunks only with clients that say they support them.  This is the default.
 * off - never use big chunks, or tell clients they are supported.  This is for clients that say they support big chunks, but don't (eg. go-ora v1).
-* on (or yes, true or 1) - use big chunks with every client new enough to support them, even if the client doesn't say so.
+* on - use big chunks with every client new enough to support them, even if the client doesn't say so.
 
 Any other value is the same as auto.
 
