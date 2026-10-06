@@ -18,7 +18,7 @@
 
 <p>The <i>nationalcharset</i> option sets the national character set id.  It defaults to 2000, which is AL16UTF16.  That is the only national character set modern Oracle databases use, so there is rarely a reason to set it at all.</p>
 
-<p>If a client still fails to decode a result set, try setting <i>charset</i> to 178, which is WE8MSWIN1252.  Every byte value decodes under cp1252, so decoding never fails, though bytes that aren't really cp1252 will decode to the wrong characters.</p>
+<p>If a client fails to decode a result set, try setting <i>charset</i> to 178, which is WE8MSWIN1252.  Every byte value decodes under cp1252, so decoding never fails, though bytes that aren't really cp1252 will decode to the wrong characters.</p>
 
 <blockquote>
 <!-- Generator: GNU source-highlight 3.1.9
