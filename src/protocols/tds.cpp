@@ -3581,8 +3581,10 @@ void sqlrprotocol_tds::init() {
 
 	// the database in play, not the connection module, decides some
 	// divergences - odbc and freetds each reach both an ASE and a SQL
-	// Server, so check the version string; sap always means ASE.
-	dbisase=(!charstring::compare(cont->getDbType(),"sap") ||
+	// Server, so check the version string; the sap module always means
+	// ASE.  Use the real backend, not the identity= override - a client
+	// sees the real server's name and version, never the identity.
+	dbisase=(!charstring::compare(cont->getNativeDbType(),"sap") ||
 			charstring::contains(dbversion,
 					"Adaptive Server Enterprise"));
 
