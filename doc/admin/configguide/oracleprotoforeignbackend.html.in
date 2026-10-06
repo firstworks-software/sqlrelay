@@ -48,7 +48,7 @@ http://www.gnu.org/software/src-highlite -->
     <li>set autocommit=yes or autocommit=no</li>
     <li>set the identity parameter to override the database type</li>
     <ul>
-      <li>setting identity=oracle causes integer types to be returned as NUMBER(38)</li>
+      <li>setting identity=oracle causes integer columns and numeric columns without declared scale to be reported as NUMBER(38)</li>
     </ul>
 
     <li>set ignorespace=yes</li>
