@@ -9,23 +9,7 @@
 [=#oracleserverversion]
 = Server Version =
 
-An Oracle client works out how to read the server's answers from the version of server it believes it is talking to.  Several parts of the protocol changed at Oracle 12.1, and a client that is told one version and then sent another version's bytes doesn't recover.  It either waits for fields that never arrive, or reads the next message a few bytes out of position.
-
-So the Oracle protocol module imitates one Oracle version, consistently, and the //serverversion// option chooses which one.  It accepts 11.2 or 12.1, and defaults to 12.1.  Any other value, including a misspelled one, is the same as leaving it out.
-
-The setting moves everything a client picks a reader from, all at once: the TTC field version the module negotiates, the shape of the summary object that ends every response, the server version and SQL version the module reports while authenticating, the version banner and packed version number an OCIServerVersion call gets back, and the default password verifier type described on the [oracleprotoverifiertype.html Password Verifier Type] page.  Both settings describe a server that could really exist.  There is no setting that mixes them.
-
-'''This option decides which clients can use the instance at all.'''  As of SQL Relay 2.3.0, measured against the module:
-
-||= Client =||= serverversion="12.1" (the default) =||= serverversion="11.2" =||
-|| Oracle JDBC driver (ojdbc) 23.26 || logs in, runs queries, reads result sets || logs in, runs queries, reads result sets ||
-|| python-oracledb 4.0.2, thin mode || logs in, runs queries, reads result sets || stops responding partway through the login ||
-|| node-oracledb 7.0.1, thin mode || logs in, runs queries, reads result sets || stops responding partway through the login ||
-|| Oracle OCI 23.26 || login fails with ORA-03113 || logs in, runs queries, reads result sets ||
-
-The default serves the three drivers that don't use Oracle's OCI library, so it's the one to leave alone unless a client fails to get through the login.  If it does, note the symptom.  python-oracledb and node-oracledb don't support Oracle servers older than 12.1 at all, and against one they wait for data that never comes, rather than reporting an error, so the client simply hangs.  Setting //serverversion// to 11.2 makes SQL Relay a server they refuse to talk to, and setting it back to 12.1 is the fix.  A client built on Oracle's OCI library goes the other way: it only gets through the login at 11.2, and reports ORA-03113 at the 12.1 default.
-
-//serverversion// is set per listener tag, not per instance, so there is no single listener that serves both an OCI client and a thin-mode client.  If both kinds of client need to connect, add a second listener tag to the instance, one at each //serverversion//.
+The //serverversion// option sets which Oracle version the Oracle protocol module imitates: 11.2 or 12.1.  It defaults to 12.1, and any other value is the same as leaving it out.  It also sets the default [oracleprotoverifiertype.html Password Verifier Type].  Some clients only support some protocol versions.  To support clients that need different versions, add a listener tag for each //serverversion//.
 
 {{{#!blockquote
 {{{#!code
