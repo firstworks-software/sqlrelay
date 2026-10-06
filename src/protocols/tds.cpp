@@ -783,6 +783,12 @@ static const pretds7charset	pretds7charsets[]={
 #define	TDS5_TYPE_INT8			0xBF	// Integer
 #define	TDS5_TYPE_LONGBINARY		0xE1	// Binary (4 byte length)
 
+// the ase usertypes that make a longbinary utf-16 character data - sap's
+// ct-lib sends a CS_UNICHAR_TYPE parameter as a longbinary with one of
+// these, and ase reads it as unichar
+#define	TDS5_USERTYPE_UNICHAR		34
+#define	TDS5_USERTYPE_UNIVARCHAR	35
+
 // tds 5.0 rowfmt column flags.  One byte, and not the 16-bit map that
 // colFlags() writes - there's no case-sensitivity bit, no 2-bit
 // updateable field, and nullable sits somewhere else.
@@ -2314,13 +2320,17 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_tds : public sqlrprotocol {
 					sqlrserverbindvar *bv);
 		bool	preTds7ParamFmtWrite(const tds5paramfmt *fmts,
 					uint16_t count);
+		void	preTds7ParamFmtBlock(bytebuffer *buffer,
+					const tds5paramfmt *fmt,
+					bool locale);
 		bool	preTds7ParamsWrite(const tds5paramfmt *fmts,
 					sqlrserverbindvar *bvs,
 					uint16_t count);
 		void	preTds7ParamValueWrite(const tds5paramfmt *fmt,
 					sqlrserverbindvar *bv);
 		void	preTds7ParamNullWrite(const tds5paramfmt *fmt);
-		void	preTds7ParamError(const char *msgtext, bool more);
+		void	preTds7ParamError(const char *msgtext, bool more,
+						uint32_t number=0);
 
 		void	preTds7UnsupportedToken(byte_t token, bool more);
 		void	tooManyCommands(byte_t token);
@@ -2412,6 +2422,8 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_tds : public sqlrprotocol {
 		byte_t	mapType(uint16_t type);
 		byte_t	preTds7VarintSize(byte_t tds5type);
 		byte_t	preTds7FixedSize(byte_t tds5type);
+		bool	preTds7HasFractionDigits(byte_t tds5type);
+		bool	preTds7IsUnichar(const tds5paramfmt *fmt);
 		void	colData(sqlrservercursor *cursor, uint16_t col);
 		void	userType(byte_t tdstype);
 		void	colFlags(sqlrservercursor *cursor,
@@ -2488,6 +2500,10 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_tds : public sqlrprotocol {
 					uint32_t *threehundredths);
 		void	dateTimeValue(int32_t dayssince1900,
 					uint32_t threehundredths,
+					sqlrserverbindvar *bv);
+		void	preTds7DateValue(int32_t days,
+					int32_t startyear,
+					uint64_t microseconds,
 					sqlrserverbindvar *bv);
 		void	moneyValue(int64_t tenthousandths,
 					sqlrserverbindvar *bv);
@@ -2750,6 +2766,7 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_tds : public sqlrprotocol {
 					uint64_t maxrows);
 		void	rpcError(sqlrservercursor *cursor,
 					bool returnstatus=true);
+		void	aseProcError(sqlrservercursor *cursor);
 		bool	rpcInvalidHandleError(uint32_t number,
 					const char *what,
 					uint32_t handle);
@@ -2850,7 +2867,8 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_tds : public sqlrprotocol {
 					const char *servername,
 					const char *procname,
 					uint32_t linenumber);
-		uint32_t	appendQueryError(sqlrservercursor *cursor);
+		uint32_t	appendQueryError(sqlrservercursor *cursor,
+						byte_t *errclassout=NULL);
 
 		// error senders - these clear the response packet, append
 		// the error, append a done, and send it
@@ -2909,6 +2927,11 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_tds : public sqlrprotocol {
 					bool isnull);
 		void	preTds7ReturnValueInteger(int32_t value,
 					bool isnull);
+		void	preTds7ReturnValueWrite(const tds5paramfmt *fmt,
+					sqlrserverbindvar *bv);
+		// the fixed-width type an n-type of the given size stands
+		// for, or the type itself if it has none
+		byte_t	preTds7FixedType(byte_t tds5type, uint32_t size);
 		void	returnValueHeader(uint16_t ordinal,
 						const char *name,
 						uint16_t namesize,
@@ -3079,11 +3102,12 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_tds : public sqlrprotocol {
 		tds5paramfmt		*pretds7paramfmts;
 		uint16_t		pretds7paramfmtcount;
 
-		// the output parameters of the proc being answered, packed
-		// down from the cursor's output binds so that the paramfmt
-		// and the params token that replays it index alike
-		tds5paramfmt		*pretds7outfmts;
-		sqlrserverbindvar	*pretds7outbinds;
+		// the error ase answers a tds 5.0 parameter value with when
+		// the value walked fine but can't be bound.  The params walk
+		// records it and carries on, and preTds7Params() refuses the
+		// command once the walk is done.
+		uint32_t		pretds7paramerrnumber;
+		const char		*pretds7paramerr;
 
 		bool			rpcfailed;
 
@@ -3226,9 +3250,8 @@ sqlrprotocol_tds::sqlrprotocol_tds(sqlrservercontroller *cont,
 
 	pretds7paramfmts=new tds5paramfmt[maxbindcount];
 	pretds7paramfmtcount=0;
-
-	pretds7outfmts=new tds5paramfmt[maxbindcount];
-	pretds7outbinds=new sqlrserverbindvar[maxbindcount];
+	pretds7paramerrnumber=0;
+	pretds7paramerr=NULL;
 
 	bulkcolumns=new char *[maxbindcount];
 	bulktypes=new byte_t[maxbindcount];
@@ -3270,9 +3293,6 @@ sqlrprotocol_tds::~sqlrprotocol_tds() {
 	delete[] outbindparams;
 
 	delete[] pretds7paramfmts;
-
-	delete[] pretds7outfmts;
-	delete[] pretds7outbinds;
 
 	delete[] bulkcolumns;
 	delete[] bulktypes;
@@ -8373,13 +8393,12 @@ bool sqlrprotocol_tds::preTds7DbRpc(const byte_t **rpinout,
 		debugProcId(procid);
 	}
 
-	// the numbered procs whose reply tail is still ms-tds only.  Their
-	// cores are wire-neutral, but each of them either writes
-	// colmetadata (0x81) and rows (0xD1) straight out rather than going
-	// through rpcResultSet(), or sends several output parameters, which
-	// is one paramfmt/params pair in this dialect rather than one token
-	// each.  Answering one would desynchronize the client rather than
-	// fail it, and 0x81 is the cursor-delete token here.  A ct-lib
+	// the numbered cursor procs.  Their cores are wire-neutral, but all
+	// but sp_cursorprepare write colmetadata (0x81) and rows (0xD1)
+	// straight out rather than going through rpcResultSet().  Answering
+	// one of those would desynchronize the client rather than fail it,
+	// and 0x81 is the cursor-delete token here.  sp_cursorprepare has no
+	// such tail, but has never been run over this dialect.  A ct-lib
 	// client has cursor tokens of its own and never sends these.
 	// FIXME: give these a pre-tds7 reply tail along with the tds 5.0
 	// cursor tokens
@@ -11489,6 +11508,17 @@ byte_t sqlrprotocol_tds::preTds7FixedSize(byte_t tds5type) {
 	}
 }
 
+bool sqlrprotocol_tds::preTds7IsUnichar(const tds5paramfmt *fmt) {
+	return (fmt->tds5type==TDS5_TYPE_LONGBINARY &&
+			(fmt->usertype==TDS5_USERTYPE_UNICHAR ||
+			fmt->usertype==TDS5_USERTYPE_UNIVARCHAR));
+}
+
+bool sqlrprotocol_tds::preTds7HasFractionDigits(byte_t tds5type) {
+	return (tds5type==TDS5_TYPE_SYB5BIGDATETIME ||
+			tds5type==TDS5_TYPE_SYB5BIGTIME);
+}
+
 void sqlrprotocol_tds::colData(sqlrservercursor *cursor, uint16_t col) {
 
 	debugStart("col %d",col);
@@ -12326,7 +12356,10 @@ byte_t sqlrprotocol_tds::tds5TypeToMsType(byte_t tds5type) {
 			return TDS_TYPE_DATEN;
 		case TDS5_TYPE_TIME:
 		case TDS5_TYPE_TIMEN:
+		case TDS5_TYPE_SYB5BIGTIME:
 			return TDS_TYPE_TIMEN;
+		case TDS5_TYPE_SYB5BIGDATETIME:
+			return TDS_TYPE_DATETIME2N;
 
 		// longchar is 4-byte counted and not blank padded, so it's
 		// a bigvarchr rather than the bigchar that happens to share
@@ -13608,7 +13641,9 @@ void sqlrprotocol_tds::binary(const char *field, uint64_t size, bool hextext) {
 	}
 }
 
-void sqlrprotocol_tds::preTds7ParamError(const char *msgtext, bool more) {
+void sqlrprotocol_tds::preTds7ParamError(const char *msgtext,
+						bool more,
+						uint32_t number) {
 
 	// refuses a malformed or unsupported paramfmt/params pair, with its
 	// own done, so the client sees the command fail rather than being left
@@ -13620,9 +13655,11 @@ void sqlrprotocol_tds::preTds7ParamError(const char *msgtext, bool more) {
 	// one on the way out is in the middle of a reply whose caller still
 	// appends its own closing done, and ct-lib stops reading at the first
 	// done without DONE_MORE, so that one would be left in the socket.
+	//
+	// "number" is 0 unless the refusal is one ase has a number for.
 
-	// FIXME: is there a real error number/state for this?
-	appendError(0,1,16,msgtext,srvname,NULL,1);
+	// FIXME: is there a real error number/state for the others?
+	appendError(number,1,16,msgtext,srvname,NULL,1);
 	done(DONE_ERROR|((more)?DONE_MORE:DONE_FINAL),transState(),0);
 }
 
@@ -13887,6 +13924,18 @@ bool sqlrprotocol_tds::preTds7ParamFmtRead(const byte_t **rpinout,
 			}
 		}
 
+		// bigdatetime and bigtime carry one more byte, the number of
+		// fractional second digits, which sap's ct-lib sends as 6
+		if (preTds7HasFractionDigits(fmt->tds5type)) {
+			if (!left) {
+				debugEnd();
+				return false;
+			}
+			read(rp,&(fmt->precision),&rp);
+			left--;
+			debugWrite("precision: %d",fmt->precision);
+		}
+
 		// locale.  Mandatory even when it's empty, the way it is in
 		// a rowfmt - the next parameter starts right after it.
 		if (!left) {
@@ -13975,6 +14024,8 @@ bool sqlrprotocol_tds::preTds7ParamsRead(const byte_t **rpinout,
 	// ms-tds params() does
 	rpcparampool.clear();
 	rpcparamcount=0;
+	pretds7paramerrnumber=0;
+	pretds7paramerr=NULL;
 
 	// the loop is bounded by the format array rather than by what's
 	// left in the buffer, so a value that consumed nothing can't spin
@@ -14002,9 +14053,13 @@ bool sqlrprotocol_tds::preTds7ParamsRead(const byte_t **rpinout,
 		switch (fmt->tds5type) {
 			case TDS5_TYPE_BINARY:
 			case TDS5_TYPE_VARBINARY:
-			case TDS5_TYPE_LONGBINARY:
 			case TDS5_TYPE_IMAGE:
 				bv->type=SQLRSERVERBINDVARTYPE_NULLBLOB;
+				break;
+			case TDS5_TYPE_LONGBINARY:
+				if (!preTds7IsUnichar(fmt)) {
+					bv->type=SQLRSERVERBINDVARTYPE_NULLBLOB;
+				}
 				break;
 		}
 
@@ -14048,7 +14103,17 @@ bool sqlrprotocol_tds::preTds7Params(const byte_t **rpinout,
 						size_t *rpsizeinout) {
 
 	if (preTds7ParamsRead(rpinout,rpsizeinout)) {
-		return true;
+
+		if (!pretds7paramerr) {
+			return true;
+		}
+
+		// a value that can't be bound.  The refusal's done is
+		// final, so nothing after it in the buffer runs either.
+		*rpsizeinout=0;
+		rpcparamcount=0;
+		preTds7ParamError(pretds7paramerr,false,pretds7paramerrnumber);
+		return false;
 	}
 
 	// a params token carries no length of its own, so a walk that ran
@@ -14468,9 +14533,43 @@ bool sqlrprotocol_tds::preTds7ParamValueRead(const byte_t **rpinout,
 			}
 			break;
 
+		case TDS5_TYPE_LONGBINARY:
+			if (preTds7IsUnichar(fmt)) {
+				// utf-16 code units in the byte order the login
+				// declared, so an odd count of bytes can't be
+				// one, and ase refuses it.  The value has
+				// already been stepped over, so the walk goes
+				// on and preTds7Params() refuses the command.
+				if (size%sizeof(uint16_t)) {
+					debugWrite("odd unichar size: %d",size);
+					pretds7paramerrnumber=2433;
+					pretds7paramerr="Illegal byte sequence "
+						"encountered in Unicode data.";
+					break;
+				}
+				// ucs2ToUtf8() reads utf-16le
+				size_t		length=size/sizeof(uint16_t);
+				ucs2_t		*value16=new ucs2_t[length+1];
+				const byte_t	*vp=value;
+				for (size_t i=0; i<length; i++) {
+					uint16_t	unit=0;
+					read(vp,&unit,&vp);
+					value16[i]=hostToLE(unit);
+				}
+				value16[length]=0;
+				size_t	value8size=0;
+				char	*value8=ucs2ToUtf8(value16,length,
+								&value8size);
+				bulkString(bv,&rpcparampool,value8,value8size);
+				delete[] value8;
+				delete[] value16;
+				break;
+			}
+			bulkBinary(bv,&rpcparampool,value,size);
+			break;
+
 		case TDS5_TYPE_VARBINARY:
 		case TDS5_TYPE_BINARY:
-		case TDS5_TYPE_LONGBINARY:
 		case TDS5_TYPE_IMAGE:
 			bulkBinary(bv,&rpcparampool,value,size);
 			break;
@@ -14479,15 +14578,49 @@ bool sqlrprotocol_tds::preTds7ParamValueRead(const byte_t **rpinout,
 		case TDS5_TYPE_DATEN:
 		case TDS5_TYPE_TIME:
 		case TDS5_TYPE_TIMEN:
-			// FIXME: actually implement these.  A date is a
-			// signed count of days since 1900-01-01 and a time
-			// an unsigned count of three-hundredths of a second
-			// since midnight, but neither has ever been seen on
-			// the wire, and paramValue() leaves the ms-tds
-			// versions unimplemented too.  The value has already
-			// been stepped over, so the parameter just stays
-			// null.
-			debugWrite("unimplemented type - leaving null");
+			{
+			// a date is a signed count of days since 1900-01-01
+			// and a time an unsigned count of three-hundredths of
+			// a second since midnight.  A time is bound as a time
+			// of day on 1900-01-01, the date ase gives one too.
+			if (size!=4) {
+				debugWrite("invalid size: %d",size);
+				return false;
+			}
+			const byte_t	*vp=value;
+			uint32_t	data=0;
+			read(vp,&data,&vp);
+			if (fmt->tds5type==TDS5_TYPE_DATE ||
+					fmt->tds5type==TDS5_TYPE_DATEN) {
+				preTds7DateValue((int32_t)data,1900,0,bv);
+			} else {
+				preTds7DateValue(0,1900,
+					((uint64_t)data)*10000/3,bv);
+			}
+			}
+			break;
+
+		case TDS5_TYPE_SYB5BIGDATETIME:
+		case TDS5_TYPE_SYB5BIGTIME:
+			{
+			// microseconds, since 0000-01-01 for a bigdatetime -
+			// a proleptic year 0, so 366 days ahead of 0001-01-01
+			// - and since midnight for a bigtime
+			if (size!=8) {
+				debugWrite("invalid size: %d",size);
+				return false;
+			}
+			const byte_t	*vp=value;
+			uint64_t	data=0;
+			read(vp,&data,&vp);
+			if (fmt->tds5type==TDS5_TYPE_SYB5BIGDATETIME) {
+				const uint64_t	usecsperday=86400000000ULL;
+				int32_t	days=(int32_t)(data/usecsperday)-366;
+				preTds7DateValue(days,1,data%usecsperday,bv);
+			} else {
+				preTds7DateValue(0,1900,data,bv);
+			}
+			}
 			break;
 
 		default:
@@ -14534,74 +14667,8 @@ bool sqlrprotocol_tds::preTds7ParamFmtWrite(const tds5paramfmt *fmts,
 	bytebuffer	params;
 
 	for (uint16_t i=0; i<count; i++) {
-
-		const tds5paramfmt	*fmt=&(fmts[i]);
-
 		debugStart("pre-tds7 param fmt %d",i);
-
-		// name.  single-byte characters, and the length is a single
-		// byte, so a longer name is truncated the way
-		// preTds7RowFmt() truncates a column name.
-		size_t	namelen=fmt->namesize;
-		if (namelen>255) {
-			namelen=255;
-		}
-		write(&params,(byte_t)namelen);
-		if (namelen) {
-			write(&params,fmt->name,namelen);
-		}
-		debugWrite("namelen: %lld",(long long)namelen);
-		debugWrite("name: %s",fmt->name);
-
-		// status.  one byte in this token, four in a paramfmt2.
-		write(&params,fmt->status);
-		debugWrite("status: 0x%02x",fmt->status);
-
-		// usertype.  0 means "no alias type", which is what
-		// preTds7RowFmt() sends for a column.
-		write(&params,fmt->usertype);
-		debugWrite("usertype: %d",fmt->usertype);
-
-		// datatype
-		write(&params,fmt->tds5type);
-		debugPreTds7ColumnType(fmt->tds5type);
-
-		// size.  no table name after a blob's size, unlike a rowfmt.
-		byte_t	varintsize=preTds7VarintSize(fmt->tds5type);
-		switch (varintsize) {
-			case 0:
-				debugWrite("fixed, no size");
-				break;
-			case 4:
-			case 5:
-				write(&params,fmt->size);
-				debugWrite("size: %d (32-bit)",fmt->size);
-				break;
-			default:
-				{
-				byte_t	size=(fmt->size>255)?
-							255:(byte_t)fmt->size;
-				write(&params,size);
-				debugWrite("size: %d (8-bit)",size);
-				}
-				break;
-		}
-
-		// precision and scale
-		if (fmt->tds5type==TDS5_TYPE_DECN ||
-				fmt->tds5type==TDS5_TYPE_NUMN) {
-			write(&params,fmt->precision);
-			write(&params,fmt->scale);
-			debugWrite("precision: %d",fmt->precision);
-			debugWrite("scale: %d",fmt->scale);
-		}
-
-		// locale.  Mandatory even when it's empty - the client reads
-		// it right after the type info, so leaving it out
-		// desynchronizes everything after this parameter.
-		write(&params,(byte_t)0);
-		debugWrite("locale length: 0");
-
+		preTds7ParamFmtBlock(&params,&(fmts[i]),true);
 		debugEnd();
 	}
 
@@ -14629,6 +14696,83 @@ bool sqlrprotocol_tds::preTds7ParamFmtWrite(const tds5paramfmt *fmts,
 	debugEnd();
 
 	return true;
+}
+
+void sqlrprotocol_tds::preTds7ParamFmtBlock(bytebuffer *buffer,
+						const tds5paramfmt *fmt,
+						bool locale) {
+
+	// writes one parameter's description, as a paramfmt carries it
+	// and, minus the locale, as a returnvalue does
+
+	// name.  single-byte characters, and the length is a single byte,
+	// so a longer name is truncated the way preTds7RowFmt() truncates a
+	// column name.
+	size_t	namelen=fmt->namesize;
+	if (namelen>255) {
+		namelen=255;
+	}
+	write(buffer,(byte_t)namelen);
+	if (namelen) {
+		write(buffer,fmt->name,namelen);
+	}
+	debugWrite("namelen: %lld",(long long)namelen);
+	debugWrite("name: %s",fmt->name);
+
+	// status.  one byte in this token, four in a paramfmt2.
+	write(buffer,fmt->status);
+	debugWrite("status: 0x%02x",fmt->status);
+
+	// usertype.  0 means "no alias type", which is what preTds7RowFmt()
+	// sends for a column.
+	write(buffer,fmt->usertype);
+	debugWrite("usertype: %d",fmt->usertype);
+
+	// datatype
+	write(buffer,fmt->tds5type);
+	debugPreTds7ColumnType(fmt->tds5type);
+
+	// size.  no table name after a blob's size, unlike a rowfmt.
+	byte_t	varintsize=preTds7VarintSize(fmt->tds5type);
+	switch (varintsize) {
+		case 0:
+			debugWrite("fixed, no size");
+			break;
+		case 4:
+		case 5:
+			write(buffer,fmt->size);
+			debugWrite("size: %d (32-bit)",fmt->size);
+			break;
+		default:
+			{
+			byte_t	size=(fmt->size>255)?255:(byte_t)fmt->size;
+			write(buffer,size);
+			debugWrite("size: %d (8-bit)",size);
+			}
+			break;
+	}
+
+	// precision and scale
+	if (fmt->tds5type==TDS5_TYPE_DECN ||
+			fmt->tds5type==TDS5_TYPE_NUMN) {
+		write(buffer,fmt->precision);
+		write(buffer,fmt->scale);
+		debugWrite("precision: %d",fmt->precision);
+		debugWrite("scale: %d",fmt->scale);
+	}
+	if (preTds7HasFractionDigits(fmt->tds5type)) {
+		write(buffer,fmt->precision);
+		debugWrite("precision: %d",fmt->precision);
+	}
+
+	// locale.  Mandatory in a paramfmt even when it's empty - the
+	// client reads it right after the type info, so leaving it out
+	// desynchronizes everything after this parameter.  A returnvalue
+	// has none.
+	if (locale) {
+		write(buffer,(byte_t)0);
+		debugWrite("locale length: 0");
+	}
 }
 
 bool sqlrprotocol_tds::preTds7ParamsWrite(const tds5paramfmt *fmts,
@@ -14730,6 +14874,12 @@ void sqlrprotocol_tds::preTds7ParamValueWrite(const tds5paramfmt *fmt,
 			null=true;
 			break;
 	}
+
+	// a backend leaves the type of a null output bind set
+	if (cont->getBindValueIsNull(bv->isnull)) {
+		null=true;
+	}
+
 	if (!field) {
 		field=strb.getString();
 		fieldsize=strb.getStringLength();
@@ -14891,7 +15041,15 @@ void sqlrprotocol_tds::preTds7ParamValueWrite(const tds5paramfmt *fmt,
 			// decimal() only fills the low 4 or 8 bytes, so zero
 			// the rest before reversing a wider window of it
 			bytestring::zero(val,sizeof(val));
-			decimal(field,&ispositive,&size,val);
+
+			// decimal() reads the digits as a count of units of
+			// the declared scale, so the value has to be rendered
+			// at that scale rather than at the backend's, the way
+			// returnValueDecimal() renders one
+			char	rendered[64];
+			charstring::printf(rendered,sizeof(rendered),"%.*f",
+						(int32_t)fmt->scale,dblval);
+			decimal(rendered,&ispositive,&size,val);
 
 			// the sign byte is 0 for positive, the opposite way
 			// round from decimal()'s "ispositive", and the
@@ -14910,7 +15068,7 @@ void sqlrprotocol_tds::preTds7ParamValueWrite(const tds5paramfmt *fmt,
 			debugWrite("size: %d",wiresize);
 			debugWrite("sign: %d",(ispositive)?0:1);
 			debugWrite("data: %s (precision %d)",
-						field,fmt->precision);
+						rendered,fmt->precision);
 			}
 			break;
 
@@ -15019,13 +15177,12 @@ void sqlrprotocol_tds::preTds7ParamValueWrite(const tds5paramfmt *fmt,
 			break;
 
 		default:
-			// void, and the date and time types the reader
-			// doesn't decode either.  Write the null form rather
-			// than nothing at all, so a type added later without
-			// a case here costs one value rather than the whole
-			// token.
-			// FIXME: implement date and time, both here and in
-			// preTds7ParamValueRead()
+			// void, and the date and time types other than
+			// datetime and smalldatetime.  Write the null form
+			// rather than nothing at all, so a type added later
+			// without a case here costs one value rather than the
+			// whole token.
+			// FIXME: implement date, time, bigdatetime and bigtime
 			debugWrite("unhandled type - writing null");
 			preTds7ParamNullWrite(fmt);
 			break;
@@ -15312,6 +15469,43 @@ void sqlrprotocol_tds::dateTimeValue(int32_t dayssince1900,
 	bv->isnull=cont->getNonNullBindValue();
 
 	debugWrite("value: %s",strb.getString());
+	debugEnd();
+}
+
+void sqlrprotocol_tds::preTds7DateValue(int32_t days,
+						int32_t startyear,
+						uint64_t microseconds,
+						sqlrserverbindvar *bv) {
+
+	debugStart("pre-tds7 date value");
+	debugWrite("days since %d-01-01: %d",startyear,days);
+	debugWrite("microseconds since 12AM: %lld",(long long)microseconds);
+
+	// bulkYmd() writes yyyy-mm-dd
+	stringbuffer	strb;
+	bulkYmd(days,startyear,&strb);
+	const char	*ymd=strb.getString();
+
+	uint64_t	seconds=microseconds/1000000;
+
+	bv->type=SQLRSERVERBINDVARTYPE_DATE;
+	bv->value.dateval.year=(int16_t)charstring::convertToInteger(ymd);
+	bv->value.dateval.month=(int16_t)charstring::convertToInteger(ymd+5);
+	bv->value.dateval.day=(int16_t)charstring::convertToInteger(ymd+8);
+	bv->value.dateval.hour=(int16_t)(seconds/3600);
+	bv->value.dateval.minute=(int16_t)((seconds/60)%60);
+	bv->value.dateval.second=(int16_t)(seconds%60);
+	bv->value.dateval.microsecond=(int32_t)(microseconds%1000000);
+	bv->value.dateval.tz=NULL;
+	bv->value.dateval.isnegative=false;
+	bv->valuesize=sizeof(bv->value.dateval);
+	bv->isnull=cont->getNonNullBindValue();
+
+	debugWrite("value: %s %02d:%02d:%02d.%06d",ymd,
+				(int32_t)bv->value.dateval.hour,
+				(int32_t)bv->value.dateval.minute,
+				(int32_t)bv->value.dateval.second,
+				(int32_t)bv->value.dateval.microsecond);
 	debugEnd();
 }
 
@@ -15761,7 +15955,8 @@ byte_t sqlrprotocol_tds::charsToHex(const char *chars) {
 	return sixteens*16+ones;
 }
 
-uint32_t sqlrprotocol_tds::appendQueryError(sqlrservercursor *cursor) {
+uint32_t sqlrprotocol_tds::appendQueryError(sqlrservercursor *cursor,
+						byte_t *errclassout) {
 
 	debugStart("query error");
 
@@ -15819,7 +16014,9 @@ uint32_t sqlrprotocol_tds::appendQueryError(sqlrservercursor *cursor) {
 			procn=charstring::duplicate(procptr+17);
 		}
 
-		*severityptr='\0';
+		if (severityptr) {
+			*severityptr='\0';
+		}
 	}
 
 	// hand the backend's sqlstate down to preTds7AppendEed(), which is
@@ -15862,6 +16059,10 @@ uint32_t sqlrprotocol_tds::appendQueryError(sqlrservercursor *cursor) {
 	delete[] srvn;
 	delete[] procn;
 	delete[] errorbuffer;
+
+	if (errclassout) {
+		*errclassout=errclass;
+	}
 
 	debugEnd();
 	return (uint32_t)errorcode;
@@ -18424,6 +18625,28 @@ void sqlrprotocol_tds::rpcError(sqlrservercursor *cursor, bool returnstatus) {
 	debugEnd();
 }
 
+void sqlrprotocol_tds::aseProcError(sqlrservercursor *cursor) {
+
+	debugStart("ase-proc-error");
+
+	// ASE answers a procedure that failed with one of its reserved
+	// return statuses rather than with the error number.  Each one stands
+	// for a severity from 11 (-1, object not found) to 24 (-14, hardware
+	// error), and anything outside that range is reported as -6,
+	// miscellaneous user error.
+	byte_t		errclass=16;
+	uint32_t	number=appendQueryError(cursor,&errclass);
+	int32_t		status=(errclass>=11 && errclass<=24)?
+					-((int32_t)errclass-10):-6;
+	debugWrite("number: %d",number);
+	debugWrite("errclass: %d",errclass);
+	debugWrite("status: %d",status);
+	returnStatus((uint32_t)status);
+	rpcfailed=true;
+
+	debugEnd();
+}
+
 void sqlrprotocol_tds::rpcResultSet(sqlrservercursor *cursor,
 						bool nometadata,
 						uint64_t maxrows) {
@@ -18465,14 +18688,14 @@ void sqlrprotocol_tds::rpcResultSet(sqlrservercursor *cursor,
 void sqlrprotocol_tds::procReturnValues(sqlrservercursor *cursor) {
 
 	// writes a proc's output parameters in whichever dialect the session
-	// negotiated.  The two are different tokens rather than two shapes of
-	// one - ms-tds gives each parameter its own self-describing
-	// returnvalue (0xAC), and tds 5.0 sends the whole set as a
-	// paramfmt/params pair, the way a result set is a rowfmt and rows.
+	// negotiated.  Both give each parameter its own returnvalue token
+	// (0xAC), but the two dialects lay that token out differently.
 	//
-	// A real ase does send 0xAC, but only to a client that set response
-	// capability bit 45, TDS_NO_WIDETABLES.  The sap client leaves it
-	// clear, so the pair is what actually gets asked for.
+	// A real ase sends sap's ct-lib an rpc's output parameters as
+	// returnvalue tokens, not as a paramfmt/params pair - a capture of
+	// the native link shows it.  That matters to sap's ct-lib: after a
+	// pair, the closing done reports only CS_CMD_DONE, where after
+	// returnvalues it reports CS_CMD_SUCCEED and then CS_CMD_DONE.
 
 	if (pretds7) {
 		preTds7ReturnValues(cursor);
@@ -18487,10 +18710,9 @@ void sqlrprotocol_tds::preTds7ReturnValues(sqlrservercursor *cursor) {
 	// parameter goes back in is the one the client declared it with, on
 	// the same reasoning returnValue() echoes the declared ms-tds type:
 	// sql relay's own bind type can't tell a char(20) from a varchar(max),
-	// and ct_describe() reports whatever arrives.  A real ase re-derives
-	// the type instead and sends a fixed INT4 where the client declared an
-	// INTN(4), but a fixed type has no null form, so echoing what came in
-	// keeps a null output parameter expressible.
+	// and ct_describe() reports whatever arrives.  The one exception, a
+	// non-null n-type going back as its fixed type, is made in
+	// preTds7ReturnValueWrite().
 
 	debugStart("pre-tds7 return-values");
 
@@ -18498,13 +18720,7 @@ void sqlrprotocol_tds::preTds7ReturnValues(sqlrservercursor *cursor) {
 	sqlrserverbindvar	*outbinds=cont->getOutputBinds(cursor);
 	debugWrite("outbindcount: %d",outbindcount);
 
-	// the paramfmt and the params are two tokens but one set, and the
-	// second can only be parsed by replaying the first, so both are
-	// written from the same array - built here rather than in place,
-	// since the return value drops out of the middle of the output
-	// binds and the two tokens must not disagree about the count.
-	uint16_t	count=0;
-	for (uint16_t i=0; i<outbindcount && count<maxbindcount; i++) {
+	for (uint16_t i=0; i<outbindcount; i++) {
 
 		// the return value went out in the returnstatus token, so
 		// it isn't one of these
@@ -18515,38 +18731,29 @@ void sqlrprotocol_tds::preTds7ReturnValues(sqlrservercursor *cursor) {
 
 		uint16_t	rpcparam=outbindparams[i];
 
-		tds5paramfmt	*fmt=&(pretds7outfmts[count]);
-		fmt->name=rpcparamnames[rpcparam];
-		fmt->namesize=rpcparamnamesizes[rpcparam];
-		fmt->status=TDS5_PARAM_RETURN;
-		// 0 rather than the systypes number a real ase echoes for a
-		// decimal - the client asserts whatever arrives, and this
-		// module has never sent one
-		fmt->usertype=0;
-		fmt->tds5type=rpcparamtds5types[rpcparam];
-		fmt->mstype=rpcparamtdstypes[rpcparam];
-		fmt->varintsize=preTds7VarintSize(fmt->tds5type);
-		fmt->size=rpcparammaxsizes[rpcparam];
-		fmt->precision=rpcparamprecisions[rpcparam];
-		fmt->scale=rpcparamscales[rpcparam];
+		tds5paramfmt	fmt;
+		fmt.name=rpcparamnames[rpcparam];
+		fmt.namesize=rpcparamnamesizes[rpcparam];
+		fmt.status=TDS5_PARAM_RETURN;
+		// a real ase echoes a decimal's systypes usertype, as
+		// returnValue() does over tds 7, and 0 for everything else
+		fmt.usertype=0;
+		if (dbisase) {
+			if (rpcparamtds5types[rpcparam]==TDS5_TYPE_DECN) {
+				fmt.usertype=27;
+			} else if (rpcparamtds5types[rpcparam]==
+							TDS5_TYPE_NUMN) {
+				fmt.usertype=28;
+			}
+		}
+		fmt.tds5type=rpcparamtds5types[rpcparam];
+		fmt.mstype=rpcparamtdstypes[rpcparam];
+		fmt.varintsize=preTds7VarintSize(fmt.tds5type);
+		fmt.size=rpcparammaxsizes[rpcparam];
+		fmt.precision=rpcparamprecisions[rpcparam];
+		fmt.scale=rpcparamscales[rpcparam];
 
-		pretds7outbinds[count]=outbinds[i];
-
-		count++;
-	}
-
-	// a proc with no output parameters sends neither token, the way a
-	// real ase sends neither
-	if (!count) {
-		debugWrite("no output parameters");
-		debugEnd();
-		return;
-	}
-
-	// the paramfmt refuses with its own error and done if the set won't
-	// fit, and the params token behind it can't be parsed without it
-	if (preTds7ParamFmtWrite(pretds7outfmts,count)) {
-		preTds7ParamsWrite(pretds7outfmts,pretds7outbinds,count);
+		preTds7ReturnValueWrite(&fmt,&(outbinds[i]));
 	}
 
 	debugEnd();
@@ -18611,8 +18818,10 @@ bool sqlrprotocol_tds::namedProc(const char *procname, bool nometadata) {
 		rpcResultSet(cursor,nometadata,0);
 		returnStatus(procReturnValue(cursor));
 		procReturnValues(cursor);
+	} else if (dbisase) {
+		aseProcError(cursor);
 	} else {
-		rpcError(cursor,dbisase);
+		rpcError(cursor,false);
 	}
 
 	// release the cursor
@@ -22638,13 +22847,9 @@ void sqlrprotocol_tds::returnValueInteger(uint16_t ordinal,
 						bool isnull) {
 
 	// one unnamed integer output parameter, which is how the numbered
-	// procs hand a handle back.  A tds 5.0 session gets the
-	// paramfmt/params pair instead of the ms-tds returnvalue token, the
-	// same swap procReturnValues() makes.
-	//
-	// A pair carries the whole set rather than one parameter, so this only
-	// works where the proc sends exactly one - preTds7DbRpc() refuses the
-	// procs that send several.
+	// procs hand a handle back.  A tds 5.0 session gets the tds 5.0
+	// layout of the returnvalue token, the same swap procReturnValues()
+	// makes.
 
 	if (pretds7) {
 		preTds7ReturnValueInteger(value,isnull);
@@ -22682,38 +22887,155 @@ void sqlrprotocol_tds::preTds7ReturnValueInteger(int32_t value,
 
 	debugStart("pre-tds7 return-value integer");
 
-	tds5paramfmt	*fmt=&(pretds7outfmts[0]);
-	fmt->name="";
-	fmt->namesize=0;
-	fmt->status=TDS5_PARAM_RETURN;
-	fmt->usertype=0;
+	tds5paramfmt	fmt;
+	fmt.name="";
+	fmt.namesize=0;
+	fmt.status=TDS5_PARAM_RETURN;
+	fmt.usertype=0;
 	// intn rather than a fixed int4, so that a null can be expressed -
 	// a fixed type has no length field to set to zero
-	fmt->tds5type=TDS5_TYPE_INTN;
-	fmt->mstype=TDS_TYPE_INTN;
-	fmt->varintsize=preTds7VarintSize(fmt->tds5type);
-	fmt->size=sizeof(int32_t);
-	fmt->precision=0;
-	fmt->scale=0;
+	fmt.tds5type=TDS5_TYPE_INTN;
+	fmt.mstype=TDS_TYPE_INTN;
+	fmt.varintsize=preTds7VarintSize(fmt.tds5type);
+	fmt.size=sizeof(int32_t);
+	fmt.precision=0;
+	fmt.scale=0;
 
-	sqlrserverbindvar	*bv=&(pretds7outbinds[0]);
-	bv->variable=NULL;
-	bv->variablesize=0;
-	bv->valuesize=0;
-	bv->isnull=cont->getNullBindValue();
+	sqlrserverbindvar	bv;
+	bv.variable=NULL;
+	bv.variablesize=0;
+	bv.valuesize=0;
+	bv.isnull=cont->getNullBindValue();
 	if (isnull) {
-		bv->type=SQLRSERVERBINDVARTYPE_NULL;
-		bv->value.stringval=NULL;
+		bv.type=SQLRSERVERBINDVARTYPE_NULL;
+		bv.value.stringval=NULL;
 	} else {
-		bv->type=SQLRSERVERBINDVARTYPE_INTEGER;
-		bv->value.integerval=value;
+		bv.type=SQLRSERVERBINDVARTYPE_INTEGER;
+		bv.value.integerval=value;
 	}
 
-	if (preTds7ParamFmtWrite(pretds7outfmts,1)) {
-		preTds7ParamsWrite(pretds7outfmts,pretds7outbinds,1);
-	}
+	preTds7ReturnValueWrite(&fmt,&bv);
 
 	debugEnd();
+}
+
+void sqlrprotocol_tds::preTds7ReturnValueWrite(const tds5paramfmt *fmt,
+						sqlrserverbindvar *bv) {
+
+	// writes one output parameter as a tds 5.0 returnvalue (0xAC) - a
+	// length, the parameter's description as a paramfmt would carry it
+	// but with no locale, and the value as a params token would carry it
+
+	byte_t	token=TOKEN_RETURNVALUE;
+
+	debugStart("pre-tds7 return-value write");
+	debugTokenType(token);
+
+	// A null goes out as a null of the type the client declared, since
+	// the backend leaves the bind's type set whether or not the value
+	// is null.
+	tds5paramfmt		retfmt=*fmt;
+	sqlrserverbindvar	retbv=*bv;
+	bool	isnull=(cont->getBindValueIsNull(bv->isnull) ||
+			(bv->type==SQLRSERVERBINDVARTYPE_STRING &&
+						!bv->value.stringval));
+	if (isnull) {
+		retbv.type=SQLRSERVERBINDVARTYPE_NULL;
+	}
+
+	// A real ase sends a non-null value of a fixed-width type as that
+	// fixed type, not as the n-type the client declared, and sap's
+	// ct-lib reports CS_CANBENULL in an n-type parameter's status.
+	if (retbv.type==SQLRSERVERBINDVARTYPE_INTEGER ||
+			retbv.type==SQLRSERVERBINDVARTYPE_DOUBLE ||
+			retbv.type==SQLRSERVERBINDVARTYPE_DATE ||
+			retbv.type==SQLRSERVERBINDVARTYPE_STRING) {
+		retfmt.tds5type=preTds7FixedType(fmt->tds5type,fmt->size);
+		retfmt.varintsize=preTds7VarintSize(retfmt.tds5type);
+	}
+
+	// A character output parameter's bind is a buffer the size the
+	// client declared, and the value ends at the first NUL in it.  A
+	// real ase sends a non-null one as a longchar sized to the value.
+	if (retbv.type==SQLRSERVERBINDVARTYPE_STRING &&
+			(fmt->tds5type==TDS5_TYPE_CHAR ||
+			fmt->tds5type==TDS5_TYPE_VARCHAR ||
+			fmt->tds5type==TDS5_TYPE_LONGCHAR)) {
+		retbv.valuesize=charstring::getLength(bv->value.stringval);
+		retfmt.tds5type=TDS5_TYPE_LONGCHAR;
+		retfmt.varintsize=preTds7VarintSize(retfmt.tds5type);
+		retfmt.size=retbv.valuesize;
+	}
+
+	write(&resppacket,token);
+
+	// the length covers the value too, and the value writers write
+	// straight into the response packet, so reserve the length and fill
+	// it in once the value is there
+	size_t	lengthpos=resppacket.getSize();
+	write(&resppacket,(uint16_t)0);
+
+	bytebuffer	desc;
+	preTds7ParamFmtBlock(&desc,&retfmt,false);
+	write(&resppacket,desc.getBuffer(),desc.getSize());
+
+	preTds7ParamValueWrite(&retfmt,&retbv);
+
+	size_t	tokenlength=resppacket.getSize()-lengthpos-sizeof(uint16_t);
+
+	// refuse rather than truncate, as preTds7ParamFmtWrite() does
+	if (tokenlength>65535) {
+		debugWrite("token too large: %lld",(long long)tokenlength);
+		debugEnd();
+		resppacket.truncate(lengthpos-sizeof(token));
+		resppacket.setPositionRelativeToEnd(0);
+		preTds7ParamError("TDS 5.0 parameter too large to send.",true);
+		return;
+	}
+
+	// write() appends, so overwrite the reserved length directly
+	resppacket.setPositionRelativeToBeginning(lengthpos);
+	resppacket.write(hostTo((uint16_t)tokenlength));
+	resppacket.setPositionRelativeToEnd(0);
+
+	debugWrite("token length: %lld",(long long)tokenlength);
+	debugEnd();
+}
+
+byte_t sqlrprotocol_tds::preTds7FixedType(byte_t tds5type, uint32_t size) {
+	switch (tds5type) {
+		case TDS5_TYPE_INTN:
+			switch (size) {
+				case 1:
+					return TDS5_TYPE_INT1;
+				case 2:
+					return TDS5_TYPE_INT2;
+				case 4:
+					return TDS5_TYPE_INT4;
+				case 8:
+					return TDS5_TYPE_INT8;
+			}
+			break;
+		case TDS5_TYPE_UINTN:
+			switch (size) {
+				case 1:
+					return TDS5_TYPE_UINT1;
+				case 2:
+					return TDS5_TYPE_UINT2;
+				case 4:
+					return TDS5_TYPE_UINT4;
+				case 8:
+					return TDS5_TYPE_UINT8;
+			}
+			break;
+		case TDS5_TYPE_FLTN:
+			return (size==4)?TDS5_TYPE_FLT4:TDS5_TYPE_FLT8;
+		case TDS5_TYPE_MONEYN:
+			return (size==4)?TDS5_TYPE_SHORTMONEY:TDS5_TYPE_MONEY;
+		case TDS5_TYPE_DATETIMEN:
+			return (size==4)?TDS5_TYPE_SHORTDATE:TDS5_TYPE_DATETIME;
+	}
+	return tds5type;
 }
 
 void sqlrprotocol_tds::writeIntN(int64_t value, byte_t size) {
@@ -23058,7 +23380,9 @@ void sqlrprotocol_tds::returnValue(sqlrservercursor *cursor,
 		return;
 	}
 
-	// otherwise, whatever the database put in the output bind
+	// otherwise, whatever the database put in the output bind.  A null
+	// integer or float keeps its type, with a length of 0.
+	bool	isnull=cont->getBindValueIsNull(bv->isnull);
 	switch (bv->type) {
 		case SQLRSERVERBINDVARTYPE_INTEGER:
 			{
@@ -23072,6 +23396,11 @@ void sqlrprotocol_tds::returnValue(sqlrservercursor *cursor,
 			}
 			write(&resppacket,(byte_t)TDS_TYPE_INTN);
 			write(&resppacket,size);
+			if (isnull) {
+				write(&resppacket,(byte_t)0);
+				debugWrite("value: (null)");
+				break;
+			}
 			write(&resppacket,size);
 			writeIntN(bv->value.integerval,size);
 			debugWrite("value: %lld",(long long)bv->value.integerval);
@@ -23080,6 +23409,11 @@ void sqlrprotocol_tds::returnValue(sqlrservercursor *cursor,
 		case SQLRSERVERBINDVARTYPE_DOUBLE:
 			write(&resppacket,(byte_t)TDS_TYPE_FLTN);
 			write(&resppacket,(byte_t)sizeof(double));
+			if (isnull) {
+				write(&resppacket,(byte_t)0);
+				debugWrite("value: (null)");
+				break;
+			}
 			write(&resppacket,(byte_t)sizeof(double));
 			write(&resppacket,bv->value.doubleval.value);
 			debugWrite("value: %f",bv->value.doubleval.value);

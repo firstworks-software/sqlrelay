@@ -4657,9 +4657,11 @@ bool sapcursor::fetchOutputParams() {
 		}
 		for (CS_INT i=0; i<maxindex; i++) {
 			CS_INT	outidx=i+outbindoffset;
-			if (outbindtype[outidx]==CS_CHAR_TYPE) {
+			if (outbindisnulls[outidx]) {
 				*(outbindisnulls[outidx])=
 						*paramnullindicator[i];
+			}
+			if (outbindtype[outidx]==CS_CHAR_TYPE) {
 				CS_INT	size=outbindstringsizes[outidx];
 				if (paramdatasize[i][0]<size) {
 					size=paramdatasize[i][0];

@@ -4847,6 +4847,12 @@ int main(int argc, char **argv) {
 	stdoutput.printf("\n");
 
 
+	// A null fetched with CS_FMT_NULLTERM is an empty string.  Sap's
+	// ct-lib counts its terminator in the length, the way it does for
+	// every other value here, while freetds reports 0.
+	CS_INT	nulltermnulllength=(TDSTEST_LINKED_WITH_FREETDS)?0:1;
+
+
 	stdoutput.printf("ct_fetch:\n");
 	for (CS_INT i=0; i<4; i++) {
 
@@ -4866,10 +4872,10 @@ int main(int argc, char **argv) {
 
 		if (i==3) {
 			assertEquals(dyndata[1],"");
-			assertEquals(dyndatalength[1],0);
+			assertEquals(dyndatalength[1],nulltermnulllength);
 			assertEquals(dynnullindicator[1],-1);
 			assertEquals(dyndata[2],"");
-			assertEquals(dyndatalength[2],0);
+			assertEquals(dyndatalength[2],nulltermnulllength);
 			assertEquals(dynnullindicator[2],-1);
 		} else {
 			assertEquals(dyndata[1],dyncharexpect[i]);
@@ -5283,16 +5289,26 @@ int main(int argc, char **argv) {
 	// 20-byte blank-padded value sqlrelay bound is what mssql stores,
 	// in the varchar column as well as the char one, exactly like the
 	// cases above with no NUL in them.  The terminator in the middle
-	// still ends the C string at "six"/"seis".  ASE pads nothing.
-	// #9531 - that issybase length was measured against sap's ct-lib.
-	// freetds reports one byte more for this exact embedded-NUL case
-	// over a native tds 5.0 link to a real ASE; content is unaffected
-	// (dyndata still comes back "six"/"seis"), so this is a narrow
-	// value gate rather than a chased-down wire difference.
+	// still ends the C string at "six"/"seis".
+	//
+	// Whether ASE keeps the NUL depends on how the value reaches it.
+	// Natively, sap's ct-lib sends it as a varchar parameter of a
+	// dynamic statement and ASE drops the NUL, while freetds sends it as
+	// a char and ASE keeps it.  sqlrelay runs the statement as a
+	// language command with parameters instead.  Over tds 5.0 the value
+	// goes on unchanged and ASE keeps the NUL.  Over tds 7 sqlrelay
+	// blank pads it to the declared 20 first, and ASE trims the NUL off
+	// along with the padding.
+	CS_INT	embnulllength=21;
+	if (nativease) {
+		embnulllength=(TDSTEST_LINKED_WITH_FREETDS)?5:4;
+	} else if (issybase) {
+		embnulllength=(tds5)?5:4;
+	}
 	assertEquals(dyndata[0],"six");
-	assertEquals(dyndatalength[0],(freetdsnativease)?5:((issybase)?4:21));
+	assertEquals(dyndatalength[0],embnulllength);
 	assertEquals(dyndata[1],"seis");
-	assertEquals(dyndatalength[1],(freetdsnativease)?6:((issybase)?5:21));
+	assertEquals(dyndatalength[1],(issybase)?embnulllength+1:21);
 	assertEquals(ct_fetch(cmd,CS_UNUSED,CS_UNUSED,
 					CS_UNUSED,&rowsread),CS_END_DATA);
 	results=ct_results(cmd,&resultstype);
@@ -5374,11 +5390,13 @@ int main(int argc, char **argv) {
 
 
 	// Preparing an id that is already live fails at ct_send with no
-	// client message and no server message at all.  ct_results then
-	// returns CS_FAIL rather than a result type.  This block sits
-	// after everything that needs a healthy command, because leaving
-	// the failure neither drained nor cancelled desynchronizes every
-	// block after it.
+	// client message and no server message at all on freetds.  Sap's
+	// ct-lib tracks the ids itself and refuses it earlier, at
+	// ct_dynamic, with client message 134.  Either way ct_send then
+	// fails, and ct_results returns CS_FAIL rather than a result type.
+	// This block sits after everything that needs a healthy command,
+	// because leaving the failure neither drained nor cancelled
+	// desynchronizes every block after it.
 	stdoutput.printf("ct_dynamic: prepare a live id twice\n");
 	assertEquals(ct_dynamic(cmd,CS_PREPARE,
 				(CS_CHAR *)dyninsertid,CS_NULLTERM,
@@ -5395,7 +5413,8 @@ int main(int argc, char **argv) {
 	assertEquals(ct_cancel(NULL,cmd,CS_CANCEL_ALL),CS_SUCCEED);
 	assertEquals(ct_dynamic(cmd,CS_PREPARE,
 				(CS_CHAR *)dyninsertid,CS_NULLTERM,
-				(CS_CHAR *)dyninsert,CS_NULLTERM),CS_SUCCEED);
+				(CS_CHAR *)dyninsert,CS_NULLTERM),
+			(TDSTEST_LINKED_WITH_FREETDS)?CS_SUCCEED:CS_FAIL);
 	assertEquals(ct_send(cmd),CS_FAIL);
 	results=ct_results(cmd,&resultstype);
 	assertEquals(results,CS_FAIL);
@@ -5552,9 +5571,9 @@ int main(int argc, char **argv) {
 	// The name comes back only because it was set on the way in.  Over
 	// tds 7 the status is 0, so an output parameter cannot be told from
 	// the describe there - only from the result type.  Over tds 5.0 it
-	// can: the paramfmt that carries a returned parameter sets its own
-	// "return value" status bit, which is what a real ASE sends, and
-	// sap's ct-lib surfaces that as CS_RETURN.
+	// can: the returnvalue token that carries a returned parameter sets
+	// its own "return value" status bit, which is what a real ASE sends,
+	// and sap's ct-lib surfaces that as CS_RETURN.
 	stdoutput.printf("ct_results: rpc output params\n");
 	results=ct_results(cmd,&resultstype);
 	assertEquals(results,CS_SUCCEED);
@@ -5690,7 +5709,7 @@ int main(int argc, char **argv) {
 			assertEquals(ct_fetch(cmd,CS_UNUSED,CS_UNUSED,
 					CS_UNUSED,&rowsread),CS_SUCCEED);
 			assertEquals(dynnullindicator[0],-1);
-			assertEquals(dyndatalength[0],0);
+			assertEquals(dyndatalength[0],nulltermnulllength);
 			assertEquals(ct_fetch(cmd,CS_UNUSED,CS_UNUSED,
 					CS_UNUSED,&rowsread),CS_END_DATA);
 		}
@@ -6097,12 +6116,10 @@ int main(int argc, char **argv) {
 
 
 	// ASE answers an rpc for a procedure that does not exist with a
-	// status result before the CS_CMD_FAIL, and sqlrelay relays that
-	// behavior for an ASE backend.  The number differs: a native link
-	// carries ASE's own -6, while the relay carries the sqlrelay error
-	// number for the failure, so only the native case checks the value.
-	// mssql sends no status result at all, either natively or through
-	// the relay.
+	// status result before the CS_CMD_FAIL, -6 for the severity 16
+	// error, and sqlrelay answers the same way for an ASE backend.  mssql
+	// sends no status result at all, either natively or through the
+	// relay.
 	stdoutput.printf("ct_command: rpc no such procedure\n");
 	assertEquals(ct_command(cmd,CS_RPC_CMD,
 				(CS_CHAR *)"dynnosuchproc",CS_NULLTERM,
@@ -6112,21 +6129,16 @@ int main(int argc, char **argv) {
 		results=ct_results(cmd,&resultstype);
 		assertEquals(results,CS_SUCCEED);
 		assertEquals(resultstype,CS_STATUS_RESULT);
-		if (nativease) {
-			bytestring::zero(dyndata[0],1024);
-			assertEquals(ct_bind(cmd,1,&(dynfmt[0]),
-					(CS_VOID *)dyndata[0],
-					&(dyndatalength[0]),
-					&(dynnullindicator[0])),CS_SUCCEED);
-			assertEquals(ct_fetch(cmd,CS_UNUSED,CS_UNUSED,
-					CS_UNUSED,&rowsread),CS_SUCCEED);
-			assertEquals(dyndata[0],"-6");
-			assertEquals(ct_fetch(cmd,CS_UNUSED,CS_UNUSED,
-					CS_UNUSED,&rowsread),CS_END_DATA);
-		} else {
-			assertEquals(ct_cancel(NULL,cmd,CS_CANCEL_CURRENT),
-								CS_SUCCEED);
-		}
+		bytestring::zero(dyndata[0],1024);
+		assertEquals(ct_bind(cmd,1,&(dynfmt[0]),
+				(CS_VOID *)dyndata[0],
+				&(dyndatalength[0]),
+				&(dynnullindicator[0])),CS_SUCCEED);
+		assertEquals(ct_fetch(cmd,CS_UNUSED,CS_UNUSED,
+				CS_UNUSED,&rowsread),CS_SUCCEED);
+		assertEquals(dyndata[0],"-6");
+		assertEquals(ct_fetch(cmd,CS_UNUSED,CS_UNUSED,
+				CS_UNUSED,&rowsread),CS_END_DATA);
 	}
 	results=ct_results(cmd,&resultstype);
 	assertEquals(results,CS_SUCCEED);
@@ -9891,6 +9903,7 @@ int main(int argc, char **argv) {
 	unsigned char	binduniquevalue[16];
 	CS_VARCHAR	bindvarcharvalue;
 	CS_VARBINARY	bindvarbinaryvalue;
+	CS_USHORT	bindunicharvalue[3]={'a','b','c'};
 	CS_TINYINT	bindtinyintvalue=7;
 	CS_SMALLINT	bindsmallintvalue=7;
 	CS_INT		bindintvalue=7;
@@ -10036,21 +10049,66 @@ int main(int argc, char **argv) {
 	// The same padding at maxlength 20, for the datalen cases below.
 	// bindterm is what a datalen of strlen+1 leaves behind: the
 	// terminator goes in as data, which mssql hides inside its own
-	// padding and ASE shows as one byte of extra length.  bindblank is
-	// what is left when the value is thrown away, which is blanks out
-	// to maxlength on mssql and a single blank on ASE.
+	// padding and ASE shows as one byte of extra length when it keeps
+	// it.  bindblank is what is left when the value is thrown away,
+	// which is blanks out to maxlength on mssql and a single blank on
+	// ASE.
 	//
-	// Only a native ct-lib link puts the terminator on the wire.  On the
-	// tds 7 wire freetds sends a CS_CHAR_TYPE parameter as a bigchar of
-	// strlen bytes and drops the extra byte, whatever datalen said, so
-	// through sqlrelay the row is the plain "abc" the padded case leaves
-	// and the length matches bindpadlength.  mssql pads either way, so
-	// only the ASE side of this can tell.
+	// Whether ASE keeps the terminator depends on how the value reaches
+	// it, the same way it does for the embedded NUL in the dynamic
+	// parameter section above.  On the tds 7 wire freetds sends a
+	// CS_CHAR_TYPE parameter as a bigchar of strlen bytes and drops the
+	// extra byte, whatever datalen said, so through sqlrelay the row is
+	// the plain "abc" the padded case leaves.  Natively, sap's ct-lib
+	// sends it as a varchar parameter of a dynamic statement and ASE
+	// drops it, while freetds sends it and ASE keeps it.  Over tds 5.0
+	// sqlrelay passes the terminator on to a language command with
+	// parameters, and ASE keeps it.  mssql pads either way, so only the
+	// ASE side of this can tell.
 	const char	*bindpadexpect=(issybase)?"abc":"abc                 ";
 	CS_INT		bindpadlength=(issybase)?4:21;
-	CS_INT		bindtermlength=(issybase)?((nativease)?5:4):21;
+	CS_INT		bindtermlength=21;
+	if (nativease) {
+		bindtermlength=(TDSTEST_LINKED_WITH_FREETDS)?5:4;
+	} else if (issybase) {
+		bindtermlength=(tds5)?5:4;
+	}
 	const char	*bindblankexpect=(issybase)?" ":"                    ";
 	CS_INT		bindblanklength=(issybase)?2:21;
+
+	// Sap's ct-lib refuses a datalen of CS_UNUSED on a character type
+	// outright, and sends a datalen of 0 as a null rather than throwing
+	// the value away.
+	CS_INT		bindunusedchar=(tds5)?bindparamfails:bindtakes;
+	const char	*bindzeroexpect=(tds5)?"":bindblankexpect;
+	CS_INT		bindzerolength=
+				(tds5)?nulltermnulllength:bindblanklength;
+	CS_SMALLINT	bindzeroindicator=(tds5)?-1:0;
+
+	// Sap's ct-lib converts dates, times and money to text in its own
+	// default formats - dates and times with no seconds, and money with
+	// two decimal places rather than four.
+	const char	*binddatetimeexpect=(tds5)?"Jan  1 2001 12:00PM":
+						"Jan  1 2001 12:00:00:000PM";
+	const char	*binddateexpect=(tds5)?"Jan  1 2001 12:00AM":
+						"Jan  1 2001 12:00:00:000AM";
+	const char	*bindtimeexpect=(tds5)?"Jan  1 1900 12:00PM":
+						"Jan  1 1900 12:00:00:000PM";
+	CS_INT		binddatetimelength=(tds5)?20:27;
+	CS_INT		binddatelength=binddatetimelength;
+	CS_INT		bindtimelength=binddatetimelength;
+
+	// Over tds 5.0 sqlrelay sends a date or time column as text, in the
+	// sap backend's own rendering, rather than as the date or time type
+	// ASE sends natively - the same as in the Queries section above.
+	if (issybase && !nativease && tds5) {
+		binddateexpect="Jan  1 2001";
+		binddatelength=12;
+		bindtimeexpect="12:00PM";
+		bindtimelength=8;
+	}
+	const char	*bindmoneyexpect=(tds5)?"12.34":"12.3400";
+	CS_INT		bindmoneylength=(tds5)?6:8;
 
 
 	// One entry per type, bound as the single parameter of a prepared
@@ -10077,21 +10135,40 @@ int main(int argc, char **argv) {
 	// token 16", so it is not driven there at all.
 	//
 	// Those tds 5 types only reach a server that speaks tds 5.  A
-	// native ct-lib link to ASE does.  sqlrelay's tds protocol module
-	// is a tds 7 server whichever backend is behind it, so it answers
-	// the same "Data type 0xNN is unknown" mssql does -
+	// native link to ASE does, and so does sqlrelay's tds protocol
+	// module when sap's ct-lib logs in, since that always speaks tds
+	// 5.0.  Over the tds 7 that freetds speaks to the relay, the module
+	// answers the same "Data type 0xNN is unknown" mssql does -
 	// rpcUnsupportedTypeError() in src/protocols/tds.cpp - and the
-	// command fails.  That makes "ASE takes them" a native-transport
-	// fact, so bindtds5 below carries it rather than the sybase column
-	// saying bindtakes outright.  The relay names the byte at execute
-	// time rather than at prepare time, so they come out as
-	// bindcmdfails through the relay.
+	// command fails.  That makes "ASE takes them" a tds 5.0 wire fact,
+	// so bindtds5 below carries it rather than the sybase column saying
+	// bindtakes outright.  The relay names the byte at execute time
+	// rather than at prepare time, so they come out as bindcmdfails
+	// through the relay over tds 7.
 	//
 	// CS_LONGBINARY_TYPE's 0xE1 is the exception.  It is a sybase type
 	// too, but the relay takes it for an ASE backend (its tds 7 form
 	// sizes both its maxsize and its value with a single byte, exactly
 	// like binary/varbinary), so the sybase column says bindtakes.
-	CS_INT	bindtds5=(nativease)?bindtakes:bindcmdfails;
+	CS_INT	bindtds5=(nativease || tds5)?bindtakes:bindcmdfails;
+
+	// Sap's ct-lib refuses a text or image parameter in ct_param,
+	// natively and through sqlrelay alike.
+	CS_INT	bindlob=(tds5)?bindparamfails:bindtakes;
+
+	// Sap's ct-lib takes the parameters freetds refuses in ct_param and
+	// puts them on the wire.  CS_LONG_TYPE and CS_USHORT_TYPE go out as
+	// datatype 0xFF and sensitivity and boundary as their own label
+	// types, and the server refuses all four, so the command fails.
+	CS_INT	bindsapsends=(tds5)?bindcmdfails:bindparamfails;
+	CS_INT	bindlong=(tds5)?bindcmdfails:bindtds5;
+
+	// Sap's ct-lib sends a CS_UNICHAR_TYPE parameter as utf-16 and ASE
+	// refuses the odd byte count of a 3-byte character value, with
+	// error 2433.  A real utf-16 value goes in fine.  Freetds sends the
+	// character value as it is.
+	CS_INT	bindunichar=(tds5)?bindcmdfails:bindtakes;
+	CS_INT	bindunichar16=(tds5)?bindtakes:bindnocolumn;
 
 
 	// The three binary types' prepare is accepted rather than refused
@@ -10130,10 +10207,13 @@ int main(int argc, char **argv) {
 			bindtakes,bindtakes,"abc",4,1,0,0},
 		{"CS_TEXT_TYPE","bindtext",CS_TEXT_TYPE,
 			(CS_VOID *)bindcharvalue,3,36,0,0,
-			bindtakes,bindtakes,"abc",4,1,0,0},
+			bindtakes,bindlob,"abc",4,1,0,0},
 		{"CS_UNICHAR_TYPE","bindunichar",CS_UNICHAR_TYPE,
 			(CS_VOID *)bindcharvalue,3,36,0,0,
-			bindtakes,bindtakes,"abc",4,1,0,0},
+			bindtakes,bindunichar,"abc",4,1,0,0},
+		{"CS_UNICHAR_TYPE utf-16","bindunichar",CS_UNICHAR_TYPE,
+			(CS_VOID *)bindunicharvalue,6,36,0,0,
+			bindnocolumn,bindunichar16,"abc",4,1,0,0},
 		{"CS_BINARY_TYPE","bindbinary",CS_BINARY_TYPE,
 			(CS_VOID *)bindbinaryvalue,3,36,0,0,
 			bindprepnotrefused,bindtakes,"010203",7,1,0,0},
@@ -10146,7 +10226,7 @@ int main(int argc, char **argv) {
 			bindprepnotrefused,bindtakes,"010203",7,1,0,0},
 		{"CS_IMAGE_TYPE","bindimage",CS_IMAGE_TYPE,
 			(CS_VOID *)bindbinaryvalue,3,36,0,0,
-			bindtakes,bindtakes,"010203",7,1,0,0},
+			bindtakes,bindlob,"010203",7,1,0,0},
 		{"CS_TINYINT_TYPE","bindtinyint",CS_TINYINT_TYPE,
 			(CS_VOID *)&bindtinyintvalue,
 			(CS_INT)sizeof(CS_TINYINT),1,0,0,
@@ -10166,11 +10246,11 @@ int main(int argc, char **argv) {
 		{"CS_LONG_TYPE","bindbigint",CS_LONG_TYPE,
 			(CS_VOID *)&bindlongvalue,
 			(CS_INT)sizeof(CS_LONG),(CS_INT)sizeof(CS_LONG),0,0,
-			bindcmdfails,bindtds5,"7",2,1,0,0},
+			bindcmdfails,bindlong,"7",2,1,0,0},
 		{"CS_USHORT_TYPE","bindint",CS_USHORT_TYPE,
 			(CS_VOID *)&bindushortvalue,
 			(CS_INT)sizeof(CS_USHORT),2,0,0,
-			bindparamfails,bindparamfails,"7",2,1,0,0},
+			bindparamfails,bindsapsends,"7",2,1,0,0},
 		{"CS_USMALLINT_TYPE","bindint",CS_USMALLINT_TYPE,
 			(CS_VOID *)&bindusmallintvalue,
 			(CS_INT)sizeof(CS_USMALLINT),2,0,0,
@@ -10199,40 +10279,42 @@ int main(int argc, char **argv) {
 			(CS_VOID *)&binddatetimevalue,
 			(CS_INT)sizeof(CS_DATETIME),8,0,0,
 			bindtakes,bindtakes,
-			"Jan  1 2001 12:00:00:000PM",27,1,0,0},
+			binddatetimeexpect,binddatetimelength,1,0,0},
 		{"CS_DATETIME4_TYPE","bindsmalldatetime",CS_DATETIME4_TYPE,
 			(CS_VOID *)&binddatetime4value,
 			(CS_INT)sizeof(CS_DATETIME4),4,0,0,
 			bindtakes,bindtakes,
-			"Jan  1 2001 12:00:00:000PM",27,1,0,0},
+			binddatetimeexpect,binddatetimelength,1,0,0},
 		{"CS_BIGDATETIME_TYPE","binddatetime",CS_BIGDATETIME_TYPE,
 			(CS_VOID *)&bindbigdatetimevalue,
 			(CS_INT)sizeof(CS_BIGDATETIME),8,0,0,
 			bindcmdfails,bindtds5,
-			"Jan  1 2001 12:00:00:000PM",27,1,0,0},
+			binddatetimeexpect,binddatetimelength,1,0,0},
 		{"CS_DATE_TYPE","binddate",CS_DATE_TYPE,
 			(CS_VOID *)&binddatevalue,
 			(CS_INT)sizeof(CS_DATE),4,0,0,
 			bindcmdfails,bindtds5,
-			"Jan  1 2001 12:00:00:000AM",27,1,0,0},
+			binddateexpect,binddatelength,1,0,0},
 		{"CS_TIME_TYPE","bindtime",CS_TIME_TYPE,
 			(CS_VOID *)&bindtimevalue,
 			(CS_INT)sizeof(CS_TIME),4,0,0,
 			bindcmdfails,bindtds5,
-			"Jan  1 1900 12:00:00:000PM",27,1,0,0},
+			bindtimeexpect,bindtimelength,1,0,0},
 		{"CS_BIGTIME_TYPE","bindtime",CS_BIGTIME_TYPE,
 			(CS_VOID *)&bindbigtimevalue,
 			(CS_INT)sizeof(CS_BIGTIME),8,0,0,
 			bindcmdfails,bindtds5,
-			"Jan  1 1900 12:00:00:000PM",27,1,0,0},
+			bindtimeexpect,bindtimelength,1,0,0},
 		{"CS_MONEY_TYPE","bindmoney",CS_MONEY_TYPE,
 			(CS_VOID *)&bindmoneyvalue,
 			(CS_INT)sizeof(CS_MONEY),8,0,0,
-			bindtakes,bindtakes,"12.3400",8,1,0,0},
+			bindtakes,bindtakes,
+			bindmoneyexpect,bindmoneylength,1,0,0},
 		{"CS_MONEY4_TYPE","bindsmallmoney",CS_MONEY4_TYPE,
 			(CS_VOID *)&bindmoney4value,
 			(CS_INT)sizeof(CS_MONEY4),4,0,0,
-			bindtakes,bindtakes,"12.3400",8,1,0,0},
+			bindtakes,bindtakes,
+			bindmoneyexpect,bindmoneylength,1,0,0},
 		{"CS_NUMERIC_TYPE","bindnumeric",CS_NUMERIC_TYPE,
 			(CS_VOID *)&bindnumericvalue,
 			(CS_INT)sizeof(CS_NUMERIC),
@@ -10258,10 +10340,10 @@ int main(int argc, char **argv) {
 			bindparamfails,bindparamfails,"abc",4,1,0,0},
 		{"CS_SENSITIVITY_TYPE","bindchar",CS_SENSITIVITY_TYPE,
 			(CS_VOID *)bindcharvalue,3,36,0,0,
-			bindparamfails,bindparamfails,"abc",4,1,0,0},
+			bindparamfails,bindsapsends,"abc",4,1,0,0},
 		{"CS_BOUNDARY_TYPE","bindchar",CS_BOUNDARY_TYPE,
 			(CS_VOID *)bindcharvalue,3,36,0,0,
-			bindparamfails,bindparamfails,"abc",4,1,0,0},
+			bindparamfails,bindsapsends,"abc",4,1,0,0},
 		{"CS_VOID_TYPE","bindchar",CS_VOID_TYPE,
 			(CS_VOID *)bindcharvalue,3,36,0,0,
 			bindparamfails,bindparamfails,"abc",4,1,0,0},
@@ -10303,12 +10385,12 @@ int main(int argc, char **argv) {
 			bindpadexpect,bindpadlength,1,0,0},
 		{"datalen CS_UNUSED on a character type","bindchar",
 			CS_CHAR_TYPE,(CS_VOID *)bindcharvalue,CS_UNUSED,
-			20,0,0,bindtakes,bindtakes,
+			20,0,0,bindtakes,bindunusedchar,
 			bindblankexpect,bindblanklength,1,0,0},
 		{"datalen zero on a character type","bindchar",
 			CS_CHAR_TYPE,(CS_VOID *)bindcharvalue,0,
 			20,0,0,bindtakes,bindtakes,
-			bindblankexpect,bindblanklength,1,0,0},
+			bindzeroexpect,bindzerolength,1,0,bindzeroindicator},
 		{"datalen over maxlength","bindchar",CS_CHAR_TYPE,
 			(CS_VOID *)bindcharvalue,3,2,0,0,
 			bindtakes,bindtakes,"abc",4,1,0,0},
@@ -10337,17 +10419,18 @@ int main(int argc, char **argv) {
 		// normally.
 		{"null through the indicator, int","bindint",CS_INT_TYPE,
 			(CS_VOID *)&bindintvalue,(CS_INT)sizeof(CS_INT),
-			4,0,0,bindtakes,bindtakes,"",0,1,-1,-1},
+			4,0,0,bindtakes,bindtakes,
+			"",nulltermnulllength,1,-1,-1},
 		{"null through the indicator, char","bindchar",CS_CHAR_TYPE,
 			(CS_VOID *)bindcharvalue,3,20,0,0,
-			bindtakes,bindtakes,"",0,1,-1,-1},
+			bindtakes,bindtakes,"",nulltermnulllength,1,-1,-1},
 		{"null through the indicator, float","bindfloat",
 			CS_FLOAT_TYPE,(CS_VOID *)&bindfloatvalue,
 			(CS_INT)sizeof(CS_FLOAT),8,0,0,
-			bindtakes,bindtakes,"",0,1,-1,-1},
+			bindtakes,bindtakes,"",nulltermnulllength,1,-1,-1},
 		{"null through a null value pointer","bindint",CS_INT_TYPE,
 			(CS_VOID *)NULL,0,4,0,0,
-			bindtakes,bindtakes,"",0,1,0,-1},
+			bindtakes,bindtakes,"",nulltermnulllength,1,0,-1},
 		{"indicator one is not null","bindint",CS_INT_TYPE,
 			(CS_VOID *)&bindintvalue,(CS_INT)sizeof(CS_INT),
 			4,0,0,bindtakes,bindtakes,"7",2,1,1,0},
@@ -10584,9 +10667,15 @@ int main(int argc, char **argv) {
 	while (ct_results(cmd,&resultstype)==CS_SUCCEED) {}
 	ct_cancel(NULL,cmd,CS_CANCEL_ALL);
 
+	query="drop procedure bindnullproc";
+	ct_command(cmd,CS_LANG_CMD,query,charstring::getLength(query),CS_UNUSED);
+	ct_send(cmd);
+	while (ct_results(cmd,&resultstype)==CS_SUCCEED) {}
+	ct_cancel(NULL,cmd,CS_CANCEL_ALL);
+
 
 	stdoutput.printf("ct_command: create procedures\n");
-	const char	*bindprocs[4]={
+	const char	*bindprocs[5]={
 		"create procedure bindproc "
 			"@pin int, @pchr varchar(20) output, "
 			"@pflt float output, @pdt datetime output as "
@@ -10603,9 +10692,15 @@ int main(int argc, char **argv) {
 			"insert into bindtable (bindbinary) values (@pbin)",
 		"create procedure bindimgproc "
 			"@pimg image as "
-			"insert into bindtable (bindimage) values (@pimg)"
+			"insert into bindtable (bindimage) values (@pimg)",
+		"create procedure bindnullproc "
+			"@pint int output, @pflt float output, "
+			"@pdt datetime output as "
+			"select @pint = null "
+			"select @pflt = null "
+			"select @pdt = null"
 	};
-	for (CS_INT i=0; i<4; i++) {
+	for (CS_INT i=0; i<5; i++) {
 		assertEquals(ct_command(cmd,CS_LANG_CMD,bindprocs[i],
 					charstring::getLength(bindprocs[i]),
 					CS_UNUSED),CS_SUCCEED);
@@ -10696,12 +10791,18 @@ int main(int argc, char **argv) {
 	stdoutput.printf("\n");
 
 
-	// A char output parameter comes back blank padded to the
-	// maxlength that was given on the way in, on both servers, which
-	// is the one place the mssql only padding rule for input
-	// parameters does not hold.  usertype splits the usual way -
-	// mssql reports 0, a native ASE link reports its syscolumns ids,
-	// and sqlrelay reports 0 whichever backend is behind it.
+	// With freetds a char output parameter comes back blank padded to
+	// the maxlength that was given on the way in, on both servers,
+	// which is the one place the mssql only padding rule for input
+	// parameters does not hold.  With sap's ct-lib, which declares the
+	// parameter varchar, ASE sends it as a longchar at the value's own
+	// length instead, unpadded, and sqlrelay does the same.  usertype
+	// splits the usual way - mssql reports 0, a native ASE link reports
+	// its syscolumns ids (varchar's rather than char's for sap's
+	// ct-lib), and sqlrelay reports 0 whichever backend is behind it.
+	// Sap's ct-lib reports the status as CS_RETURN, as for the rpc
+	// output params above, and formats the float and the datetime its
+	// own way.
 	stdoutput.printf("ct_results: rpc typed output params\n");
 	results=ct_results(cmd,&resultstype);
 	assertEquals(results,CS_SUCCEED);
@@ -10718,7 +10819,7 @@ int main(int argc, char **argv) {
 	CS_INT		bindoutmaxlength[3]={20,8,8};
 	CS_INT		bindoutusertype[3]={0,0,0};
 	if (nativease) {
-		bindoutusertype[0]=1;
+		bindoutusertype[0]=(tds5)?2:1;
 		bindoutusertype[1]=8;
 		bindoutusertype[2]=12;
 	}
@@ -10726,6 +10827,16 @@ int main(int argc, char **argv) {
 				"out4                ","6",
 				"Jan  1 2001 12:00:00:000PM"};
 	CS_INT		bindoutvaluelen[3]={21,2,27};
+	if (tds5) {
+		bindouttype[0]=CS_LONGCHAR_TYPE;
+		bindoutmaxlength[0]=4;
+		bindoutvalue[0]="out4";
+		bindoutvaluelen[0]=5;
+		bindoutvalue[1]="6.0";
+		bindoutvaluelen[1]=4;
+		bindoutvalue[2]=binddatetimeexpect;
+		bindoutvaluelen[2]=binddatetimelength;
+	}
 
 	// every output parameter is a column of the same single row, so
 	// they all get bound before the one fetch
@@ -10748,8 +10859,8 @@ int main(int argc, char **argv) {
 		assertEquals(bindoutfmt[i].maxlength,bindoutmaxlength[i]);
 		assertEquals(bindoutfmt[i].precision,0);
 		assertEquals(bindoutfmt[i].scale,0);
-		assertEquals(bindoutfmt[i].status,0);
-		assertEquals(bindoutfmt[i].count,1);
+		assertEquals(bindoutfmt[i].status,(tds5)?CS_RETURN:0);
+		assertEquals(bindoutfmt[i].count,describecount);
 		assertEquals(bindoutfmt[i].usertype,bindoutusertype[i]);
 		bytestring::zero(bindoutdata[i],sizeof(bindoutdata[i]));
 		bindoutdatalength[i]=-1;
@@ -10767,6 +10878,97 @@ int main(int argc, char **argv) {
 		assertEquals(bindoutdata[i],bindoutvalue[i]);
 		assertEquals(bindoutdatalength[i],bindoutvaluelen[i]);
 		assertEquals(bindoutdataindicator[i],0);
+	}
+	assertEquals(ct_fetch(cmd,CS_UNUSED,CS_UNUSED,
+					CS_UNUSED,&rowsread),CS_END_DATA);
+	results=ct_results(cmd,&resultstype);
+	assertEquals(results,CS_SUCCEED);
+	assertEquals(resultstype,CS_CMD_SUCCEED);
+	results=ct_results(cmd,&resultstype);
+	assertEquals(results,CS_SUCCEED);
+	assertEquals(resultstype,CS_CMD_DONE);
+	results=ct_results(cmd,&resultstype);
+	assertEquals(results,CS_END_RESULTS);
+	assertEquals(ct_cancel(NULL,cmd,CS_CANCEL_ALL),CS_SUCCEED);
+	stdoutput.printf("\n");
+
+
+	// Output parameters that come back null.  A fixed-width type has no
+	// null form, so over tds 5.0 each one goes out as its nullable type
+	// with a length of 0, and the status says CS_CANBENULL.  Sap's
+	// ct-lib reports CS_RETURN as well.
+	stdoutput.printf("ct_command: rpc with null typed output params\n");
+	assertEquals(ct_command(cmd,CS_RPC_CMD,(CS_CHAR *)"bindnullproc",
+				CS_NULLTERM,CS_UNUSED),CS_SUCCEED);
+	CS_INT		bindnulltype[3]={
+				CS_INT_TYPE,CS_FLOAT_TYPE,CS_DATETIME_TYPE};
+	CS_INT		bindnullmaxlength[3]={4,8,8};
+	const char	*bindnullname[3]={"@pint","@pflt","@pdt"};
+	bindintvalue=4;
+	bindoutfloat=0;
+	bytestring::zero(&bindoutdatetime,sizeof(CS_DATETIME));
+	CS_VOID		*bindnullvalue[3]={
+				(CS_VOID *)&bindintvalue,
+				(CS_VOID *)&bindoutfloat,
+				(CS_VOID *)&bindoutdatetime};
+	for (CS_INT i=0; i<3; i++) {
+		bytestring::zero(&(bindoutfmt[i]),sizeof(CS_DATAFMT));
+		bindoutfmt[i].datatype=bindnulltype[i];
+		bindoutfmt[i].maxlength=bindnullmaxlength[i];
+		bindoutfmt[i].count=1;
+		bindoutfmt[i].status=CS_RETURN;
+		charstring::copy(bindoutfmt[i].name,bindnullname[i]);
+		bindoutfmt[i].namelen=charstring::getLength(bindnullname[i]);
+		assertEquals(ct_param(cmd,&(bindoutfmt[i]),bindnullvalue[i],
+					bindnullmaxlength[i],0),CS_SUCCEED);
+	}
+	assertEquals(ct_send(cmd),CS_SUCCEED);
+	results=ct_results(cmd,&resultstype);
+	assertEquals(results,CS_SUCCEED);
+	assertEquals(resultstype,CS_STATUS_RESULT);
+	bytestring::zero(bindreaddata,sizeof(bindreaddata));
+	assertEquals(ct_bind(cmd,1,&bindreadfmt,
+				(CS_VOID *)bindreaddata,
+				&bindreadlength,
+				&bindreadindicator),CS_SUCCEED);
+	assertEquals(ct_fetch(cmd,CS_UNUSED,CS_UNUSED,
+				CS_UNUSED,&rowsread),CS_SUCCEED);
+	assertEquals(bindreaddata,"0");
+	assertEquals(ct_fetch(cmd,CS_UNUSED,CS_UNUSED,
+				CS_UNUSED,&rowsread),CS_END_DATA);
+	results=ct_results(cmd,&resultstype);
+	assertEquals(results,CS_SUCCEED);
+	assertEquals(resultstype,CS_PARAM_RESULT);
+	ncols=-1;
+	assertEquals(ct_res_info(cmd,CS_NUMDATA,
+					(CS_VOID *)&ncols,CS_UNUSED,
+					(CS_INT *)NULL),CS_SUCCEED);
+	assertEquals(ncols,3);
+	for (CS_INT i=0; i<ncols && i<3; i++) {
+		bytestring::zero(&(bindoutfmt[i]),sizeof(CS_DATAFMT));
+		assertEquals(ct_describe(cmd,i+1,&(bindoutfmt[i])),CS_SUCCEED);
+		assertEquals(bindoutfmt[i].name,bindnullname[i]);
+		assertEquals(bindoutfmt[i].datatype,bindnulltype[i]);
+		assertEquals(bindoutfmt[i].maxlength,bindnullmaxlength[i]);
+		assertEquals(bindoutfmt[i].status,
+				((tds5)?CS_RETURN:0)|
+				((nativease || tds5)?CS_CANBENULL:0));
+		bytestring::zero(bindoutdata[i],sizeof(bindoutdata[i]));
+		bindoutdatalength[i]=-1;
+		bindoutdataindicator[i]=-99;
+		assertEquals(ct_bind(cmd,i+1,&bindoutreadfmt,
+					(CS_VOID *)bindoutdata[i],
+					&(bindoutdatalength[i]),
+					&(bindoutdataindicator[i])),
+					CS_SUCCEED);
+	}
+	assertEquals(ct_fetch(cmd,CS_UNUSED,CS_UNUSED,
+					CS_UNUSED,&rowsread),CS_SUCCEED);
+	assertEquals(rowsread,1);
+	for (CS_INT i=0; i<ncols && i<3; i++) {
+		assertEquals(bindoutdata[i],"");
+		assertEquals(bindoutdatalength[i],nulltermnulllength);
+		assertEquals(bindoutdataindicator[i],-1);
 	}
 	assertEquals(ct_fetch(cmd,CS_UNUSED,CS_UNUSED,
 					CS_UNUSED,&rowsread),CS_END_DATA);
@@ -10800,7 +11002,13 @@ int main(int argc, char **argv) {
 	assertEquals(ct_param(cmd,&(bindoutfmt[0]),
 				(CS_VOID *)&bindintvalue,
 				sizeof(CS_INT),0),CS_SUCCEED);
+	// sap's ct-lib checks the value's own precision and scale, even
+	// for an output parameter, and refuses the zeros
 	bytestring::zero(&bindoutnumeric,sizeof(CS_NUMERIC));
+	if (tds5) {
+		bindoutnumeric.precision=10;
+		bindoutnumeric.scale=4;
+	}
 	bytestring::zero(&(bindoutfmt[1]),sizeof(CS_DATAFMT));
 	bindoutfmt[1].datatype=CS_NUMERIC_TYPE;
 	bindoutfmt[1].maxlength=(CS_INT)sizeof(CS_NUMERIC);
@@ -11031,6 +11239,11 @@ int main(int argc, char **argv) {
 	// a null anyway and the column reads back the same either way.
 	// mssql refuses the type itself, null or not - 0xE1 is unknown to
 	// it - so there this case only goes as far as the command failing.
+	//
+	// Sap's ct-lib refuses an image parameter in ct_param, the way it
+	// does on the prepared path, so the procedure runs without one.  ASE
+	// fails it with 201, "expects parameter @pimg, which was not
+	// supplied", and answers with return status -6.
 	stdoutput.printf("ct_command: rpc with null binary params\n");
 	CS_INT		bindrpcnulltype[4]={
 				CS_BINARY_TYPE,CS_VARBINARY_TYPE,
@@ -11043,7 +11256,8 @@ int main(int argc, char **argv) {
 				"select bindbinary from bindtable",
 				"select bindimage from bindtable",
 				"select bindbinary from bindtable"};
-	bool		bindrpcnullok[4]={true,true,true,issybase};
+	bool		bindrpcnullok[4]={true,true,!tds5,issybase};
+	bool		bindrpcnullparamok[4]={true,true,!tds5,true};
 	for (CS_INT i=0; i<4; i++) {
 
 		query="delete from bindtable";
@@ -11066,12 +11280,14 @@ int main(int argc, char **argv) {
 		// value and the datalen are ignored
 		assertEquals(ct_param(cmd,&bindparamfmt,
 					(CS_VOID *)bindbinaryvalue,
-					0,-1),CS_SUCCEED);
+					0,-1),
+				(bindrpcnullparamok[i])?CS_SUCCEED:CS_FAIL);
 		assertEquals(ct_send(cmd),CS_SUCCEED);
 
 		// a procedure with no return statement still answers with
-		// a status result, and it comes first
-		if (bindrpcnullok[i]) {
+		// a status result, and it comes first.  So does one that
+		// failed, on ASE.
+		if (bindrpcnullok[i] || issybase) {
 			results=ct_results(cmd,&resultstype);
 			assertEquals(results,CS_SUCCEED);
 			assertEquals(resultstype,CS_STATUS_RESULT);
@@ -11082,7 +11298,8 @@ int main(int argc, char **argv) {
 					&bindreadindicator),CS_SUCCEED);
 			assertEquals(ct_fetch(cmd,CS_UNUSED,CS_UNUSED,
 					CS_UNUSED,&rowsread),CS_SUCCEED);
-			assertEquals(bindreaddata,"0");
+			assertEquals(bindreaddata,
+					(bindrpcnullok[i])?"0":"-6");
 			assertEquals(ct_fetch(cmd,CS_UNUSED,CS_UNUSED,
 					CS_UNUSED,&rowsread),CS_END_DATA);
 		}
@@ -11120,7 +11337,7 @@ int main(int argc, char **argv) {
 					CS_UNUSED,&rowsread),CS_SUCCEED);
 		assertEquals(rowsread,1);
 		assertEquals(bindreaddata,"");
-		assertEquals(bindreadlength,0);
+		assertEquals(bindreadlength,nulltermnulllength);
 		assertEquals(bindreadindicator,-1);
 		assertEquals(ct_fetch(cmd,CS_UNUSED,CS_UNUSED,
 					CS_UNUSED,&rowsread),CS_END_DATA);
@@ -11243,13 +11460,10 @@ int main(int argc, char **argv) {
 	assertEquals(ct_command(cmd,CS_LANG_CMD,query,
 				charstring::getLength(query),
 				CS_UNUSED),CS_SUCCEED);
-	// a language command takes no parameters, and sap's ct-lib says so.
-	// Freetds only refuses this one on the zero status the CS_DATAFMT
-	// used to carry - with a real CS_INPUTVALUE it accepts the parameter
-	// and drops it on the floor.
+	// a language command takes no parameters, but with a CS_INPUTVALUE
+	// status both libraries accept one anyway and drop it on the floor
 	assertEquals(ct_param(cmd,&bindparamfmt,(CS_VOID *)&bindintvalue,
-				sizeof(CS_INT),0),
-			(TDSTEST_LINKED_WITH_FREETDS)?CS_SUCCEED:CS_FAIL);
+				sizeof(CS_INT),0),CS_SUCCEED);
 	assertEquals(ct_cancel(NULL,cmd,CS_CANCEL_ALL),CS_SUCCEED);
 	assertEquals(ct_command(cmd,CS_RPC_CMD,(CS_CHAR *)"bindbinproc",
 				CS_NULLTERM,CS_UNUSED),CS_SUCCEED);
@@ -11267,7 +11481,8 @@ int main(int argc, char **argv) {
 	// is the one place they disagree: mssql fails the command with
 	// 8144, "Procedure or function has too many arguments specified",
 	// while ASE silently ignores the extra one.  A ct_param issued
-	// after ct_send is accepted and has no effect at all.
+	// after ct_send has no effect at all - freetds accepts it and sap's
+	// ct-lib refuses it, since results are pending.
 	stdoutput.printf("ct_param: parameter count mismatch\n");
 	query="insert into bindtable (bindint) values (?)";
 	assertEquals(ct_dynamic(cmd,CS_PREPARE,(CS_CHAR *)"bindmm",
@@ -11322,7 +11537,8 @@ int main(int argc, char **argv) {
 				sizeof(CS_INT),0),CS_SUCCEED);
 	assertEquals(ct_send(cmd),CS_SUCCEED);
 	assertEquals(ct_param(cmd,&bindparamfmt,(CS_VOID *)&bindintvalue,
-				sizeof(CS_INT),0),CS_SUCCEED);
+				sizeof(CS_INT),0),
+			(TDSTEST_LINKED_WITH_FREETDS)?CS_SUCCEED:CS_FAIL);
 	results=ct_results(cmd,&resultstype);
 	assertEquals(results,CS_SUCCEED);
 	assertEquals(resultstype,CS_CMD_SUCCEED);
@@ -11338,12 +11554,13 @@ int main(int argc, char **argv) {
 
 
 	stdoutput.printf("ct_command: drop procedures\n");
-	const char	*binddrops[4]={
+	const char	*binddrops[5]={
 				"drop procedure bindproc",
 				"drop procedure bindnumproc",
 				"drop procedure bindbinproc",
-				"drop procedure bindimgproc"};
-	for (CS_INT i=0; i<4; i++) {
+				"drop procedure bindimgproc",
+				"drop procedure bindnullproc"};
+	for (CS_INT i=0; i<5; i++) {
 		assertEquals(ct_command(cmd,CS_LANG_CMD,binddrops[i],
 					charstring::getLength(binddrops[i]),
 					CS_UNUSED),CS_SUCCEED);

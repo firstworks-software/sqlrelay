@@ -86,14 +86,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   replayed to size every value; the parameters are named in the
   sql text, the way an ms-tds sp_executesql call names them, so
   bind variable translation pairs them up by position
-- added tds 5.0 remote procedure calls to the tds protocol module, so a
-  procedure called from sap's native open client runs now - the
-  reply is a result set, then a return status, then the output
-  parameters as a paramfmt/params pair, since tds 5.0 has no
-  returnvalue token at all; the procedure dispatch is shared
-  with the ms-tds path rather than copied, but the five cursor
-  procedures are refused, because they write a colmetadata
-  token, and that byte means cursor-delete in tds 5.0
+- added tds 5.0 remote procedure calls to the tds protocol module
 - added tds 5.0 dynamic sql to the tds protocol module, so prepare,
   execute, deallocate and execute-immediate from sap's native
   open client work now - statements are named by a string id
@@ -103,13 +96,6 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   describe either one; the client wraps a prepare in a "create
   proc" that would leave a real procedure behind on the server,
   so that wrapper is stripped
-- added tds 5.0 remote procedure calls to the tds protocol module - a
-  dbrpc token names its procedure by string rather than by the
-  numeric id an ms-tds rpc uses, so the name is mapped back to
-  an id and both dialects run the same procedure dispatch; the
-  reply is a rowfmt/rows result set, a return status, the output
-  parameters as a paramfmt/params pair, and a done, which is
-  what a real ase sends
 - added tds 5.0 dynamic sql to the tds protocol module - prepare,
   execute, deallocate and execute-immediate, all four answered
   with the ack a real ase sends; a dynamic statement is named by
@@ -997,11 +983,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - sap connection module: fixed RETURN value/output parameter handling,
   cursor bind styles, image column corruption, binary bind
   character set errors, result set buffering/ordering (added
-  maxbufferedrows), datetime output params, and a
+  maxbufferedrows), datetime and null output params, and a
   stuck-prepared-cursor bug
 - tds protocol module: fixed cursor/result-set leaks, sp_execute extra
   parameter handling, DONE_ERROR reporting, longbinary rpc
-  parameters, missing return status, and numeric/decimal output
+  parameters, missing and failed-procedure return status, null
+  integer/float output parameters, and numeric/decimal output
   parameter precision
 - fixed sqlrservercursor::getError() returning the connection's error
   instead of its own
