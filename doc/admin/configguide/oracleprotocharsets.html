@@ -54,7 +54,13 @@
 
 <a name="oraclecharsets"/><h1>Character Set Options</h1>
 
-<p>The Oracle protocol module tells clients which character sets to expect, by Oracle character set id.  It doesn't convert any data, so these options should match what the back-end database actually sends.  The <i>charset</i> option sets the database character set.  It defaults to 873 (AL32UTF8), or to 31 (WE8ISO8859P1) on a <i>verifiertype="9i"</i> listener, where it should be set to 873 if the connection's <i>nls_lang</i> is AL32UTF8.  The <i>nationalcharset</i> option sets the national character set.  It defaults to 2000 (AL16UTF16), and rarely needs to be changed.  If a client can't decode a result set, try setting <i>charset</i> to 178 (WE8MSWIN1252), which decodes any byte, though not always to the right character.</p>
+<p>The Oracle protocol module tells clients which character sets to expect, by Oracle character set id.  It doesn't convert any data, so these options should match what the back-end database actually sends.</p>
+
+<p>The <i>charset</i> option sets the database character set.  It defaults to 873 (AL32UTF8), or to 31 (WE8ISO8859P1) on a <i>verifiertype="9i"</i> listener, where it should be set to 873 if the connection's <i>nls_lang</i> is AL32UTF8.</p>
+
+<p>The <i>nationalcharset</i> option sets the national character set.  It defaults to 2000 (AL16UTF16), and rarely needs to be changed.</p>
+
+<p>If a client can't decode a result set, try setting <i>charset</i> to 178 (WE8MSWIN1252), which decodes any byte, though not always to the right character.</p>
 
 <blockquote>
 <!-- Generator: GNU source-highlight 3.1.9
