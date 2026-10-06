@@ -9,7 +9,7 @@
 [=#oracleloginattempts]
 = Login Attempts =
 
-After a failed login, the Oracle protocol module lets the client retry on the same connection, as a real Oracle server does.  The //maxloginattempts// option sets how many attempts a connection gets before it is dropped.  If unset or 0, it defaults to 3, matching Oracle's SEC_MAX_FAILED_LOGIN_ATTEMPTS default.
+After a failed login, the Oracle protocol module lets the client retry on the same connection, as a real Oracle server does.  The //maxloginattempts// option sets how many attempts a connection gets before it is dropped.  If unset or 0, it defaults to 3, matching Oracle's default.
 
 {{{#!blockquote
 {{{#!code
