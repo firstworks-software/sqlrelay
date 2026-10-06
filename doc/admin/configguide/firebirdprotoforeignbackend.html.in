@@ -40,7 +40,7 @@ http://www.gnu.org/software/src-highlite -->
   <ul>
     <li>set translatebindvariables="yes"</li>
     <li>set the isolationlevel attribute</li>
-    <li>set transactionmodel="explicit" - the transaction model that an app written for Firebird would expect</li>
+    <li>set transactionmodel="implicit" - the transaction model that an app written for Firebird would expect</li>
   </ul>
 
   <li>In the string attribute of the connection tag:</li>
