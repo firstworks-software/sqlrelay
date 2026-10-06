@@ -103,22 +103,13 @@ http://www.gnu.org/software/src-highlite -->
 </blockquote>
 <p>The module has no module-specific attributes - only the standard <b>module</b>, <b>enabled</b>, and <b>debug</b> attributes apply.</p>
 
-<p>Normalizing the query first helps the module identify <i>listagg()</i> calls more reliably, as their syntactic form (the spacing around <i>within group</i>, the parenthesized <i>order by</i> clause, etc.) is sensitive to whitespace and case.</p>
-
 <p>Note that in this example, the normalize query translation is loaded prior to the listagg_to_string_agg query translation.  Pattern matching is substantially more reliable and efficient if the query has been normalized first.  See the <a href="normalize.html#normalize">normalize</a> query translation for more information.</p>
 
 <h2>Considerations</h2>
 
-<p>The module performs the following transformations on each <i>listagg(EXPR, SEP) within group (order by SORT)</i> call:</p>
-
-<ul>
-  <li>wraps the aggregated expression in <b>cast(... as text)</b>, because <i>string_agg()</i> requires a text-typed first argument while <i>listagg()</i> accepts any type that can be coerced to a string</li>
-  <li>moves the <i>order by</i> from the <i>within group</i> clause inside the <i>string_agg()</i> argument list, which is where PostgreSQL expects it</li>
-</ul>
-
 <p>Calls inside string literals are left alone.  Identifiers like <i>mylistagg(...)</i> that merely end in <i>listagg</i> are also left alone.</p>
 
-<p>The match is fairly strict.  A <i>listagg()</i> call is only rewritten if it is followed by '' within group ('' (a single space, then the keywords, then a space, then the open paren) and the contents of the <i>within group</i> clause begin with <i>order by </i> (lowercase, single space).  If you have queries with unusual spacing or case, run the <a href="normalize.html#normalize">normalize</a> translation first; otherwise the call will be passed through to the database untranslated and will fail there.</p>
+<p>A <i>listagg()</i> call with unusual spacing or case isn't translated, and fails on the database, so run the <a href="normalize.html#normalize">normalize</a> translation first.</p>
 
 <p>The module does not implement the <i>on overflow truncate</i> or <i>on overflow error</i> clauses, and does not implement <i>listagg()</i> used as a window function (//over (...)//).  Calls using either of these forms will not match and will be passed through untranslated.</p>
 

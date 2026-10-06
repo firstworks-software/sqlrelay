@@ -54,7 +54,7 @@
 
 <a name="keep_dense_rank_to_array_agg"/><h1>keep_dense_rank_to_array_agg</h1>
 
-<p>Oracle's <i>keep (dense_rank first|last order by ...)</i> clause on <i>max()</i> and <i>min()</i> picks the aggregated column's value from whichever row sorts first (or last) within each group.  PostgreSQL has no <i>keep()</i> syntax, and a window function can't substitute for it in a grouped aggregate query, so the <b>keep_dense_rank_to_array_agg</b> module rewrites the call as an ordered <i>array_agg()</i> and takes its first element.</p>
+<p>Oracle's <i>keep (dense_rank first|last order by ...)</i> clause on <i>max()</i> and <i>min()</i> picks the aggregated column's value from whichever row sorts first (or last) within each group.  PostgreSQL has no <i>keep()</i> syntax, so the <b>keep_dense_rank_to_array_agg</b> module rewrites the call as an ordered <i>array_agg()</i> and takes its first element.</p>
 
 <p>A query like:</p>
 
@@ -108,25 +108,15 @@ http://www.gnu.org/software/src-highlite -->
 </blockquote>
 <p>The module has no module-specific attributes - only the standard <b>module</b>, <b>enabled</b>, and <b>debug</b> attributes apply.</p>
 
-<p>Normalizing the query first helps the module identify <i>keep (dense_rank ...)</i> calls more reliably, as their syntactic form (the spacing around <i>keep</i>, <i>dense_rank</i>, <i>order by</i>, etc.) is sensitive to whitespace and case.</p>
-
 <p>Note that in this example, the normalize query translation is loaded prior to the keep_dense_rank_to_array_agg query translation.  Pattern matching is substantially more reliable and efficient if the query has been normalized first.  See the <a href="normalize.html#normalize">normalize</a> query translation for more information.</p>
 
 <h2>Considerations</h2>
-
-<p>The module performs the following transformations on each <i>max(EXPR) keep (dense_rank first|last order by SORT)</i> or <i>min(...)</i> call, where SORT may include an optional <i>asc</i> or <i>desc</i> direction and an optional <i>nulls first</i> or <i>nulls last</i> clause:</p>
-
-<ul>
-  <li>wraps the call in an ordered <i>array_agg(EXPR order by ...)</i> and takes its first element</li>
-  <li>for <i>dense_rank last</i>, reverses the sort direction and nulls placement, since only the first element of the array can be taken</li>
-  <li>adds EXPR itself as a secondary sort key (descending for <i>max()</i>, ascending for <i>min()</i>, nulls last), so that ties in SORT resolve to a deterministic value</li>
-</ul>
 
 <p>Calls inside string literals are left alone.  Identifiers like <i>mymax(...)</i> that merely end in <i>max</i> or <i>min</i> are also left alone.</p>
 
 <p>Only a single sort key is supported inside <i>order by</i>, and only a single argument is supported inside <i>max()</i> or <i>min()</i>; either case is passed through untranslated.  An analytic form, eg. <i>max(x) keep (dense_rank first order by y) over (...)</i>, also can't be expressed this way and is left untranslated.</p>
 
-<p>EXPR appears twice in the rewritten query.  For a plain column reference this makes no difference, but a volatile EXPR (eg. a call to a random-number function) would be evaluated twice by the rewritten query where Oracle's <i>keep()</i> evaluates it once.</p>
+<p>The argument of <i>max()</i> or <i>min()</i> appears twice in the rewritten query, so an argument whose value changes each time it's evaluated (eg. a call to a random-number function) may give different results than on Oracle.</p>
 
 <hr/>
 
