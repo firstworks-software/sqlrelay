@@ -43,14 +43,12 @@ Encryption modules may be either two-way or one-way.  Two-way encryption modules
 
 As such, SQL Relay can use either one-way or two-way encryption to encrypt passwords for SQL Relay users.  However, only two-way encryption can be used to encrypt passwords for database users.
 
-There is a further restriction when a client speaks one of the database protocols that authenticates with a challenge and a response.  Those clients never send the password.  They send a hash of it, computed with a salt the server supplied.  To check that hash, SQL Relay has to compute the same hash from the configured password, which means it needs the configured password itself, and a one-way module cannot give it back.  So a one-way password encryption cannot be used with a challenge/response method, and a listener configured that way will not authenticate anyone at all.
+One-way encryption also can't be used with the following, since SQL Relay needs the original password to check what these clients send:
 
-Two protocols are affected, and they choose the method differently:
+* the '''postgresql''' protocol with its default md5 password method.  Setting passwords="cleartext" on the listener works with either kind of module, but sends the password over the network as typed, so only use it with TLS or on a trusted network.  See [postgresqlprotopasswords.html Password Method].
+* the '''firebird''' protocol.
 
-* For the '''postgresql''' protocol, the listener chooses.  The default is md5, which is challenge/response.  Setting passwords="cleartext" on the listener makes clients send the password itself, which works with either kind of module.  See [postgresqlprotopasswords.html Password Method] in the PostgreSQL Protocol section.
-* For the '''firebird''' protocol, the client chooses, by which item it puts the password in.  fbclient sends the legacy hash, so in practice a one-way module will not authenticate a normal firebird client no matter how the listener is configured.
-
-Use a two-way module for these listeners, or, for postgresql, configure the listener for cleartext passwords.  Note that cleartext sends the password over the network as typed, so it should only be used with TLS or on a trusted network.
+Use a two-way module for these listeners.
 
 The command line tool '''sqlr-pwdenc''' is provided to help encrypt passwords for inclusion in the configuration file.  Given an encryption module and password, it will print out the encrypted password.
 
@@ -76,7 +74,7 @@ benpyrcnffjbeq
 
 The resulting string "benpyrcnffjbeq" can now be put in the configuration file as the password.
 
-There is one final thing to note.  SQL Relay command line client programs like sqlrsh and sqlr-import take an -id option.  The -id option causes the program to open the configuration file and extract the port, socket, user and password from the specified instance.  If the password is two-way encrypted then this will still work.  However, if the password is one-way encrypted, then this will fail.  So, when using the -id option with a one-way encrypted password, you must also use the -user and -password option.
+SQL Relay command line programs like sqlrsh and sqlr-import can read the port, socket, user and password from the configuration file with the -id option.  This doesn't work with one-way encrypted passwords, so also use the -user and -password options in that case.
 
 For example, rather than just using:
 
