@@ -86,7 +86,7 @@ http://www.gnu.org/software/src-highlite -->
   <ul>
     <li>set translatebindvariables="yes"</li>
     <li>set the isolationlevel attribute</li>
-    <li>set transactionmodel="explicit"</li>
+    <li>set transactionmodel="explicit-error" - the transaction model that an app written for Microsoft SQL Server or SAP/Sybase would expect</li>
   </ul>
 
   <li>In the string attribute of the connection tag:</li>
@@ -95,7 +95,7 @@ http://www.gnu.org/software/src-highlite -->
     <li>set the identity parameter to override the database type</li>
     <li>set ignorespace=yes</li>
     <li>set the overrideschema parameter</li>
-    <li>set the typemangling and/or tablemangling parameters</li>
+    <li>set the typemangling and/or tablemangling parameters - when using a PostgreSQL back-end</li>
   </ul>
 
   <li>use <a href="querytranslation.html#querytranslation">Query Translation</a> modules</li>
