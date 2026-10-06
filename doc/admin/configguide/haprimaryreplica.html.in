@@ -6,16 +6,16 @@
 
 <p><a href="index.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="index.html">Contents</a>&nbsp;&nbsp;&nbsp;<a href="harac.html"><img style="vertical-align: middle; " src="../../images/navprev.png"/></a> <a href="harac.html">Already-Load Balanced Databases</a> | <a href="highavailability.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="highavailability.html">High Availability</a> | <a href="hafrontendlb.html">Front-End Load Balancing and Failover</a> <a href="hafrontendlb.html"><img style="vertical-align: middle; " src="../../images/navnext.png"/></a></p>
 
-<br/><a name="masterslave"/><h1>Master-Slave Query Routing</h1>
+<br/><a name="primaryreplica"/><h1>Primary-Replica Query Routing</h1>
 
-<p>The load balancing scenarios described on previous pages all assume that master-master replication is being used.  SQL Relay supports master-slave replication as well.</p>
+<p>The load balancing scenarios described on previous pages all assume that multi-primary replication is being used.  SQL Relay supports primary-replica replication as well.</p>
 
-<p>In a master-slave replication environment, SQL Relay can be configured to route DML and DDL queries to the master and distribute selects over the slaves.</p>
+<p>In a primary-replica replication environment, SQL Relay can be configured to route DML and DDL queries to the primary and distribute selects over the replicas.</p>
 
 <blockquote>
 <img src="../../images/router.png"/>
 </blockquote>
-<p>This actually requires 3 instances of SQL Relay.  One to connect to the master, one to connect to the slaves, and a third to route queries to the first two.</p>
+<p>This actually requires 3 instances of SQL Relay.  One to connect to the primary, one to connect to the replicas, and a third to route queries to the first two.</p>
 
 <blockquote>
 <!-- Generator: GNU source-highlight 3.1.9
@@ -25,36 +25,36 @@ http://www.gnu.org/software/src-highlite -->
 <pre><tt><b><font color="#000080">&lt;?xml</font></b> <font color="#009900">version</font><font color="#990000">=</font><font color="#FF0000">"1.0"</font><b><font color="#000080">?&gt;</font></b>
 <b><font color="#0000FF">&lt;instances&gt;</font></b>
 
-        <i><font color="#9A1900">&lt;!-- This instance maintains connections to the "master" MySQL database</font></i>
-<i><font color="#9A1900">                on the masterdb machine.  This instance only listens on the</font></i>
-<i><font color="#9A1900">                unix socket /tmp/master.socket and thus cannot be connected to</font></i>
+        <i><font color="#9A1900">&lt;!-- This instance maintains connections to the "primary" MySQL database</font></i>
+<i><font color="#9A1900">                on the primarydb machine.  This instance only listens on the</font></i>
+<i><font color="#9A1900">                unix socket /tmp/primary.socket and thus cannot be connected to</font></i>
 <i><font color="#9A1900">                by clients from another machine. --&gt;</font></i>
-        <b><font color="#0000FF">&lt;instance</font></b> <font color="#009900">id</font><font color="#990000">=</font><font color="#FF0000">"master"</font> <font color="#009900">socket</font><font color="#990000">=</font><font color="#FF0000">"/tmp/master.socket"</font> <font color="#009900">dbase</font><font color="#990000">=</font><font color="#FF0000">"mysql"</font><b><font color="#0000FF">&gt;</font></b>
+        <b><font color="#0000FF">&lt;instance</font></b> <font color="#009900">id</font><font color="#990000">=</font><font color="#FF0000">"primary"</font> <font color="#009900">socket</font><font color="#990000">=</font><font color="#FF0000">"/tmp/primary.socket"</font> <font color="#009900">dbase</font><font color="#990000">=</font><font color="#FF0000">"mysql"</font><b><font color="#0000FF">&gt;</font></b>
                 <b><font color="#0000FF">&lt;connections&gt;</font></b>
-                        <b><font color="#0000FF">&lt;connection</font></b> <font color="#009900">string</font><font color="#990000">=</font><font color="#FF0000">"user=masteruser;password=masterpassword;host=masterdb;db=master;"</font><b><font color="#0000FF">/&gt;</font></b>
+                        <b><font color="#0000FF">&lt;connection</font></b> <font color="#009900">string</font><font color="#990000">=</font><font color="#FF0000">"user=primaryuser;password=primarypassword;host=primarydb;db=primary;"</font><b><font color="#0000FF">/&gt;</font></b>
                 <b><font color="#0000FF">&lt;/connections&gt;</font></b>
         <b><font color="#0000FF">&lt;/instance&gt;</font></b>
 
 
-        <i><font color="#9A1900">&lt;!-- This instance maintains connections to 4 "slave" MySQL databases</font></i>
-<i><font color="#9A1900">                on 4 slave machines.  This instance only listens on the unix</font></i>
-<i><font color="#9A1900">                socket /tmp/slave.socket and thus cannot be connected to by</font></i>
+        <i><font color="#9A1900">&lt;!-- This instance maintains connections to 4 "replica" MySQL databases</font></i>
+<i><font color="#9A1900">                on 4 replica machines.  This instance only listens on the unix</font></i>
+<i><font color="#9A1900">                socket /tmp/replica.socket and thus cannot be connected to by</font></i>
 <i><font color="#9A1900">                clients from another machine. --&gt;</font></i>
-        <b><font color="#0000FF">&lt;instance</font></b> <font color="#009900">id</font><font color="#990000">=</font><font color="#FF0000">"slave"</font> <font color="#009900">socket</font><font color="#990000">=</font><font color="#FF0000">"/tmp/slave.socket"</font> <font color="#009900">dbase</font><font color="#990000">=</font><font color="#FF0000">"mysql"</font><b><font color="#0000FF">&gt;</font></b>
+        <b><font color="#0000FF">&lt;instance</font></b> <font color="#009900">id</font><font color="#990000">=</font><font color="#FF0000">"replica"</font> <font color="#009900">socket</font><font color="#990000">=</font><font color="#FF0000">"/tmp/replica.socket"</font> <font color="#009900">dbase</font><font color="#990000">=</font><font color="#FF0000">"mysql"</font><b><font color="#0000FF">&gt;</font></b>
                 <b><font color="#0000FF">&lt;connections&gt;</font></b>
-                        <b><font color="#0000FF">&lt;connection</font></b> <font color="#009900">string</font><font color="#990000">=</font><font color="#FF0000">"user=slaveuser;password=slavepassword;host=slavedb1;db=slave;"</font><b><font color="#0000FF">/&gt;</font></b>
-                        <b><font color="#0000FF">&lt;connection</font></b> <font color="#009900">string</font><font color="#990000">=</font><font color="#FF0000">"user=slaveuser;password=slavepassword;host=slavedb2;db=slave;"</font><b><font color="#0000FF">/&gt;</font></b>
-                        <b><font color="#0000FF">&lt;connection</font></b> <font color="#009900">string</font><font color="#990000">=</font><font color="#FF0000">"user=slaveuser;password=slavepassword;host=slavedb3;db=slave;"</font><b><font color="#0000FF">/&gt;</font></b>
-                        <b><font color="#0000FF">&lt;connection</font></b> <font color="#009900">string</font><font color="#990000">=</font><font color="#FF0000">"user=slaveuser;password=slavepassword;host=slavedb3;db=slave;"</font><b><font color="#0000FF">/&gt;</font></b>
+                        <b><font color="#0000FF">&lt;connection</font></b> <font color="#009900">string</font><font color="#990000">=</font><font color="#FF0000">"user=replicauser;password=replicapassword;host=replicadb1;db=replica;"</font><b><font color="#0000FF">/&gt;</font></b>
+                        <b><font color="#0000FF">&lt;connection</font></b> <font color="#009900">string</font><font color="#990000">=</font><font color="#FF0000">"user=replicauser;password=replicapassword;host=replicadb2;db=replica;"</font><b><font color="#0000FF">/&gt;</font></b>
+                        <b><font color="#0000FF">&lt;connection</font></b> <font color="#009900">string</font><font color="#990000">=</font><font color="#FF0000">"user=replicauser;password=replicapassword;host=replicadb3;db=replica;"</font><b><font color="#0000FF">/&gt;</font></b>
+                        <b><font color="#0000FF">&lt;connection</font></b> <font color="#009900">string</font><font color="#990000">=</font><font color="#FF0000">"user=replicauser;password=replicapassword;host=replicadb4;db=replica;"</font><b><font color="#0000FF">/&gt;</font></b>
                 <b><font color="#0000FF">&lt;/connections&gt;</font></b>
         <b><font color="#0000FF">&lt;/instance&gt;</font></b>
 
 
         <i><font color="#9A1900">&lt;!-- This instance sends DML (insert,update,delete) and</font></i>
-<i><font color="#9A1900">                DDL (create/delete) queries to the "master" SQL Relay instance</font></i>
-<i><font color="#9A1900">                which, in turn, sends them to the "master" database.</font></i>
-<i><font color="#9A1900">                This instance sends any other queries to the "slave" SQL Relay</font></i>
-<i><font color="#9A1900">                instance which, in turn, distributes them over the "slave"</font></i>
+<i><font color="#9A1900">                DDL (create/delete) queries to the "primary" SQL Relay instance</font></i>
+<i><font color="#9A1900">                which, in turn, sends them to the "primary" database.</font></i>
+<i><font color="#9A1900">                This instance sends any other queries to the "replica" SQL Relay</font></i>
+<i><font color="#9A1900">                instance which, in turn, distributes them over the "replica"</font></i>
 <i><font color="#9A1900">                databases. --&gt;</font></i>
         <b><font color="#0000FF">&lt;instance</font></b> <font color="#009900">id</font><font color="#990000">=</font><font color="#FF0000">"router"</font> <font color="#009900">dbase</font><font color="#990000">=</font><font color="#FF0000">"router"</font><b><font color="#0000FF">&gt;</font></b>
 		<b><font color="#0000FF">&lt;auths&gt;</font></b>
@@ -63,22 +63,22 @@ http://www.gnu.org/software/src-highlite -->
 			<b><font color="#0000FF">&lt;/auth&gt;</font></b>
 		<b><font color="#0000FF">&lt;/auths&gt;</font></b>
 		<b><font color="#0000FF">&lt;routers&gt;</font></b>
-                        <i><font color="#9A1900">&lt;!-- send all DML/DDL queries to "master"  --&gt;</font></i>
-			<b><font color="#0000FF">&lt;router</font></b> <font color="#009900">module</font><font color="#990000">=</font><font color="#FF0000">"regex"</font> <font color="#009900">connectionid</font><font color="#990000">=</font><font color="#FF0000">"master"</font><b><font color="#0000FF">&gt;</font></b>
+                        <i><font color="#9A1900">&lt;!-- send all DML/DDL queries to "primary"  --&gt;</font></i>
+			<b><font color="#0000FF">&lt;router</font></b> <font color="#009900">module</font><font color="#990000">=</font><font color="#FF0000">"regex"</font> <font color="#009900">connectionid</font><font color="#990000">=</font><font color="#FF0000">"primary"</font><b><font color="#0000FF">&gt;</font></b>
 				<b><font color="#0000FF">&lt;pattern</font></b> <font color="#009900">pattern</font><font color="#990000">=</font><font color="#FF0000">"^drop "</font><b><font color="#0000FF">/&gt;</font></b>
 				<b><font color="#0000FF">&lt;pattern</font></b> <font color="#009900">pattern</font><font color="#990000">=</font><font color="#FF0000">"^create "</font><b><font color="#0000FF">/&gt;</font></b>
 				<b><font color="#0000FF">&lt;pattern</font></b> <font color="#009900">pattern</font><font color="#990000">=</font><font color="#FF0000">"^insert "</font><b><font color="#0000FF">/&gt;</font></b>
 				<b><font color="#0000FF">&lt;pattern</font></b> <font color="#009900">pattern</font><font color="#990000">=</font><font color="#FF0000">"^update "</font><b><font color="#0000FF">/&gt;</font></b>
 				<b><font color="#0000FF">&lt;pattern</font></b> <font color="#009900">pattern</font><font color="#990000">=</font><font color="#FF0000">"^delete "</font><b><font color="#0000FF">/&gt;</font></b>
 			<b><font color="#0000FF">&lt;/router&gt;</font></b>
-                        <i><font color="#9A1900">&lt;!-- send all other queries to "slave" --&gt;</font></i>
-			<b><font color="#0000FF">&lt;router</font></b> <font color="#009900">module</font><font color="#990000">=</font><font color="#FF0000">"regex"</font> <font color="#009900">connectionid</font><font color="#990000">=</font><font color="#FF0000">"slave"</font><b><font color="#0000FF">&gt;</font></b>
+                        <i><font color="#9A1900">&lt;!-- send all other queries to "replica" --&gt;</font></i>
+			<b><font color="#0000FF">&lt;router</font></b> <font color="#009900">module</font><font color="#990000">=</font><font color="#FF0000">"regex"</font> <font color="#009900">connectionid</font><font color="#990000">=</font><font color="#FF0000">"replica"</font><b><font color="#0000FF">&gt;</font></b>
 				<b><font color="#0000FF">&lt;pattern</font></b> <font color="#009900">pattern</font><font color="#990000">=</font><font color="#FF0000">".*"</font><b><font color="#0000FF">/&gt;</font></b>
 			<b><font color="#0000FF">&lt;/router&gt;</font></b>
 		<b><font color="#0000FF">&lt;/routers&gt;</font></b>
 		<b><font color="#0000FF">&lt;connections&gt;</font></b>
-			<b><font color="#0000FF">&lt;connection</font></b> <font color="#009900">connectionid</font><font color="#990000">=</font><font color="#FF0000">"master"</font> <font color="#009900">string</font><font color="#990000">=</font><font color="#FF0000">"socket=/tmp/master.socket;user=masteruser;password=masterpassword"</font><b><font color="#0000FF">/&gt;</font></b>
-			<b><font color="#0000FF">&lt;connection</font></b> <font color="#009900">connectionid</font><font color="#990000">=</font><font color="#FF0000">"slave"</font> <font color="#009900">string</font><font color="#990000">=</font><font color="#FF0000">"socket=/tmp/slave.socket;user=slaveuser;password=slavepassword"</font><b><font color="#0000FF">/&gt;</font></b>
+			<b><font color="#0000FF">&lt;connection</font></b> <font color="#009900">connectionid</font><font color="#990000">=</font><font color="#FF0000">"primary"</font> <font color="#009900">string</font><font color="#990000">=</font><font color="#FF0000">"socket=/tmp/primary.socket;user=primaryuser;password=primarypassword"</font><b><font color="#0000FF">/&gt;</font></b>
+			<b><font color="#0000FF">&lt;connection</font></b> <font color="#009900">connectionid</font><font color="#990000">=</font><font color="#FF0000">"replica"</font> <font color="#009900">string</font><font color="#990000">=</font><font color="#FF0000">"socket=/tmp/replica.socket;user=replicauser;password=replicapassword"</font><b><font color="#0000FF">/&gt;</font></b>
 		<b><font color="#0000FF">&lt;/connections&gt;</font></b>
         <b><font color="#0000FF">&lt;/instance&gt;</font></b>
 
@@ -97,8 +97,8 @@ http://www.gnu.org/software/src-highlite -->
 <p>The three instances can be started using:</p>
 
 <blockquote>
-  <pre>sqlr-start -id master
-sqlr-start -id slave
+  <pre>sqlr-start -id primary
+sqlr-start -id replica
 sqlr-start -id router
 </pre>
 
@@ -106,7 +106,7 @@ sqlr-start -id router
 <blockquote>
 ( <b>NOTE:</b> When installed from packages, SQL Relay may have to be started and stopped as root.)
 </blockquote>
-<p>Client applications should connect to the router instance rather than the master or slave instances.</p>
+<p>Client applications should connect to the router instance rather than the primary or replica instances.</p>
 
 <blockquote>
   <pre>sqlrsh -host sqlrserver -user routeruser -password routerpassword

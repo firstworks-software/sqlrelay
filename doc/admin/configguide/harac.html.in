@@ -4,7 +4,7 @@
 
 <!--#include virtual="../../contentstart.html"-->
 
-<p><a href="index.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="index.html">Contents</a>&nbsp;&nbsp;&nbsp;<a href="hacluster.html"><img style="vertical-align: middle; " src="../../images/navprev.png"/></a> <a href="hacluster.html">Load Balancing and Failover With Replicated Databases or Database Clusters</a> | <a href="highavailability.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="highavailability.html">High Availability</a> | <a href="hamasterslave.html">Master-Slave Query Routing</a> <a href="hamasterslave.html"><img style="vertical-align: middle; " src="../../images/navnext.png"/></a></p>
+<p><a href="index.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="index.html">Contents</a>&nbsp;&nbsp;&nbsp;<a href="hacluster.html"><img style="vertical-align: middle; " src="../../images/navprev.png"/></a> <a href="hacluster.html">Load Balancing and Failover With Replicated Databases or Database Clusters</a> | <a href="highavailability.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="highavailability.html">High Availability</a> | <a href="haprimaryreplica.html">Primary-Replica Query Routing</a> <a href="haprimaryreplica.html"><img style="vertical-align: middle; " src="../../images/navnext.png"/></a></p>
 
 <br/><a name="rac"/><h1>Already-Load Balanced Databases</h1>
 
@@ -38,7 +38,7 @@ http://www.gnu.org/software/src-highlite -->
 </blockquote>
 <hr/>
 
-<p><a href="index.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="index.html">Contents</a>&nbsp;&nbsp;&nbsp;<a href="hacluster.html"><img style="vertical-align: middle; " src="../../images/navprev.png"/></a> <a href="hacluster.html">Load Balancing and Failover With Replicated Databases or Database Clusters</a> | <a href="highavailability.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="highavailability.html">High Availability</a> | <a href="hamasterslave.html">Master-Slave Query Routing</a> <a href="hamasterslave.html"><img style="vertical-align: middle; " src="../../images/navnext.png"/></a></p>
+<p><a href="index.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="index.html">Contents</a>&nbsp;&nbsp;&nbsp;<a href="hacluster.html"><img style="vertical-align: middle; " src="../../images/navprev.png"/></a> <a href="hacluster.html">Load Balancing and Failover With Replicated Databases or Database Clusters</a> | <a href="highavailability.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="highavailability.html">High Availability</a> | <a href="haprimaryreplica.html">Primary-Replica Query Routing</a> <a href="haprimaryreplica.html"><img style="vertical-align: middle; " src="../../images/navnext.png"/></a></p>
 
 <!--#include virtual="../../contentend.html"-->
 

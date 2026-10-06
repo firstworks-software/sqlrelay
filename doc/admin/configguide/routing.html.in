@@ -14,12 +14,12 @@
 
 <p>To route queries or sessions, one instance of SQL Relay must be configured as a router to route queries to other instances of SQL Relay which are configured normally.</p>
 
-<p>A typical use case is to configure one instance of SQL Relay to maintain connections to a master database and another instance of SQL Relay to maintain connections to a pool of slaves, then set up a third instance of SQL Relay to route queries to the other 2 instances.</p>
+<p>A typical use case is to configure one instance of SQL Relay to maintain connections to a primary database and another instance of SQL Relay to maintain connections to a pool of replicas, then set up a third instance of SQL Relay to route queries to the other 2 instances.</p>
 
 <blockquote>
 <img src="../../images/router.png"/>
 </blockquote>
-<p>This is such a common case, that it is also described in it's own section: <a href="hamasterslave.html">Master-Slave Query Routing</a>.</p>
+<p>This is such a common case, that it is also described in it's own section: <a href="haprimaryreplica.html">Primary-Replica Query Routing</a>.</p>
 
 <p>There are other possiblities as well though.</p>
 
@@ -35,20 +35,20 @@ http://www.gnu.org/software/src-highlite -->
         <b><font color="#0000FF">&lt;instance</font></b> ... <font color="#009900">dbase</font><font color="#990000">=</font><font color="#FF0000">"router"</font> ...<b><font color="#0000FF">&gt;</font></b>
 		...
 		<b><font color="#0000FF">&lt;routers&gt;</font></b>
-			<b><font color="#0000FF">&lt;router</font></b> <font color="#009900">module</font><font color="#990000">=</font><font color="#FF0000">"regex"</font> <font color="#009900">connectionid</font><font color="#990000">=</font><font color="#FF0000">"master"</font><b><font color="#0000FF">&gt;</font></b>
+			<b><font color="#0000FF">&lt;router</font></b> <font color="#009900">module</font><font color="#990000">=</font><font color="#FF0000">"regex"</font> <font color="#009900">connectionid</font><font color="#990000">=</font><font color="#FF0000">"primary"</font><b><font color="#0000FF">&gt;</font></b>
 				<b><font color="#0000FF">&lt;pattern</font></b> <font color="#009900">pattern</font><font color="#990000">=</font><font color="#FF0000">"^drop "</font><b><font color="#0000FF">/&gt;</font></b>
 				<b><font color="#0000FF">&lt;pattern</font></b> <font color="#009900">pattern</font><font color="#990000">=</font><font color="#FF0000">"^create "</font><b><font color="#0000FF">/&gt;</font></b>
 				<b><font color="#0000FF">&lt;pattern</font></b> <font color="#009900">pattern</font><font color="#990000">=</font><font color="#FF0000">"^insert "</font><b><font color="#0000FF">/&gt;</font></b>
 				<b><font color="#0000FF">&lt;pattern</font></b> <font color="#009900">pattern</font><font color="#990000">=</font><font color="#FF0000">"^update "</font><b><font color="#0000FF">/&gt;</font></b>
 				<b><font color="#0000FF">&lt;pattern</font></b> <font color="#009900">pattern</font><font color="#990000">=</font><font color="#FF0000">"^delete "</font><b><font color="#0000FF">/&gt;</font></b>
 			<b><font color="#0000FF">&lt;/router&gt;</font></b>
-			<b><font color="#0000FF">&lt;router</font></b> <font color="#009900">module</font><font color="#990000">=</font><font color="#FF0000">"regex"</font> <font color="#009900">connectionid</font><font color="#990000">=</font><font color="#FF0000">"slave"</font><b><font color="#0000FF">&gt;</font></b>
+			<b><font color="#0000FF">&lt;router</font></b> <font color="#009900">module</font><font color="#990000">=</font><font color="#FF0000">"regex"</font> <font color="#009900">connectionid</font><font color="#990000">=</font><font color="#FF0000">"replica"</font><b><font color="#0000FF">&gt;</font></b>
 				<b><font color="#0000FF">&lt;pattern</font></b> <font color="#009900">pattern</font><font color="#990000">=</font><font color="#FF0000">".*"</font><b><font color="#0000FF">/&gt;</font></b>
 			<b><font color="#0000FF">&lt;/router&gt;</font></b>
 		<b><font color="#0000FF">&lt;/routers&gt;</font></b>
 		<b><font color="#0000FF">&lt;connections&gt;</font></b>
-			<b><font color="#0000FF">&lt;connection</font></b> <font color="#009900">connectionid</font><font color="#990000">=</font><font color="#FF0000">"master"</font> <font color="#009900">string</font><font color="#990000">=</font><font color="#FF0000">"..."</font><b><font color="#0000FF">/&gt;</font></b>
-			<b><font color="#0000FF">&lt;connection</font></b> <font color="#009900">connectionid</font><font color="#990000">=</font><font color="#FF0000">"slave"</font> <font color="#009900">string</font><font color="#990000">=</font><font color="#FF0000">"..."</font><b><font color="#0000FF">/&gt;</font></b>
+			<b><font color="#0000FF">&lt;connection</font></b> <font color="#009900">connectionid</font><font color="#990000">=</font><font color="#FF0000">"primary"</font> <font color="#009900">string</font><font color="#990000">=</font><font color="#FF0000">"..."</font><b><font color="#0000FF">/&gt;</font></b>
+			<b><font color="#0000FF">&lt;connection</font></b> <font color="#009900">connectionid</font><font color="#990000">=</font><font color="#FF0000">"replica"</font> <font color="#009900">string</font><font color="#990000">=</font><font color="#FF0000">"..."</font><b><font color="#0000FF">/&gt;</font></b>
 		<b><font color="#0000FF">&lt;/connections&gt;</font></b>
 		...
         <b><font color="#0000FF">&lt;/instance&gt;</font></b>
@@ -64,7 +64,7 @@ http://www.gnu.org/software/src-highlite -->
 
 <p>Router modules can be "stacked".  Multiple modules may be loaded and multiple instances of the same type of module, with different configurations, may also be loaded.</p>
 
-<p>In fact, the example above shows a stacked configuration.  The first instance of the router module sends DDL/DML queries to a "master" database and the second instance of the router module sends all other queries to a "slave" database.</p>
+<p>In fact, the example above shows a stacked configuration.  The first instance of the router module sends DDL/DML queries to a "primary" database and the second instance of the router module sends all other queries to a "replica" database.</p>
 
 <p>At startup, the SQL Relay server creates instances of the specified router modules and initializes them.  When the client sends a query to the SQL Relay server, the server consults each router module, in the order that they were specified in the config file.  Each module applies its routing rules to determine which connection to run the query on.  If a module returns a connection then the remaining modules are ignored.  If the query makes it through all modules without being routed to a particular connection, then the query is ignored.</p>
 

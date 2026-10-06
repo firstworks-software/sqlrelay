@@ -4,7 +4,7 @@
 
 {{{#!include ../../contentstart.html}}}
 
-[[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents]&nbsp;&nbsp;&nbsp;[[Image(../../images/navprev.png,link=hacluster.html,vertical-align=middle)]] [hacluster.html Load Balancing and Failover With Replicated Databases or Database Clusters] | [[Image(../../images/navtop.png,link=highavailability.html,vertical-align=middle)]] [highavailability.html High Availability] | [hamasterslave.html Master-Slave Query Routing] [[Image(../../images/navnext.png,link=hamasterslave.html,vertical-align=middle)]]
+[[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents]&nbsp;&nbsp;&nbsp;[[Image(../../images/navprev.png,link=hacluster.html,vertical-align=middle)]] [hacluster.html Load Balancing and Failover With Replicated Databases or Database Clusters] | [[Image(../../images/navtop.png,link=highavailability.html,vertical-align=middle)]] [highavailability.html High Availability] | [haprimaryreplica.html Primary-Replica Query Routing] [[Image(../../images/navnext.png,link=haprimaryreplica.html,vertical-align=middle)]]
 
 [[br]][=#rac]
 = Already-Load Balanced Databases =
@@ -28,7 +28,7 @@ To indicate to SQL Relay that the nodes are already-load balanced, and need to b
 
 ----
 
-[[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents]&nbsp;&nbsp;&nbsp;[[Image(../../images/navprev.png,link=hacluster.html,vertical-align=middle)]] [hacluster.html Load Balancing and Failover With Replicated Databases or Database Clusters] | [[Image(../../images/navtop.png,link=highavailability.html,vertical-align=middle)]] [highavailability.html High Availability] | [hamasterslave.html Master-Slave Query Routing] [[Image(../../images/navnext.png,link=hamasterslave.html,vertical-align=middle)]]
+[[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents]&nbsp;&nbsp;&nbsp;[[Image(../../images/navprev.png,link=hacluster.html,vertical-align=middle)]] [hacluster.html Load Balancing and Failover With Replicated Databases or Database Clusters] | [[Image(../../images/navtop.png,link=highavailability.html,vertical-align=middle)]] [highavailability.html High Availability] | [haprimaryreplica.html Primary-Replica Query Routing] [[Image(../../images/navnext.png,link=haprimaryreplica.html,vertical-align=middle)]]
 
 {{{#!include ../../contentend.html}}}
 

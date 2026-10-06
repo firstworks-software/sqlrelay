@@ -11,7 +11,7 @@
 
 The '''regex''' module routes queries by matching them against regular expressions.
 
-A classic [hamasterslave.html Master-Slave Query Routing] configuration follows.
+A classic [haprimaryreplica.html Primary-Replica Query Routing] configuration follows.
 
 {{{#!blockquote
 {{{#!code
@@ -21,11 +21,11 @@ A classic [hamasterslave.html Master-Slave Query Routing] configuration follows.
 
 In this example, 3 SQL Relay instances are defined:
 
-* one to maintain connections to the master database
-* one to maintain connections to a pool of slave databases
+* one to maintain connections to the primary database
+* one to maintain connections to a pool of replica databases
 * one to route queries to the other two instances
 
-In this configuration, DDL/DML queries are routed to the connectionid "master", and all other queries are routed to the connectionid "slave".
+In this configuration, DDL/DML queries are routed to the connectionid "primary", and all other queries are routed to the connectionid "replica".
 
 The '''string''' attribute in each connection tag provides the parameters necessary to connect to the other instances.  Valid attributes include:
 
@@ -40,7 +40,7 @@ Note the use of a notification module to notify //dba@firstworks.com// if an //i
 
 [[br]]
 
-Master-slave routing isn't all that the '''regex''' module can do though.
+Primary-replica routing isn't all that the '''regex''' module can do though.
 
 In the example below, we provide a single point of access to !MySQL/MariaDB and !PostgreSQL databases.
 
@@ -88,14 +88,14 @@ regular expressions.
 
 === Selects Not Showing Changes ===
 
-In the scenario above where DML/DDL is sent to the master database and
-selects are distributed over slaves, an unintuitive thing can happen.
+In the scenario above where DML/DDL is sent to the primary database and
+selects are distributed over replicas, an unintuitive thing can happen.
 
 If you begin a transaction and do several inserts, updates and deletes,
 you'll find that if you do a select, you will not see your changes.  This is
-because in a master-slave configuration, changes to the database are not
-pushed out to the slaves until the changes have been committed.  Since your
-selects are being run against the slaves, you must first commit before your
+because in a primary-replica configuration, changes to the database are not
+pushed out to the replicas until the changes have been committed.  Since your
+selects are being run against the replicas, you must first commit before your
 changes will be visible.
 
 ----

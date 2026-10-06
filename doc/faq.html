@@ -86,8 +86,8 @@
   <li><a href="#migration">How can SQL Relay help migrating my application from one database to another?</a></li>
   <li><a href="#replicated">How can SQL Relay be used with replicated or clustered databases?</a></li>
   <li><a href="#databaseusers">Can SQL Relay proxy multiple database users instead of using the same user for every session?</a></li>
-  <li><a href="#routing">Can I use SQL Relay to send all insert/update/delete's to a master database and distribute select's over a set of slaves?</a></li>
-  <li><a href="#mysqlrouting">Can I use SQL Relay to make my existing MySQL/MariaDB, PostgreSQL, Firebird, TDS or Oracle app send all insert/update/delete's to a master database and distribute select's over a set of slaves?</a></li>
+  <li><a href="#routing">Can I use SQL Relay to send all insert/update/delete's to a primary database and distribute select's over a set of replicas?</a></li>
+  <li><a href="#mysqlrouting">Can I use SQL Relay to make my existing MySQL/MariaDB, PostgreSQL, Firebird, TDS or Oracle app send all insert/update/delete's to a primary database and distribute select's over a set of replicas?</a></li>
   <li><a href="#filtering">Can SQL Relay be configured to filter out certain queries?</a></li>
 </ul>
 
@@ -176,7 +176,7 @@
 
 <p><b>Load Balancing, Failover, and High Availability</b> - Enable distribution of traffic over clustered or replicated databases for scalability and failover.<br/></p>
 
-<p><b>Query and Session Routing</b> - Enables routing of DML to masters and distribute selects over slaves.  Enables routing of sessions by user, database, client ip, and other criteria.<br/></p>
+<p><b>Query and Session Routing</b> - Enables routing of DML to primaries and distribute selects over replicas.  Enables routing of sessions by user, database, client ip, and other criteria.<br/></p>
 
 <p><b>Data Translation</b> - Enables translation of queries, result sets, and errors.<br/></p>
 
@@ -359,15 +359,15 @@ through the connection maintained by that daemon.</p>
 
 <p>Oracle allows a process that is connected to the database to switch users without disconnecting from the database.  When used with other databases, SQL Relay logs out and logs back in to the database whenever it needs to switch users.</p>
 
-<br/><a name="routing"/><h3>Can I use SQL Relay to send all insert/update/delete's to a master database and distribute select's over a set of slaves?</h3>
+<br/><a name="routing"/><h3>Can I use SQL Relay to send all insert/update/delete's to a primary database and distribute select's over a set of replicas?</h3>
 
-<p>Yes, see <a href="admin/configguide/hamasterslave.html">Master-Slave Query Routing</a>.</p>
+<p>Yes, see <a href="admin/configguide/haprimaryreplica.html">Primary-Replica Query Routing</a>.</p>
 
-<br/><a name="mysqlrouting"/><h3>Can I use SQL Relay to make my existing MySQL/MariaDB, PostgreSQL, Firebird, TDS or Oracle app send all insert/update/delete's to a master database and distribute select's over a set of slaves?</h3>
+<br/><a name="mysqlrouting"/><h3>Can I use SQL Relay to make my existing MySQL/MariaDB, PostgreSQL, Firebird, TDS or Oracle app send all insert/update/delete's to a primary database and distribute select's over a set of replicas?</h3>
 
 <p>Probably.  You'll need to set up SQL Relay to route queries, and configure it to speak whichever front-end protocol your app already uses - MySQL/MariaDB, PostgreSQL, Firebird, TDS, or Oracle - to redirect your app to use SQL Relay without modification.</p>
 
-<p>See <a href="admin/configguide/hamasterslave.html">Master-Slave Query Routing</a> for details on how to set up SQL Relay as a query router.</p>
+<p>See <a href="admin/configguide/haprimaryreplica.html">Primary-Replica Query Routing</a> for details on how to set up SQL Relay as a query router.</p>
 
 <p>See <a href="admin/configguide/clientprotocoloptions.html#protocoloptions">Client Protocol Options</a> in the configuration guide for details about how to configure SQL Relay to speak the MySQL/MariaDB, PostgreSQL, Firebird, TDS and Oracle protocols.</p>
 

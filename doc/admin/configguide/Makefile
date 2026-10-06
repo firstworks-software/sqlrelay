@@ -108,7 +108,7 @@ SRCS = index.wt \
 	highavailability.wt \
 	hacluster.wt \
 	harac.wt \
-	hamasterslave.wt \
+	haprimaryreplica.wt \
 	hafrontendlb.wt \
 	security.wt \
 	secfrontend.wt \
@@ -289,7 +289,7 @@ INS = index.html.in \
 	highavailability.html.in \
 	hacluster.html.in \
 	harac.html.in \
-	hamasterslave.html.in \
+	haprimaryreplica.html.in \
 	hafrontendlb.html.in \
 	security.html.in \
 	secfrontend.html.in \
@@ -472,7 +472,7 @@ WTOBJS = index.html.in \
 	highavailability.html.in \
 	hacluster.html.in \
 	harac.html.in \
-	hamasterslave.html.in \
+	haprimaryreplica.html.in \
 	hafrontendlb.html.in \
 	security.html.in \
 	secfrontend.html.in \
@@ -653,7 +653,7 @@ OBJS = index.html \
 	highavailability.html \
 	hacluster.html \
 	harac.html \
-	hamasterslave.html \
+	haprimaryreplica.html \
 	hafrontendlb.html \
 	security.html \
 	secfrontend.html \

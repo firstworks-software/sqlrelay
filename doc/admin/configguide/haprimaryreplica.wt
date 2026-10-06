@@ -6,16 +6,16 @@
 
 [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents]&nbsp;&nbsp;&nbsp;[[Image(../../images/navprev.png,link=harac.html,vertical-align=middle)]] [harac.html Already-Load Balanced Databases] | [[Image(../../images/navtop.png,link=highavailability.html,vertical-align=middle)]] [highavailability.html High Availability] | [hafrontendlb.html Front-End Load Balancing and Failover] [[Image(../../images/navnext.png,link=hafrontendlb.html,vertical-align=middle)]]
 
-[[br]][=#masterslave]
-= Master-Slave Query Routing =
+[[br]][=#primaryreplica]
+= Primary-Replica Query Routing =
 
-The load balancing scenarios described on previous pages all assume that master-master replication is being used.  SQL Relay supports master-slave replication as well.
+The load balancing scenarios described on previous pages all assume that multi-primary replication is being used.  SQL Relay supports primary-replica replication as well.
 
-In a master-slave replication environment, SQL Relay can be configured to route DML and DDL queries to the master and distribute selects over the slaves.
+In a primary-replica replication environment, SQL Relay can be configured to route DML and DDL queries to the primary and distribute selects over the replicas.
 
  [[Image(../../images/router.png,nolink)]]
 
-This actually requires 3 instances of SQL Relay.  One to connect to the master, one to connect to the slaves, and a third to route queries to the first two.
+This actually requires 3 instances of SQL Relay.  One to connect to the primary, one to connect to the replicas, and a third to route queries to the first two.
 
 {{{#!blockquote
 {{{#!code
@@ -35,8 +35,8 @@ The three instances can be started using:
 
 {{{#!blockquote
 {{{
-sqlr-start -id master
-sqlr-start -id slave
+sqlr-start -id primary
+sqlr-start -id replica
 sqlr-start -id router
 }}}
 }}}
@@ -45,7 +45,7 @@ sqlr-start -id router
 ( '''NOTE:''' When installed from packages, SQL Relay may have to be started and stopped as root.)
 }}}
 
-Client applications should connect to the router instance rather than the master or slave instances.
+Client applications should connect to the router instance rather than the primary or replica instances.
 
 {{{#!blockquote
 {{{

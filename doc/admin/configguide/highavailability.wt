@@ -13,7 +13,7 @@ In a high availability environment, SQL Relay can be deployed as a front-end to 
 
 * [hacluster.html Load Balancing and Failover With Replicated Databases or Database Clusters]
 * [harac.html Already-Load Balanced Databases]
-* [hamasterslave.html Master-Slave Query Routing]
+* [haprimaryreplica.html Primary-Replica Query Routing]
 * [hafrontendlb.html Front-End Load Balancing and Failover]
 
 ----

@@ -13,7 +13,7 @@
 <ul>
   <li><a href="hacluster.html">Load Balancing and Failover With Replicated Databases or Database Clusters</a></li>
   <li><a href="harac.html">Already-Load Balanced Databases</a></li>
-  <li><a href="hamasterslave.html">Master-Slave Query Routing</a></li>
+  <li><a href="haprimaryreplica.html">Primary-Replica Query Routing</a></li>
   <li><a href="hafrontendlb.html">Front-End Load Balancing and Failover</a></li>
 </ul>
 

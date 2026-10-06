@@ -116,7 +116,7 @@ This guide is split across the pages listed below - start with Quick Start for a
 * [highavailability.html High Availability]
  * [hacluster.html Load Balancing and Failover With Replicated Databases or Database Clusters]
  * [harac.html Already-Load Balanced Databases]
- * [hamasterslave.html Master-Slave Query Routing]
+ * [haprimaryreplica.html Primary-Replica Query Routing]
  * [hafrontendlb.html Front-End Load Balancing and Failover]
   * [hafrontendlb.html#hostrand Host Randomization]
   * [hafrontendlb.html#lbapp Load Balancing Appliance]

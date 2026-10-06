@@ -15,11 +15,11 @@ Session routing sends entire sessions to one database or another; by user, by in
 
 To route queries or sessions, one instance of SQL Relay must be configured as a router to route queries to other instances of SQL Relay which are configured normally.
 
-A typical use case is to configure one instance of SQL Relay to maintain connections to a master database and another instance of SQL Relay to maintain connections to a pool of slaves, then set up a third instance of SQL Relay to route queries to the other 2 instances.
+A typical use case is to configure one instance of SQL Relay to maintain connections to a primary database and another instance of SQL Relay to maintain connections to a pool of replicas, then set up a third instance of SQL Relay to route queries to the other 2 instances.
 
  [[Image(../../images/router.png,nolink)]]
 
-This is such a common case, that it is also described in it's own section: [hamasterslave.html Master-Slave Query Routing].
+This is such a common case, that it is also described in it's own section: [haprimaryreplica.html Primary-Replica Query Routing].
 
 There are other possiblities as well though.
 
@@ -39,7 +39,7 @@ All router modules have an //enabled// attribute, allowing the module to be temp
 
 Router modules can be "stacked".  Multiple modules may be loaded and multiple instances of the same type of module, with different configurations, may also be loaded.
 
-In fact, the example above shows a stacked configuration.  The first instance of the router module sends DDL/DML queries to a "master" database and the second instance of the router module sends all other queries to a "slave" database.
+In fact, the example above shows a stacked configuration.  The first instance of the router module sends DDL/DML queries to a "primary" database and the second instance of the router module sends all other queries to a "replica" database.
 
 At startup, the SQL Relay server creates instances of the specified router modules and initializes them.  When the client sends a query to the SQL Relay server, the server consults each router module, in the order that they were specified in the config file.  Each module applies its routing rules to determine which connection to run the query on.  If a module returns a connection then the remaining modules are ignored.  If the query makes it through all modules without being routed to a particular connection, then the query is ignored.
 
