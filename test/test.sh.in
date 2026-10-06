@@ -1273,9 +1273,9 @@ run_protocol_test() {
 	# path, since OCI always sends a real, non-zero iteration count.
 	# it reads ORACLEPROTOCOLPORT1 straight from the environment as
 	# well, so it needs neither $server nor TNS_ADMIN.  last it runs
-	# oraclebigchunkclroff, a fifth raw-socket test, for #9633 - it
+	# oraclebigchunksoff, a fifth raw-socket test, for #9633 - it
 	# connects to the instance's second listener (ORACLEPROTOCOLPORT6),
-	# whose oracle protocol module carries bigchunkclr="off", so it
+	# whose oracle protocol module carries bigchunks="off", so it
 	# never advertises the big-chunk clr capability bit and always
 	# frames clr values as raw bytes - coverage for the go-ora v1
 	# client, which offers the bit but never implemented big chunks and
@@ -1510,8 +1510,8 @@ run_protocol_test() {
 		resultclrchunks="$?"
 		./oracleiterations0
 		resultiterations0="$?"
-		./oraclebigchunkclroff
-		resultbigchunkclroff="$?"
+		./oraclebigchunksoff
+		resultbigchunksoff="$?"
 		./oraclerefcursorreuse
 		resultrefcursorreuse="$?"
 		./oraclesplitrequest
@@ -1558,7 +1558,7 @@ run_protocol_test() {
 			echo "no oci7inlinelob test found (built only with HAVE_OCI7), or no db2 module built"
 			resultoci7inlinelob="0"
 		fi
-		if ( test "$resultdefault" = "0" ) && ( test "$result11g" = "0" ) && ( test "$result12c" = "0" ) && ( test "$resultconnectstrings" = "0" ) && ( test "$resultfetchatonce" = "0" ) && ( test "$resultdescribeonly" = "0" ) && ( test "$resultdescribe" = "0" ) && ( test "$resultdescribenative" = "0" ) && ( test "$resultmidfetchdescribe" = "0" ) && ( test "$resultmidfetchdescribenative" = "0" ) && ( test "$resultlegacyfetch" = "0" ) && ( test "$resulttransaction" = "0" ) && ( test "$resulttransactionnative" = "0" ) && ( test "$resultreexecuteandfetch" = "0" ) && ( test "$resultclrchunks" = "0" ) && ( test "$resultiterations0" = "0" ) && ( test "$resultbigchunkclroff" = "0" ) && ( test "$resultrefcursorreuse" = "0" ) && ( test "$resultsplitrequest" = "0" ) && ( test "$resultsplitquery3" = "0" ) && ( test "$resultsplitresponse" = "0" ) && ( test "$resultmaxdescriptors" = "0" ) && ( test "$resultmaxfetchrowcount" = "0" ) && ( test "$resultutf8clob" = "0" ) && ( test "$resultinlinelob" = "0" ) && ( test "$resultoci7" = "0" ) && ( test "$resultoci7utf8clob" = "0" ) && ( test "$resultoci7inlinelob" = "0" )
+		if ( test "$resultdefault" = "0" ) && ( test "$result11g" = "0" ) && ( test "$result12c" = "0" ) && ( test "$resultconnectstrings" = "0" ) && ( test "$resultfetchatonce" = "0" ) && ( test "$resultdescribeonly" = "0" ) && ( test "$resultdescribe" = "0" ) && ( test "$resultdescribenative" = "0" ) && ( test "$resultmidfetchdescribe" = "0" ) && ( test "$resultmidfetchdescribenative" = "0" ) && ( test "$resultlegacyfetch" = "0" ) && ( test "$resulttransaction" = "0" ) && ( test "$resulttransactionnative" = "0" ) && ( test "$resultreexecuteandfetch" = "0" ) && ( test "$resultclrchunks" = "0" ) && ( test "$resultiterations0" = "0" ) && ( test "$resultbigchunksoff" = "0" ) && ( test "$resultrefcursorreuse" = "0" ) && ( test "$resultsplitrequest" = "0" ) && ( test "$resultsplitquery3" = "0" ) && ( test "$resultsplitresponse" = "0" ) && ( test "$resultmaxdescriptors" = "0" ) && ( test "$resultmaxfetchrowcount" = "0" ) && ( test "$resultutf8clob" = "0" ) && ( test "$resultinlinelob" = "0" ) && ( test "$resultoci7" = "0" ) && ( test "$resultoci7utf8clob" = "0" ) && ( test "$resultoci7inlinelob" = "0" )
 		then
 			printf "    % 8s: success\n" "protocol" >> "$RESULTSLOG"
 			cd ../..
@@ -1628,9 +1628,9 @@ run_protocol_test() {
 		then
 			printf "    % 8s: failed (iterations 0)\n" "protocol" >> "$RESULTSLOG"
 		fi
-		if ( test "$resultbigchunkclroff" != "0" )
+		if ( test "$resultbigchunksoff" != "0" )
 		then
-			printf "    % 8s: failed (big chunk clr off)\n" "protocol" >> "$RESULTSLOG"
+			printf "    % 8s: failed (big chunks off)\n" "protocol" >> "$RESULTSLOG"
 		fi
 		if ( test "$resultrefcursorreuse" != "0" )
 		then

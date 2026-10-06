@@ -54,7 +54,7 @@
 
 <a name="oraclebigchunks"/><h1>Big Chunks</h1>
 
-<p>Oracle clients and servers split long values into pieces, and there are two ways of encoding each piece's length: an older one, limited to 255 bytes per piece, and a newer "big chunk" one.  At login, the Oracle protocol module tells the client that it supports big chunks, and then uses them only if the client says it does too.  The <i>bigchunkclr</i> option overrides this:</p>
+<p>Oracle clients and servers split long values into pieces, and there are two ways of encoding each piece's length: an older one, limited to 255 bytes per piece, and a newer "big chunk" one.  At login, the Oracle protocol module tells the client that it supports big chunks, and then uses them only if the client says it does too.  The <i>bigchunks</i> option overrides this:</p>
 
 <ul>
   <li>auto - use big chunks only with clients that say they support them.  This is the default.</li>
@@ -73,7 +73,7 @@ http://www.gnu.org/software/src-highlite -->
 <b><font color="#0000FF">&lt;instances&gt;</font></b>
 	<b><font color="#0000FF">&lt;instance</font></b> <font color="#009900">id</font><font color="#990000">=</font><font color="#FF0000">"example"</font> <font color="#009900">dbase</font><font color="#990000">=</font><font color="#FF0000">"oracle"</font><b><font color="#0000FF">&gt;</font></b>
 		<b><font color="#0000FF">&lt;listeners&gt;</font></b>
-			<b><font color="#0000FF">&lt;listener</font></b> <font color="#009900">protocol</font><font color="#990000">=</font><font color="#FF0000">"oracle"</font> <font color="#009900">port</font><font color="#990000">=</font><font color="#FF0000">"1521"</font> <font color="#009900">bigchunkclr</font><font color="#990000">=</font><font color="#FF0000">"off"</font><b><font color="#0000FF">/&gt;</font></b>
+			<b><font color="#0000FF">&lt;listener</font></b> <font color="#009900">protocol</font><font color="#990000">=</font><font color="#FF0000">"oracle"</font> <font color="#009900">port</font><font color="#990000">=</font><font color="#FF0000">"1521"</font> <font color="#009900">bigchunks</font><font color="#990000">=</font><font color="#FF0000">"off"</font><b><font color="#0000FF">/&gt;</font></b>
 		<b><font color="#0000FF">&lt;/listeners&gt;</font></b>
 		<b><font color="#0000FF">&lt;connections&gt;</font></b>
 			<b><font color="#0000FF">&lt;connection</font></b> <font color="#009900">string</font><font color="#990000">=</font><font color="#FF0000">"user=scott;password=tiger;oracle_home=/u01/app/oracle/product/12.1.0;oracle_sid=ora1"</font><b><font color="#0000FF">/&gt;</font></b>

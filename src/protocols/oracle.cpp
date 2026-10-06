@@ -1393,10 +1393,10 @@ enum oraclelisttype_t {
 	ORACLELISTTYPE_COLUMN_LIST
 };
 
-enum oraclebigchunkclr_t {
-	ORACLEBIGCHUNKCLR_AUTO=0,
-	ORACLEBIGCHUNKCLR_OFF,
-	ORACLEBIGCHUNKCLR_ON
+enum oraclebigchunks_t {
+	ORACLEBIGCHUNKS_AUTO=0,
+	ORACLEBIGCHUNKS_OFF,
+	ORACLEBIGCHUNKS_ON
 };
 
 // what a statement does to the session's end of call status
@@ -1588,7 +1588,7 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_oracle : public sqlrprotocol {
 						byte_t runtimecapssize);
 		void	putTti6Response();
 		void	putTti5Response();
-		bool	advertiseBigChunkClr();
+		bool	advertiseBigChunks();
 
 		bool	dataTypeNegotiation();
 		bool	recvDataTypeRequest();
@@ -2178,12 +2178,12 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_oracle : public sqlrprotocol {
 		// dropped, from the "maxloginattempts" listener attribute
 		uint16_t	maxloginattempts;
 
-		// whether big chunk clr framing may be advertised and used at
-		// all, from the "bigchunkclr" listener attribute.  set once,
+		// whether big chunk framing may be advertised and used at
+		// all, from the "bigchunks" listener attribute.  set once,
 		// in the constructor, and never changed - not the same thing
-		// as the per-session bigchunkclr flag below, which is the
+		// as the per-session bigchunks flag below, which is the
 		// decision this one feeds into
-		oraclebigchunkclr_t	bigchunkclrsetting;
+		oraclebigchunks_t	bigchunkssetting;
 
 		// the SID/SERVICE_NAME the client's CONNECT_DATA asked for, parsed
 		// out by recvConnectRequest(); NULL if it didn't name one
@@ -2251,8 +2251,8 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_oracle : public sqlrprotocol {
 		// count prefixed ub4 rather than as a raw byte.  decided per
 		// session in recvDataTypeRequest() and reset by init() - the
 		// constructor-scoped setting it answers to is
-		// bigchunkclrsetting above
-		bool		bigchunkclr;
+		// bigchunkssetting above
+		bool		bigchunks;
 
 		// whether the client writes the data type list's fields as
 		// ub2s rather than ub1s, and ends its request with the
@@ -2702,7 +2702,7 @@ sqlrprotocol_oracle::sqlrprotocol_oracle(sqlrservercontroller *cont,
 			major,(major>=12)?"c":"g",
 			major,minor,third,patch,fifth);
 
-	// whether big chunk clr framing may be used at all.  "auto" (the
+	// whether big chunk framing may be used at all.  "auto" (the
 	// default, and anything unrecognized) leaves the decision to the
 	// negotiation, "no" holds every session to raw byte chunks, "yes"
 	// takes big chunks for any TTI 6 session.
@@ -2712,13 +2712,13 @@ sqlrprotocol_oracle::sqlrprotocol_oracle(sqlrservercontroller *cont,
 	// having never implemented big chunks, and nothing on the wire
 	// separates it from v2, which advertises the same bit and does
 	// implement them.  so the deployment has to say.
-	const char	*bcc=parameters->getAttributeValue("bigchunkclr");
+	const char	*bcc=parameters->getAttributeValue("bigchunks");
 	if (charstring::isYes(bcc)) {
-		bigchunkclrsetting=ORACLEBIGCHUNKCLR_ON;
+		bigchunkssetting=ORACLEBIGCHUNKS_ON;
 	} else if (charstring::isNo(bcc)) {
-		bigchunkclrsetting=ORACLEBIGCHUNKCLR_OFF;
+		bigchunkssetting=ORACLEBIGCHUNKS_OFF;
 	} else {
-		bigchunkclrsetting=ORACLEBIGCHUNKCLR_AUTO;
+		bigchunkssetting=ORACLEBIGCHUNKS_AUTO;
 	}
 
 	if (getDebug()) {
@@ -2730,9 +2730,9 @@ sqlrprotocol_oracle::sqlrprotocol_oracle(sqlrservercontroller *cont,
 		debugWrite("server field version: %d",serverfieldversion);
 		debugWrite("sid: %s",(sids)?sids:"(any)");
 		debugWrite("max login attempts: %d",maxloginattempts);
-		debugWrite("big chunk clr setting: %s",
-			(bigchunkclrsetting==ORACLEBIGCHUNKCLR_ON)?"on":
-			((bigchunkclrsetting==ORACLEBIGCHUNKCLR_OFF)?
+		debugWrite("big chunks setting: %s",
+			(bigchunkssetting==ORACLEBIGCHUNKS_ON)?"on":
+			((bigchunkssetting==ORACLEBIGCHUNKS_OFF)?
 							"off":"auto"));
 		debugEnd();
 	}
@@ -2940,7 +2940,7 @@ void sqlrprotocol_oracle::init() {
 	clientwantsdbtimezone=false;
 	clientwantstzversion=false;
 	clienttzversion=0;
-	bigchunkclr=false;
+	bigchunks=false;
 	ub2datatypes=false;
 	o5logonclient=false;
 	oci7endtoendseqnumber=false;
@@ -5438,7 +5438,7 @@ bool sqlrprotocol_oracle::sendTtiResponse() {
 // raw byte and a length up to 255, which is what the module's framing was
 // worked out against; set, a client that also offers the bit frames them as a
 // count prefixed ub4 instead.  it's set here for every session, and only
-// "bigchunkclr off" takes it back out, in putTti6Response().  what it can't be
+// "bigchunks off" takes it back out, in putTti6Response().  what it can't be
 // is an answer to the client: the capability arrays are sent in the protocol
 // negotiation, before the client's own arrive in the datatype negotiation, so
 // there is nothing to answer yet.  the per-session choice is made afterwards,
@@ -5650,16 +5650,16 @@ void sqlrprotocol_oracle::putTtiResponse(byte_t version,
 	}
 }
 
-bool sqlrprotocol_oracle::advertiseBigChunkClr() {
+bool sqlrprotocol_oracle::advertiseBigChunks() {
 
 	// a 9i client's compile-caps array has no CCAP_TTC3 byte at all
 	if (verifiertype==VERIFIER_TYPE_9I) {
 		return false;
 	}
 
-	// "bigchunkclr off" offers big chunks to nobody; otherwise the
+	// "bigchunks off" offers big chunks to nobody; otherwise the
 	// capability array the module sends is the whole answer
-	return (bigchunkclrsetting!=ORACLEBIGCHUNKCLR_OFF &&
+	return (bigchunkssetting!=ORACLEBIGCHUNKS_OFF &&
 			(ttiservercompilecaps[CCAP_TTC3]&
 					CCAP_TTC3_BIG_CHUNK_CLR)!=0);
 }
@@ -5708,14 +5708,14 @@ void sqlrprotocol_oracle::putTti6Response() {
 	}
 	compilecaps[CCAP_FIELD_VERSION]=serverfieldversion;
 
-	// "bigchunkclr off" has to clear the bit, not just skip the framing.
+	// "bigchunks off" has to clear the bit, not just skip the framing.
 	// ojdbc takes big chunks from the server's bit alone, without regard
 	// to its own, so framing raw bytes while still advertising the bit
 	// would break ojdbc instead of fixing go-ora v1.  the 9i array is
-	// only 33 bytes and has no CCAP_TTC3 byte at all - advertiseBigChunkClr()
+	// only 33 bytes and has no CCAP_TTC3 byte at all - advertiseBigChunks()
 	// already returns false for 9i, so this has to stay out of that array
 	// rather than index past its end.
-	if (verifiertype!=VERIFIER_TYPE_9I && !advertiseBigChunkClr()) {
+	if (verifiertype!=VERIFIER_TYPE_9I && !advertiseBigChunks()) {
 		compilecaps[CCAP_TTC3]&=(byte_t)~CCAP_TTC3_BIG_CHUNK_CLR;
 	}
 
@@ -6176,12 +6176,12 @@ bool sqlrprotocol_oracle::recvDataTypeRequest() {
 	// 37 is 0xb3 there - and then frames raw bytes anyway, having never
 	// implemented big chunks at all.  nothing on the wire separates it
 	// from v2, which advertises the same bit and does implement them, so
-	// there is no gate that could serve both.  the "bigchunkclr"
+	// there is no gate that could serve both.  the "bigchunks"
 	// attribute is the way out: "off" for a deployment whose clients are
 	// go-ora v1, "on" for one whose clients all take big chunks without
 	// advertising the bit.
 	//
-	// forced on, the gate doesn't consult advertiseBigChunkClr().  it
+	// forced on, the gate doesn't consult advertiseBigChunks().  it
 	// doesn't have to today - the static array has the bit set, so the
 	// advertisement agrees - but if that byte ever loses the bit, "on"
 	// would frame big chunks against an advertisement that says raw.
@@ -6189,14 +6189,14 @@ bool sqlrprotocol_oracle::recvDataTypeRequest() {
 	if (verifiertype==VERIFIER_TYPE_9I) {
 		// the 9i array has no CCAP_TTC3 byte at all to have advertised
 		// the bit with, regardless of what this attribute says
-		bigchunkclr=false;
-	} else if (bigchunkclrsetting==ORACLEBIGCHUNKCLR_ON) {
-		bigchunkclr=(ttiversion>=6);
-	} else if (bigchunkclrsetting==ORACLEBIGCHUNKCLR_OFF) {
-		bigchunkclr=false;
+		bigchunks=false;
+	} else if (bigchunkssetting==ORACLEBIGCHUNKS_ON) {
+		bigchunks=(ttiversion>=6);
+	} else if (bigchunkssetting==ORACLEBIGCHUNKS_OFF) {
+		bigchunks=false;
 	} else {
-		bigchunkclr=(ttiversion>=6 &&
-				advertiseBigChunkClr() &&
+		bigchunks=(ttiversion>=6 &&
+				advertiseBigChunks() &&
 				compilecapssize>CCAP_TTC3 &&
 				(compilecaps[CCAP_TTC3]&
 					CCAP_TTC3_BIG_CHUNK_CLR)!=0);
@@ -6287,7 +6287,7 @@ bool sqlrprotocol_oracle::recvDataTypeRequest() {
 		debugHexDump(runtimecaps,runtimecapssize);
 		debugWrite("client field version: %d",clientfieldversion);
 		debugWrite("negotiated field version: %d",fieldversion);
-		debugWrite("big chunk clr: %s",(bigchunkclr)?"true":"false");
+		debugWrite("big chunks: %s",(bigchunks)?"true":"false");
 		debugWrite("ub2 data types: %s",
 					(ub2datatypes)?"true":"false");
 		if (clientwantsdbtimezone) {
@@ -7153,7 +7153,7 @@ bool sqlrprotocol_oracle::getLenString(const byte_t *rp,
 				return false;
 			}
 			uint32_t	chunksize;
-			if (bigchunkclr) {
+			if (bigchunks) {
 				if (!readLenPreInt(rp,end,&chunksize,&rp)) {
 					debugWrite("malformed string: "
 							"bad chunk length");
@@ -7404,7 +7404,7 @@ void sqlrprotocol_oracle::putLenBytesChunks(const char *bytes, uint32_t size) {
 	// the run of chunks in the middle of a long form clr, without the
 	// marker ahead of it or the empty chunk that closes it - so that a
 	// value made of more than one run of bytes can be written as one clr
-	uint32_t	maxchunk=(bigchunkclr)?
+	uint32_t	maxchunk=(bigchunks)?
 				CLR_MAX_BIG_CHUNK_SIZE:CLR_MAX_CHUNK_SIZE;
 	uint32_t	offset=0;
 	while (offset<size) {
@@ -7412,7 +7412,7 @@ void sqlrprotocol_oracle::putLenBytesChunks(const char *bytes, uint32_t size) {
 		if (chunk>maxchunk) {
 			chunk=maxchunk;
 		}
-		if (bigchunkclr) {
+		if (bigchunks) {
 			writeLenPreInt(&reqpacket,chunk);
 		} else {
 			write(&reqpacket,(byte_t)chunk);
@@ -7562,7 +7562,7 @@ bool sqlrprotocol_oracle::readLongFormChunks(const byte_t *rp,
 			return false;
 		}
 		uint32_t	chunksize;
-		if (bigchunkclr) {
+		if (bigchunks) {
 			if (!getLenPreInt(rp,&end,&chunksize,&rp)) {
 				debugWrite("bad long form chunk length");
 				return false;
@@ -7877,7 +7877,7 @@ bool sqlrprotocol_oracle::peekPrintableString(const byte_t *rp,
 			return false;
 		}
 		uint32_t	chunksize;
-		if (bigchunkclr) {
+		if (bigchunks) {
 			if (!readLenPreInt(rp,end,&chunksize,&rp)) {
 				return false;
 			}
@@ -19966,7 +19966,7 @@ bool sqlrprotocol_oracle::putLobField(sqlrservercursor *cursor, uint32_t col) {
 			// sizeof(lobbuffer)/MAX_BYTES_PER_CHAR bytes) is far
 			// larger than a single clr chunk can declare in a
 			// one-byte count
-			uint32_t	maxchunk=(bigchunkclr)?
+			uint32_t	maxchunk=(bigchunks)?
 					CLR_MAX_BIG_CHUNK_SIZE:
 					CLR_MAX_CHUNK_SIZE;
 			uint64_t	suboffset=0;
@@ -19975,7 +19975,7 @@ bool sqlrprotocol_oracle::putLobField(sqlrservercursor *cursor, uint32_t col) {
 				if (subchunk>maxchunk) {
 					subchunk=maxchunk;
 				}
-				if (bigchunkclr) {
+				if (bigchunks) {
 					writeLenPreInt(&reqpacket,
 						(uint32_t)subchunk);
 				} else {

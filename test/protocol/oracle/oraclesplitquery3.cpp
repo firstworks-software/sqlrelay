@@ -441,7 +441,7 @@ static bool boundaryLandsAtRowDataStart(size_t requestsize, uint16_t sdu,
 // walk a fetch response - the data flags, a row header, one row data message
 // carrying the single column, and then the summary object, which this stops
 // short of.  see sendFetch3Response(), putRowHeader() and putRowData() in
-// src/protocols/oracle.cpp.  the same walk oraclebigchunkclroff.cpp does
+// src/protocols/oracle.cpp.  the same walk oraclebigchunksoff.cpp does
 static bool readFetch3Row(oracleprotocolclient *client,
 				uint32_t *colcount,
 				unsigned char *value,

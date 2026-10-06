@@ -207,7 +207,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   sqlstate as an alternative to its error-size/text checks for its
   SQL1224N and CLI0106E cases (SQL30081N has no documented sqlstate,
   so it's unchanged)
-- added a bigchunkclr attribute to the oracle protocol module's listener,
+- added a bigchunks attribute to the oracle protocol module's listener,
   which overrides the big chunk clr framing negotiation.  the
   default, auto, negotiates as before.  off never advertises
   CCAP_TTC3 bit 0x20 and always frames each long clr chunk's

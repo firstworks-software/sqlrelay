@@ -123,7 +123,7 @@ static const unsigned char	ORA_CCAP_FIELD_VERSION_12_2=8;
 // CCAP_TTC3 and CCAP_TTC3_BIG_CHUNK_CLR in src/protocols/oracle.cpp.  a
 // client that offers the bit, against a module that also offers it, gets a
 // long clr's chunk lengths as count prefixed ub4s rather than raw bytes -
-// see recvDataTypeRequest() there, which is where bigchunkclr is decided
+// see recvDataTypeRequest() there, which is where bigchunks is decided
 static const size_t		ORA_CCAP_TTC3=37;
 static const unsigned char	ORA_CCAP_TTC3_BIG_CHUNK_CLR=0x20;
 
@@ -312,7 +312,7 @@ class oracleprotocolclient {
 		// go-ora v1 is the one.  it offers the bit - byte 37 is
 		// 0xb3 there - and then frames raw bytes anyway, having
 		// never implemented big chunks at all.  that combination is
-		// what the "bigchunkclr" listener attribute exists for, and
+		// what the "bigchunks" listener attribute exists for, and
 		// it can't be reached by moving setBigChunkClr() alone, so
 		// a test that has to imitate go-ora v1 says
 		// setBigChunkClr(true) and setBigChunkClrFraming(false).
@@ -790,7 +790,7 @@ uint16_t oracleprotocolclient::getSdu() {
 // src/protocols/oracle.cpp gates the big chunk framing on the tti version as
 // well as on both ends' bits:
 //
-//	bigchunkclr=(ttiversion>=6 && ...)
+//	bigchunks=(ttiversion>=6 && ...)
 //
 // so a client that offers the bit at version 5 is answered in raw bytes
 // anyway, and has to frame its own requests in raw bytes to be understood.
@@ -799,7 +799,7 @@ uint16_t oracleprotocolclient::getSdu() {
 //
 // setBigChunkClrFraming() overrides the whole gate, because one real client
 // disagrees with it: go-ora v1 offers the bit and frames raw bytes anyway.
-// the "bigchunkclr" listener attribute is what answers that, and a test of
+// the "bigchunks" listener attribute is what answers that, and a test of
 // it has to be able to say the two things separately
 bool oracleprotocolclient::bigChunkClrFraming() {
 	if (bigchunkclrframingset) {

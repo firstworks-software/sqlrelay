@@ -8,7 +8,7 @@
 
 #include "oracleprotocolclient.cpp"
 
-// Coverage for the "bigchunkclr" listener attribute's "off" state in
+// Coverage for the "bigchunks" listener attribute's "off" state in
 // src/protocols/oracle.cpp - #9633.
 //
 // A clr past 252 bytes goes out chunked, and how a chunk's length is written
@@ -21,10 +21,10 @@
 // and then frames raw bytes anyway, having never implemented big chunks at
 // all.  Nothing on the wire separates it from v2, which advertises the same
 // bit and does implement them, so no gate could serve both and the
-// deployment has to say instead.  bigchunkclr="off" is how it says so, and
+// deployment has to say instead.  bigchunks="off" is how it says so, and
 // it does two things at once:
 //
-//	- advertiseBigChunkClr() returns false, so putTti6Response() clears
+//	- advertiseBigChunks() returns false, so putTti6Response() clears
 //	  CCAP_TTC3 bit 0x20 out of the array the module advertises.  this
 //	  half is for ojdbc, which takes big chunks from the server's bit
 //	  alone without regard to its own - framing raw bytes while still
@@ -474,7 +474,7 @@ static uint16_t portFromEnvironment(const char *name, uint16_t fallback) {
 
 int main(int argc, char **argv) {
 
-	stdoutput.printf("\n====== bigchunkclr off ======\n\n");
+	stdoutput.printf("\n====== bigchunks off ======\n\n");
 
 	// the oracleprotocol test instance - see
 	// test/sqlrelay.conf.d/oracleprotocol.conf.  it isn't a real oracle
@@ -500,9 +500,9 @@ int main(int argc, char **argv) {
 	stdoutput.printf("bind and column value: %d bytes\n",
 				(int)ORA_CLR_TEST_VALUE_SIZE);
 
-	// the listener with bigchunkclr="off".  the bit has to be gone from
+	// the listener with bigchunks="off".  the bit has to be gone from
 	// what it advertises, and everything has to be framed raw
-	runLeg("bigchunkclr off",host,offport,sid,user,password,
+	runLeg("bigchunks off",host,offport,sid,user,password,
 			query,value,ORA_CLR_TEST_VALUE_SIZE,false,false);
 
 	// and the listener without the attribute, which is the control: same

@@ -674,7 +674,7 @@ int main(int argc, char **argv) {
 	// the tti version leg of the gate, on its own.  recvDataTypeRequest()
 	// only honors the bit at tti version 6 and above:
 	//
-	//	bigchunkclr=(ttiversion>=6 && ... )
+	//	bigchunks=(ttiversion>=6 && ... )
 	//
 	// so a version 5 client that offers the bit - which this run is, and
 	// which nothing else here or anywhere else is - still has to be
