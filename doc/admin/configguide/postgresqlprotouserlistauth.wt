@@ -23,8 +23,6 @@ To enable user list auth, you must provide a list of user/password combinations,
 
 When using SQL Relay as a transparent proxy, it is desirable to define the same set of users that are defined in the database itself.  While this may sound inconvenient, in practice, most apps use a single user to access the database, and it's not uncommon for multiple apps to share a user.  So, the list is typically short.
 
-If the database has a lot of users, or users are added, deleted, or updated regularly, then it might be inconvenient to maintain a duplicate list of users in the configuration file.  Unfortunately there isn't currently a //postgresql_database// auth module that can be used to auth users directly against the database, so for now this is the only option.
-
 ----
 
 [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents]&nbsp;&nbsp;&nbsp;[[Image(../../images/navprev.png,link=postgresqlprotoconnectstringsauth.html,vertical-align=middle)]] [postgresqlprotoconnectstringsauth.html PostgreSQL Connect Strings Auth] | [[Image(../../images/navtop.png,link=postgresqlprotoauth.html,vertical-align=middle)]] [postgresqlprotoauth.html PostgreSQL Authentication/Encryption Options] | [postgresqlprototls.html PostgreSQL TLS/SSL Encryption and Authentication] [[Image(../../images/navnext.png,link=postgresqlprototls.html,vertical-align=middle)]]

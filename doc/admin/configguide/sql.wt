@@ -19,7 +19,7 @@ The '''sql''' module logs all queries to log files in the "log directory", usual
 
 This module takes four attributes: '''sync''', '''queryevent''', '''logerrors''', and '''logpidchange'''.
 
-If '''sync''' is set to "yes" then data will be written to the log synchronously, that is, data will be written to the log immediately and completely after each query has been executed.  This degrades performance, sometimes significantly, but makes it easier to monitor the log.  If '''sync''' is set to "no" (the default) then data will be written to the log asynchronously, that is, data may not be written to the log immediately or completely after each query has been executed.  This improves performance, sometimes significantly, but makes it it more difficult to monitor the log, and may require an sqlr-stop to be executed for the final bit of data to be written to the log.
+If '''sync''' is set to "yes" then each query is written to the log as soon as it runs, which makes the log easier to monitor but can degrade performance significantly.  If '''sync''' is set to "no" (the default) then writes are buffered, which is faster, but the last few queries may not be written to the log until sqlr-stop is run.
 
 The '''queryevent''' parameter may be set to '''received''', '''prepared''', or '''executed'''.  The behavior of each is summarized as follows:
 

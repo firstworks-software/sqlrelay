@@ -38,7 +38,7 @@ http://www.gnu.org/software/src-highlite -->
 
 <p>The key attribute of the passwordencryption element contains a hexidecimal representation of the 128 bit (16 byte) key.  The password attribute of the user element, and password parameter of the string attribute of the connection element contain hexidecimal representations of the encrypted passwords.</p>
 
-<p>Note that multiple runs of sqlr-pwdenc with the same key and password will generate different results each time.  This is the correct behavior.  The first 128 bits (16 bytes) of the encrypted password are the "initialization vector" - a randomly generated string used in conjunction with the key to encrypt/decrypt the password.  This vector is generated each time sqlr-pwdenc is run.  Successive runs of sqlr-pwdenc generate different initialization vectors, and thus different encrypted passwords.</p>
+<p>The first 128 bits (16 bytes) of the encrypted password are the initialization vector, regenerated each time sqlr-pwdenc is run, so multiple runs with the same key and password will generate different results each time.  This is the correct behavior.</p>
 
 <hr/>
 
