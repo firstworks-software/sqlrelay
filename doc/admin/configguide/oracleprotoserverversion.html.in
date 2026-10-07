@@ -4,11 +4,11 @@
 
 <!--#include virtual="../../contentstart.html"-->
 
-<p><a href="index.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="index.html">Contents</a>&nbsp;&nbsp;&nbsp;<a href="oracleprotologinattempts.html"><img style="vertical-align: middle; " src="../../images/navprev.png"/></a> <a href="oracleprotologinattempts.html">Oracle Login Attempts</a> | <a href="oracleprotocol.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="oracleprotocol.html">Oracle Protocol</a> | <a href="oracleprotoverifiertype.html">Oracle Password Verifier Type</a> <a href="oracleprotoverifiertype.html"><img style="vertical-align: middle; " src="../../images/navnext.png"/></a></p>
+<p><a href="index.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="index.html">Contents</a>&nbsp;&nbsp;&nbsp;<a href="oracleprotologinattempts.html"><img style="vertical-align: middle; " src="../../images/navprev.png"/></a> <a href="oracleprotologinattempts.html">Oracle Login Attempts</a> | <a href="oracleprotocol.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="oracleprotocol.html">Oracle Protocol</a> | <a href="oracleprotobigchunks.html">Oracle Big Chunks</a> <a href="oracleprotobigchunks.html"><img style="vertical-align: middle; " src="../../images/navnext.png"/></a></p>
 
 <a name="oracleserverversion"/><h1>Server Version</h1>
 
-<p>The <i>serverversion</i> option sets which Oracle version the Oracle protocol module imitates: 11.2 or 12.1.  It defaults to 12.1, and any other value is the same as leaving it out.  It also sets the default <a href="oracleprotoverifiertype.html">Password Verifier Type</a>.  Some clients only support some protocol versions.  To support clients that need different versions, add a listener tag for each <i>serverversion</i>.</p>
+<p>The <i>serverversion</i> option sets which Oracle version the Oracle protocol module imitates: 10.2, 11.2 or 12.1.  It defaults to 12.1, and any other value is the same as leaving it out.</p>
 
 <blockquote>
 <!-- Generator: GNU source-highlight 3.1.9
@@ -19,7 +19,8 @@ http://www.gnu.org/software/src-highlite -->
 <b><font color="#0000FF">&lt;instances&gt;</font></b>
 	<b><font color="#0000FF">&lt;instance</font></b> <font color="#009900">id</font><font color="#990000">=</font><font color="#FF0000">"example"</font> <font color="#009900">dbase</font><font color="#990000">=</font><font color="#FF0000">"oracle"</font><b><font color="#0000FF">&gt;</font></b>
 		<b><font color="#0000FF">&lt;listeners&gt;</font></b>
-			<b><font color="#0000FF">&lt;listener</font></b> <font color="#009900">protocol</font><font color="#990000">=</font><font color="#FF0000">"oracle"</font> <font color="#009900">port</font><font color="#990000">=</font><font color="#FF0000">"1521"</font> <font color="#009900">serverversion</font><font color="#990000">=</font><font color="#FF0000">"11.2"</font><b><font color="#0000FF">/&gt;</font></b>
+			<b><font color="#0000FF">&lt;listener</font></b> <font color="#009900">protocol</font><font color="#990000">=</font><font color="#FF0000">"oracle"</font> <font color="#009900">port</font><font color="#990000">=</font><font color="#FF0000">"1521"</font> <font color="#009900">serverversion</font><font color="#990000">=</font><font color="#FF0000">"12.1"</font><b><font color="#0000FF">/&gt;</font></b>
+			<b><font color="#0000FF">&lt;listener</font></b> <font color="#009900">protocol</font><font color="#990000">=</font><font color="#FF0000">"oracle"</font> <font color="#009900">port</font><font color="#990000">=</font><font color="#FF0000">"1522"</font> <font color="#009900">serverversion</font><font color="#990000">=</font><font color="#FF0000">"11.2"</font><b><font color="#0000FF">/&gt;</font></b>
 		<b><font color="#0000FF">&lt;/listeners&gt;</font></b>
 		<b><font color="#0000FF">&lt;connections&gt;</font></b>
 			<b><font color="#0000FF">&lt;connection</font></b> <font color="#009900">string</font><font color="#990000">=</font><font color="#FF0000">"user=scott;password=tiger;oracle_home=/u01/app/oracle/product/12.1.0;oracle_sid=ora1"</font><b><font color="#0000FF">/&gt;</font></b>
@@ -29,9 +30,283 @@ http://www.gnu.org/software/src-highlite -->
 </tt></pre>
 
 </blockquote>
+<a name="oracleserverversionceiling"/><h2>Ceiling and Negotiation</h2>
+
+<p><i>serverversion</i> is a ceiling.  It sets what the module advertises and the newest password verifier it can offer.  Everything below the ceiling is negotiated with each client, as a real Oracle server does it.  One listener can serve old and new clients together.</p>
+
+<p>The ceiling fixes:</p>
+
+<ul>
+  <li>the Oracle version the module reports to clients, including the version banner</li>
+  <li>the capabilities it advertises to clients, including the logon types it supports</li>
+  <li>the newest password verifier it can offer: 12c at 12.1, 11g at 11.2, and only the older O3LOGON exchange at 10.2</li>
+</ul>
+
+<p>Each client negotiates:</p>
+
+<ul>
+  <li>its own password verifier, picked from what the client says it supports, up to the ceiling</li>
+  <li>the protocol version for the session, which is the lower of the client's and the module's</li>
+  <li>the other options the client and the module both support, such as <a href="oracleprotobigchunks.html">Big Chunks</a></li>
+</ul>
+
+<p>There is no verifier option.  The module picks the verifier for each login attempt.</p>
+
+<a name="oracleserverversionverifiers"/><h2>Verifiers</h2>
+
+<p>The verifier is how the client and the module prove the password to each other without sending it.  This table shows which one each kind of client gets:</p>
+
+<table>
+  <tr>
+    <th> Client 
+</th>
+    <th> 10.2 
+</th>
+    <th> 11.2 
+</th>
+    <th> 12.1 
+</th>
+  </tr>
+  <tr>
+    <td>A genuine OCI7 era client (older than Oracle 10g)
+</td>
+    <td>O3LOGON, 9i verifier
+</td>
+    <td>O3LOGON, 9i verifier
+</td>
+    <td>O3LOGON, 9i verifier
+</td>
+  </tr>
+  <tr>
+    <td>An OCI7 interface call from a modern OCI client
+</td>
+    <td>O3LOGON, 10g verifier
+</td>
+    <td>O3LOGON, 10g verifier
+</td>
+    <td>O3LOGON, 10g verifier
+</td>
+  </tr>
+  <tr>
+    <td>A modern OCI, ojdbc or thin driver client
+</td>
+    <td>O3LOGON, 10g verifier
+</td>
+    <td>O5LOGON, 11g verifier
+</td>
+    <td>O5LOGON, 12c verifier
+</td>
+  </tr>
+  <tr>
+    <td>A client that advertises O5LOGON only
+</td>
+    <td>O3LOGON, 10g verifier
+</td>
+    <td>O5LOGON, 11g verifier
+</td>
+    <td>O5LOGON, 11g verifier
+</td>
+  </tr>
+</table>
+
+<br/><p>Notes on the table:</p>
+
+<ul>
+  <li>A client older than Oracle 10g doesn't say that it supports O5LOGON, so it gets the 9i verifier.  So does any other client that doesn't say it.</li>
+  <li>A modern OCI client can also use the old OCI7 call interface.  Its login call is a "classic" one, which has no O5LOGON form, so it gets O3LOGON, with the 10g verifier.</li>
+  <li>A modern client gets 12c when the ceiling is 12.1 and the client says it supports 12c.  ojdbc and OCI 23.26 copy the logon types the module advertises, so they ask for 12c at 12.1 and for 11g at 11.2.  A client that doesn't support 12c gets 11g at both.</li>
+  <li>At 10.2 every client gets O3LOGON, because Oracle 10.2 has no O5LOGON.</li>
+  <li>The logon types the module advertises follow the ceiling: O7LOGON, the 12c bit, is in the list only at 12.1.</li>
+</ul>
+
+<p>O3LOGON is the older exchange.  See <a href="#oracleallowedlogonversion">Allowed Logon Version</a> if you want to refuse it.</p>
+
+<a name="oracleserverversionclients"/><h2>Which Clients Work</h2>
+
+<p>Which clients work at which ceiling:</p>
+
+<table>
+  <tr>
+    <th> Client 
+</th>
+    <th> 10.2 
+</th>
+    <th> 11.2 
+</th>
+    <th> 12.1 
+</th>
+  </tr>
+  <tr>
+    <td>OCI7 interface calls from a modern OCI client
+</td>
+    <td>Yes
+</td>
+    <td>Yes
+</td>
+    <td>Yes
+</td>
+  </tr>
+  <tr>
+    <td>Genuine Oracle 9.2 OCI7 client
+</td>
+    <td>Yes
+</td>
+    <td>Yes
+</td>
+    <td>Yes
+</td>
+  </tr>
+  <tr>
+    <td>Genuine Oracle 9.0.1 OCI7 client
+</td>
+    <td>Yes
+</td>
+    <td>Not tested
+</td>
+    <td>Not tested
+</td>
+  </tr>
+  <tr>
+    <td>OCI 23.26 and ojdbc
+</td>
+    <td>Not tested
+</td>
+    <td>Yes
+</td>
+    <td>Yes
+</td>
+  </tr>
+  <tr>
+    <td>python-oracledb and node-oracledb
+</td>
+    <td>No
+</td>
+    <td>No
+</td>
+    <td>Yes
+</td>
+  </tr>
+</table>
+
+<br/><ul>
+  <li>python-oracledb and node-oracledb need 12.1, the default.  At 11.2 and 10.2 their logins hang.</li>
+  <li>OCI 23.26 and ojdbc work at 11.2 and 12.1.</li>
+  <li>Modern clients that use the OCI7 call interface work at any ceiling.</li>
+  <li>Genuine Oracle 9.2 OCI7 clients work at any ceiling.  The Oracle 9i sqlplus logs in at any ceiling too, but currently fails after its first query.</li>
+  <li>Genuine Oracle 9.0.1 OCI7 clients have only been tested at 10.2, so serverversion="10.2" is the known-good setting for them.</li>
+</ul>
+
+<p>To serve clients that need different ceilings, add a listener for each one.  They can share an instance and its back-end database.  Just give each its own port, as shown below for a 10.2 listener beside a default one.</p>
+
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt><b><font color="#000080">&lt;?xml</font></b> <font color="#009900">version</font><font color="#990000">=</font><font color="#FF0000">"1.0"</font><b><font color="#000080">?&gt;</font></b>
+<b><font color="#0000FF">&lt;instances&gt;</font></b>
+	<b><font color="#0000FF">&lt;instance</font></b> <font color="#009900">id</font><font color="#990000">=</font><font color="#FF0000">"example"</font> <font color="#009900">dbase</font><font color="#990000">=</font><font color="#FF0000">"oracle"</font><b><font color="#0000FF">&gt;</font></b>
+		<b><font color="#0000FF">&lt;listeners&gt;</font></b>
+			<b><font color="#0000FF">&lt;listener</font></b> <font color="#009900">protocol</font><font color="#990000">=</font><font color="#FF0000">"oracle"</font> <font color="#009900">port</font><font color="#990000">=</font><font color="#FF0000">"1521"</font><b><font color="#0000FF">/&gt;</font></b>
+			<b><font color="#0000FF">&lt;listener</font></b> <font color="#009900">protocol</font><font color="#990000">=</font><font color="#FF0000">"oracle"</font> <font color="#009900">port</font><font color="#990000">=</font><font color="#FF0000">"1522"</font> <font color="#009900">serverversion</font><font color="#990000">=</font><font color="#FF0000">"10.2"</font><b><font color="#0000FF">/&gt;</font></b>
+		<b><font color="#0000FF">&lt;/listeners&gt;</font></b>
+		<b><font color="#0000FF">&lt;connections&gt;</font></b>
+			<b><font color="#0000FF">&lt;connection</font></b> <font color="#009900">string</font><font color="#990000">=</font><font color="#FF0000">"user=scott;password=tiger;oracle_home=/u01/app/oracle/product/12.1.0;oracle_sid=ora1"</font><b><font color="#0000FF">/&gt;</font></b>
+		<b><font color="#0000FF">&lt;/connections&gt;</font></b>
+	<b><font color="#0000FF">&lt;/instance&gt;</font></b>
+<b><font color="#0000FF">&lt;/instances&gt;</font></b>
+</tt></pre>
+
+</blockquote>
+<p>A 10.2 listener tells the client the database character set is AL32UTF8, like any other.  If the back-end connection's <i>nls_lang</i> is a single byte character set, set <i>charset</i> to match.  See <a href="oracleprotocharsets.html">Character Set Options</a>.</p>
+
+<a name="oracleallowedlogonversion"/><h2>Allowed Logon Version</h2>
+
+<p>The <i>allowedlogonversion</i> option sets the oldest logon protocol the module accepts.  It is the module's version of Oracle's SQLNET.ALLOWED_LOGON_VERSION_SERVER setting, and takes the same values:</p>
+
+<table>
+  <tr>
+    <th> Value 
+</th>
+    <th> Allows 
+</th>
+    <th> Refuses 
+</th>
+  </tr>
+  <tr>
+    <td>8
+</td>
+    <td>every client
+</td>
+    <td>nothing
+</td>
+  </tr>
+  <tr>
+    <td>10
+</td>
+    <td>10g, 11g and 12c verifiers
+</td>
+    <td>the 9i verifier (clients older than Oracle 10g)
+</td>
+  </tr>
+  <tr>
+    <td>11
+</td>
+    <td>11g and 12c verifiers
+</td>
+    <td>the 9i and 10g verifiers, so all O3LOGON clients
+</td>
+  </tr>
+  <tr>
+    <td>12
+</td>
+    <td>11g and 12c verifiers
+</td>
+    <td>the same as 11
+</td>
+  </tr>
+  <tr>
+    <td>12a
+</td>
+    <td>the 12c verifier
+</td>
+    <td>every other verifier
+</td>
+  </tr>
+</table>
+
+<br/><p>8 is the default, and so are 9 and any other value.  Oracle's 12 also requires some client features that the module doesn't check, so here it is the same as 11.  A client below the floor is refused with ORA-28040, "No matching authentication protocol".  A refused attempt counts toward <a href="oracleprotologinattempts.html">Login Attempts</a>.</p>
+
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt><b><font color="#000080">&lt;?xml</font></b> <font color="#009900">version</font><font color="#990000">=</font><font color="#FF0000">"1.0"</font><b><font color="#000080">?&gt;</font></b>
+<b><font color="#0000FF">&lt;instances&gt;</font></b>
+	<b><font color="#0000FF">&lt;instance</font></b> <font color="#009900">id</font><font color="#990000">=</font><font color="#FF0000">"example"</font> <font color="#009900">dbase</font><font color="#990000">=</font><font color="#FF0000">"oracle"</font><b><font color="#0000FF">&gt;</font></b>
+		<b><font color="#0000FF">&lt;listeners&gt;</font></b>
+			<b><font color="#0000FF">&lt;listener</font></b> <font color="#009900">protocol</font><font color="#990000">=</font><font color="#FF0000">"oracle"</font> <font color="#009900">port</font><font color="#990000">=</font><font color="#FF0000">"1521"</font> <font color="#009900">allowedlogonversion</font><font color="#990000">=</font><font color="#FF0000">"11"</font><b><font color="#0000FF">/&gt;</font></b>
+		<b><font color="#0000FF">&lt;/listeners&gt;</font></b>
+		<b><font color="#0000FF">&lt;connections&gt;</font></b>
+			<b><font color="#0000FF">&lt;connection</font></b> <font color="#009900">string</font><font color="#990000">=</font><font color="#FF0000">"user=scott;password=tiger;oracle_home=/u01/app/oracle/product/12.1.0;oracle_sid=ora1"</font><b><font color="#0000FF">/&gt;</font></b>
+		<b><font color="#0000FF">&lt;/connections&gt;</font></b>
+	<b><font color="#0000FF">&lt;/instance&gt;</font></b>
+<b><font color="#0000FF">&lt;/instances&gt;</font></b>
+</tt></pre>
+
+</blockquote>
+<p>Because the module negotiates down, any client can ask for an older verifier.  O3LOGON is built on a DES based password hash, and is the weakest one the module offers.  A client gets it by leaving O5LOGON out of the logon types in its login request, or by using the classic login call, and an attacker who can change that byte on the network can do the same to a client.  So if no client needs O3LOGON, set <i>allowedlogonversion</i> to refuse it:</p>
+
+<ul>
+  <li>11 refuses O3LOGON.  It also refuses genuine pre-10g clients and OCI7 interface calls from modern OCI clients, since both log in with O3LOGON.</li>
+  <li>12a allows only the 12c verifier.  It needs a ceiling of 12.1.  At 11.2, every login is refused.</li>
+  <li>11 and 12 at a ceiling of 10.2 refuse every login too, since every login there is O3LOGON.</li>
+</ul>
+
 <hr/>
 
-<p><a href="index.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="index.html">Contents</a>&nbsp;&nbsp;&nbsp;<a href="oracleprotologinattempts.html"><img style="vertical-align: middle; " src="../../images/navprev.png"/></a> <a href="oracleprotologinattempts.html">Oracle Login Attempts</a> | <a href="oracleprotocol.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="oracleprotocol.html">Oracle Protocol</a> | <a href="oracleprotoverifiertype.html">Oracle Password Verifier Type</a> <a href="oracleprotoverifiertype.html"><img style="vertical-align: middle; " src="../../images/navnext.png"/></a></p>
+<p><a href="index.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="index.html">Contents</a>&nbsp;&nbsp;&nbsp;<a href="oracleprotologinattempts.html"><img style="vertical-align: middle; " src="../../images/navprev.png"/></a> <a href="oracleprotologinattempts.html">Oracle Login Attempts</a> | <a href="oracleprotocol.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="oracleprotocol.html">Oracle Protocol</a> | <a href="oracleprotobigchunks.html">Oracle Big Chunks</a> <a href="oracleprotobigchunks.html"><img style="vertical-align: middle; " src="../../images/navnext.png"/></a></p>
 
 <!--#include virtual="../../contentend.html"-->
 

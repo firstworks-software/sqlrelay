@@ -40,7 +40,7 @@
 //
 // --bin and --bindstr were added for #10273: a real OCI7 client corrupted
 // multibyte text defined SQLT_STR, independent of NLS_LANG.  Traced to the
-// module always declaring charset 31 (WE8ISO8859P1) for a verifiertype="9i"
+// module always declaring charset 31 (WE8ISO8859P1) for an OCI7 client's
 // listener regardless of the backend's real charset - not a client
 // limitation.  This program is the minimal fetch and bind side of that
 // capture.  To reproduce the fetch side, pass a --query that builds the test

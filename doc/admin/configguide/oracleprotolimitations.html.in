@@ -15,13 +15,13 @@
   <li>Clients always log in with Oracle's challenge/response password exchange.  Cleartext password login is not supported.</li>
   <li>TLS/SSL (TCPS) and Kerberos are not supported between the client and SQL Relay.  Setting <i>tls</i> or <i>krb</i> on an Oracle listener has no effect, other than possibly a warning at startup.</li>
   <li>LOB locators are read-only.  LOBs can be bound into inserts and updates, and fetched LOBs can be read, but writing, appending, trimming or erasing through a locator, creating or freeing a temporary LOB, asking whether a locator is open, and getting a BFILE's file name all fail with ORA-03001.  The session remains usable afterwards.</li>
-  <li>A row's LOBs must be read before the next row is fetched.  Fetching the next row, re-executing, or closing the cursor invalidates the previous row's LOBs, and reading one afterwards fails with ORA-22275.  This only applies to an Oracle back-end.  Other back-ends, and OCI7 clients (verifiertype="9i"), get LOB values inline.</li>
+  <li>A row's LOBs must be read before the next row is fetched.  Fetching the next row, re-executing, or closing the cursor invalidates the previous row's LOBs, and reading one afterwards fails with ORA-22275.  This only applies to an Oracle back-end.  Other back-ends, and OCI7 clients, get LOB values inline.</li>
   <li>Bound TIMESTAMP values (including those with a time zone) are truncated to DATE.  Fractional seconds and time zones are dropped.</li>
   <li>CLOB characters outside the Basic Multilingual Plane (eg. most emoji) are garbled when read, and can cause text after them in the same read to be skipped.</li>
   <li>Cancelling a running statement (eg. with Ctrl-C in sqlplus) doesn't interrupt it.  The statement runs to completion first.</li>
   <li>Distributed and two-phase-commit/XA transactions, database startup and shutdown, and end-to-end tracing attributes (module, action and client identifier) are not supported, and fail with ORA-03001.  Setting a tracing attribute also causes the client's next call to fail.</li>
   <li>A fetch of more than 100,000 rows at once fails with ORA-20004, and a batch larger than 32MB fails with ORA-20005.</li>
-  <li>OCI7 clients (verifiertype="9i") can only bind NUMBER, VARNUM, CHAR, VARCHAR, LONG and DATE values.</li>
+  <li>OCI7 clients can only bind NUMBER, VARNUM, CHAR, VARCHAR, LONG and DATE values.</li>
   <li>A client that keeps many statements open at once (eg. one with a client-side statement cache) needs the instance's <i>maxcursors</i> set higher than that number, or new statements fail with ORA-01000.
 ----</li>
 </ul>

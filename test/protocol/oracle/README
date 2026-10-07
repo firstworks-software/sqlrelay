@@ -1210,17 +1210,20 @@ the decoder can be exercised without live server access:
     10042-dev-oci23api7-portable-datatypenegotiation-sqlrelay-narrow.oraproxy
                                      the same oci7bind run against the
                                       oracleprotocoloci7 instance
-                                      (verifiertype="9i",
-                                      "SQLRelay/PortableTTC" banner) taken
+                                      (then verifiertype="9i", which
+                                      serverversion="10.2" has since
+                                      replaced, "SQLRelay/PortableTTC"
+                                      banner) taken
                                       before the #10042 fix. Shows the bug
                                       this ticket is for: [0009] is the same
                                       ub2 request the client sent the real
                                       server, 3248 body bytes in one packet
                                       rather than two, but the module chose
-                                      the answer's field width off
-                                      verifiertype rather than off the
-                                      client, so [0010] is ttidatatypes9i's
-                                      ub1 catalog, 947 body bytes - the same
+                                      the answer's field width off the
+                                      listener's verifier type rather than
+                                      off the client, so [0010] is
+                                      ttidatatypes9i's ub1 catalog, 947
+                                      body bytes - the same
                                       eleven db time zone bytes, then a tz
                                       version 00 00 00 0b the client never
                                       asked for, then 01 01 01 00 where the
@@ -1249,7 +1252,8 @@ the decoder can be exercised without live server access:
                                       to take the field width, and the
                                       request's trailing national charset,
                                       from the client's own CCAP_UB2_DTY byte
-                                      instead of from verifiertype. [0010] is
+                                      instead of from the listener's
+                                      verifier type. [0010] is
                                       now 2348 body bytes of ub2 catalog
                                       opening with the eleven db time zone
                                       bytes and then 00 01 00 01 00 01 00 00,
@@ -1755,7 +1759,8 @@ against oracle122, which honestly declares charset 873 (AL32UTF8):
                                       9.2.0.4.0 client build.
 
 SQL Relay captures taken before any fix (#10273 comment 8) - the
-oracleprotocoloci7utf8 instance (verifiertype="9i", backend
+oracleprotocoloci7utf8 instance (then verifiertype="9i", which
+serverversion="10.2" has since replaced, backend
 nls_lang=AMERICAN_AMERICA.AL32UTF8), unmodified, forcing charset 31 the way
 every 9i listener did before #10273's fix. Same queries as the real-server runs
 above, so each pair diffs cleanly:
@@ -2210,12 +2215,12 @@ missing bytes silently.
                                       against sqlrelay's own
                                       oracle-protocol listener - a
                                       build-tree instance from this
-                                      directory's mixedtypetest.conf (its
-                                      second listener, the only one in
-                                      the test suite that answers a 12.1+
-                                      client - see test.sh's -buildtree
-                                      and the note at the top of
-                                      mixedtypetest.conf) - captured
+                                      directory's mixedtypetest.conf
+                                      (then its second listener, at the
+                                      time the only one that answered a
+                                      12.1+ client - see test.sh's
+                                      -buildtree; the file has one
+                                      listener, at 12.1, now) - captured
                                       before the module tracked a call
                                       status for query3 sessions at all:
                                       every reply carries whatever
@@ -2300,6 +2305,87 @@ missing bytes silently.
                                       execute calls), not a
                                       server-version one (#10325).
 
+    10515-dev-oci23api7-bannerrewrite-universalreps-bindmany-realserver-oracle122.oraproxy
+                                     oci7bind --bind=many - Instant
+                                      Client 23 driving the legacy OCI7
+                                      calls - through oraproxy against the
+                                      real 12.2 server, with both banners
+                                      rewritten (the way
+                                      ocibannerrewritetest does it) and
+                                      ORAPROXY_UNIVERSAL_REPS=1, so the
+                                      session runs portable, in the count
+                                      prefixed integer representation the
+                                      module uses.  oci7bind was compiled
+                                      by hand against the Instant Client,
+                                      the way oci7datestr.cpp's header
+                                      describes.  One connection covers a
+                                      correct O3LOGON login ([0011] to
+                                      [0014]), an erroring statement (the
+                                      setup "drop table protocoltestbind",
+                                      ORA-00942 at [0026]), dml through
+                                      TTI_QUERY2 and two bare TTI_EXECUTEs
+                                      ([0041] to [0046]), and a select
+                                      fetched past its last row (ORA-01403
+                                      at [0062]).  It settles that 12.2
+                                      sends this client the 12.1 summary
+                                      shape on the OCI7 path: the
+                                      challenge's and the login answer's
+                                      summaries are 33 bytes, not the 31 a
+                                      real 10.2 server sends the same
+                                      client in 10048-dev-oci23api7-
+                                      bannerrewrite-universalreps-
+                                      realserver.oraproxy, and the
+                                      ORA-00942 and ORA-01403 summaries
+                                      carry the error number again and the
+                                      row count (02 03 ae 00 and
+                                      02 05 7b 01 03) ahead of the
+                                      message.  Every summary's call
+                                      number is the seq byte of the call
+                                      it answers.  The server's TTIPRO and
+                                      data type answers are the ones 12.2
+                                      sends an OCI8 client: 42 byte compile
+                                      caps, field version 9, and a catalog
+                                      that includes data type 612.  Its
+                                      login also settles which half of
+                                      the 32 byte 10g session key this
+                                      client encrypts its password under
+                                      when the server advertises logon
+                                      types 0x6f: the first, where 0x0d
+                                      gets the second.  The [0013]
+                                      AUTH_PASSWORD decrypts to the
+                                      user's password under the first
+                                      half of the [0012] key.
+                                      o3logonAesVerify() in
+                                      src/auths/oracle_userlist.cpp picks
+                                      the half from the logon types the
+                                      module advertised.  The run
+                                      left protocoltestbind behind on
+                                      oracle122, and it was dropped
+                                      afterwards (#10515)
+
+    10515-dev-oci23api7-bannerrewrite-universalreps-describeparse-realserver-oracle122.oraproxy
+                                     oci7describe --describe=parse, the
+                                      same client, proxy and rewrites as
+                                      the bindmany capture above.  It
+                                      settles the OCI7 describe at 12.2
+                                      field versions: the TTI_DESCRIBE
+                                      answer at [0028] carries two zero
+                                      fields per column that a real 10.2
+                                      server's answer to this client
+                                      (10048-dev-oci23api7-portable-
+                                      describe-realserver.oraproxy) does
+                                      not - one ahead of the null-ok byte
+                                      (nonzero, 02 3f fe, for the char
+                                      column; python-oracledb reads it as
+                                      oaccolid from field version 12.2 up)
+                                      and one after the column position.
+                                      The module, which tops out at field
+                                      version 12.1, sends the second one
+                                      from 11.2 up: without it OCI 23.26
+                                      hangs waiting after the answer at
+                                      11.2 and 12.1, though not at 10.2
+                                      (#10515)
+
 The three real Oracle test servers on this network
 --------------------------------------------------
 
@@ -2325,10 +2411,9 @@ not recorded anywhere in this tree beyond this line; only its IP,
 NLS_CHARACTERSET, confirmed live (nls_charset_id(), #10273): oracle102
 is WE8ISO8859P1 (charset id 31); oracle122 is AL32UTF8 (charset id
 873). Both also carry NCHAR AL16UTF16 (charset id 2000). This is what
-oracleprotocoloci7's forced 9i charset default of 31
-(src/protocols/oracle.cpp, the VERIFIER_TYPE_9I block in the
-constructor) matches for oracle102, but not for oracle122 or for
-oracleprotocoloci7utf8's own AL32UTF8-connected backend - see #10273.
+oracleprotocoloci7's charset="31" (test/sqlrelay.conf.d/
+oracleprotocol.conf.in) matches for oracle102, but not for oracle122 or
+for oracleprotocoloci7utf8's own AL32UTF8-connected backend - see #10273.
 
 oracle122's server-side login policy was changed for #10273, and is
 still in that changed state as of this writing:

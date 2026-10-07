@@ -378,13 +378,16 @@ static void runAuthenticationSection(bool issqlrelay) {
 	stdoutput.printf("\n=========== Authentication ===========\n\n");
 
 	// This section, run against the sqlrelay11g and sqlrelay12c targets
-	// (see test.sh.in), is the verifier-type coverage.  The listener
-	// behind each of those is pinned to that verifiertype, and the
-	// correct-password login below succeeding is the proof that that
-	// verifier's O5LOGON crypto path ran end to end.  The server dictates
-	// the type and the client picks its crypto from what is presented, so
-	// a mismatch surfaces as ORA-01017 even for a correct password, and
-	// there is no separate api for asking which type was used.
+	// (see test.sh.in), covers the O3LOGON exchange at both ceilings.
+	// The listener behind each of those is at serverversion="11.2" and
+	// "12.1".  olog() logs in with the classic call, so it gets O3LOGON
+	// at either one: the 9i verifier for a genuine pre-10g client, the
+	// 10g verifier for a modern client that advertises O5LOGON.  The 10g
+	// verifier's password key half follows the logon types each ceiling
+	// advertises, so the correct-password login below succeeding at both
+	// is the proof that both halves work.  A mismatch surfaces as
+	// ORA-01017 even for a correct password, and there is no separate
+	// api for asking which verifier was used.
 
 	// Run against the sqlrelayconnectstrings target, this section covers
 	// #9309: oracleprotocolconnectstrings has no <auths> block, so
@@ -813,7 +816,7 @@ int main(int argc, char **argv) {
 					&versionlen,&versioncode)),0);
 		assertEquals(check(vercda,oexec(vercda)),0);
 		assertEquals(check(vercda,ofen(vercda,1)),0);
-		// oci8.cpp asserts the exact 11.2 banner here and is right
+		// oci8.cpp asserts the exact banner here and is right
 		// to: OCIServerVersion is the tti version call, which the
 		// module answers itself, out of the serverversion attribute -
 		// see sendVersionResponse(), src/protocols/oracle.cpp.  this
@@ -822,16 +825,13 @@ int main(int argc, char **argv) {
 		// instance points at, not anything the module made up.  for
 		// sqlrelayoci7 that is the farm's only oci7-capable backend,
 		// a real 10.2 server - see test/sqlrelay.conf.d/
-		// oracleprotocol.conf.in - so an 11.2 banner was never coming
-		// back.  nor would the module report one on this instance
-		// even if it did answer: a verifiertype="9i" listener reports
-		// 10.2 whatever serverversion says, since no server old
-		// enough to offer a pre-o5logon verifier is newer than that.
-		// so the version itself is what goes unasserted here.  the
-		// rest of the banner's shape still is, and it has to be: this
-		// section runs against every target this program takes, whose
-		// backends are different versions, so pinning 10.2 would only
-		// move the problem to the other targets
+		// oracleprotocol.conf.in - so oci8.cpp's banner was never
+		// coming back.  so the version itself is what goes
+		// unasserted here.  the rest of the banner's
+		// shape still is, and it has to be: this section runs against
+		// every target this program takes, whose backends are
+		// different versions, so pinning 10.2 would only move the
+		// problem to the other targets
 		assertTrue(!charstring::compare(versionbuf,
 						"Oracle Database ",16));
 		assertTrue(charstring::contains(versionbuf,

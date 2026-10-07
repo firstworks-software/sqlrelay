@@ -10,10 +10,14 @@
 # that sendAuthenticationChallenge() in src/protocols/oracle.cpp
 # actually put on the wire:
 #
-#   11g (verifiertype="11g"): AUTH_VFR_DATA flags 0x1b25,
-#                              AUTH_SESSKEY 96 hex chars
-#   12c (verifiertype="12c"): AUTH_VFR_DATA flags 0x4815,
-#                              AUTH_SESSKEY 64 hex chars
+#   11g (serverversion="11.2"): AUTH_VFR_DATA flags 0x1b25,
+#                                AUTH_SESSKEY 96 hex chars
+#   12c (serverversion="12.1"): AUTH_VFR_DATA flags 0x4815,
+#                                AUTH_SESSKEY 64 hex chars
+#
+# ojdbc sets O7LOGON in its own logon types only when the server
+# advertised it, which only 12.1 does, so it gets the 11g verifier from
+# the 11.2 listener and the 12c one from the 12.1 listener.
 #
 # The oracleprotocol11g / oracleprotocol12c instances must
 # already be running (./test.sh oracleprotocol starts them, or by

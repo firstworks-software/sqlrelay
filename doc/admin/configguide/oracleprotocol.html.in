@@ -21,7 +21,6 @@
   <li><a href="oracleprotosid.html">SID / Service Name</a></li>
   <li><a href="oracleprotologinattempts.html">Login Attempts</a></li>
   <li><a href="oracleprotoserverversion.html">Server Version</a></li>
-  <li><a href="oracleprotoverifiertype.html">Password Verifier Type</a></li>
   <li><a href="oracleprotobigchunks.html">Big Chunks</a></li>
   <li><a href="oracleprotocharsets.html">Character Set Options</a></li>
   <li><a href="oracleprotodateformat.html">Date Format</a></li>

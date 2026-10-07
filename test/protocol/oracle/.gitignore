@@ -14,6 +14,7 @@
 /oci7utf8clob
 /oci7inlinelob
 /oracletransaction
+/oracleverifiernegotiation
 *.o
 *.obj
 *.lo

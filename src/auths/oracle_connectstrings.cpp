@@ -118,6 +118,9 @@
 //		password		AUTH_PASSWORD from the client, hex
 //		verifiertype		as above
 //		serverauthsesskey	what challenge() returned
+//		serverlogontypes	the CCAP_LOGON_TYPES byte the server
+//					advertised, read for 2361 only, and
+//					taken as 0 if absent
 //
 // The client sends no AUTH_SESSKEY of its own for O3LOGON, so there is no
 // clientauthsesskey.  serverauthsesskey is needed for the same reason it is
@@ -846,8 +849,9 @@ static uint32_t o3logonVerifierType(parameterstring *p) {
 //			with 8 zero bytes
 //	AUTH_SESSKEY	aes-128-cbc(kek, 32 random bytes), iv 0, sent as
 //			64 hex characters
-//	combo key	aes-128 key: the second 16 bytes of the decrypted
-//			session key, used raw
+//	combo key	aes-128 key: 16 bytes of the decrypted session key,
+//			used raw - the first 16 if the server advertised
+//			both O7LOGON and O5LOGON_NP, the second 16 if not
 //	AUTH_PASSWORD	aes-128-cbc(combo key, 16 salt bytes || the
 //			password || pkcs#5 padding), iv 0
 //
@@ -865,6 +869,10 @@ static uint32_t o3logonVerifierType(parameterstring *p) {
 #define O3LOGON_AES_BLOCK_SIZE		16
 #define O3LOGON_AES_SESSION_KEY_SIZE	32
 #define O3LOGON_AES_SALT_SIZE		16
+
+// CCAP_LOGON_TYPES bits, from python-oracledb's constants.pxi
+#define CCAP_O5LOGON_NP			0x02
+#define CCAP_O7LOGON			0x20
 
 static void o3logonAesKek(const byte_t *hash, byte_t *kek) {
 	bytestring::copy(kek,hash,O3LOGON_HASH_SIZE);
@@ -915,8 +923,8 @@ static bool o3logonAesVerify(const char *authpassword,
 		return false;
 	}
 
-	// recover the session key from the module's own challenge.  its second
-	// half is the key the client obfuscated the password under
+	// recover the session key from the module's own challenge.  one of its
+	// halves is the key the client obfuscated the password under
 	byte_t	kek[O3LOGON_AES_KEY_SIZE];
 	byte_t	encsesskey[O3LOGON_AES_SESSION_KEY_SIZE];
 	byte_t	sesskey[O3LOGON_AES_SESSION_KEY_SIZE];
@@ -934,9 +942,19 @@ static bool o3logonAesVerify(const char *authpassword,
 		return false;
 	}
 
+	// OCI 23.26 encrypts under the first half when the server advertised
+	// both bits, and under the second otherwise - measured with 0x0d,
+	// 0x0f, 0x2d, 0x2f, 0x4f and 0x6f.  real 12.2, which sends 0x6f,
+	// verifies the first half too
+	uint32_t	logontypes=
+			(uint32_t)charstring::convertToUnsignedInteger(
+				p->getValue("serverlogontypes"),(int32_t)0);
+	bool		firsthalf=((logontypes&CCAP_O7LOGON) &&
+					(logontypes&CCAP_O5LOGON_NP));
 	byte_t	combokey[O3LOGON_AES_KEY_SIZE];
-	bytestring::copy(combokey,sesskey+O3LOGON_AES_KEY_SIZE,
-						sizeof(combokey));
+	bytestring::copy(combokey,
+			sesskey+((firsthalf)?0:O3LOGON_AES_KEY_SIZE),
+			sizeof(combokey));
 	bytestring::zero(sesskey,sizeof(sesskey));
 
 	// AUTH_PASSWORD = aes-128-cbc(combo key, 16 bytes of salt || the

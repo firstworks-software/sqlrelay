@@ -222,8 +222,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   config.mk when present, as an optional capability separate
   from the main oracle probe
 - added an O3LOGON authentication verifier to the oracle protocol and
-  oracle userlist/connectstrings auth modules, selected with
-  verifiertype="9i", so a pre-10g OCI7 client can log in at all.
+  oracle userlist/connectstrings auth modules, so a pre-10g OCI7
+  client can log in at all.
   O5LOGON postdates OCI7 entirely, and such a client answers an
   O5LOGON challenge by dropping the connection. the crypto - the
   oracle DES password hash, the SHA-1 3DES key derivation, and
@@ -308,6 +308,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - added a sha512 pwdenc module
 - added firebird, tds, and oracle protocol diagrams to the documentation
   images
+- added serverversion and allowedlogonversion attributes to the oracle
+  protocol module
 
 ### Changed
 - requires rudiments 2.3.0 or newer
@@ -772,13 +774,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   usernames case-sensitively, so a username ojdbc clients will use
   must be configured in the case ojdbc sends it, or configured
   twice
-- the oracle protocol module sends a pre-10g OCI7 client under
-  verifiertype="9i" the real 10.2 server's own fdo block in its
-  TTC 01 protocol negotiation response now. part 1 of that block
-  is 36 bytes there rather than the 31 the module sent, which
-  moves the character set ids the client looks for behind it.
-  part 2, the block size, the character set ids and the trailer
-  were already right
+- the oracle protocol module sends every client the 36 byte fdo part 1
+  real oracle servers send now
 - untracked doc/admin/installingpkg.wt, a generated file, and fixed the
   stale distclean path for it
 - renamed a local sockaddr_un variable in sqlrlistener.cpp from sun,
@@ -789,13 +786,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   a uint32_t is undefined behavior that only worked because int
   and uint32_t are passed identically on the hosts that build;
   gcc 2.95 on solaris rejects it under -Werror
-- the oracle protocol module answers a verifiertype="9i" client's data
-  type negotiation from a real 10.2 server's own catalog now,
+- the oracle protocol module answers a data type negotiation at
+  serverversion 10.2 from a real 10.2 server's own catalog now,
   rather than echoing the client's list back. it emits the
   server's types in the server's own order, declines BINARY_FLOAT
   and BINARY_DOUBLE the way a 10.2 server does, and lets the
   client's offer pick only the representation
-- the oracle protocol module hands a verifiertype="9i" client cursor ids
+- the oracle protocol module hands an O3LOGON session cursor ids
   starting at 2 now, rather than 1 - which is where a real 10.2
   server starts, in every capture on file
 - the oracle protocol module answers a legacy oci7 fetch in the encoding
@@ -815,13 +812,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   response's status message now, the way a real server does. an
   oci7 client hung forever on the two bytes that were missing,
   and never went on to its logoff
-- the oracle protocol module leaves the end-to-end sequence number off a
-  verifiertype="9i" client's logoff response, and reads a close
+- the oracle protocol module leaves the end-to-end sequence number off an
+  O3LOGON session's logoff response, and reads a close
   request's cursor id in the encoding the session negotiated
-- documented the oracle protocol module's verifiertype="9i" option and
-  the separate back-end an oci7 listener needs, in the
-  configuration guide and reference; added a matching example
-  config
+- documented the oracle protocol module's OCI7 support and the separate
+  back-end an oci7 listener needs, in the configuration guide and
+  reference; added a matching example config
 - cast the width argument of 6 "%.*s" debugPrintf() calls in the odbc
   api to int - the same undefined behavior #9675 fixed in
   sqlrclient.cpp, with widths passed as uint32_t, size_t or
@@ -1876,8 +1872,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   trailer shape the legacy fetch path already builds; the one
   opaque per-session field in it, with no correlation to anything
   else on the wire, is sent as zero rather than guessed
-- fixed the oracle protocol module sending a pre-10g OCI7 client under
-  verifiertype="9i" a datatype negotiation response the client
+- fixed the oracle protocol module sending a pre-10g OCI7 client a
+  datatype negotiation response the client
   can't parse, hanging or aborting the connection before login is
   ever attempted. the module's TTC 01 capability arrays are now
   the real 10.2 server's own bytes for such a client, and its
@@ -1906,8 +1902,6 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   summary the module answers a successful O3LOGON login with is
   that same object now too, instead of putSummary()'s field
   stream
-- fixed the oracle protocol module to default a verifiertype="9i"
-  listener to charset 31 (WE8ISO8859P1), overridable with charset=
 - fixed the oracle protocol module's o3logon phase-1 challenge and
   login-success summary against a real portable-mode reference -
   a SPARC Solaris OCI7 client's login into an x86 linux 10.2
@@ -1916,7 +1910,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   object is 29 bytes, not the 64 taken from a capture that
   turned out not to be portable-mode at all
 - fixed the oracle protocol module appending an end-to-end sequence
-  number to a verifiertype="9i" connection's tti version
+  number to an O3LOGON session's tti version
   (0x3b) response. the field came after 9i - a real 10.2
   server answering a real OCI7 client ends that response at
   the call status - and the extra byte cost the client the
@@ -1964,7 +1958,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   a 9i client asking for 0x0137 or 0x0138 got 0x0136, the 8.1.7
   version. it answers with the client's own version now, capped
   at 12, the way a real server does
-- fixed the oracle protocol module answering a verifiertype="9i" client's
+- fixed the oracle protocol module answering a pre-10g OCI7 client's
   multi-representation data types with a representation no real
   server picks. such a client offers the integer types 25 through
   33 in three representations - its platform's, then the type's
@@ -1984,13 +1978,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   also read host-independently now. the tti version, open and
   osql7 requests are what this affects
 - fixed the oracle protocol module telling a client two different server
-  versions. a session with verifiertype="9i" already answers as a
-  10.2 server everywhere else, but reported whatever the
-  serverversion attribute said - 11.2 by default - in the tti
-  version response, and answered the ano negotiation with the
-  version the client sent rather than its own. it reports 10.2
-  throughout now, and the ano frame carries the module's own
-  version the way every real server capture on file does
+  versions at serverversion 10.2; it reports 10.2 in the tti version
+  response and the ano frame now
 - fixed the oracle protocol module's login-failure error packet, in both
   the native and portable branches, which had never been
   exercised against a real login failure before and didn't match
@@ -2492,19 +2481,19 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   little-endian, where the byte lands in the low half either
   way (#10033)
 - fixed the oracle protocol module deadlocking a modern client that
-  wire-speaks the legacy oci7 call interface under a
-  verifiertype="9i" listener.  the module answered its
+  wire-speaks the legacy oci7 call interface under an
+  OCI7 listener.  the module answered its
   data-type-negotiation request in the old ub1 field width
-  unconditionally under verifiertype="9i", assuming that meant
-  a genuinely old client; this client's array carries the ub2
+  unconditionally, assuming that meant a genuinely old client;
+  this client's array carries the ub2
   width instead, same as every other modern client, so it broke
   the call and then blocked reading a result that never came.
   the width, and a client's request for the db time zone
   version field, are read off the client's own request now
-  instead of off verifiertype (#10042)
+  instead of off the listener's configuration (#10042)
 - fixed the oracle protocol module hanging a modern client that
   wire-speaks the legacy oci7 call interface - instant client 23
-  among them - logging in under a verifiertype="9i" listener. the
+  among them - logging in to an OCI7 listener. the
   module never read the client's CCAP_LOGON_TYPES capability
   byte, so it always answered with the old 16 byte des session
   key and summary object a genuine 1990s oci7 client expects; a
@@ -2518,11 +2507,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   legacy oci7 clients (#10048) on their first describe call once
   login was fixed. their describe response needs an extra count
   field, the column's own 0-based index, after each column's
-  metadata; a genuine old oci7 client's describe is unaffected
+  metadata, and another zero count after that from serverversion
+  11.2 up; a genuine old oci7 client's describe is unaffected
   (#10051)
 - fixed the oracle protocol module miscomputing the trailing
-  string-blob length for a classic pre-o5logon oci7 login
-  (verifiertype="9i" only). it read the terminal name's length
+  string-blob length for a classic pre-o5logon oci7 login.
+  it read the terminal name's length
   off the wire but discarded it instead of adding it into the
   blob length, so a client with a real controlling terminal -
   ttyname() populates it, not an olog() argument - got its
@@ -2915,10 +2905,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - fixed intercepted begin/commit/rollback/autocommit queries permanently
   disabling column info for the rest of a connection's life on every
   protocol but the native one
-- fixed OCI7 clients corrupting multibyte text fetched or bound through a
-  verifiertype="9i" oracle protocol listener
-- fixed OCI7 clients with a WE8ISO8859P1 NLS_LANG failing to log in to a
-  verifiertype="9i" oracle protocol listener
+- fixed OCI7 clients corrupting multibyte text fetched or bound through
+  the oracle protocol module
+- fixed OCI7 clients with a WE8ISO8859P1 NLS_LANG failing to log in to
+  the oracle protocol module
 - fixed several OCI7 correctness bugs in the oracle protocol module, most
   unreachable by real clients today
 - fixed the oracle protocol module's OCI7 rollback and autocommit replies
@@ -2954,6 +2944,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - fixed a crash loading an instance config with no auths and no
   connections (affected sqlr-pwdenc and sqlrsh)
 - fixed the sha256 pwdenc doc example being mislabeled as sha1
+- fixed the oracle protocol module's login replies not echoing the
+  client's sequence number
+- fixed OCI clients hanging or failing to log in to the oracle protocol
+  module at serverversion 12.1
 
 ### Security
 - fixed an authentication hole in the des password encryption module

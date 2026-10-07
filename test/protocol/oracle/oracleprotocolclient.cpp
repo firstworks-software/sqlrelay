@@ -27,8 +27,10 @@
 //
 // The o5logon math is the client side of src/auths/oracle_userlist.cpp's
 // passwordHash(), o5logonChallenge(), o5logonComboKey() and o5logonVerify().
-// Only the 11g path is implemented: the oracleprotocol listener pins
-// serverversion="11.2", which defaults verifiertype to VERIFIER_TYPE_11G_2.
+// Only the 11g path is implemented: the client advertises O5LOGON and not
+// O7LOGON, which gets it the 11g verifier at serverversion 11.2 and 12.1 -
+// see sendDataTypeNegotiation().  setLogonTypes() advertises something else,
+// for a test that only asks for a challenge - see requestChallenge().
 
 #include <rudiments/inetsocketclient.h>
 #include <rudiments/bytebuffer.h>
@@ -46,6 +48,11 @@ static const unsigned char	ORA_PACKET_ACCEPT=2;
 static const unsigned char	ORA_PACKET_REFUSE=4;
 static const unsigned char	ORA_PACKET_DATA=6;
 static const unsigned char	ORA_PACKET_RESEND=11;
+static const unsigned char	ORA_PACKET_MARKER=12;
+
+// marker types - the MARKER_TYPE_* defines in src/protocols/oracle.cpp
+static const unsigned char	ORA_MARKER_TYPE_BREAK=1;
+static const unsigned char	ORA_MARKER_TYPE_RESET=2;
 
 // two task common codes - the TTC_* defines in src/protocols/oracle.cpp
 static const unsigned char	ORA_TTC_PROTOCOL_NEGOTIATION=0x01;
@@ -107,6 +114,12 @@ static const uint16_t	ORA_ANO_FLAGS_NO_SERVICES=0x0808;
 // AL32UTF8, which is what the listener answers with whatever the client
 // asks for - see the charset parameter in src/protocols/oracle.cpp
 static const uint16_t	ORA_CHARSET_AL32UTF8=873;
+
+// CCAP_LOGON_TYPES and its bits in src/protocols/oracle.cpp
+static const size_t		ORA_CCAP_LOGON_TYPES=4;
+static const unsigned char	ORA_CCAP_O5LOGON_NP=0x02;
+static const unsigned char	ORA_CCAP_O5LOGON=0x08;
+static const unsigned char	ORA_CCAP_O7LOGON=0x20;
 
 // CCAP_FIELD_VERSION and CCAP_FIELD_VERSION_11_2 in src/protocols/oracle.cpp
 static const size_t		ORA_CCAP_FIELD_VERSION=7;
@@ -351,6 +364,25 @@ class oracleprotocolclient {
 		void	setNativeEncoding(bool nativeencoding);
 		bool	getNativeEncoding();
 
+		// what this client's CCAP_LOGON_TYPES byte advertises.
+		// O5LOGON alone by default, which is the one byte login()
+		// can answer the challenge for.  the module picks each
+		// client's verifier from this byte in phase one of the
+		// login - see chooseVerifierType() in
+		// src/protocols/oracle.cpp - so a test that advertises
+		// anything else asks for a challenge with requestChallenge()
+		// and stops there.  it has to be set before connect(), since
+		// the byte goes out in the data type negotiation
+		void	setLogonTypes(unsigned char logontypes);
+
+		// the sequence numbers phase one and phase two of a login
+		// carry, 2 for both by default.  the module echoes each one
+		// as the call number in the trailer of its answer - see
+		// putAuthTrailer() and putO3LogonSummary() in
+		// src/protocols/oracle.cpp
+		void	setAuthSequenceNumbers(unsigned char phaseone,
+						unsigned char phasetwo);
+
 		// what this client's connect packet asks the session's
 		// packets to be bounded by.  8192 by default, which
 		// recvConnectRequest() in src/protocols/oracle.cpp negotiates
@@ -376,6 +408,24 @@ class oracleprotocolclient {
 
 		// the two phase o5logon exchange, 11g verifier
 		bool	login(const char *user, const char *password);
+
+		// the two halves of login().  requestChallenge() sends phase
+		// one and reads the answer: the challenge, or for a refused
+		// login a break marker, a reset marker and then the error.
+		// it answers the markers itself, and gotBreak() says whether
+		// they came.  answerChallenge() sends phase two, built from
+		// the challenge still in the response, and reads the answer
+		bool	requestChallenge(const char *user);
+		bool	answerChallenge(const char *user, const char *password);
+		bool	gotBreak();
+
+		// the AUTH_ pairs in the answer to either phase, and the
+		// trailer behind them.  "flags" may be NULL
+		bool	getAuthFieldCount(uint32_t *count);
+		bool	getAuthField(const char *name,
+					char **value, uint32_t *flags);
+		bool	getAuthTrailer(const unsigned char **trailer,
+							size_t *size);
 
 		// TTI_DISCONNECT, then close the socket
 		void	disconnect();
@@ -624,19 +674,27 @@ class oracleprotocolclient {
 		bool	parseTtiResponse();
 		bool	sendDataTypeNegotiation();
 		void	sendAuthRequest(unsigned char ttifunction,
+					unsigned char seqnumber,
 					const char *user,
 					uint32_t authmode,
 					uint32_t fieldcount);
 		void	appendAuthField(const char *name,
 					const char *value,
 					uint32_t flags);
-		bool	findAuthField(const char *name, char **value);
+		bool	walkAuthFields(const char *name,
+					char **value, uint32_t *flags,
+					uint32_t *count);
+		bool	sendMarker(unsigned char markertype);
 
 		inetsocketclient	sock;
 		bool			connected;
 		bool			largeheader;
 		bool			bigchunkclr;
 		bool			nativeencoding;
+		unsigned char		logontypes;
+		unsigned char		authseqphaseone;
+		unsigned char		authseqphasetwo;
+		bool			gotbreak;
 
 		// what the connect packet asks for, and what the accept
 		// answered with
@@ -719,6 +777,10 @@ oracleprotocolclient::oracleprotocolclient() {
 	largeheader=false;
 	bigchunkclr=false;
 	nativeencoding=false;
+	logontypes=ORA_CCAP_O5LOGON;
+	authseqphaseone=2;
+	authseqphasetwo=2;
+	gotbreak=false;
 	bigchunkclrframingset=false;
 	bigchunkclrframing=false;
 	offeredsdu=ORA_DEFAULT_SDU;
@@ -775,6 +837,16 @@ void oracleprotocolclient::setNativeEncoding(bool nativeencoding) {
 
 bool oracleprotocolclient::getNativeEncoding() {
 	return nativeencoding;
+}
+
+void oracleprotocolclient::setLogonTypes(unsigned char logontypes) {
+	this->logontypes=logontypes;
+}
+
+void oracleprotocolclient::setAuthSequenceNumbers(unsigned char phaseone,
+						unsigned char phasetwo) {
+	authseqphaseone=phaseone;
+	authseqphasetwo=phasetwo;
 }
 
 void oracleprotocolclient::setSdu(uint16_t sdu) {
@@ -1516,8 +1588,8 @@ bool oracleprotocolclient::parseTtiResponse() {
 //
 //	- the compile capability array's CCAP_FIELD_VERSION byte, which
 //	  recvDataTypeRequest() negotiates down to the lower of the two
-//	  ends' values.  the listener is pinned at 11.2, so offering 11.2
-//	  lands on 11.2 either way
+//	  ends' values.  offering 11.2 lands on 11.2 against a listener at
+//	  11.2 or at 12.1
 //	- exactly one representation per data type.  OCI is the only client
 //	  that offers two, and recvDataTypeRequest() sets ociclient from
 //	  that.  offering one keeps ociclient false, which puts
@@ -1542,10 +1614,15 @@ bool oracleprotocolclient::sendDataTypeNegotiation() {
 	// 9i both send alone
 	appendByte(0x02);
 
-	// the compile capabilities.  everything but the field version and
-	// CCAP_TTC3 is zero: recvDataTypeRequest() reads no other index out
-	// of a client's array, and a zero at CCAP_TTC3 leaves the time zone
-	// version out of the request, which keeps this simple.
+	// the compile capabilities.  everything but the logon types, the
+	// field version and CCAP_TTC3 is zero, and a zero at CCAP_TTC3 leaves
+	// the time zone version out of the request, which keeps this simple.
+	//
+	// the logon types are O5LOGON alone unless setLogonTypes() said
+	// otherwise, an 11g-only client's: no O3LOGON login at 11.2 or 12.1,
+	// and no O7LOGON to get the 12c verifier at 12.1, so the 11g verifier
+	// at both.  10.2 runs O3LOGON for every client, which this one
+	// doesn't implement.
 	//
 	// CCAP_TTC3_BIG_CHUNK_CLR is the one bit a test can turn on there.
 	// clear - the default, and what every test here sent before the bit
@@ -1557,6 +1634,7 @@ bool oracleprotocolclient::sendDataTypeNegotiation() {
 	// stays out of the request either way
 	unsigned char	compilecaps[ORA_CCAP_SIZE];
 	bytestring::zero(compilecaps,sizeof(compilecaps));
+	compilecaps[ORA_CCAP_LOGON_TYPES]=logontypes;
 	compilecaps[ORA_CCAP_FIELD_VERSION]=fieldversion;
 	if (bigchunkclr) {
 		compilecaps[ORA_CCAP_TTC3]|=ORA_CCAP_TTC3_BIG_CHUNK_CLR;
@@ -1692,6 +1770,7 @@ void oracleprotocolclient::appendAuthField(const char *name,
 // setNativeEncoding() and appendAuthPointer().  the field count is the one
 // count here that isn't 4 bytes wide in the native encoding
 void oracleprotocolclient::sendAuthRequest(unsigned char ttifunction,
+						unsigned char seqnumber,
 						const char *user,
 						uint32_t authmode,
 						uint32_t fieldcount) {
@@ -1699,7 +1778,7 @@ void oracleprotocolclient::sendAuthRequest(unsigned char ttifunction,
 	size_t	usersize=charstring::getLength(user);
 
 	beginTtiCall(ttifunction);
-	appendByte(2);				// sequence number
+	appendByte(seqnumber);
 	appendAuthPointer();
 	appendAuthCount((uint32_t)usersize,4);
 	appendAuthCount(authmode,4);
@@ -1710,10 +1789,25 @@ void oracleprotocolclient::sendAuthRequest(unsigned char ttifunction,
 	appendLenString(user,usersize);
 }
 
-// pull one AUTH_ pair's value out of the response the listener just sent
-bool oracleprotocolclient::findAuthField(const char *name, char **value) {
+// walk every AUTH_ pair in the answer the listener just sent, keeping the
+// first one called "name", if any, and leave the response positioned at the
+// trailer behind the last one.  "name", "value", "flags" and "count" may each
+// be NULL.  only an answer that went through has pairs - an error doesn't
+bool oracleprotocolclient::walkAuthFields(const char *name,
+						char **value,
+						uint32_t *flags,
+						uint32_t *count) {
 
-	*value=NULL;
+	bool	found=false;
+	if (value) {
+		*value=NULL;
+	}
+	if (flags) {
+		*flags=0;
+	}
+	if (count) {
+		*count=0;
+	}
 
 	rewindResponse();
 
@@ -1722,7 +1816,8 @@ bool oracleprotocolclient::findAuthField(const char *name, char **value) {
 	unsigned char	ttccode=0;
 	uint32_t	paircount=0;
 	if (!readByte(&dataflagshigh) || !readByte(&dataflagslow) ||
-			!readByte(&ttccode) || !readAuthCount(&paircount,2)) {
+			!readByte(&ttccode) || ttccode!=ORA_TTC_OK ||
+			!readAuthCount(&paircount,2)) {
 		return false;
 	}
 
@@ -1732,7 +1827,7 @@ bool oracleprotocolclient::findAuthField(const char *name, char **value) {
 		char		*fieldname=NULL;
 		uint32_t	valuesize=0;
 		char		*fieldvalue=NULL;
-		uint32_t	flags=0;
+		uint32_t	fieldflags=0;
 
 		if (!readAuthCount(&namesize,4) || !readLenString(&fieldname)) {
 			return false;
@@ -1745,23 +1840,113 @@ bool oracleprotocolclient::findAuthField(const char *name, char **value) {
 			delete[] fieldname;
 			return false;
 		}
-		if (!readAuthCount(&flags,4)) {
+		if (!readAuthCount(&fieldflags,4)) {
 			delete[] fieldname;
 			delete[] fieldvalue;
 			return false;
 		}
 
-		if (!charstring::compare(fieldname,name)) {
-			delete[] fieldname;
-			*value=fieldvalue;
-			return true;
+		if (!found && name && !charstring::compare(fieldname,name)) {
+			found=true;
+			if (value) {
+				*value=fieldvalue;
+				fieldvalue=NULL;
+			}
+			if (flags) {
+				*flags=fieldflags;
+			}
 		}
 
 		delete[] fieldname;
 		delete[] fieldvalue;
 	}
 
-	return false;
+	if (count) {
+		*count=paircount;
+	}
+	return (found || !name);
+}
+
+bool oracleprotocolclient::getAuthFieldCount(uint32_t *count) {
+	return walkAuthFields(NULL,NULL,NULL,count);
+}
+
+bool oracleprotocolclient::getAuthField(const char *name,
+						char **value,
+						uint32_t *flags) {
+	return walkAuthFields(name,value,flags,NULL);
+}
+
+bool oracleprotocolclient::getAuthTrailer(const unsigned char **trailer,
+							size_t *size) {
+	if (!walkAuthFields(NULL,NULL,NULL,NULL)) {
+		return false;
+	}
+	*trailer=resppacket+respposition;
+	*size=respsize-respposition;
+	return true;
+}
+
+bool oracleprotocolclient::login(const char *user, const char *password) {
+
+	if (!requestChallenge(user)) {
+		return false;
+	}
+	if (getResponseTtcCode()!=ORA_TTC_OK) {
+		setError("the listener refused the login at phase one");
+		return false;
+	}
+	return answerChallenge(user,password);
+}
+
+bool oracleprotocolclient::requestChallenge(const char *user) {
+
+	gotbreak=false;
+
+	// phase one names the user and asks for a challenge.  the listener
+	// reads no field out of it, so it carries none
+	sendAuthRequest(ORA_TTI_LOGON_PRESENT_USER_REQ_AUTH_SESSKEY,
+					authseqphaseone,user,1,0);
+	if (!sendPacket() || !recvPacket()) {
+		return false;
+	}
+	if (resppackettype!=ORA_PACKET_MARKER) {
+		return true;
+	}
+
+	// a refused login: a break marker and a reset marker, which this
+	// client answers with a reset marker of its own, and then the error.
+	// see sendAuthenticationBreak() in src/protocols/oracle.cpp
+	if (respsize!=3 || resppacket[2]!=ORA_MARKER_TYPE_BREAK ||
+			!recvPacket() ||
+			resppackettype!=ORA_PACKET_MARKER ||
+			respsize!=3 || resppacket[2]!=ORA_MARKER_TYPE_RESET) {
+		setError("bad marker exchange at phase one");
+		return false;
+	}
+	gotbreak=true;
+	if (!sendMarker(ORA_MARKER_TYPE_RESET) || !recvPacket()) {
+		return false;
+	}
+	if (resppackettype!=ORA_PACKET_DATA) {
+		setError("no error behind the markers at phase one");
+		return false;
+	}
+	return true;
+}
+
+bool oracleprotocolclient::gotBreak() {
+	return gotbreak;
+}
+
+// one data byte follows, a reserved byte, then the marker type - see
+// sqlrprotocol_oracle::sendMarker()
+bool oracleprotocolclient::sendMarker(unsigned char markertype) {
+	beginPacket(ORA_PACKET_MARKER);
+	appendByte(1);
+	appendByte(0);
+	appendByte(markertype);
+	return sendPacket();
 }
 
 // the o5logon exchange, client side.  the math mirrors
@@ -1779,24 +1964,13 @@ bool oracleprotocolclient::findAuthField(const char *name, char **value) {
 //	combo key	= md5(b[0..15]) || md5(b[16..23])[0..7]
 //	AUTH_PASSWORD	= aes192-cbc-encrypt(combo key,
 //					16 random bytes || password || pad)
-bool oracleprotocolclient::login(const char *user, const char *password) {
-
-	// phase one names the user and asks for a challenge.  the listener
-	// reads no field out of it, so it carries none
-	sendAuthRequest(ORA_TTI_LOGON_PRESENT_USER_REQ_AUTH_SESSKEY,
-							user,1,0);
-	if (!sendPacket() || !recvPacket()) {
-		return false;
-	}
-	if (getResponseTtcCode()!=ORA_TTC_OK) {
-		setError("the listener refused the login at phase one");
-		return false;
-	}
+bool oracleprotocolclient::answerChallenge(const char *user,
+						const char *password) {
 
 	char	*vfrdatahex=NULL;
 	char	*sesskeyhex=NULL;
-	if (!findAuthField("AUTH_VFR_DATA",&vfrdatahex) ||
-		!findAuthField("AUTH_SESSKEY",&sesskeyhex)) {
+	if (!getAuthField("AUTH_VFR_DATA",&vfrdatahex,NULL) ||
+		!getAuthField("AUTH_SESSKEY",&sesskeyhex,NULL)) {
 		delete[] vfrdatahex;
 		delete[] sesskeyhex;
 		setError("no challenge in the phase one response");
@@ -1915,7 +2089,7 @@ bool oracleprotocolclient::login(const char *user, const char *password) {
 	// of this and ignores everything else, so those two are all it
 	// carries - a real client sends around twenty
 	sendAuthRequest(ORA_TTI_LOGON_PRESENT_PWD_SEND_AUTH_PASSWORD,
-						user,0x40000101,2);
+				authseqphasetwo,user,0x40000101,2);
 	appendAuthField("AUTH_SESSKEY",sesskey,1);
 	appendAuthField("AUTH_PASSWORD",authpassword,0);
 	delete[] sesskey;

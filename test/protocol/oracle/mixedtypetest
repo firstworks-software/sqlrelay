@@ -12,9 +12,8 @@
 # evidence of a live bug.
 #
 # Starts its own sqlr instance (mixedtypetest.conf), runs all six
-# queries from the ticket against the OCI listener (serverversion=11.2)
-# with ociselect, and against the thin listener (serverversion left at
-# its 12.1 default) with mixedtypetest.py (python-oracledb, thin mode).
+# queries from the ticket against its one listener with ociselect and
+# with mixedtypetest.py (python-oracledb, thin mode).
 # Every run is wrapped in `timeout` regardless - if a future report in
 # this area turns out to be real, a hang here should time out and
 # report rather than hang this whole script.  Tears the instance down
@@ -40,8 +39,7 @@
 
 CONF=./mixedtypetest.conf
 ID=mixedtypetest
-OCIPORT=15340
-THINPORT=15341
+PORT=15340
 SID=ora1
 DBUSER=testuser
 DBPASSWORD=testpassword
@@ -63,7 +61,7 @@ runoci() {
 	echo "--- OCI: $_label ---"
 	echo "query: $_query"
 	timeout $RUNTIMEOUT ./ociselect \
-		"(DESCRIPTION=(ADDRESS=(PROTOCOL=TCP)(HOST=localhost)(PORT=$OCIPORT))(CONNECT_DATA=(SID=$SID)))" \
+		"(DESCRIPTION=(ADDRESS=(PROTOCOL=TCP)(HOST=localhost)(PORT=$PORT))(CONNECT_DATA=(SID=$SID)))" \
 		$DBUSER $DBPASSWORD "$_query"
 	_status=$?
 	if ( test $_status = 124 )
@@ -79,7 +77,7 @@ runthin() {
 	echo "--- thin (python-oracledb): $_label ---"
 	echo "query: $_query"
 	timeout $RUNTIMEOUT ./mixedtypetest.py \
-		localhost $THINPORT $SID $DBUSER $DBPASSWORD "$_query"
+		localhost $PORT $SID $DBUSER $DBPASSWORD "$_query"
 	_status=$?
 	if ( test $_status = 124 )
 	then

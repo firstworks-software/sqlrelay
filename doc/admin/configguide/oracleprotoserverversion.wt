@@ -4,12 +4,12 @@
 
 {{{#!include ../../contentstart.html}}}
 
-[[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents]&nbsp;&nbsp;&nbsp;[[Image(../../images/navprev.png,link=oracleprotologinattempts.html,vertical-align=middle)]] [oracleprotologinattempts.html Oracle Login Attempts] | [[Image(../../images/navtop.png,link=oracleprotocol.html,vertical-align=middle)]] [oracleprotocol.html Oracle Protocol] | [oracleprotoverifiertype.html Oracle Password Verifier Type] [[Image(../../images/navnext.png,link=oracleprotoverifiertype.html,vertical-align=middle)]]
+[[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents]&nbsp;&nbsp;&nbsp;[[Image(../../images/navprev.png,link=oracleprotologinattempts.html,vertical-align=middle)]] [oracleprotologinattempts.html Oracle Login Attempts] | [[Image(../../images/navtop.png,link=oracleprotocol.html,vertical-align=middle)]] [oracleprotocol.html Oracle Protocol] | [oracleprotobigchunks.html Oracle Big Chunks] [[Image(../../images/navnext.png,link=oracleprotobigchunks.html,vertical-align=middle)]]
 
 [=#oracleserverversion]
 = Server Version =
 
-The //serverversion// option sets which Oracle version the Oracle protocol module imitates: 11.2 or 12.1.  It defaults to 12.1, and any other value is the same as leaving it out.  It also sets the default [oracleprotoverifiertype.html Password Verifier Type].  Some clients only support some protocol versions.  To support clients that need different versions, add a listener tag for each //serverversion//.
+The //serverversion// option sets which Oracle version the Oracle protocol module imitates: 10.2, 11.2 or 12.1.  It defaults to 12.1, and any other value is the same as leaving it out.
 
 {{{#!blockquote
 {{{#!code
@@ -17,9 +17,103 @@ The //serverversion// option sets which Oracle version the Oracle protocol modul
 }}}
 }}}
 
+[=#oracleserverversionceiling]
+== Ceiling and Negotiation ==
+
+//serverversion// is a ceiling.  It sets what the module advertises and the newest password verifier it can offer.  Everything below the ceiling is negotiated with each client, as a real Oracle server does it.  One listener can serve old and new clients together.
+
+The ceiling fixes:
+
+* the Oracle version the module reports to clients, including the version banner
+* the capabilities it advertises to clients, including the logon types it supports
+* the newest password verifier it can offer: 12c at 12.1, 11g at 11.2, and only the older O3LOGON exchange at 10.2
+
+Each client negotiates:
+
+* its own password verifier, picked from what the client says it supports, up to the ceiling
+* the protocol version for the session, which is the lower of the client's and the module's
+* the other options the client and the module both support, such as [oracleprotobigchunks.html Big Chunks]
+
+There is no verifier option.  The module picks the verifier for each login attempt.
+
+[=#oracleserverversionverifiers]
+== Verifiers ==
+
+The verifier is how the client and the module prove the password to each other without sending it.  This table shows which one each kind of client gets:
+
+||= Client =||= 10.2 =||= 11.2 =||= 12.1 =||
+||A genuine OCI7 era client (older than Oracle 10g)||O3LOGON, 9i verifier||O3LOGON, 9i verifier||O3LOGON, 9i verifier||
+||An OCI7 interface call from a modern OCI client||O3LOGON, 10g verifier||O3LOGON, 10g verifier||O3LOGON, 10g verifier||
+||A modern OCI, ojdbc or thin driver client||O3LOGON, 10g verifier||O5LOGON, 11g verifier||O5LOGON, 12c verifier||
+||A client that advertises O5LOGON only||O3LOGON, 10g verifier||O5LOGON, 11g verifier||O5LOGON, 11g verifier||
+
+Notes on the table:
+
+* A client older than Oracle 10g doesn't say that it supports O5LOGON, so it gets the 9i verifier.  So does any other client that doesn't say it.
+* A modern OCI client can also use the old OCI7 call interface.  Its login call is a "classic" one, which has no O5LOGON form, so it gets O3LOGON, with the 10g verifier.
+* A modern client gets 12c when the ceiling is 12.1 and the client says it supports 12c.  ojdbc and OCI 23.26 copy the logon types the module advertises, so they ask for 12c at 12.1 and for 11g at 11.2.  A client that doesn't support 12c gets 11g at both.
+* At 10.2 every client gets O3LOGON, because Oracle 10.2 has no O5LOGON.
+* The logon types the module advertises follow the ceiling: O7LOGON, the 12c bit, is in the list only at 12.1.
+
+O3LOGON is the older exchange.  See [#oracleallowedlogonversion Allowed Logon Version] if you want to refuse it.
+
+[=#oracleserverversionclients]
+== Which Clients Work ==
+
+Which clients work at which ceiling:
+
+||= Client =||= 10.2 =||= 11.2 =||= 12.1 =||
+||OCI7 interface calls from a modern OCI client||Yes||Yes||Yes||
+||Genuine Oracle 9.2 OCI7 client||Yes||Yes||Yes||
+||Genuine Oracle 9.0.1 OCI7 client||Yes||Not tested||Not tested||
+||OCI 23.26 and ojdbc||Not tested||Yes||Yes||
+||python-oracledb and node-oracledb||No||No||Yes||
+
+* python-oracledb and node-oracledb need 12.1, the default.  At 11.2 and 10.2 their logins hang.
+* OCI 23.26 and ojdbc work at 11.2 and 12.1.
+* Modern clients that use the OCI7 call interface work at any ceiling.
+* Genuine Oracle 9.2 OCI7 clients work at any ceiling.  The Oracle 9i sqlplus logs in at any ceiling too, but currently fails after its first query.
+* Genuine Oracle 9.0.1 OCI7 clients have only been tested at 10.2, so serverversion="10.2" is the known-good setting for them.
+
+To serve clients that need different ceilings, add a listener for each one.  They can share an instance and its back-end database.  Just give each its own port, as shown below for a 10.2 listener beside a default one.
+
+{{{#!blockquote
+{{{#!code
+@parts/sqlrelay-oraclefeserverversion102.conf@
+}}}
+}}}
+
+A 10.2 listener tells the client the database character set is AL32UTF8, like any other.  If the back-end connection's //nls_lang// is a single byte character set, set //charset// to match.  See [oracleprotocharsets.html Character Set Options].
+
+[=#oracleallowedlogonversion]
+== Allowed Logon Version ==
+
+The //allowedlogonversion// option sets the oldest logon protocol the module accepts.  It is the module's version of Oracle's SQLNET.ALLOWED_LOGON_VERSION_SERVER setting, and takes the same values:
+
+||= Value =||= Allows =||= Refuses =||
+||8||every client||nothing||
+||10||10g, 11g and 12c verifiers||the 9i verifier (clients older than Oracle 10g)||
+||11||11g and 12c verifiers||the 9i and 10g verifiers, so all O3LOGON clients||
+||12||11g and 12c verifiers||the same as 11||
+||12a||the 12c verifier||every other verifier||
+
+8 is the default, and so are 9 and any other value.  Oracle's 12 also requires some client features that the module doesn't check, so here it is the same as 11.  A client below the floor is refused with ORA-28040, "No matching authentication protocol".  A refused attempt counts toward [oracleprotologinattempts.html Login Attempts].
+
+{{{#!blockquote
+{{{#!code
+@parts/sqlrelay-oraclefeallowedlogonversion.conf@
+}}}
+}}}
+
+Because the module negotiates down, any client can ask for an older verifier.  O3LOGON is built on a DES based password hash, and is the weakest one the module offers.  A client gets it by leaving O5LOGON out of the logon types in its login request, or by using the classic login call, and an attacker who can change that byte on the network can do the same to a client.  So if no client needs O3LOGON, set //allowedlogonversion// to refuse it:
+
+* 11 refuses O3LOGON.  It also refuses genuine pre-10g clients and OCI7 interface calls from modern OCI clients, since both log in with O3LOGON.
+* 12a allows only the 12c verifier.  It needs a ceiling of 12.1.  At 11.2, every login is refused.
+* 11 and 12 at a ceiling of 10.2 refuse every login too, since every login there is O3LOGON.
+
 ----
 
-[[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents]&nbsp;&nbsp;&nbsp;[[Image(../../images/navprev.png,link=oracleprotologinattempts.html,vertical-align=middle)]] [oracleprotologinattempts.html Oracle Login Attempts] | [[Image(../../images/navtop.png,link=oracleprotocol.html,vertical-align=middle)]] [oracleprotocol.html Oracle Protocol] | [oracleprotoverifiertype.html Oracle Password Verifier Type] [[Image(../../images/navnext.png,link=oracleprotoverifiertype.html,vertical-align=middle)]]
+[[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents]&nbsp;&nbsp;&nbsp;[[Image(../../images/navprev.png,link=oracleprotologinattempts.html,vertical-align=middle)]] [oracleprotologinattempts.html Oracle Login Attempts] | [[Image(../../images/navtop.png,link=oracleprotocol.html,vertical-align=middle)]] [oracleprotocol.html Oracle Protocol] | [oracleprotobigchunks.html Oracle Big Chunks] [[Image(../../images/navnext.png,link=oracleprotobigchunks.html,vertical-align=middle)]]
 
 {{{#!include ../../contentend.html}}}
 

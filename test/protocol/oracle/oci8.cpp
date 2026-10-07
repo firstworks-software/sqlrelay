@@ -317,7 +317,8 @@ int main(int argc, char **argv) {
 
 	// This section, run against the sqlrelay11g and sqlrelay12c targets
 	// (see test.sh.in), is the verifier-type coverage.  The listener
-	// behind each of those is pinned to that verifiertype, and the
+	// behind each of those is at serverversion="11.2" and "12.1", which
+	// give this client the 11g and 12c verifiers, and the
 	// correct-password login below succeeding is the proof that that
 	// verifier's O5LOGON crypto path ran end to end.  The server dictates
 	// the type and the client picks its crypto from what is presented, so
@@ -565,11 +566,15 @@ int main(int argc, char **argv) {
 				(text *)versionbuf,sizeof(versionbuf),
 				OCI_HTYPE_SVCCTX),
 		OCI_SUCCESS);
-	// the test configs all set serverversion="11.2", which the protocol
-	// module packs as 0x0b200100 and expands into this exact banner
+	// the sqlrelay11g target's listener sets serverversion="11.2" and the
+	// others run at the default 12.1, which the protocol module packs as
+	// 0x0b200100 and 0x0c100200 and expands into these exact banners
 	assertEquals(versionbuf,
+		(!charstring::compare(sid,"sqlrelay11g"))?
 		"Oracle Database 11g Enterprise Edition "
-		"Release 11.2.0.1.0 - 64bit Production");
+		"Release 11.2.0.1.0 - 64bit Production":
+		"Oracle Database 12c Enterprise Edition "
+		"Release 12.1.0.2.0 - 64bit Production");
 	stdoutput.printf("\n%s\n",versionbuf);
 	stdoutput.printf("\n\n");
 

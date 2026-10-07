@@ -1,17 +1,15 @@
 <?xml version="1.0"?>
 <instances>
 
-	<!-- These instances are pinned at serverversion="11.2".
-	     OCI 23.26, in the portable encoding, reads only the 11.2
-	     summary-object shape.  At the module's 12.1 default, the OCI
-	     client this test uses cannot even log in; it gets ORA-03113.
-	     That choice has a direct cost: no thin-mode Oracle driver
-	     - python-oracledb, node-oracledb - can connect to any of
-	     these instances.  A thin-mode client does not fail cleanly
-	     against serverversion="11.2".  It hangs forever at login
-	     instead, with no error.  See the Server Version section of
-	     doc/admin/configguide/oracleprotocol.wt for the full trade-off across every
-	     client tested against this module. -->
+	<!-- These instances run at the module's default serverversion
+	     (12.1), except for oracleprotocol11g, which is the 11.2
+	     coverage, and one 10.2 listener on oracleprotocol, which only
+	     oracleverifiernegotiation uses.  oracleprotocol12c spells out
+	     12.1.  The verifier each client gets depends on what that
+	     client advertises, so an OCI or thin-mode client gets the 12c
+	     verifier here, the raw-socket test client, which advertises
+	     O5LOGON alone, gets 11g, and a client using the OCI7 calls gets
+	     O3LOGON. -->
 	<!-- HOST=oracle below (used by this instance and by 11g, 12c,
 	     connectstrings, and fetchatonce below) resolves to a real 12.2
 	     backend, which under its default SQLNET.ALLOWED_LOGON_VERSION_SERVER
@@ -33,11 +31,18 @@
 	     this module through oracleprotocoloci7. -->
 	<instance id="oracleprotocol" dbase="oracle" debug="protocols">
 		<listeners>
-			<listener protocol="oracle" port="@ORACLEPROTOCOLPORT1@" serverversion="11.2" sid="ora1"/>
+			<listener protocol="oracle" port="@ORACLEPROTOCOLPORT1@" sid="ora1"/>
 			<!-- #9633 - a listener that never advertises the
 			     big-chunk clr capability bit and always frames
 			     raw bytes, for the go-ora v1 case. -->
-			<listener protocol="oracle" port="@ORACLEPROTOCOLPORT6@" serverversion="11.2" sid="ora1" bigchunks="off"/>
+			<listener protocol="oracle" port="@ORACLEPROTOCOLPORT6@" sid="ora1" bigchunks="off"/>
+			<!-- #10515 - a 10.2 ceiling and two logon version
+			     floors, for oracleverifiernegotiation, which
+			     sends phase one of a login by hand to each of
+			     these and to the 12.1 and 11.2 listeners. -->
+			<listener protocol="oracle" port="@ORACLEPROTOCOLPORT12@" sid="ora1" serverversion="10.2"/>
+			<listener protocol="oracle" port="@ORACLEPROTOCOLPORT13@" sid="ora1" allowedlogonversion="11"/>
+			<listener protocol="oracle" port="@ORACLEPROTOCOLPORT14@" sid="ora1" allowedlogonversion="12a"/>
 		</listeners>
 		<auths>
 			<auth module="oracle_userlist">
@@ -50,13 +55,13 @@
 		</connections>
 	</instance>
 
-	<!-- same as oracleprotocol, but with verifiertype="11g", to
-	     exercise the 11g O5LOGON verifier - a 48-byte session key and
-	     an sha1 verifier.  the tnsnames.ora alias sqlrelay11g points
+	<!-- same as oracleprotocol, but at serverversion="11.2", which gives
+	     every O5LOGON client the 11g verifier - a 48-byte session key
+	     and an sha1 verifier.  the tnsnames.ora alias sqlrelay11g points
 	     here. -->
 	<instance id="oracleprotocol11g" dbase="oracle" debug="protocols">
 		<listeners>
-			<listener protocol="oracle" port="@ORACLEPROTOCOLPORT2@" serverversion="11.2" verifiertype="11g" sid="ora1"/>
+			<listener protocol="oracle" port="@ORACLEPROTOCOLPORT2@" serverversion="11.2" sid="ora1"/>
 		</listeners>
 		<auths>
 			<auth module="oracle_userlist">
@@ -69,13 +74,13 @@
 		</connections>
 	</instance>
 
-	<!-- same as oracleprotocol, but with verifiertype="12c", to
-	     exercise the 12c O5LOGON verifier - a 32-byte session key and
-	     a pbkdf2-hmac-sha512 verifier.  the tnsnames.ora alias
-	     sqlrelay12c points here. -->
+	<!-- same as oracleprotocol, with serverversion="12.1" spelled out,
+	     which gives a client that advertises O7LOGON the 12c verifier -
+	     a 32-byte session key and a pbkdf2-hmac-sha512 verifier.  the
+	     tnsnames.ora alias sqlrelay12c points here. -->
 	<instance id="oracleprotocol12c" dbase="oracle" debug="protocols">
 		<listeners>
-			<listener protocol="oracle" port="@ORACLEPROTOCOLPORT3@" serverversion="11.2" verifiertype="12c" sid="ora1"/>
+			<listener protocol="oracle" port="@ORACLEPROTOCOLPORT3@" serverversion="12.1" sid="ora1"/>
 		</listeners>
 		<auths>
 			<auth module="oracle_userlist">
@@ -95,7 +100,7 @@
 	     tnsnames.ora alias sqlrelayconnectstrings points here. -->
 	<instance id="oracleprotocolconnectstrings" dbase="oracle" debug="protocols">
 		<listeners>
-			<listener protocol="oracle" port="@ORACLEPROTOCOLPORT4@" serverversion="11.2" sid="ora1"/>
+			<listener protocol="oracle" port="@ORACLEPROTOCOLPORT4@" sid="ora1"/>
 		</listeners>
 		<connections>
 			<connection string="oracle_sid=(DESCRIPTION = (ADDRESS = (PROTOCOL = TCP)(HOST = oracle)(PORT = 1521)) (CONNECT_DATA = (SERVER = DEDICATED) (SERVICE_NAME = ora1)));user=testuser;password=testpassword;date_to_text_format=YYYY-MM-DD HH24:MI:SS"/>
@@ -113,7 +118,7 @@
 	     tnsnames.ora alias sqlrelayfetchatonce points here. -->
 	<instance id="oracleprotocolfetchatonce" dbase="oracle" debug="protocols">
 		<listeners>
-			<listener protocol="oracle" port="@ORACLEPROTOCOLPORT5@" serverversion="11.2" sid="ora1"/>
+			<listener protocol="oracle" port="@ORACLEPROTOCOLPORT5@" sid="ora1"/>
 		</listeners>
 		<auths>
 			<auth module="oracle_userlist">
@@ -139,7 +144,7 @@
 	     separate scenario from oci8's existing ascii one. -->
 	<instance id="oracleprotocolutf8" dbase="oracle" debug="protocols">
 		<listeners>
-			<listener protocol="oracle" port="@ORACLEPROTOCOLPORT8@" serverversion="11.2" sid="ora1"/>
+			<listener protocol="oracle" port="@ORACLEPROTOCOLPORT8@" sid="ora1"/>
 		</listeners>
 		<auths>
 			<auth module="oracle_userlist">
@@ -163,7 +168,7 @@
 	     than an oracle connect descriptor. -->
 	<instance id="oracleprotocoldb2" dbase="db2" debug="protocols">
 		<listeners>
-			<listener protocol="oracle" port="@ORACLEPROTOCOLPORT9@" serverversion="11.2" sid="ora1"/>
+			<listener protocol="oracle" port="@ORACLEPROTOCOLPORT9@" sid="ora1"/>
 		</listeners>
 		<auths>
 			<auth module="oracle_userlist">
@@ -176,16 +181,18 @@
 		</connections>
 	</instance>
 
-	<!-- same as oracleprotocol, but with its own backend, since a
-	     client old enough to speak OCI7 (#9651, #9653) is also too old to
-	     authenticate to the same modern backend the other instances above
-	     use - see #9654.  the listener also uses verifiertype="9i" (#9658)
-	     rather than the default, since an OCI7 client speaks O3LOGON, not
-	     O5LOGON, on the client-facing side too.  the tnsnames.ora alias
-	     sqlrelayoci7 points here. -->
+	<!-- same as oracleprotocol, for OCI7 clients (#9651, #9653), but
+	     with its own backend, a real 10.2 server, since sqlr-connection
+	     built against an OCI7-era client (redhat9x86's build) can't
+	     log in to the modern backend the other instances above use -
+	     see #9654.  the listener runs at the default serverversion like
+	     the others, which gives an OCI7 client O3LOGON, the only login
+	     it speaks, and uses charset="31" to match that backend's
+	     WE8ISO8859P1.  the tnsnames.ora alias sqlrelayoci7 points
+	     here. -->
 	<instance id="oracleprotocoloci7" dbase="oracle" debug="protocols">
 		<listeners>
-			<listener protocol="oracle" port="@ORACLEPROTOCOLPORT7@" serverversion="11.2" verifiertype="9i" sid="ora1"/>
+			<listener protocol="oracle" port="@ORACLEPROTOCOLPORT7@" sid="ora1" charset="31"/>
 		</listeners>
 		<auths>
 			<auth module="oracle_userlist">
@@ -204,22 +211,20 @@
 
 	<!-- same backend as oracleprotocolutf8 (nls_lang=AMERICAN_AMERICA.AL32UTF8,
 	     so the backend connection's client character set is genuinely
-	     multibyte), but with verifiertype="9i" (see oracleprotocoloci7
-	     above), for an OCI7 client to exercise #10265's fix on the legacy
-	     putLobField() path rather than the query3 sendLobReadResponse()
+	     multibyte), for an OCI7 client to exercise #10265's fix on the
+	     legacy putLobField() path rather than the query3 sendLobReadResponse()
 	     path oracleutf8clob.cpp already covers.  unlike oracleprotocoloci7,
 	     this reuses the same modern backend oracleprotocolutf8 does rather
 	     than 10.0.2.3 - oracleprotocoloci7's separate old backend is only
 	     needed when sqlr-connection itself is built against an OCI7-era
 	     client (redhat9x86's build; #9654), which can't O5LOGON to the
 	     modern backend; a host new enough to run this test suite generally
-	     has no such restriction.  charset="873" overrides a 9i listener's
-	     WE8ISO8859P1 default to match nls_lang, or an OCI7 client
-	     converting to its own NLS_LANG re-encodes the UTF-8 bytes as if
-	     they were WE8ISO8859P1 (#10273). -->
+	     has no such restriction.  charset="873", the default, matches
+	     nls_lang, or an OCI7 client converting to its own NLS_LANG would
+	     re-encode the UTF-8 bytes as if they were WE8ISO8859P1 (#10273). -->
 	<instance id="oracleprotocoloci7utf8" dbase="oracle" debug="protocols">
 		<listeners>
-			<listener protocol="oracle" port="@ORACLEPROTOCOLPORT10@" serverversion="11.2" verifiertype="9i" sid="ora1" charset="873"/>
+			<listener protocol="oracle" port="@ORACLEPROTOCOLPORT10@" sid="ora1" charset="873"/>
 		</listeners>
 		<auths>
 			<auth module="oracle_userlist">
@@ -233,16 +238,17 @@
 	</instance>
 
 	<!-- same backend as oracleprotocoldb2 (a genuinely non-oracle backend),
-	     with verifiertype="9i" (see oracleprotocoloci7 above), meant for an
-	     OCI7 client to exercise #10267's fix on the legacy putRow()/
-	     putOci7DescribeColumn() path rather than the query3 putRowData()
-	     path oracleinlinelob.cpp already covers - see oracleprotocoloci7utf8
-	     just above for why this would reuse oracleprotocoldb2's backend
-	     rather than oracleprotocoloci7's own separate one.
+	     with charset="31" (see oracleprotocoloci7 above), meant for an
+	     OCI7 client to exercise #10267's fix on the legacy
+	     putRow()/putOci7DescribeColumn() path rather than the query3
+	     putRowData() path oracleinlinelob.cpp already covers - see
+	     oracleprotocoloci7utf8 just above for why this would reuse
+	     oracleprotocoldb2's backend rather than oracleprotocoloci7's own
+	     separate one.
 	     test/protocol/oracle/oci7inlinelob.cpp runs against it (#10272). -->
 	<instance id="oracleprotocoloci7db2" dbase="db2" debug="protocols">
 		<listeners>
-			<listener protocol="oracle" port="@ORACLEPROTOCOLPORT11@" serverversion="11.2" verifiertype="9i" sid="ora1"/>
+			<listener protocol="oracle" port="@ORACLEPROTOCOLPORT11@" sid="ora1" charset="31"/>
 		</listeners>
 		<auths>
 			<auth module="oracle_userlist">

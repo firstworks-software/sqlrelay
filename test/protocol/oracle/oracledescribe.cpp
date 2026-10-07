@@ -35,11 +35,10 @@
 //	  same three columns, has to answer with what that model builds
 //
 // The listener's charset is the one field the two steps don't share.  A
-// real 10.2 server answered these captures as charset 31, which is what a
-// verifiertype="9i" listener answers with too, but the oracleprotocol
-// instance this test logs into is on the module's AL32UTF8 default - so the
-// charset is the model's parameter, and only its value differs between the
-// capture and the live answer.
+// real 10.2 server answered these captures as charset 31, but the
+// oracleprotocol instance this test logs into is on the module's AL32UTF8
+// default - so the charset is the model's parameter, and only its value
+// differs between the capture and the live answer.
 //
 // The ORA-01007 path gets the same treatment against the -outofrange
 // captures, where the only fields that can't match are the ones that are
@@ -49,8 +48,8 @@
 static const unsigned char	ORA_TTC_STATUS=0x09;
 
 // the module's default charset, and the one a real 10.2 server sent - see
-// the charset parameter in src/protocols/oracle.cpp, which answers 31 for a
-// verifiertype="9i" listener and AL32UTF8 for every other one
+// the charset parameter in src/protocols/oracle.cpp, which defaults to
+// AL32UTF8
 static const uint32_t	ORA_CHARSET_CAPTURE=31;
 static const uint32_t	ORA_CHARSET_DEFAULT=873;
 

@@ -680,9 +680,9 @@ static bool readFetchRows(oracleprotocolclient *client,
 // call status, the rows processed, and then the number.
 //
 // there is an end to end sequence number between the first two, but only for
-// an o5logonclient, and no session here is one: that flag takes a listener on
-// verifiertype="9i" (see recvDataTypeRequest()), where this test's listener
-// runs on the 11g verifier serverversion="11.2" defaults to
+// a session on the 10g/DES verifier, an o3logon login by a client that
+// advertises o5logon (see chooseVerifierType()), and no session here is one:
+// this test's client logs in with o5logon, on the 11g verifier
 static bool readSummaryOraNumber(oracleprotocolclient *client,
 						uint32_t *oranum) {
 

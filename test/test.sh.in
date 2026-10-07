@@ -196,9 +196,8 @@ stop_instances() {
 		# the oracleprotocol test also has 11g and 12c
 		# verifier-type instances, a connectstrings-default-auth
 		# instance, a fetchatonce=1 instance, a db2-backed instance,
-		# an oci7 (o3logon/9i-verifier) instance with its own
-		# older backend, and oci7-verifier siblings of the utf8 and
-		# db2 instances
+		# an oci7 (o3logon) instance with its own older backend,
+		# and oci7 siblings of the utf8 and db2 instances
 		if ( test "$_instance" = "oracleprotocol" )
 		then
 			$SQLRBINDIR/sqlr-stop $PATHOPTS -config $CONFDIR/${_instance}.conf -id oracleprotocol11g
@@ -403,9 +402,9 @@ start_instance() {
 	fi
 
 	# the oracleprotocol test needs two more instances, one per o5logon
-	# verifier type, since the verifier type is chosen at listener
-	# configuration time and can't be varied per connection, plus one
-	# more with no <auths> block, to cover the default oracle_connectstrings
+	# verifier type, at serverversion="11.2" and "12.1", since the
+	# verifier a client gets is capped by its listener's serverversion,
+	# plus one more with no <auths> block, to cover the default oracle_connectstrings
 	# auth path (#9309), plus one more with fetchatonce=1 on the
 	# connection string, to cover a backend error landing on a row past
 	# the first fetch (#9601), plus one more with
@@ -414,11 +413,11 @@ start_instance() {
 	# more backed by db2 rather than oracle, to cover the oracle-wire-
 	# protocol lob-column path against a non-oracle backend (#10267;
 	# skipped on a host without the db2 connection module built), plus
-	# one more with verifiertype="9i" and its own older backend, to cover
-	# an OCI7 (O3LOGON) client (#9654, #9658), plus oci7-verifier
-	# siblings of the utf8 and db2 instances above, so an OCI7 client can
-	# exercise #10265's and #10267's legacy-fetch-path fixes too (#10268;
-	# the db2 one skipped the same way oracleprotocoldb2 itself is)
+	# one more with its own older backend, to cover an OCI7 (O3LOGON)
+	# client (#9654, #9658), plus OCI7 siblings of the utf8 and db2
+	# instances above, so an OCI7 client can exercise #10265's and
+	# #10267's legacy-fetch-path fixes too (#10268; the db2 one skipped
+	# the same way oracleprotocoldb2 itself is)
 	if ( test "$instance" = "oracleprotocol" )
 	then
 		$SQLRBINDIR/sqlr-start $PATHOPTS -config $CONFDIR/${instance}.conf -id oracleprotocol11g -backtrace $BACKTRACEDIR
@@ -1206,8 +1205,8 @@ run_protocol_test() {
 
 	# oracleprotocol runs the oracle test five times, against the five
 	# instances in its config - the default one (tnsnames alias sqlrelay,
-	# ORACLEPROTOCOLPORT1), the verifiertype="11g" one (sqlrelay11g,
-	# ORACLEPROTOCOLPORT2), the verifiertype="12c" one (sqlrelay12c,
+	# ORACLEPROTOCOLPORT1), the 11g verifier one (sqlrelay11g,
+	# ORACLEPROTOCOLPORT2), the 12c verifier one (sqlrelay12c,
 	# ORACLEPROTOCOLPORT3) - so both o5logon verifier types get covered -
 	# the no-<auths>-block one (sqlrelayconnectstrings,
 	# ORACLEPROTOCOLPORT4), which covers the default oracle_connectstrings
@@ -1453,7 +1452,7 @@ run_protocol_test() {
 	# #10268 - it covers #10265's fix on the legacy putLobField() path an
 	# OCI7 client actually takes, which the OCI8 test above can't reach.
 	# it connects with a literal connect descriptor (ORACLEPROTOCOLPORT10)
-	# to oracleprotocoloci7utf8, an oci7-verifier sibling of the utf8
+	# to oracleprotocoloci7utf8, an OCI7 sibling of the utf8
 	# instance above, reusing that instance's backend rather than
 	# oracleprotocoloci7's separate older one - that older backend is
 	# only needed when sqlr-connection itself is built against an
@@ -1474,8 +1473,22 @@ run_protocol_test() {
 	# oraclereexecuteandfetch, for #10322 - it drives TTI_REEXECUTE_AND_FETCH
 	# (0x4e) directly and checks the row header, rows and summary it
 	# answers with against what a real 12.2 server sends (see
-	# samples/10314-dev-pythonoracledb-thin-main-realserver.out)
-	# all twenty-eight runs have to succeed for the instance to pass
+	# samples/10314-dev-pythonoracledb-thin-main-realserver.out).  then
+	# oracleverifiernegotiation, twice, once per wire encoding, for
+	# #10515 - it sends phase one of a login by hand, advertising logon
+	# types 0x05, 0x08 and 0x2a in turn, to listeners at serverversion
+	# 12.1 (ORACLEPROTOCOLPORT1), 11.2 (ORACLEPROTOCOLPORT2) and 10.2
+	# (ORACLEPROTOCOLPORT12), and to two 12.1 listeners with an
+	# allowedlogonversion floor of 11 (ORACLEPROTOCOLPORT13) and 12a
+	# (ORACLEPROTOCOLPORT14).  it checks what each listener advertises,
+	# and the verifier, the challenge shape and the trailer call number
+	# each client gets, or the ORA-28040 a below-floor client gets
+	# instead, and completes the login wherever the 11g verifier comes
+	# back.  no real client can send all three bytes, and the genuine 9i
+	# clients that send 0x05 only run on the buildfarm.  it reads the
+	# ports straight from the environment, so it needs neither $server
+	# nor TNS_ADMIN.
+	# all thirty runs have to succeed for the instance to pass
 	if ( test "$instance" = "oracleprotocol" )
 	then
 		./$prog
@@ -1506,6 +1519,10 @@ run_protocol_test() {
 		resulttransactionnative="$?"
 		./oraclereexecuteandfetch
 		resultreexecuteandfetch="$?"
+		./oracleverifiernegotiation
+		resultverifiernegotiation="$?"
+		./oracleverifiernegotiation -native
+		resultverifiernegotiationnative="$?"
 		./oracleclrchunks
 		resultclrchunks="$?"
 		./oracleiterations0
@@ -1558,7 +1575,7 @@ run_protocol_test() {
 			echo "no oci7inlinelob test found (built only with HAVE_OCI7), or no db2 module built"
 			resultoci7inlinelob="0"
 		fi
-		if ( test "$resultdefault" = "0" ) && ( test "$result11g" = "0" ) && ( test "$result12c" = "0" ) && ( test "$resultconnectstrings" = "0" ) && ( test "$resultfetchatonce" = "0" ) && ( test "$resultdescribeonly" = "0" ) && ( test "$resultdescribe" = "0" ) && ( test "$resultdescribenative" = "0" ) && ( test "$resultmidfetchdescribe" = "0" ) && ( test "$resultmidfetchdescribenative" = "0" ) && ( test "$resultlegacyfetch" = "0" ) && ( test "$resulttransaction" = "0" ) && ( test "$resulttransactionnative" = "0" ) && ( test "$resultreexecuteandfetch" = "0" ) && ( test "$resultclrchunks" = "0" ) && ( test "$resultiterations0" = "0" ) && ( test "$resultbigchunksoff" = "0" ) && ( test "$resultrefcursorreuse" = "0" ) && ( test "$resultsplitrequest" = "0" ) && ( test "$resultsplitquery3" = "0" ) && ( test "$resultsplitresponse" = "0" ) && ( test "$resultmaxdescriptors" = "0" ) && ( test "$resultmaxfetchrowcount" = "0" ) && ( test "$resultutf8clob" = "0" ) && ( test "$resultinlinelob" = "0" ) && ( test "$resultoci7" = "0" ) && ( test "$resultoci7utf8clob" = "0" ) && ( test "$resultoci7inlinelob" = "0" )
+		if ( test "$resultdefault" = "0" ) && ( test "$result11g" = "0" ) && ( test "$result12c" = "0" ) && ( test "$resultconnectstrings" = "0" ) && ( test "$resultfetchatonce" = "0" ) && ( test "$resultdescribeonly" = "0" ) && ( test "$resultdescribe" = "0" ) && ( test "$resultdescribenative" = "0" ) && ( test "$resultmidfetchdescribe" = "0" ) && ( test "$resultmidfetchdescribenative" = "0" ) && ( test "$resultlegacyfetch" = "0" ) && ( test "$resulttransaction" = "0" ) && ( test "$resulttransactionnative" = "0" ) && ( test "$resultreexecuteandfetch" = "0" ) && ( test "$resultverifiernegotiation" = "0" ) && ( test "$resultverifiernegotiationnative" = "0" ) && ( test "$resultclrchunks" = "0" ) && ( test "$resultiterations0" = "0" ) && ( test "$resultbigchunksoff" = "0" ) && ( test "$resultrefcursorreuse" = "0" ) && ( test "$resultsplitrequest" = "0" ) && ( test "$resultsplitquery3" = "0" ) && ( test "$resultsplitresponse" = "0" ) && ( test "$resultmaxdescriptors" = "0" ) && ( test "$resultmaxfetchrowcount" = "0" ) && ( test "$resultutf8clob" = "0" ) && ( test "$resultinlinelob" = "0" ) && ( test "$resultoci7" = "0" ) && ( test "$resultoci7utf8clob" = "0" ) && ( test "$resultoci7inlinelob" = "0" )
 		then
 			printf "    % 8s: success\n" "protocol" >> "$RESULTSLOG"
 			cd ../..
@@ -1619,6 +1636,14 @@ run_protocol_test() {
 		if ( test "$resultreexecuteandfetch" != "0" )
 		then
 			printf "    % 8s: failed (re-execute and fetch)\n" "protocol" >> "$RESULTSLOG"
+		fi
+		if ( test "$resultverifiernegotiation" != "0" )
+		then
+			printf "    % 8s: failed (verifier negotiation)\n" "protocol" >> "$RESULTSLOG"
+		fi
+		if ( test "$resultverifiernegotiationnative" != "0" )
+		then
+			printf "    % 8s: failed (verifier negotiation, native encoding)\n" "protocol" >> "$RESULTSLOG"
 		fi
 		if ( test "$resultclrchunks" != "0" )
 		then
@@ -2111,7 +2136,7 @@ STAGEDIR=$TESTDIR/stagedmodules
 # the .conf files get regenerated from these values on every run, since a
 # prior -randomports run may have left one holding a port that no longer
 # matches what this run expects (see regenerate_files() below).
-PORTTOKENS="ORACLEPROTOCOLPORT1 ORACLEPROTOCOLPORT2 ORACLEPROTOCOLPORT3 ORACLEPROTOCOLPORT4 ORACLEPROTOCOLPORT5 ORACLEPROTOCOLPORT6 ORACLEPROTOCOLPORT7 ORACLEPROTOCOLPORT8 ORACLEPROTOCOLPORT9 ORACLEPROTOCOLPORT10 ORACLEPROTOCOLPORT11 FIREBIRDPROTOCOLPORT1 FIREBIRDPROTOCOLPORT2 FIREBIRDPROTOCOLPORT3 MYSQLPROTOCOLPORT1 POSTGRESQLPROTOCOLPORT1 POSTGRESQLPROTOCOLPORT2 TDSPROTOCOLPORT1 TDSSAPPROTOCOLPORT1 TDSSAPPROTOCOLPORT2 TERADATAPROTOCOLPORT1 MYSQLPROTOCOLTLSPORT1 MYSQLPROTOCOLTLSSERVERAUTHPORT1 MYSQLPROTOCOLTLSMUTUALAUTHPORT1 POSTGRESQLPROTOCOLTLSPORT1 POSTGRESQLPROTOCOLTLSSERVERAUTHPORT1 POSTGRESQLPROTOCOLTLSMUTUALAUTHPORT1 TDSPROTOCOLTLSPORT1 TDSPROTOCOLTLSSERVERAUTHPORT1"
+PORTTOKENS="ORACLEPROTOCOLPORT1 ORACLEPROTOCOLPORT2 ORACLEPROTOCOLPORT3 ORACLEPROTOCOLPORT4 ORACLEPROTOCOLPORT5 ORACLEPROTOCOLPORT6 ORACLEPROTOCOLPORT7 ORACLEPROTOCOLPORT8 ORACLEPROTOCOLPORT9 ORACLEPROTOCOLPORT10 ORACLEPROTOCOLPORT11 ORACLEPROTOCOLPORT12 ORACLEPROTOCOLPORT13 ORACLEPROTOCOLPORT14 FIREBIRDPROTOCOLPORT1 FIREBIRDPROTOCOLPORT2 FIREBIRDPROTOCOLPORT3 MYSQLPROTOCOLPORT1 POSTGRESQLPROTOCOLPORT1 POSTGRESQLPROTOCOLPORT2 TDSPROTOCOLPORT1 TDSSAPPROTOCOLPORT1 TDSSAPPROTOCOLPORT2 TERADATAPROTOCOLPORT1 MYSQLPROTOCOLTLSPORT1 MYSQLPROTOCOLTLSSERVERAUTHPORT1 MYSQLPROTOCOLTLSMUTUALAUTHPORT1 POSTGRESQLPROTOCOLTLSPORT1 POSTGRESQLPROTOCOLTLSSERVERAUTHPORT1 POSTGRESQLPROTOCOLTLSMUTUALAUTHPORT1 TDSPROTOCOLTLSPORT1 TDSPROTOCOLTLSSERVERAUTHPORT1"
 ORACLEPROTOCOLPORT1=@ORACLEPROTOCOLPORT1@
 ORACLEPROTOCOLPORT2=@ORACLEPROTOCOLPORT2@
 ORACLEPROTOCOLPORT3=@ORACLEPROTOCOLPORT3@
@@ -2123,6 +2148,9 @@ ORACLEPROTOCOLPORT8=@ORACLEPROTOCOLPORT8@
 ORACLEPROTOCOLPORT9=@ORACLEPROTOCOLPORT9@
 ORACLEPROTOCOLPORT10=@ORACLEPROTOCOLPORT10@
 ORACLEPROTOCOLPORT11=@ORACLEPROTOCOLPORT11@
+ORACLEPROTOCOLPORT12=@ORACLEPROTOCOLPORT12@
+ORACLEPROTOCOLPORT13=@ORACLEPROTOCOLPORT13@
+ORACLEPROTOCOLPORT14=@ORACLEPROTOCOLPORT14@
 FIREBIRDPROTOCOLPORT1=@FIREBIRDPROTOCOLPORT1@
 FIREBIRDPROTOCOLPORT2=@FIREBIRDPROTOCOLPORT2@
 FIREBIRDPROTOCOLPORT3=@FIREBIRDPROTOCOLPORT3@

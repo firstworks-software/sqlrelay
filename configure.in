@@ -1248,12 +1248,17 @@ dnl client character set
 ORACLEPROTOCOLPORT8=`expr $ORACLEPROTOCOLPORTBASE + 7`
 dnl the oracleprotocoldb2 instance, whose backend is db2 rather than oracle
 ORACLEPROTOCOLPORT9=`expr $ORACLEPROTOCOLPORTBASE + 8`
-dnl the oracleprotocoloci7utf8 instance - oracleprotocolutf8's backend, but
-dnl with a verifiertype="9i" listener, for an OCI7 client
+dnl the oracleprotocoloci7utf8 instance - oracleprotocolutf8's backend, for
+dnl an OCI7 client
 ORACLEPROTOCOLPORT10=`expr $ORACLEPROTOCOLPORTBASE + 9`
-dnl the oracleprotocoloci7db2 instance - oracleprotocoldb2's backend, but
-dnl with a verifiertype="9i" listener, for an OCI7 client
+dnl the oracleprotocoloci7db2 instance - oracleprotocoldb2's backend, for an
+dnl OCI7 client
 ORACLEPROTOCOLPORT11=`expr $ORACLEPROTOCOLPORTBASE + 10`
+dnl three more oracleprotocol listeners, for the logon negotiation test: one
+dnl at serverversion 10.2, and two with an allowedlogonversion floor
+ORACLEPROTOCOLPORT12=`expr $ORACLEPROTOCOLPORTBASE + 11`
+ORACLEPROTOCOLPORT13=`expr $ORACLEPROTOCOLPORTBASE + 12`
+ORACLEPROTOCOLPORT14=`expr $ORACLEPROTOCOLPORTBASE + 13`
 AC_SUBST(ORACLEPROTOCOLPORT1)
 AC_SUBST(ORACLEPROTOCOLPORT2)
 AC_SUBST(ORACLEPROTOCOLPORT3)
@@ -1265,6 +1270,9 @@ AC_SUBST(ORACLEPROTOCOLPORT8)
 AC_SUBST(ORACLEPROTOCOLPORT9)
 AC_SUBST(ORACLEPROTOCOLPORT10)
 AC_SUBST(ORACLEPROTOCOLPORT11)
+AC_SUBST(ORACLEPROTOCOLPORT12)
+AC_SUBST(ORACLEPROTOCOLPORT13)
+AC_SUBST(ORACLEPROTOCOLPORT14)
 
 test -z "$FIREBIRDPROTOCOLPORTBASE" && FIREBIRDPROTOCOLPORTBASE=3050
 FIREBIRDPROTOCOLPORT1=$FIREBIRDPROTOCOLPORTBASE

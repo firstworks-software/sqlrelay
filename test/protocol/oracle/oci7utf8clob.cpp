@@ -17,8 +17,8 @@
 // characters, 18000 bytes) unchanged - past the threshold, and small enough
 // to fit in one OCI7 inline-fetch buffer.  It connects through the
 // oracleprotocoloci7utf8 instance (test/sqlrelay.conf.d/
-// oracleprotocol.conf.in), a verifiertype="9i" sibling of oracleprotocolutf8
-// that reuses that instance's own multibyte backend, with a literal connect
+// oracleprotocol.conf.in), an OCI7 sibling of oracleprotocolutf8 that
+// reuses that instance's own multibyte backend, with a literal connect
 // descriptor built from ORACLEPROTOCOLPORT10 rather than a tnsnames.ora
 // alias, so it needs no TNS_ADMIN.
 //
