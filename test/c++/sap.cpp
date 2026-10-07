@@ -1770,6 +1770,43 @@ int main(int argc, char **argv) {
 	stdoutput.printf("\n");
 
 
+	// date input bind with a fraction of a second
+	stdoutput.printf("DATE INPUT BIND WITH A FRACTION: \n");
+	cur->sendQuery("drop table testdatebind");
+	cur->sendQuery(dumptran.getString());
+	assertTrue(cur->sendQuery(
+		"create table testdatebind ("
+		"	id int null, "
+		"	testdatetime datetime null, "
+		"	testbigdatetime bigdatetime null)"));
+	const int32_t	microseconds[]={0,5,12000,123456,500000,999999};
+	for (uint16_t i=0; i<6; i++) {
+		cur->prepareQuery("insert into testdatebind values (@id,@dt,@bdt)");
+		cur->inputBind("id",(int64_t)i);
+		cur->inputBind("dt",2012,2,3,23,5,6,microseconds[i],"",false);
+		cur->inputBind("bdt",2012,2,3,23,5,6,microseconds[i],"",false);
+		assertTrue(cur->executeQuery());
+	}
+	assertTrue(cur->sendQuery(
+		"select datepart(ms,testdatetime), "
+		"	datepart(us,testbigdatetime) "
+		"from testdatebind order by id"));
+	assertEquals(cur->getField(0,(uint32_t)0),"0");
+	assertEquals(cur->getField(0,(uint32_t)1),"0");
+	assertEquals(cur->getField(1,(uint32_t)0),"0");
+	assertEquals(cur->getField(1,(uint32_t)1),"5");
+	assertEquals(cur->getField(2,(uint32_t)0),"13");
+	assertEquals(cur->getField(2,(uint32_t)1),"12000");
+	assertEquals(cur->getField(3,(uint32_t)0),"123");
+	assertEquals(cur->getField(3,(uint32_t)1),"123456");
+	assertEquals(cur->getField(4,(uint32_t)0),"500");
+	assertEquals(cur->getField(4,(uint32_t)1),"500000");
+	assertEquals(cur->getField(5,(uint32_t)0),"996");
+	assertEquals(cur->getField(5,(uint32_t)1),"999999");
+	assertTrue(cur->sendQuery("drop table testdatebind"));
+	stdoutput.printf("\n");
+
+
 	// output bind by name with validation
 	// validateBinds() can't be used for output binds, with sap.  In sap,
 	// when executing a procedure, you don't declare any bind variable

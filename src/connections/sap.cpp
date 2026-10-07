@@ -2892,7 +2892,7 @@ sapcursor::sapcursor(sqlrserverconnection *conn, uint16_t id) :
 	inbindindicator=new CS_SMALLINT[maxbindcount];
 	inbindts=new char *[maxbindcount];
 	for (uint16_t i=0; i<maxbindcount; i++) {
-		inbindts[i]=new char[27];
+		inbindts[i]=new char[64];
 	}
 	outbindtype=new CS_INT[maxbindcount];
 	outbindstrings=new char *[maxbindcount];
@@ -3992,6 +3992,16 @@ static const char *monthname[]={
 	NULL
 };
 
+static void appendPadded(char *buffer, int32_t value, uint8_t digits) {
+	char	number[16];
+	for (uint8_t i=digits; i>0; i--) {
+		number[i-1]='0'+(value%10);
+		value/=10;
+	}
+	number[digits]='\0';
+	charstring::append(buffer,number);
+}
+
 bool sapcursor::inputBind(const char *variable,
 				uint16_t variablesize,
 				int64_t year,
@@ -4006,7 +4016,7 @@ bool sapcursor::inputBind(const char *variable,
 				int16_t *isnull) {
 	checkRePrepare();
 
-	// Sybase requires this format: "Jan 2 2012 4:5:3:000PM"
+	// Sybase requires this format: "Jan 2 2012 4:5:3.000000PM"
 	if (month<1) {
 		month=1;
 	}
@@ -4034,8 +4044,24 @@ bool sapcursor::inputBind(const char *variable,
 	charstring::append(buffer,(int64_t)minute);
 	charstring::append(buffer,":");
 	charstring::append(buffer,(int64_t)second);
-	charstring::append(buffer,":");
-	charstring::append(buffer,(int64_t)microsecond);
+
+	// ASE reads the field after the last colon as milliseconds, and
+	// rejects more than 3 digits, so give it a ".uuuuuu" fraction when
+	// the server has bigdatetime, and ":mmm" milliseconds when it
+	// doesn't.  Either way the column type decides how much is kept.
+	if (microsecond<0) {
+		microsecond=0;
+	}
+	if (microsecond>999999) {
+		microsecond=999999;
+	}
+	if (sapconn->bigdatetime) {
+		charstring::append(buffer,".");
+		appendPadded(buffer,microsecond,6);
+	} else {
+		charstring::append(buffer,":");
+		appendPadded(buffer,microsecond/1000,3);
+	}
 	charstring::append(buffer,ampm);
 	return inputBind(variable,variablesize,
 				buffer,charstring::getLength(buffer),isnull);
