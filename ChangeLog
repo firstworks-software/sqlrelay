@@ -981,8 +981,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   several integer underflow/oversized allocation bugs; fixed
   mysql_info reporting
 - sap connection module: fixed RETURN value/output parameter handling,
-  cursor bind styles, image column corruption, binary bind
-  character set errors, result set buffering/ordering (added
+  cursor bind styles, image column corruption, empty blob binds, binary
+  bind character set errors, result set buffering/ordering (added
   maxbufferedrows), datetime input and output params (including
   fractional seconds; time and bigtime outputs are dated 0001-01-01
   now) and null output params, and a stuck-prepared-cursor bug

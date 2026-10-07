@@ -3940,7 +3940,18 @@ bool sapcursor::inputBindBlob(const char *variable,
 	parameter[paramindex].maxlength=CS_UNUSED;
 	parameter[paramindex].status=CS_INPUTVALUE;
 	parameter[paramindex].locale=NULL;
-	if (!inputBind((CS_VOID *)value,valuesize,
+
+	// ct_param() treats a zero-length binary value as NULL, and ase has
+	// no truly empty binary value, so bind a single \0 for empty data,
+	// the same way encodeBlob() does for a literal
+	static CS_BYTE	emptyblob=0;
+	CS_VOID		*blobvalue=(CS_VOID *)value;
+	CS_INT		blobsize=(CS_INT)valuesize;
+	if (!valuesize && *isnull!=conn->cont->getNullBindValue()) {
+		blobvalue=(CS_VOID *)&emptyblob;
+		blobsize=1;
+	}
+	if (!inputBind(blobvalue,blobsize,
 		(*isnull==conn->cont->getNullBindValue())?-1:0)) {
 		return false;
 	}
@@ -5260,16 +5271,14 @@ void sapcursor::getField(uint32_t col,
 	char		*d=&rowdata[col][row*conn->cont->getMaxFieldSize()];
 	uint64_t	ds=(rowdatasize[col][row]>0)?(rowdatasize[col][row]-1):0;
 
-	// Note: image columns are fetched with the same CS_CHAR_TYPE/
-	// CS_FMT_NULLTERM ct_bind() format as everything else (see
-	// templatecolumn in open()), and ct-lib's own binary-to-char
-	// conversion already hands back the column's real bytes - it does
-	// not hex-encode them.  decodeBlob() (a hex decode, the counterpart
-	// of encodeBlob()'s hex-encode used for embedding blob literals in
-	// query text) must not be run on that data - doing so corrupts the
-	// value by decoding literal text as if it were hex.  binary and
-	// varbinary columns are already handled the same way, with no
-	// decode step, so this just brings image in line with them.
+	// ct-lib hands image columns back as hex text, since they're fetched
+	// as CS_CHAR_TYPE like everything else, so decode them to the real
+	// bytes (unless the user has opted out via decodeblobs=no)
+	if (column[col].datatype==CS_IMAGE_TYPE && sapconn->getDecodeBlobs()) {
+		uint32_t	blobsize=(uint32_t)ds;
+		decodeBlob(&d,&blobsize);
+		ds=(uint64_t)blobsize;
+	}
 
 	// return the field and field size
 	*field=d;

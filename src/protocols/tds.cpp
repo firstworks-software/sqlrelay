@@ -3213,11 +3213,13 @@ sqlrprotocol_tds::sqlrprotocol_tds(sqlrservercontroller *cont,
 	// the ct-lib-based connection modules hand back binary and varbinary
 	// column values as hex text rather than as bytes, because ct-lib's
 	// own binary-to-char conversion renders them that way and neither
-	// module decodes them.  sap does the same with image; freetds
-	// decodes image itself.  Every other connection module returns the
+	// module decodes them.  sap and freetds decode image themselves,
+	// unless decodeblobs=no.  Every other connection module returns the
 	// raw bytes.  Either way the value has to reach the client as bytes.
 	binaryishextext=dbistds;
-	imageishextext=(!charstring::compare(dbtype,"sap"));
+	imageishextext=(dbistds &&
+			charstring::isNo(cont->getConnectStringValue(
+							"decodeblobs")));
 
 	maxquerysize=cont->getConfig()->getMaxQuerySize();
 	maxrequestsize=(uint64_t)maxquerysize*16;
@@ -13541,8 +13543,8 @@ void sqlrprotocol_tds::preTds7Field(uint16_t coltype,
 		case TDS5_TYPE_TEXT:
 		case TDS5_TYPE_IMAGE:
 			{
-			// image comes back as hex text from the sap back end
-			// too, under its own config flag - text doesn't
+			// image comes back as hex text from sap and freetds
+			// when decodeblobs=no - text doesn't
 			bool		hextext=(tds5type==TDS5_TYPE_IMAGE &&
 							imageishextext);
 
