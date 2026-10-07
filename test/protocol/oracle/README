@@ -2433,6 +2433,43 @@ missing bytes silently.
                                       AUTH_SVR_RESPONSE among them
                                       (#10554)
 
+    10555-dev-oci23-native-tstz-realserver-oracle102.oraproxy
+                                     an OCI 23.26 OCI8 client (a scratch
+                                      program defining every datetime
+                                      column as an OCIDateTime) against
+                                      the real 10.2 server, through
+                                      oraproxy with
+                                      ORAPROXY_UNIVERSAL_REPS=1, four
+                                      statements in one session.  [0018]
+                                      answers 18 TIMESTAMP WITH TIME
+                                      ZONE literals with fixed offsets:
+                                      the date and time are UTC, carried
+                                      across day, month, year and
+                                      century ends, the offset hour is
+                                      biased by 20 and the minute by 60
+                                      (-05:00 is 0f 3c, -00:30 is 14
+                                      1e).  [0022] is a TIMESTAMP (local,
+                                      no offset), a TIMESTAMP WITH LOCAL
+                                      TIME ZONE (11 bytes, UTC) and
+                                      precision 3 columns, [0026] named
+                                      regions (UTC time, 0x80 plus a
+                                      region id in the offset bytes,
+                                      US/Eastern is 89 90), and [0029]
+                                      binds the same kinds of value,
+                                      which the client sends in the same
+                                      UTC form and [0030] echoes back.
+                                      A real 12.2 server sends OCI the
+                                      local time with the offset hour
+                                      biased by 84 instead, but only when
+                                      both sides set 0x02 in runtime
+                                      capability 6 (RCAP_TTC).  A real
+                                      10.2 server's runtime caps are 5
+                                      bytes, so it never does.  Thin
+                                      drivers (python-oracledb, ojdbc)
+                                      never set the bit, and a real 12.2
+                                      server sends python-oracledb the
+                                      UTC form too (#10555)
+
 The three real Oracle test servers on this network
 --------------------------------------------------
 

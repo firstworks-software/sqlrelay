@@ -501,6 +501,7 @@
 #define RCAP_COMPAT_81			2
 #define RCAP_DB_TIMEZONE_REQUESTED	0x01
 #define RCAP_TTC_ZERO_COPY		0x01
+#define RCAP_TTC_LOCAL_DATETIMES	0x02
 #define RCAP_TTC_32K			0x04
 #define RCAP_TTC_SESSION_STATE_OPS	0x10
 
@@ -735,11 +736,13 @@
 
 // a timestamp's binary form is a date's 7 bytes and then 4 more for the
 // nanoseconds, and a timestamp with time zone's is those 11 and then 2 more
-// for the offset - its hours biased by 84 and its minutes by 60.  see
+// for the offset - its minutes biased by 60, and its hours biased by 20, plus
+// 64 more when the date and time are local rather than utc.  see
 // putTimestampField()
 #define ORACLE_TIMESTAMP_SIZE		11
 #define ORACLE_TIMESTAMPTZ_SIZE		13
-#define ORACLE_TZ_HOUR_BIAS		84
+#define ORACLE_TZ_HOUR_BIAS		20
+#define ORACLE_TZ_LOCAL_HOUR_BIAS	84
 #define ORACLE_TZ_MINUTE_BIAS		60
 #define ORACLE_TIMESTAMP_FRACTION_DIGITS	9
 #define MAX_TIMESTAMP_DATE_TEXT		32
@@ -2029,6 +2032,14 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_oracle : public sqlrprotocol {
 							const char *end,
 							uint32_t *value);
 
+		// moves a date one day forward or back, by oracle's
+		// calendar - julian before 1582-10-15, gregorian from then on
+		void	shiftDate(int16_t *year,
+						int16_t *month,
+						int16_t *day,
+						bool forward);
+		int16_t	getDaysInMonth(int16_t year, int16_t month);
+
 		// execute...
 		bool	execute(const byte_t *rp);
 		bool	reexecute(const byte_t *rp);
@@ -2283,6 +2294,11 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_oracle : public sqlrprotocol {
 		bool		clientwantsdbtimezone;
 		bool		clientwantstzversion;
 		uint32_t	clienttzversion;
+
+		// whether a timestamp with time zone goes out as local time
+		// rather than utc.  decided per session in
+		// recvDataTypeRequest() and reset by init()
+		bool		localdatetimes;
 
 		// whether the clr long form frames each chunk's length as a
 		// count prefixed ub4 rather than as a raw byte.  decided per
@@ -2988,6 +3004,7 @@ void sqlrprotocol_oracle::init() {
 	clientwantsdbtimezone=false;
 	clientwantstzversion=false;
 	clienttzversion=0;
+	localdatetimes=false;
 	bigchunks=false;
 	ub2datatypes=false;
 	verifiertype=(serverfieldversion==CCAP_FIELD_VERSION_10_2)?
@@ -5522,9 +5539,9 @@ static const byte_t	ttiservercompilecaps[]={
 };
 
 // server runtime capabilities, from the same server
-// (RCAP_TTC is RCAP_TTC_ZERO_COPY plus one unnamed bit; RCAP_TTC_32K and
-// RCAP_TTC_SESSION_STATE_OPS are clear because the module supports neither
-// 32k varchars nor request boundaries)
+// (RCAP_TTC is RCAP_TTC_ZERO_COPY plus RCAP_TTC_LOCAL_DATETIMES - see
+// putTimestampField(); RCAP_TTC_32K and RCAP_TTC_SESSION_STATE_OPS are clear
+// because the module supports neither 32k varchars nor request boundaries)
 static const byte_t	ttiserverruntimecaps[]={
 	0x02, 0x01, 0x00, 0x01, 0x18, 0x00, 0x03
 };
@@ -6177,6 +6194,19 @@ bool sqlrprotocol_oracle::recvDataTypeRequest() {
 				(runtimecaps[RCAP_DB_TIMEZONE]&
 					RCAP_DB_TIMEZONE_REQUESTED)!=0);
 
+	// whether a timestamp with time zone goes out as local time rather
+	// than utc.  both sides have to set RCAP_TTC_LOCAL_DATETIMES, and the
+	// module's bit only went out if putTti6Response() sent the full
+	// runtime caps array.  a version 5 response sends none, and the 10.2
+	// array, like a real 10.2 server's, is too short to reach RCAP_TTC.
+	localdatetimes=(ttiversion>=6 &&
+			serverfieldversion!=CCAP_FIELD_VERSION_10_2 &&
+			(ttiserverruntimecaps[RCAP_TTC]&
+				RCAP_TTC_LOCAL_DATETIMES)!=0 &&
+			runtimecapssize>RCAP_TTC &&
+			(runtimecaps[RCAP_TTC]&
+				RCAP_TTC_LOCAL_DATETIMES)!=0);
+
 	// the clr long form's chunk framing.  left at auto, three things have
 	// to line up: the module has to advertise the bit, the client has to
 	// answer with it, and the version has to be 6.  the version matters
@@ -6303,6 +6333,8 @@ bool sqlrprotocol_oracle::recvDataTypeRequest() {
 		debugWrite("client field version: %d",clientfieldversion);
 		debugWrite("negotiated field version: %d",fieldversion);
 		debugWrite("big chunks: %s",(bigchunks)?"true":"false");
+		debugWrite("local datetimes: %s",
+					(localdatetimes)?"true":"false");
 		debugWrite("ub2 data types: %s",
 					(ub2datatypes)?"true":"false");
 		if (clientwantsdbtimezone) {
@@ -17658,7 +17690,7 @@ bool sqlrprotocol_oracle::putTimestampField(const char *field,
 	// then the fraction, then the half of the day, and then, for a
 	// timestamp with time zone, the offset - and the wire wants the
 	// fixed width binary form behind a length byte.  captured from a
-	// live 12.2 server:
+	// live 12.2 server talking to OCI 23.26:
 	//
 	//	2004-04-04 04:04:04.444444
 	//		-> 0b 78 68 04 04 05 05 05 1a 7d ad 60
@@ -17679,9 +17711,26 @@ bool sqlrprotocol_oracle::putTimestampField(const char *field,
 	// 4 are the nanoseconds most significant byte first and unbiased,
 	// and a timestamp with time zone adds the offset's hours biased by
 	// 84 and its minutes biased by 60.  a negative offset carries one
-	// sign in the text and both of its fields go out negative.  the
-	// date and the time are the local ones, not the utc ones a
-	// timestamp with time zone is stored as
+	// sign in the text and both of its fields go out negative.
+	//
+	// that is the local form, which a server only sends when both sides
+	// set RCAP_TTC_LOCAL_DATETIMES - see recvDataTypeRequest().
+	// otherwise the date and the time are shifted to utc, with carries,
+	// and the offset's hours are biased by 20 instead.  captured from a
+	// live 10.2 server, whose runtime caps are too short to set the bit:
+	//
+	//	2005-05-05 05:05:05.555555 -05:00
+	//		-> 0d 78 69 05 05 0b 06 06 21 1d 18 b8 0f 3c
+	//	2006-06-06 06:06:06.666666 +05:30
+	//		-> 0d 78 6a 06 06 01 25 07 27 bc 84 10 19 5a
+	//	2005-12-31 23:30:00 -08:00
+	//		-> 0d 78 6a 01 01 08 1f 01 00 00 00 00 0c 3c
+	//	1582-10-15 00:30:00 +01:00
+	//		-> 0d 73 b6 0a 04 18 1f 01 00 00 00 00 15 3c
+	//
+	// a live 12.2 server sends the same to a client that leaves the bit
+	// clear.  the seconds and the fraction never change, and, as the last
+	// one shows, a date before 1582-10-15 is a julian one
 	const char	*f=field;
 	const char	*end=field+fieldsize;
 
@@ -17829,6 +17878,14 @@ bool sqlrprotocol_oracle::putTimestampField(const char *field,
 			return false;
 		}
 
+		// oracle's offsets run from -12:00 to +14:00, and one of a day
+		// or more couldn't be shifted to utc with a single carry
+		if (offsethours>23 || offsetminutes>59) {
+			debugWrite("time zone out of range");
+			debugEnd();
+			return false;
+		}
+
 		tzhour=(int16_t)((tznegative)?
 				-(int32_t)offsethours:(int32_t)offsethours);
 		tzminute=(int16_t)((tznegative)?
@@ -17850,6 +17907,21 @@ bool sqlrprotocol_oracle::putTimestampField(const char *field,
 				ORACLE_TIMESTAMP_SIZE;
 	bytestring::zero(out,sizeof(out));
 
+	// shift to utc, unless the session takes local time
+	if (withtimezone && !localdatetimes) {
+		int32_t	utcminutes=(int32_t)(hours*60+minutes)-
+					((int32_t)tzhour*60+(int32_t)tzminute);
+		if (utcminutes<0) {
+			utcminutes+=24*60;
+			shiftDate(&year,&month,&day,false);
+		} else if (utcminutes>=24*60) {
+			utcminutes-=24*60;
+			shiftDate(&year,&month,&day,true);
+		}
+		hours=(uint32_t)(utcminutes/60);
+		minutes=(uint32_t)(utcminutes%60);
+	}
+
 	putOracleDate(out,year,month,day,
 			(int16_t)hours,(int16_t)minutes,(int16_t)seconds);
 
@@ -17861,10 +17933,13 @@ bool sqlrprotocol_oracle::putTimestampField(const char *field,
 	debugWrite("nanoseconds: %d",nanoseconds);
 
 	if (withtimezone) {
-		out[11]=(byte_t)(tzhour+ORACLE_TZ_HOUR_BIAS);
+		out[11]=(byte_t)(tzhour+((localdatetimes)?
+						ORACLE_TZ_LOCAL_HOUR_BIAS:
+						ORACLE_TZ_HOUR_BIAS));
 		out[12]=(byte_t)(tzminute+ORACLE_TZ_MINUTE_BIAS);
-		debugWrite("time zone: %d:%d",
-				(int32_t)tzhour,(int32_t)tzminute);
+		debugWrite("time zone: %d:%d (%s)",
+				(int32_t)tzhour,(int32_t)tzminute,
+				(localdatetimes)?"local":"utc");
 	}
 
 	putLenBytes((const char *)out,outsize);
@@ -17873,6 +17948,63 @@ bool sqlrprotocol_oracle::putTimestampField(const char *field,
 	debugEnd();
 
 	return true;
+}
+
+void sqlrprotocol_oracle::shiftDate(int16_t *year,
+					int16_t *month,
+					int16_t *day,
+					bool forward) {
+
+	// the julian calendar's 1582-10-04 is followed by the gregorian
+	// calendar's 1582-10-15
+	bool	gap=(*year==1582 && *month==10);
+
+	if (forward) {
+		(*day)++;
+		if (gap && *day==5) {
+			*day=15;
+		} else if (*day>getDaysInMonth(*year,*month)) {
+			*day=1;
+			(*month)++;
+			if (*month>12) {
+				*month=1;
+				(*year)++;
+			}
+		}
+	} else {
+		(*day)--;
+		if (gap && *day==14) {
+			*day=4;
+		} else if (*day<1) {
+			(*month)--;
+			if (*month<1) {
+				*month=12;
+				(*year)--;
+			}
+			*day=getDaysInMonth(*year,*month);
+		}
+	}
+}
+
+int16_t sqlrprotocol_oracle::getDaysInMonth(int16_t year, int16_t month) {
+
+	static const int16_t	days[]={
+		31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31
+	};
+
+	if (month<1 || month>12) {
+		return 31;
+	}
+	if (month!=2) {
+		return days[month-1];
+	}
+
+	// february - every 4th year is a leap year in the julian calendar,
+	// and the gregorian one skips centuries not divisible by 400
+	bool	leap=(year<1583)?
+			(year%4==0):
+			(year%4==0 && (year%100!=0 || year%400==0));
+	return (leap)?29:28;
 }
 
 bool sqlrprotocol_oracle::execute(const byte_t *rp) {

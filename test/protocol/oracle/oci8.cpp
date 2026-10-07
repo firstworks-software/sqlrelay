@@ -1670,6 +1670,10 @@ int main(int argc, char **argv) {
 	sb2	tzyear=0;
 	ub1	tzmonth=0;
 	ub1	tzday=0;
+	ub1	tzhour=0;
+	ub1	tzminute=0;
+	ub1	tzsecond=0;
+	ub4	tzfsecond=0;
 	sb1	tzhouroffset=0;
 	sb1	tzminuteoffset=0;
 	assertEquals(
@@ -1677,12 +1681,22 @@ int main(int argc, char **argv) {
 					&tzyear,&tzmonth,&tzday),
 		OCI_SUCCESS);
 	assertEquals(
+		OCIDateTimeGetTime(env,err,typetimestamptz,
+					&tzhour,&tzminute,&tzsecond,&tzfsecond),
+		OCI_SUCCESS);
+	assertEquals(
 		OCIDateTimeGetTimeZoneOffset(env,err,typetimestamptz,
 					&tzhouroffset,&tzminuteoffset),
 		OCI_SUCCESS);
+	// the date and time come back as the wall time in the value's own
+	// time zone, whether the server sent them as local time or as utc
 	assertEquals((int)tzyear,2005);
 	assertEquals((int)tzmonth,5);
 	assertEquals((int)tzday,5);
+	assertEquals((int)tzhour,5);
+	assertEquals((int)tzminute,5);
+	assertEquals((int)tzsecond,5);
+	assertEquals((int)tzfsecond,555555000);
 	assertEquals((int)tzhouroffset,-5);
 	assertEquals((int)tzminuteoffset,0);
 	stdoutput.printf("\n\n");
