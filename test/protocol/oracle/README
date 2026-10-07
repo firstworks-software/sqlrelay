@@ -2386,6 +2386,36 @@ missing bytes silently.
                                       11.2 and 12.1, though not at 10.2
                                       (#10515)
 
+    10541-solaris8sparc-oci7describe-parse-sqlrelay121.oraproxy
+                                     the genuine Oracle 9.0.1 OCI7 client
+                                      on solaris8sparc (SPARC, portable
+                                      encoding), oci7describe
+                                      --describe=parse, against a
+                                      serverversion="12.1" listener with
+                                      an oracle102 backend.  The
+                                      TTIPRO at [0008] is the 12.1 shape
+                                      every client gets - 42-byte compile
+                                      caps, logon types 0x2f, 36-byte fdo
+                                      part 1 - and the client negotiates
+                                      field version 1 and logs in with
+                                      O3LOGON.  Its output matched the
+                                      10.2 listener's (#10541)
+
+    10541-solaris8sparc-sqlplus-select-sqlrelay121.oraproxy
+                                     the same client's 9.0.1 sqlplus,
+                                      "select 1, 'two', sysdate from
+                                      dual", against the same listener.
+                                      It logs in with the tagged 0x76
+                                      O3LOGON call: the challenge at
+                                      [0012] ends in the 29-byte oci7
+                                      summary, and the client's sequence
+                                      numbers run 76 02, 73 03, 3b 04.
+                                      After its first bootstrap fetch it
+                                      sends a break and gets ORA-01013
+                                      twice, then closes, and reports
+                                      ORA-03114 locally (#10538, also at
+                                      10.2) (#10541)
+
 The three real Oracle test servers on this network
 --------------------------------------------------
 

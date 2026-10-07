@@ -64,16 +64,15 @@ Which clients work at which ceiling:
 
 ||= Client =||= 10.2 =||= 11.2 =||= 12.1 =||
 ||OCI7 interface calls from a modern OCI client||Yes||Yes||Yes||
-||Genuine Oracle 9.2 OCI7 client||Yes||Yes||Yes||
-||Genuine Oracle 9.0.1 OCI7 client||Yes||Not tested||Not tested||
-||OCI 23.26 and ojdbc||Not tested||Yes||Yes||
+||Genuine Oracle 9i OCI7 client (9.0.1 and 9.2)||Yes||Yes||Yes||
+||OCI 23.26||No||Yes||Yes||
+||ojdbc||Not tested||Yes||Yes||
 ||python-oracledb and node-oracledb||No||No||Yes||
 
 * python-oracledb and node-oracledb need 12.1, the default.  At 11.2 and 10.2 their logins hang.
-* OCI 23.26 and ojdbc work at 11.2 and 12.1.
+* OCI 23.26 and ojdbc work at 11.2 and 12.1.  At 10.2, OCI 23.26's own (OCI8) login currently fails.
 * Modern clients that use the OCI7 call interface work at any ceiling.
-* Genuine Oracle 9.2 OCI7 clients work at any ceiling.  The Oracle 9i sqlplus logs in at any ceiling too, but currently fails after its first query.
-* Genuine Oracle 9.0.1 OCI7 clients have only been tested at 10.2, so serverversion="10.2" is the known-good setting for them.
+* Genuine Oracle 9i OCI7 clients, 9.0.1 and 9.2, work at any ceiling.  The Oracle 9i sqlplus logs in at any ceiling too, but currently fails after its first query.
 
 To serve clients that need different ceilings, add a listener for each one.  They can share an instance and its back-end database.  Just give each its own port, as shown below for a 10.2 listener beside a default one.
 
