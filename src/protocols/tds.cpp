@@ -2929,6 +2929,14 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_tds : public sqlrprotocol {
 					bool isnull);
 		void	preTds7ReturnValueWrite(const tds5paramfmt *fmt,
 					sqlrserverbindvar *bv);
+		void	preTds7ReturnValuePrepare(const tds5paramfmt *fmt,
+					sqlrserverbindvar *bv,
+					bool pair,
+					tds5paramfmt *retfmt,
+					sqlrserverbindvar *retbv);
+		// whether output parameters go out as a paramfmt/params
+		// pair rather than as returnvalue tokens
+		bool	preTds7OutputParamsAsPair();
 		// the fixed-width type an n-type of the given size stands
 		// for, or the type itself if it has none
 		byte_t	preTds7FixedType(byte_t tds5type, uint32_t size);
@@ -14663,9 +14671,10 @@ bool sqlrprotocol_tds::preTds7ParamFmtWrite(const tds5paramfmt *fmts,
 	// else is derived from the datatype here, so that this and
 	// preTds7ParamsWrite() can't disagree about a parameter's shape.
 	//
-	// The narrow token (0xEC) rather than paramfmt2 (0x20), because that's
-	// what a real ase sends a client that didn't ask for wide tables, and
-	// capability() doesn't offer them.
+	// The narrow token (0xEC) rather than paramfmt2 (0x20), because
+	// that's what a real ase sends a client that didn't ask for wide
+	// tables, and what it sends a small output parameter set to one
+	// that did.  capability() doesn't offer them.
 	//
 	// The declared size is not the width the values have to be
 	// written at - a real ase declares a decimal(9,2) at 5 where a
@@ -18785,10 +18794,11 @@ void sqlrprotocol_tds::procReturnValues(sqlrservercursor *cursor) {
 	// (0xAC), but the two dialects lay that token out differently.
 	//
 	// A real ase sends sap's ct-lib an rpc's output parameters as
-	// returnvalue tokens, not as a paramfmt/params pair - a capture of
-	// the native link shows it.  That matters to sap's ct-lib: after a
-	// pair, the closing done reports only CS_CMD_DONE, where after
-	// returnvalues it reports CS_CMD_SUCCEED and then CS_CMD_DONE.
+	// returnvalue tokens or as a paramfmt/params pair, depending on
+	// the client - see preTds7OutputParamsAsPair().  That matters to
+	// sap's ct-lib: after a pair, the closing done reports only
+	// CS_CMD_DONE, where after returnvalues it reports CS_CMD_SUCCEED
+	// and then CS_CMD_DONE.
 
 	if (pretds7) {
 		preTds7ReturnValues(cursor);
@@ -18805,13 +18815,26 @@ void sqlrprotocol_tds::preTds7ReturnValues(sqlrservercursor *cursor) {
 	// sql relay's own bind type can't tell a char(20) from a varchar(max),
 	// and ct_describe() reports whatever arrives.  The one exception, a
 	// non-null n-type going back as its fixed type, is made in
-	// preTds7ReturnValueWrite().
+	// preTds7ReturnValuePrepare().
 
 	debugStart("pre-tds7 return-values");
 
 	uint16_t		outbindcount=cont->getOutputBindCount(cursor);
 	sqlrserverbindvar	*outbinds=cont->getOutputBinds(cursor);
 	debugWrite("outbindcount: %d",outbindcount);
+
+	bool	aspair=preTds7OutputParamsAsPair();
+	debugWrite("as paramfmt/params: %d",aspair);
+
+	// a pair describes every parameter in one token and then carries
+	// every value in another, so gather them all first
+	tds5paramfmt		*pairfmts=NULL;
+	sqlrserverbindvar	*pairbvs=NULL;
+	uint16_t		paircount=0;
+	if (aspair && outbindcount) {
+		pairfmts=new tds5paramfmt[outbindcount];
+		pairbvs=new sqlrserverbindvar[outbindcount];
+	}
 
 	for (uint16_t i=0; i<outbindcount; i++) {
 
@@ -18846,10 +18869,40 @@ void sqlrprotocol_tds::preTds7ReturnValues(sqlrservercursor *cursor) {
 		fmt.precision=rpcparamprecisions[rpcparam];
 		fmt.scale=rpcparamscales[rpcparam];
 
-		preTds7ReturnValueWrite(&fmt,&(outbinds[i]));
+		if (aspair) {
+			preTds7ReturnValuePrepare(&fmt,&(outbinds[i]),true,
+						&(pairfmts[paircount]),
+						&(pairbvs[paircount]));
+			paircount++;
+		} else {
+			preTds7ReturnValueWrite(&fmt,&(outbinds[i]));
+		}
 	}
 
+	if (paircount) {
+		if (preTds7ParamFmtWrite(pairfmts,paircount)) {
+			preTds7ParamsWrite(pairfmts,pairbvs,paircount);
+		}
+	}
+
+	delete[] pairfmts;
+	delete[] pairbvs;
+
 	debugEnd();
+}
+
+bool sqlrprotocol_tds::preTds7OutputParamsAsPair() {
+
+	// A real ase sends an rpc's output parameters as returnvalue tokens
+	// to a client that didn't ask for wide tables, and as a paramfmt and
+	// params pair to one that did, and nothing else in the login decides
+	// it.  ct-lib asks from CS_VERSION_150 up.
+	//
+	// What the client asked for decides this, not what capability()
+	// granted: this module never offers wide tables, and writes the
+	// narrow paramfmt (0xEC) either way, which is what ase sends here too.
+
+	return clientRequestedCapability(TDS5_CAP_REQ_WIDETABLE);
 }
 
 bool sqlrprotocol_tds::namedProc(const char *procname, bool nometadata) {
@@ -22942,7 +22995,9 @@ void sqlrprotocol_tds::returnValueInteger(uint16_t ordinal,
 	// one unnamed integer output parameter, which is how the numbered
 	// procs hand a handle back.  A tds 5.0 session gets the tds 5.0
 	// layout of the returnvalue token, the same swap procReturnValues()
-	// makes.
+	// makes.  The cursor procs call this several times in a row, which
+	// a pair per call would turn into several parameter results, so it
+	// stays a returnvalue whatever the client asked for.
 
 	if (pretds7) {
 		preTds7ReturnValueInteger(value,isnull);
@@ -23013,6 +23068,85 @@ void sqlrprotocol_tds::preTds7ReturnValueInteger(int32_t value,
 	debugEnd();
 }
 
+void sqlrprotocol_tds::preTds7ReturnValuePrepare(const tds5paramfmt *fmt,
+						sqlrserverbindvar *bv,
+						bool pair,
+						tds5paramfmt *retfmt,
+						sqlrserverbindvar *retbv) {
+
+	// works out the format and value an output parameter goes back in,
+	// for a returnvalue token or, if "pair" is set, for a paramfmt/params
+	// pair
+
+	// A null goes out as a null of the type the client declared, since
+	// the backend leaves the bind's type set whether or not the value
+	// is null.
+	*retfmt=*fmt;
+	*retbv=*bv;
+	bool	isnull=(cont->getBindValueIsNull(bv->isnull) ||
+			(bv->type==SQLRSERVERBINDVARTYPE_STRING &&
+						!bv->value.stringval));
+	if (isnull) {
+		retbv->type=SQLRSERVERBINDVARTYPE_NULL;
+	}
+
+	// A real ase sends a non-null value of a fixed-width type as that
+	// fixed type, not as the n-type the client declared, and sap's
+	// ct-lib reports CS_CANBENULL in an n-type parameter's status.
+	if (retbv->type==SQLRSERVERBINDVARTYPE_INTEGER ||
+			retbv->type==SQLRSERVERBINDVARTYPE_DOUBLE ||
+			retbv->type==SQLRSERVERBINDVARTYPE_DATE ||
+			retbv->type==SQLRSERVERBINDVARTYPE_STRING) {
+		retfmt->tds5type=preTds7FixedType(fmt->tds5type,fmt->size);
+		retfmt->varintsize=preTds7VarintSize(retfmt->tds5type);
+	}
+
+	// A character output parameter's bind is a buffer the size the
+	// client declared, and the value ends at the first NUL in it.  A
+	// real ase sends a non-null one as a longchar sized to the value.
+	if (retbv->type==SQLRSERVERBINDVARTYPE_STRING &&
+			(fmt->tds5type==TDS5_TYPE_CHAR ||
+			fmt->tds5type==TDS5_TYPE_VARCHAR ||
+			fmt->tds5type==TDS5_TYPE_LONGCHAR)) {
+		retbv->valuesize=charstring::getLength(bv->value.stringval);
+		retfmt->tds5type=TDS5_TYPE_LONGCHAR;
+		retfmt->varintsize=preTds7VarintSize(retfmt->tds5type);
+		retfmt->size=retbv->valuesize;
+	}
+
+	if (!pair) {
+		return;
+	}
+
+	// A pair differs from a returnvalue in two ways, both seen on a
+	// native link.  A null parameter is flagged nullable, which
+	// ct-lib needs to report CS_CANBENULL - it works that out for
+	// itself from a returnvalue.  And a character parameter, null or
+	// not, is a longchar declared at the size the client gave it,
+	// where a returnvalue's is sized to the value or, when null, the
+	// same as the client's.  A client whose character set is passed
+	// through gets twice that, up to 255 characters' worth, but never
+	// less than the value.
+	if (isnull) {
+		retfmt->status|=TDS5_PARAM_NULLALLOWED;
+	}
+	if (fmt->tds5type==TDS5_TYPE_CHAR ||
+			fmt->tds5type==TDS5_TYPE_VARCHAR ||
+			fmt->tds5type==TDS5_TYPE_LONGCHAR) {
+		uint32_t	size=(fmt->size>255)?255:fmt->size;
+		if (!clientcharsetoutenc) {
+			size*=2;
+		}
+		if (retbv->type==SQLRSERVERBINDVARTYPE_STRING &&
+						retbv->valuesize>size) {
+			size=retbv->valuesize;
+		}
+		retfmt->tds5type=TDS5_TYPE_LONGCHAR;
+		retfmt->varintsize=preTds7VarintSize(retfmt->tds5type);
+		retfmt->size=size;
+	}
+}
+
 void sqlrprotocol_tds::preTds7ReturnValueWrite(const tds5paramfmt *fmt,
 						sqlrserverbindvar *bv) {
 
@@ -23025,41 +23159,9 @@ void sqlrprotocol_tds::preTds7ReturnValueWrite(const tds5paramfmt *fmt,
 	debugStart("pre-tds7 return-value write");
 	debugTokenType(token);
 
-	// A null goes out as a null of the type the client declared, since
-	// the backend leaves the bind's type set whether or not the value
-	// is null.
-	tds5paramfmt		retfmt=*fmt;
-	sqlrserverbindvar	retbv=*bv;
-	bool	isnull=(cont->getBindValueIsNull(bv->isnull) ||
-			(bv->type==SQLRSERVERBINDVARTYPE_STRING &&
-						!bv->value.stringval));
-	if (isnull) {
-		retbv.type=SQLRSERVERBINDVARTYPE_NULL;
-	}
-
-	// A real ase sends a non-null value of a fixed-width type as that
-	// fixed type, not as the n-type the client declared, and sap's
-	// ct-lib reports CS_CANBENULL in an n-type parameter's status.
-	if (retbv.type==SQLRSERVERBINDVARTYPE_INTEGER ||
-			retbv.type==SQLRSERVERBINDVARTYPE_DOUBLE ||
-			retbv.type==SQLRSERVERBINDVARTYPE_DATE ||
-			retbv.type==SQLRSERVERBINDVARTYPE_STRING) {
-		retfmt.tds5type=preTds7FixedType(fmt->tds5type,fmt->size);
-		retfmt.varintsize=preTds7VarintSize(retfmt.tds5type);
-	}
-
-	// A character output parameter's bind is a buffer the size the
-	// client declared, and the value ends at the first NUL in it.  A
-	// real ase sends a non-null one as a longchar sized to the value.
-	if (retbv.type==SQLRSERVERBINDVARTYPE_STRING &&
-			(fmt->tds5type==TDS5_TYPE_CHAR ||
-			fmt->tds5type==TDS5_TYPE_VARCHAR ||
-			fmt->tds5type==TDS5_TYPE_LONGCHAR)) {
-		retbv.valuesize=charstring::getLength(bv->value.stringval);
-		retfmt.tds5type=TDS5_TYPE_LONGCHAR;
-		retfmt.varintsize=preTds7VarintSize(retfmt.tds5type);
-		retfmt.size=retbv.valuesize;
-	}
+	tds5paramfmt		retfmt;
+	sqlrserverbindvar	retbv;
+	preTds7ReturnValuePrepare(fmt,bv,false,&retfmt,&retbv);
 
 	write(&resppacket,token);
 

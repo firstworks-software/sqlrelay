@@ -11445,6 +11445,346 @@ int main(int argc, char **argv) {
 	}
 
 
+	// #10524 - output parameters at CS_VERSION_160.  A real ase answers
+	// a ct-lib client that asks for wide tables - CS_VERSION_150 and up
+	// do - with a paramfmt/params pair rather than returnvalue tokens,
+	// and ct-lib then reports one parameter result carrying every
+	// output parameter and no CS_CMD_SUCCEED, where the CS_VERSION_100
+	// connection above gets one result per parameter and a
+	// CS_CMD_SUCCEED.  Sap's ct-lib only, against a native ase and
+	// sqlrelay alike, and only where its headers know CS_VERSION_160.
+	#if !TDSTEST_LINKED_WITH_FREETDS && defined(CS_VERSION_160)
+	if (issybase) {
+
+		const char	*bind160procs[2]={"bind160proc",
+							"bind160nullproc"};
+		for (CS_INT i=0; i<2; i++) {
+			stringbuffer	dropq;
+			dropq.append("drop procedure ")->
+						append(bind160procs[i]);
+			ct_command(cmd,CS_LANG_CMD,
+					(CS_CHAR *)dropq.getString(),
+					dropq.getStringLength(),CS_UNUSED);
+			ct_send(cmd);
+			while (ct_results(cmd,&resultstype)==CS_SUCCEED) {}
+			ct_cancel(NULL,cmd,CS_CANCEL_ALL);
+		}
+
+		stdoutput.printf("ct_command: create CS_VERSION_160 "
+								"procedures\n");
+		const char	*bind160creates[2]={
+			"create procedure bind160proc "
+				"@pin int, @pi int output, "
+				"@pc varchar(20) output, "
+				"@pn numeric(10,4) output, "
+				"@pdt datetime output as "
+				"select @pi = @pin + 1 "
+				"select @pc = 'hello' "
+				"select @pn = 5.5 "
+				"select @pdt = '2001-02-03 04:05:06' "
+				"return 5",
+			"create procedure bind160nullproc "
+				"@pin int, @pi int output, "
+				"@pc varchar(20) output, "
+				"@pn numeric(10,4) output, "
+				"@pdt datetime output as "
+				"select @pi = null "
+				"select @pc = null "
+				"select @pn = null "
+				"select @pdt = null "
+				"return 6"
+		};
+		for (CS_INT i=0; i<2; i++) {
+			assertEquals(ct_command(cmd,CS_LANG_CMD,
+					(CS_CHAR *)bind160creates[i],
+					charstring::getLength(
+						bind160creates[i]),
+					CS_UNUSED),CS_SUCCEED);
+			assertEquals(ct_send(cmd),CS_SUCCEED);
+			results=ct_results(cmd,&resultstype);
+			assertEquals(results,CS_SUCCEED);
+			assertEquals(resultstype,CS_CMD_SUCCEED);
+			results=ct_results(cmd,&resultstype);
+			assertEquals(results,CS_SUCCEED);
+			assertEquals(resultstype,CS_CMD_DONE);
+			results=ct_results(cmd,&resultstype);
+			assertEquals(results,CS_END_RESULTS);
+			assertEquals(ct_cancel(NULL,cmd,CS_CANCEL_ALL),
+								CS_SUCCEED);
+		}
+		stdoutput.printf("\n");
+
+		// a second connection at CS_VERSION_160, with the same login
+		// as the first
+		stdoutput.printf("cs_ctx_alloc: CS_VERSION_160\n");
+		CS_CONTEXT	*context160=NULL;
+		assertEquals(cs_ctx_alloc(CS_VERSION_160,&context160),
+								CS_SUCCEED);
+		assertEquals(ct_init(context160,CS_VERSION_160),CS_SUCCEED);
+		assertEquals(ct_config(context160,CS_SET,CS_LOGIN_TIMEOUT,
+				(CS_VOID *)&logintimeout,CS_UNUSED,
+				(CS_INT *)NULL),CS_SUCCEED);
+		assertEquals(ct_config(context160,CS_SET,CS_TIMEOUT,
+				(CS_VOID *)&cmdtimeout,CS_UNUSED,
+				(CS_INT *)NULL),CS_SUCCEED);
+		assertEquals(cs_config(context160,CS_SET,CS_MESSAGE_CB,
+				(CS_VOID *)csMessageCallback,
+				CS_UNUSED,(CS_INT *)NULL),CS_SUCCEED);
+		assertEquals(ct_callback(context160,NULL,CS_SET,
+				CS_CLIENTMSG_CB,
+				(CS_VOID *)clientMessageCallback),CS_SUCCEED);
+		assertEquals(ct_callback(context160,NULL,CS_SET,
+				CS_SERVERMSG_CB,
+				(CS_VOID *)serverMessageCallback),CS_SUCCEED);
+		CS_CONNECTION	*conn160=NULL;
+		assertEquals(ct_con_alloc(context160,&conn160),CS_SUCCEED);
+		assertEquals(ct_con_props(conn160,CS_SET,
+				CS_USERNAME,(CS_VOID *)user,CS_NULLTERM,
+				(CS_INT *)NULL),CS_SUCCEED);
+		assertEquals(ct_con_props(conn160,CS_SET,
+				CS_PASSWORD,(CS_VOID *)password,CS_NULLTERM,
+				(CS_INT *)NULL),CS_SUCCEED);
+		assertEquals(ct_con_props(conn160,CS_SET,
+				CS_PACKETSIZE,(CS_VOID *)&ps,CS_UNUSED,
+				(CS_INT *)NULL),CS_SUCCEED);
+		assertEquals(ct_con_props(conn160,CS_SET,
+				CS_SEC_ENCRYPTION,(CS_VOID *)&enc,CS_UNUSED,
+				(CS_INT *)NULL),CS_SUCCEED);
+		CS_LOCALE	*locale160=NULL;
+		assertEquals(cs_loc_alloc(context160,&locale160),CS_SUCCEED);
+		assertEquals(cs_locale(context160,CS_SET,locale160,CS_LC_ALL,
+				(CS_CHAR *)NULL,CS_UNUSED,(CS_INT *)NULL),
+				CS_SUCCEED);
+		assertEquals(cs_locale(context160,CS_SET,locale160,
+				CS_SYB_LANG,(CS_CHAR *)language,CS_NULLTERM,
+				(CS_INT *)NULL),CS_SUCCEED);
+		assertEquals(cs_locale(context160,CS_SET,locale160,
+				CS_SYB_CHARSET,(CS_CHAR *)charset,CS_NULLTERM,
+				(CS_INT *)NULL),CS_SUCCEED);
+		assertEquals(ct_con_props(conn160,CS_SET,
+				CS_LOC_PROP,(CS_VOID *)locale160,CS_UNUSED,
+				(CS_INT *)NULL),CS_SUCCEED);
+		assertEquals(ct_connect(conn160,(CS_CHAR *)NULL,(CS_INT)0),
+								CS_SUCCEED);
+		CS_COMMAND	*cmd160=NULL;
+		assertEquals(ct_cmd_alloc(conn160,&cmd160),CS_SUCCEED);
+		stdoutput.printf("\n");
+
+		stdoutput.printf("ct_command: use db\n");
+		stringbuffer	usedb160;
+		usedb160.append("use ")->append(db);
+		assertEquals(ct_command(cmd160,CS_LANG_CMD,
+				(CS_CHAR *)usedb160.getString(),
+				usedb160.getStringLength(),CS_UNUSED),
+				CS_SUCCEED);
+		assertEquals(ct_send(cmd160),CS_SUCCEED);
+		results=ct_results(cmd160,&resultstype);
+		assertEquals(results,CS_SUCCEED);
+		assertEquals(resultstype,CS_CMD_SUCCEED);
+		results=ct_results(cmd160,&resultstype);
+		assertEquals(results,CS_SUCCEED);
+		assertEquals(resultstype,CS_CMD_DONE);
+		results=ct_results(cmd160,&resultstype);
+		assertEquals(results,CS_END_RESULTS);
+		assertEquals(ct_cancel(NULL,cmd160,CS_CANCEL_ALL),CS_SUCCEED);
+		stdoutput.printf("\n");
+
+		const char	*bind160name[4]={"@pi","@pc","@pn","@pdt"};
+		// what the parameters are declared as
+		CS_INT		bind160ptype[4]={
+					CS_INT_TYPE,CS_VARCHAR_TYPE,
+					CS_NUMERIC_TYPE,CS_DATETIME_TYPE};
+		// what ct_describe reports, which is not what the parameters
+		// were declared as: a varchar comes back as a longchar,
+		// sized for the server's character set
+		CS_INT		bind160type[4]={
+					CS_INT_TYPE,CS_LONGCHAR_TYPE,
+					CS_NUMERIC_TYPE,CS_DATETIME_TYPE};
+		CS_INT		bind160maxlength[4]={4,40,35,8};
+		// ase's own systypes usertypes, which differ for a null int
+		// and datetime because they come back as intn and datetimn.
+		// Sqlrelay's tds protocol module synthesizes its own, apart
+		// from the numeric's.
+		CS_INT		bind160usertype[2][4]={
+					{(nativease)?7:0,(nativease)?2:0,
+					28,(nativease)?12:0},
+					{(nativease)?13:0,(nativease)?2:0,
+					28,(nativease)?15:0}};
+		const char	*bind160value[2][4]={
+					{"3","hello","5.5000",
+					"Feb  3 2001  4:05AM"},
+					{"","","",""}};
+		const char	*bind160status[2]={"5","6"};
+
+		for (CS_INT p=0; p<2; p++) {
+
+			bool	isnull=(p==1);
+
+			stdoutput.printf("ct_command: rpc with %soutput "
+					"params at CS_VERSION_160\n",
+					(isnull)?"null ":"");
+			assertEquals(ct_command(cmd160,CS_RPC_CMD,
+					(CS_CHAR *)bind160procs[p],
+					CS_NULLTERM,CS_UNUSED),CS_SUCCEED);
+			CS_DATAFMT	paramfmt160;
+			bytestring::zero(&paramfmt160,sizeof(CS_DATAFMT));
+			paramfmt160.datatype=CS_INT_TYPE;
+			paramfmt160.maxlength=4;
+			paramfmt160.count=1;
+			paramfmt160.status=CS_INPUTVALUE;
+			charstring::copy(paramfmt160.name,"@pin");
+			paramfmt160.namelen=4;
+			CS_INT	in160=2;
+			assertEquals(ct_param(cmd160,&paramfmt160,
+					(CS_VOID *)&in160,sizeof(CS_INT),0),
+					CS_SUCCEED);
+			CS_INT		out160int=0;
+			CS_VARCHAR	out160varchar;
+			bytestring::zero(&out160varchar,sizeof(CS_VARCHAR));
+			CS_NUMERIC	out160numeric;
+			bytestring::zero(&out160numeric,sizeof(CS_NUMERIC));
+			out160numeric.precision=10;
+			out160numeric.scale=4;
+			CS_DATETIME	out160datetime;
+			bytestring::zero(&out160datetime,sizeof(CS_DATETIME));
+			CS_VOID		*out160[4]={
+						(CS_VOID *)&out160int,
+						(CS_VOID *)&out160varchar,
+						(CS_VOID *)&out160numeric,
+						(CS_VOID *)&out160datetime};
+			CS_INT		out160size[4]={
+						sizeof(CS_INT),
+						sizeof(CS_VARCHAR),
+						sizeof(CS_NUMERIC),
+						sizeof(CS_DATETIME)};
+			for (CS_INT i=0; i<4; i++) {
+				bytestring::zero(&paramfmt160,
+							sizeof(CS_DATAFMT));
+				paramfmt160.datatype=bind160ptype[i];
+				paramfmt160.maxlength=(i==1)?20:out160size[i];
+				paramfmt160.precision=(i==2)?10:0;
+				paramfmt160.scale=(i==2)?4:0;
+				paramfmt160.count=1;
+				paramfmt160.status=CS_RETURN;
+				charstring::copy(paramfmt160.name,
+							bind160name[i]);
+				paramfmt160.namelen=
+					charstring::getLength(bind160name[i]);
+				assertEquals(ct_param(cmd160,&paramfmt160,
+						out160[i],out160size[i],0),
+						CS_SUCCEED);
+			}
+			assertEquals(ct_send(cmd160),CS_SUCCEED);
+
+			results=ct_results(cmd160,&resultstype);
+			assertEquals(results,CS_SUCCEED);
+			assertEquals(resultstype,CS_STATUS_RESULT);
+			bytestring::zero(bindreaddata,sizeof(bindreaddata));
+			assertEquals(ct_bind(cmd160,1,&bindreadfmt,
+						(CS_VOID *)bindreaddata,
+						&bindreadlength,
+						&bindreadindicator),CS_SUCCEED);
+			assertEquals(ct_fetch(cmd160,CS_UNUSED,CS_UNUSED,
+						CS_UNUSED,&rowsread),CS_SUCCEED);
+			assertEquals(bindreaddata,bind160status[p]);
+			assertEquals(ct_fetch(cmd160,CS_UNUSED,CS_UNUSED,
+						CS_UNUSED,&rowsread),CS_END_DATA);
+
+			results=ct_results(cmd160,&resultstype);
+			assertEquals(results,CS_SUCCEED);
+			assertEquals(resultstype,CS_PARAM_RESULT);
+			ncols=-1;
+			assertEquals(ct_res_info(cmd160,CS_NUMDATA,
+						(CS_VOID *)&ncols,CS_UNUSED,
+						(CS_INT *)NULL),CS_SUCCEED);
+			assertEquals(ncols,4);
+			CS_INT		bind160length[4];
+			CS_SMALLINT	bind160indicator[4];
+			char		bind160data[4][64];
+			for (CS_INT i=0; i<ncols && i<4; i++) {
+				CS_DATAFMT	descfmt;
+				bytestring::zero(&descfmt,sizeof(CS_DATAFMT));
+				assertEquals(ct_describe(cmd160,i+1,&descfmt),
+								CS_SUCCEED);
+				assertEquals(descfmt.name,bind160name[i]);
+				assertEquals(descfmt.datatype,bind160type[i]);
+				assertEquals(descfmt.maxlength,
+							bind160maxlength[i]);
+				assertEquals(descfmt.usertype,
+						bind160usertype[p][i]);
+				assertEquals(descfmt.status,(isnull)?
+					(CS_RETURN|CS_CANBENULL):CS_RETURN);
+				bytestring::zero(bind160data[i],64);
+				bind160length[i]=-1;
+				bind160indicator[i]=-99;
+				CS_DATAFMT	charfmt;
+				bytestring::zero(&charfmt,sizeof(CS_DATAFMT));
+				charfmt.datatype=CS_CHAR_TYPE;
+				charfmt.format=CS_FMT_NULLTERM;
+				charfmt.maxlength=64;
+				charfmt.count=1;
+				assertEquals(ct_bind(cmd160,i+1,&charfmt,
+						(CS_VOID *)bind160data[i],
+						&(bind160length[i]),
+						&(bind160indicator[i])),
+						CS_SUCCEED);
+			}
+			assertEquals(ct_fetch(cmd160,CS_UNUSED,CS_UNUSED,
+						CS_UNUSED,&rowsread),CS_SUCCEED);
+			assertEquals(rowsread,1);
+			for (CS_INT i=0; i<ncols && i<4; i++) {
+				assertEquals(bind160data[i],bind160value[p][i]);
+				assertEquals(bind160indicator[i],
+							(isnull)?-1:0);
+			}
+			assertEquals(ct_fetch(cmd160,CS_UNUSED,CS_UNUSED,
+						CS_UNUSED,&rowsread),CS_END_DATA);
+			results=ct_results(cmd160,&resultstype);
+			assertEquals(results,CS_SUCCEED);
+			assertEquals(resultstype,CS_CMD_DONE);
+			results=ct_results(cmd160,&resultstype);
+			assertEquals(results,CS_END_RESULTS);
+			assertEquals(ct_cancel(NULL,cmd160,CS_CANCEL_ALL),
+								CS_SUCCEED);
+			stdoutput.printf("\n");
+		}
+
+		stdoutput.printf("ct_cmd_drop: CS_VERSION_160\n");
+		assertEquals(ct_cmd_drop(cmd160),CS_SUCCEED);
+		assertEquals(ct_close(conn160,CS_UNUSED),CS_SUCCEED);
+		assertEquals(ct_con_drop(conn160),CS_SUCCEED);
+		assertEquals(cs_loc_drop(context160,locale160),CS_SUCCEED);
+		assertEquals(ct_exit(context160,CS_UNUSED),CS_SUCCEED);
+		assertEquals(cs_ctx_drop(context160),CS_SUCCEED);
+		stdoutput.printf("\n");
+
+		stdoutput.printf("ct_command: drop CS_VERSION_160 "
+							"procedures\n");
+		for (CS_INT i=0; i<2; i++) {
+			stringbuffer	dropq;
+			dropq.append("drop procedure ")->
+						append(bind160procs[i]);
+			assertEquals(ct_command(cmd,CS_LANG_CMD,
+					(CS_CHAR *)dropq.getString(),
+					dropq.getStringLength(),
+					CS_UNUSED),CS_SUCCEED);
+			assertEquals(ct_send(cmd),CS_SUCCEED);
+			results=ct_results(cmd,&resultstype);
+			assertEquals(results,CS_SUCCEED);
+			assertEquals(resultstype,CS_CMD_SUCCEED);
+			results=ct_results(cmd,&resultstype);
+			assertEquals(results,CS_SUCCEED);
+			assertEquals(resultstype,CS_CMD_DONE);
+			results=ct_results(cmd,&resultstype);
+			assertEquals(results,CS_END_RESULTS);
+			assertEquals(ct_cancel(NULL,cmd,CS_CANCEL_ALL),
+								CS_SUCCEED);
+		}
+		stdoutput.printf("\n");
+	}
+	#endif
+
+
 	// CS_NUMERIC_TYPE goes in as an input parameter on both servers,
 	// but mssql refuses it as an output parameter - 8016, 'Parameter 2
 	// ("@pnum"): Data type 0x6C has an invalid data length or metadata
