@@ -1581,9 +1581,10 @@ def main():
 	# empty string, so we have to check for a single space here.
 	assertEquals(cur.getField(0,0)," ")
 	assertNone(cur.getField(0,1))
-	# see note above for why we're checking for a single space;
-	# image column comes back as bytes in Python
-	assertEquals(cur.getField(0,2),b" ")
+	# sap doesn't really support inserting an empty string into a binary
+	# column.  The minimum that can be inserted is a single \0, which
+	# is what reads back here.
+	assertEquals(cur.getField(0,2),b"\x00")
 	assertNone(cur.getField(0,3))
 	cur.getNullsAsEmptyStrings()
 	assertTrue(cur.sendQuery("drop table testtable"))
@@ -1845,9 +1846,12 @@ def main():
 	# error 164, "The untyped variable ? is allowed only in a WHERE
 	# clause or the SET clause of an UPDATE statement or the VALUES
 	# list of an INSERT statement" - its own parser restriction, not a
-	# sqlrelay bug; the same query fails identically against every
-	# client language.
-	cur.prepareQuery("select cast(@1 as int)")
+	# sqlrelay bug, so bind in a where clause instead.
+	cur.sendQuery("drop table testtable")
+	assertTrue(cur.sendQuery("create table testtable (col1 int)"))
+	assertTrue(cur.sendQuery("insert into testtable values (1)"))
+	assertTrue(cur.sendQuery("insert into testtable values (2)"))
+	cur.prepareQuery("select col1 from testtable where col1=@1")
 	cur.inputBind("1",1)
 	assertTrue(cur.executeQuery())
 	assertEquals(cur.rowCount(),1)
@@ -1861,6 +1865,7 @@ def main():
 	assertTrue(cur.executeQuery())
 	assertEquals(cur.rowCount(),1)
 	assertEquals(cur.getField(0,0),"2")
+	assertTrue(cur.sendQuery("drop table testtable"))
 	output()
 
 

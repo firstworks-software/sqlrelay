@@ -1690,9 +1690,11 @@ int main(int argc, char **argv) {
 	// for a single space here.
 	assertEqStr(sqlrcur_getFieldByIndex(cur,0,0)," ");
 	assertEqStr(sqlrcur_getFieldByIndex(cur,0,1),NULL);
-	// see note above for why we're checking
-	// for a single space
-	assertEqStr(sqlrcur_getFieldByIndex(cur,0,2)," ");
+	// sap doesn't really support inserting an empty string into a binary
+	// column.  The minimum that can be inserted is a single \0.  That ends
+	// up being interpreted as an empty string here, but it's actually a
+	// single \0 character, not zero characters.
+	assertEqStr(sqlrcur_getFieldByIndex(cur,0,2),"");
 	assertEqStr(sqlrcur_getFieldByIndex(cur,0,3),NULL);
 	sqlrcur_getNullsAsEmptyStrings(cur);
 	assertTrue(sqlrcur_sendQuery(cur,"drop table testtable"));
@@ -1955,9 +1957,12 @@ int main(int argc, char **argv) {
 	// error 164, "The untyped variable ? is allowed only in a WHERE
 	// clause or the SET clause of an UPDATE statement or the VALUES
 	// list of an INSERT statement" - its own parser restriction, not a
-	// sqlrelay bug; the same query fails identically against every
-	// client language.
-	sqlrcur_prepareQuery(cur,"select cast(@1 as int)");
+	// sqlrelay bug, so bind in a where clause instead.
+	sqlrcur_sendQuery(cur,"drop table testtable");
+	assertTrue(sqlrcur_sendQuery(cur,"create table testtable (col1 int)"));
+	assertTrue(sqlrcur_sendQuery(cur,"insert into testtable values (1)"));
+	assertTrue(sqlrcur_sendQuery(cur,"insert into testtable values (2)"));
+	sqlrcur_prepareQuery(cur,"select col1 from testtable where col1=@1");
 	sqlrcur_inputBindLong(cur,"1",1);
 	assertTrue(sqlrcur_executeQuery(cur));
 	assertEqInt(sqlrcur_rowCount(cur),1);
@@ -1971,6 +1976,7 @@ int main(int argc, char **argv) {
 	assertTrue(sqlrcur_executeQuery(cur));
 	assertEqInt(sqlrcur_rowCount(cur),1);
 	assertEqStr(sqlrcur_getFieldByIndex(cur,0,0),"2");
+	assertTrue(sqlrcur_sendQuery(cur,"drop table testtable"));
 	printf("\n");
 
 

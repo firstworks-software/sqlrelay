@@ -7434,14 +7434,23 @@ int main(int argc, char **argv) {
 	// error 164, "The untyped variable ? is allowed only in a WHERE
 	// clause or the SET clause of an UPDATE statement or the VALUES
 	// list of an INSERT statement" - its own parser restriction, not a
-	// sqlrelay bug; the same query fails identically against every
-	// client language.
+	// sqlrelay bug, so bind in a where clause instead.
+	SQLExecDirect(stmt,(SQLCHAR *)"drop table testtable",SQL_NTS);
+	erg=SQLExecDirect(stmt,(SQLCHAR *)
+		"create table testtable (col1 int)",SQL_NTS);
+	assertSuccessStmt(stmt,erg);
+	erg=SQLExecDirect(stmt,(SQLCHAR *)
+		"insert into testtable values (1)",SQL_NTS);
+	assertSuccessStmt(stmt,erg);
+	erg=SQLExecDirect(stmt,(SQLCHAR *)
+		"insert into testtable values (2)",SQL_NTS);
+	assertSuccessStmt(stmt,erg);
 	if (issqlrelay) {
 		erg=SQLPrepare(stmt,(SQLCHAR *)
-			"select @1",SQL_NTS);
+			"select col1 from testtable where col1=@1",SQL_NTS);
 	} else {
 		erg=SQLPrepare(stmt,(SQLCHAR *)
-			"select ?",SQL_NTS);
+			"select col1 from testtable where col1=?",SQL_NTS);
 	}
 	assertSuccessStmt(stmt,erg);
 	SQLINTEGER	reexbind=1;
@@ -7475,6 +7484,11 @@ int main(int argc, char **argv) {
 	erg=SQLFetch(stmt);
 	assertSuccessStmt(stmt,erg);
 	assertEqualStmt(stmt,(int)reexval,2);
+	SQLFreeStmt(stmt,SQL_CLOSE);
+	SQLFreeStmt(stmt,SQL_UNBIND);
+	SQLFreeStmt(stmt,SQL_RESET_PARAMS);
+	erg=SQLExecDirect(stmt,(SQLCHAR *)"drop table testtable",SQL_NTS);
+	assertSuccessStmt(stmt,erg);
 	stdoutput.printf("\n");
 
 

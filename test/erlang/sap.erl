@@ -1321,7 +1321,11 @@ main() ->
     %% sap converts empty strings to a single space.
     assertEqualsString(sqlrelay:getFieldByIndex(0, 0), " "),
     assertEqualsString(sqlrelay:getFieldByIndex(0, 1), null),
-    assertEqualsString(sqlrelay:getFieldByIndex(0, 2), " "),
+    %% sap doesn't really support inserting an empty string into a binary
+    %% column.  The minimum that can be inserted is a single \0.  That ends
+    %% up being interpreted as an empty string here, but it's actually a
+    %% single \0 character, not zero characters.
+    assertEqualsString(sqlrelay:getFieldByIndex(0, 2), ""),
     assertEqualsString(sqlrelay:getFieldByIndex(0, 3), null),
     sqlrelay:getNullsAsEmptyStrings(),
     assertTrue(sqlrelay:sendQuery("drop table testtable")),
@@ -1549,10 +1553,13 @@ main() ->
     %% ASE rejects a bind marker used as a bare select-list value with
     %% error 164, "The untyped variable ? is allowed only in a WHERE
     %% clause or the SET clause of an UPDATE statement or the VALUES
-    %% list of an INSERT statement" - its own parser restriction, not
-    %% a sqlrelay bug; the same query fails identically against every
-    %% client language.
-    sqlrelay:prepareQuery("select cast(@1 as int)"),
+    %% list of an INSERT statement" - its own parser restriction, not a
+    %% sqlrelay bug, so bind in a where clause instead.
+    sqlrelay:sendQuery("drop table testtable"),
+    assertTrue(sqlrelay:sendQuery("create table testtable (col1 int)")),
+    assertTrue(sqlrelay:sendQuery("insert into testtable values (1)")),
+    assertTrue(sqlrelay:sendQuery("insert into testtable values (2)")),
+    sqlrelay:prepareQuery("select col1 from testtable where col1=@1"),
     sqlrelay:inputBindLong("1", 1),
     assertTrue(sqlrelay:executeQuery()),
     assertEqualsInt(sqlrelay:rowCount(), 1),
@@ -1566,6 +1573,7 @@ main() ->
     assertTrue(sqlrelay:executeQuery()),
     assertEqualsInt(sqlrelay:rowCount(), 1),
     assertEqualsString(sqlrelay:getFieldByIndex(0, 0), "2"),
+    assertTrue(sqlrelay:sendQuery("drop table testtable")),
     io:format("~n"),
 
     %% STORED PROCEDURE RETURNING NO VALUE

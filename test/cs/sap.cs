@@ -1594,8 +1594,11 @@ namespace SQLRClientTest
             // empty string, so we have to check for a single space here.
             assertEquals(cur.getField((UInt64)0, (UInt32)0), " ");
             assertEquals(cur.getField((UInt64)0, (UInt32)1), (String)null);
-            // see note above for why we're checking for a single space
-            assertEquals(cur.getField((UInt64)0, (UInt32)2), " ");
+            // sap doesn't really support inserting an empty string into a binary
+            // column.  The minimum that can be inserted is a single \0.  That ends
+            // up being interpreted as an empty string here, but it's actually a
+            // single \0 character, not zero characters.
+            assertEquals(cur.getField((UInt64)0, (UInt32)2), "");
             assertEquals(cur.getField((UInt64)0, (UInt32)3), (String)null);
             cur.getNullsAsEmptyStrings();
             assertTrue(cur.sendQuery("drop table testtable"));
@@ -1863,14 +1866,16 @@ namespace SQLRClientTest
             assertEquals(cur.rowCount(), (UInt64)1);
             assertEquals(cur.getField((UInt64)0, (UInt32)0), "1");
             Console.WriteLine("");
-            // ASE rejects a bind marker used as a bare select-list
-            // value with error 164, "The untyped variable ? is
-            // allowed only in a WHERE clause or the SET clause of an
-            // UPDATE statement or the VALUES list of an INSERT
-            // statement" - its own parser restriction, not a
-            // sqlrelay bug; the same query fails identically against
-            // every client language.
-            cur.prepareQuery("select cast(@1 as int)");
+            // ASE rejects a bind marker used as a bare select-list value with
+            // error 164, "The untyped variable ? is allowed only in a WHERE
+            // clause or the SET clause of an UPDATE statement or the VALUES
+            // list of an INSERT statement" - its own parser restriction, not a
+            // sqlrelay bug, so bind in a where clause instead.
+            cur.sendQuery("drop table testtable");
+            assertTrue(cur.sendQuery("create table testtable (col1 int)"));
+            assertTrue(cur.sendQuery("insert into testtable values (1)"));
+            assertTrue(cur.sendQuery("insert into testtable values (2)"));
+            cur.prepareQuery("select col1 from testtable where col1=@1");
             cur.inputBind("1", (Int64)1);
             assertTrue(cur.executeQuery());
             assertEquals(cur.rowCount(), (UInt64)1);
@@ -1884,6 +1889,7 @@ namespace SQLRClientTest
             assertTrue(cur.executeQuery());
             assertEquals(cur.rowCount(), (UInt64)1);
             assertEquals(cur.getField((UInt64)0, (UInt32)0), "2");
+            assertTrue(cur.sendQuery("drop table testtable"));
             Console.WriteLine("");
 
 
