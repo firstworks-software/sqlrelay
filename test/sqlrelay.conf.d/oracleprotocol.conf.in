@@ -245,7 +245,13 @@
 	     oracleprotocoloci7utf8 just above for why this would reuse
 	     oracleprotocoldb2's backend rather than oracleprotocoloci7's own
 	     separate one.
-	     test/protocol/oracle/oci7inlinelob.cpp runs against it (#10272). -->
+	     test/protocol/oracle/oci7inlinelob.cpp runs against it (#10272).
+	     Instant Client 23 in OCI7 mode sends ALTER SESSION SET
+	     TIME_ZONE right after login, which db2 rejects (#10539).  a
+	     genuine 9i client (solaris8sparc 9.0.1, redhat9x86 9.2.0.4)
+	     doesn't send it.  the translation only rewrites a client-sent
+	     ALTER SESSION SET to a harmless db2 statement so the inline
+	     LOB checks can run. -->
 	<instance id="oracleprotocoloci7db2" dbase="db2" debug="protocols">
 		<listeners>
 			<listener protocol="oracle" port="@ORACLEPROTOCOLPORT11@" sid="ora1" charset="31"/>
@@ -256,6 +262,12 @@
 				<user user="TESTUSER" password="testpassword"/>
 			</auth>
 		</auths>
+		<querytranslations>
+			<!-- any client-sent ALTER SESSION SET (TIME_ZONE, NLS_LANGUAGE) -->
+			<querytranslation module="patterns">
+				<pattern type="regex" from="^ALTER SESSION SET .*$" to="SET CURRENT DEGREE = '1'"/>
+			</querytranslation>
+		</querytranslations>
 		<connections>
 			<connection string="user=db2inst1;password=testpassword;db=@SHORTHOSTNAME@;lang=C;timeout=120"/>
 		</connections>

@@ -1463,7 +1463,10 @@ run_protocol_test() {
 	# putOci7DescribeColumn() path, and describes the select list out of
 	# order, against oracleprotocoloci7db2 (ORACLEPROTOCOLPORT11).  it is
 	# skipped the same way oracleinlinelob is, and tolerates a missing
-	# binary the same way oci7 does.  then oracletransaction, twice, once
+	# binary the same way oci7 does.  that instance rewrites the ALTER
+	# SESSION SET statement newer clients send after login into a
+	# harmless db2 one, for #10539 - db2 rejects it, and a genuine 9i
+	# client doesn't send it.  then oracletransaction, twice, once
 	# per wire encoding, for #10293 - it drives TTI_COMMIT, TTI_ROLLBACK,
 	# TTI_AUTOCOMMIT_ON and TTI_AUTOCOMMIT_OFF directly, with no prior
 	# TTI_QUERY3 call, and checks each reply against the bytes a real
