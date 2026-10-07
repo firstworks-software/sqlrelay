@@ -39,7 +39,7 @@ http://www.gnu.org/software/src-highlite -->
 <ul>
   <li>the Oracle version the module reports to clients, including the version banner</li>
   <li>the capabilities it advertises to clients, including the logon types it supports</li>
-  <li>the newest password verifier it can offer: 12c at 12.1, 11g at 11.2, and only the older O3LOGON exchange at 10.2</li>
+  <li>the newest password verifier it can offer: 12c at 12.1, 11g at 11.2, and 10g at 10.2</li>
 </ul>
 
 <p>Each client negotiates:</p>
@@ -90,7 +90,7 @@ http://www.gnu.org/software/src-highlite -->
   <tr>
     <td>A modern OCI, ojdbc or thin driver client
 </td>
-    <td>O3LOGON, 10g verifier
+    <td>O5LOGON, 10g verifier
 </td>
     <td>O5LOGON, 11g verifier
 </td>
@@ -100,7 +100,7 @@ http://www.gnu.org/software/src-highlite -->
   <tr>
     <td>A client that advertises O5LOGON only
 </td>
-    <td>O3LOGON, 10g verifier
+    <td>O5LOGON, 10g verifier
 </td>
     <td>O5LOGON, 11g verifier
 </td>
@@ -115,7 +115,7 @@ http://www.gnu.org/software/src-highlite -->
   <li>A client older than Oracle 10g doesn't say that it supports O5LOGON, so it gets the 9i verifier.  So does any other client that doesn't say it.</li>
   <li>A modern OCI client can also use the old OCI7 call interface.  Its login call is a "classic" one, which has no O5LOGON form, so it gets O3LOGON, with the 10g verifier.</li>
   <li>A modern client gets 12c when the ceiling is 12.1 and the client says it supports 12c.  ojdbc and OCI 23.26 copy the logon types the module advertises, so they ask for 12c at 12.1 and for 11g at 11.2.  A client that doesn't support 12c gets 11g at both.</li>
-  <li>At 10.2 every client gets O3LOGON, because Oracle 10.2 has no O5LOGON.</li>
+  <li>Oracle 10.2 has no 11g or 12c verifier.  So at 10.2 a modern client gets O5LOGON with the 10g verifier, as it does from a real Oracle 10.2 server.</li>
   <li>The logon types the module advertises follow the ceiling: O7LOGON, the 12c bit, is in the list only at 12.1.</li>
 </ul>
 
@@ -159,7 +159,7 @@ http://www.gnu.org/software/src-highlite -->
   <tr>
     <td>OCI 23.26
 </td>
-    <td>No
+    <td>Partly
 </td>
     <td>Yes
 </td>
@@ -169,7 +169,7 @@ http://www.gnu.org/software/src-highlite -->
   <tr>
     <td>ojdbc
 </td>
-    <td>Not tested
+    <td>Partly
 </td>
     <td>Yes
 </td>
@@ -189,8 +189,8 @@ http://www.gnu.org/software/src-highlite -->
 </table>
 
 <br/><ul>
-  <li>python-oracledb and node-oracledb need 12.1, the default.  At 11.2 and 10.2 their logins hang.</li>
-  <li>OCI 23.26 and ojdbc work at 11.2 and 12.1.  At 10.2, OCI 23.26's own (OCI8) login currently fails.</li>
+  <li>python-oracledb and node-oracledb need 12.1, the default.  At 11.2 their logins hang, and they don't work at 10.2 either.</li>
+  <li>OCI 23.26 and ojdbc work at 11.2 and 12.1.  At 10.2 they log in and run queries, but TIMESTAMP WITH TIME ZONE values and LOBs aren't supported yet.  For OCI 23.26 that means its own (OCI8) calls, not its OCI7 interface calls.  ojdbc has only been tested at 10.2 with a login and a simple query.</li>
   <li>Modern clients that use the OCI7 call interface work at any ceiling.</li>
   <li>Genuine Oracle 9i OCI7 clients, 9.0.1 and 9.2, work at any ceiling.  The Oracle 9i sqlplus logs in at any ceiling too, but currently fails after its first query.</li>
 </ul>
@@ -300,7 +300,7 @@ http://www.gnu.org/software/src-highlite -->
 <ul>
   <li>11 refuses O3LOGON.  It also refuses genuine pre-10g clients and OCI7 interface calls from modern OCI clients, since both log in with O3LOGON.</li>
   <li>12a allows only the 12c verifier.  It needs a ceiling of 12.1.  At 11.2, every login is refused.</li>
-  <li>11 and 12 at a ceiling of 10.2 refuse every login too, since every login there is O3LOGON.</li>
+  <li>11 and 12 at a ceiling of 10.2 refuse every login too, since every login there uses the 9i or 10g verifier.</li>
 </ul>
 
 <hr/>

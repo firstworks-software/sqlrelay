@@ -32,6 +32,7 @@
 // rudiments' pbkdf2-hmac-sha512 (needed for 12c verifiers) has no
 // non-openssl fallback and fails outright without it.  Where it isn't
 // supported, oracle_clear_password still works; O5LOGON just isn't offered.
+// O5LOGON under the 10g verifier also needs des - see supportedVerifierType().
 //
 // That said, no protocol module SQL Relay ships - including src/protocols/
 // oracle.cpp and the native SQLRClient protocol - ever builds a credential
@@ -53,19 +54,26 @@
 // The 10g/DES verifier type, which is what an O3LOGON login runs under for a
 // client that advertises O5LOGON.  Same des password hash as the 9i type,
 // but the session key and the password ride under aes-128-cbc rather than
-// 3des.  Unlike VERIFIER_TYPE_9I this one is a real oracle constant.
+// 3des.  Unlike VERIFIER_TYPE_9I this one is a real oracle constant.  A
+// tagged login at 10.2 runs it as O5LOGON instead.
 #define VERIFIER_TYPE_10G	0x0939
 
-// session key lengths, which the client tells the two verifier types apart by
+// session key lengths, which the client tells the 11g and 12c verifier types
+// apart by
 #define SESSION_KEY_SIZE_11G	48
 #define SESSION_KEY_SIZE_12C	32
+#define SESSION_KEY_SIZE_10G	32
+
+// the 10g verifier's key encryption key: the 8 byte des password hash, right
+// padded with zeros to an aes-128 key
+#define PASSWORD_HASH_SIZE_10G	16
 
 // how much of the 11g session key is pkcs#7 padding rather than key material
 #define SESSION_KEY_PAD_SIZE_11G	8
 
 // AUTH_SVR_RESPONSE - a 16-byte salt, then this, then a whole block of number
-// padding, because 16+16 is already block aligned.  48 bytes for both verifier
-// types.
+// padding, because 16+16 is already block aligned.  48 bytes for every
+// verifier type.
 #define SERVER_RESPONSE_PAYLOAD		"SERVER_TO_CLIENT"
 #define SERVER_RESPONSE_SIZE		48
 
@@ -74,11 +82,12 @@
 // inputs on the verify side, and widening it means relinking libsqlrserver.
 //
 //	challenge(), with method "O5LOGON":
-//		verifiertype		45394, 6949 or 18453 (0x prefix ok)
-//		authvfrdata		AUTH_VFR_DATA, hex
+//		verifiertype		45394, 6949, 18453 or 2361 (0x
+//					prefix ok)
+//		authvfrdata		AUTH_VFR_DATA, hex, empty for 2361
 //		authpbkdf2vgencount	AUTH_PBKDF2_VGEN_COUNT, 12c only
 //	  out:	the AUTH_SESSKEY to send, uppercase hex, 96 characters
-//		for 11g and 64 for 12c
+//		for 11g and 64 for 12c and 2361
 //
 //	auth(), with method "O5LOGON":
 //		password		AUTH_PASSWORD from the client, hex
@@ -93,7 +102,12 @@
 //	challenge(), with method "O5LOGON-SERVER-RESPONSE":
 //		the same 8 inputs auth() was given, minus password
 //	  out:	the AUTH_SVR_RESPONSE to send, uppercase hex, 96 characters
-//		for both verifier types
+//		for every verifier type
+//
+// 2361 is the 10g verifier, which a real 10.2 server runs as O5LOGON for a
+// tagged login.  It has no verifier salt, so authvfrdata is empty.  Its key
+// encryption key is the des password hash O3LOGON uses, right padded with 8
+// zero bytes, and its combo key is md5(part_a[16..31] xor part_b[16..31]).
 //
 // serverauthsesskey is the one that's easy to miss.  challenge() generates
 // session key part A and keeps no state, so the only way to get part A back at
@@ -280,12 +294,24 @@ static bool derivedKey(const byte_t *password, uint32_t passwordsize,
 	return true;
 }
 
-static bool passwordHash(const char *password,
+static bool o3logonPasswordHash(const char *user, const char *password,
+							byte_t *hash);
+
+static bool passwordHash(const char *user, const char *password,
 				uint32_t verifiertype,
 				const byte_t *vfrdata, uint64_t vfrdatasize,
 				uint32_t vgencount,
 				byte_t *passwordhash,
 				size_t *passwordhashsize) {
+
+	if (verifiertype==VERIFIER_TYPE_10G) {
+
+		// password_hash = des_password_hash(user, password) ||
+		//			8 zero bytes
+		bytestring::zero(passwordhash,PASSWORD_HASH_SIZE_10G);
+		*passwordhashsize=PASSWORD_HASH_SIZE_10G;
+		return o3logonPasswordHash(user,password,passwordhash);
+	}
 
 	if (verifiertype==VERIFIER_TYPE_12C) {
 
@@ -344,11 +370,22 @@ static size_t sessionKeySize(uint32_t verifiertype) {
 	// the client tells 11g and 12c apart by the length of the session key
 	// rather than by the verifier type it was told, so these lengths are
 	// load-bearing on the wire
+	if (verifiertype==VERIFIER_TYPE_10G) {
+		return SESSION_KEY_SIZE_10G;
+	}
 	return (verifiertype==VERIFIER_TYPE_12C)?
 			SESSION_KEY_SIZE_12C:SESSION_KEY_SIZE_11G;
 }
 
 static bool supportedVerifierType(uint32_t verifiertype) {
+
+	// The 10g verifier's key encryption key is the des password hash, and
+	// des may not be there (e.g. openssl 3 without its legacy provider),
+	// so check for it the way challenge() checks for O3LOGON's crypto.
+	if (verifiertype==VERIFIER_TYPE_10G) {
+		singledes	sd;
+		return sd.isSupported();
+	}
 	return (verifiertype==VERIFIER_TYPE_11G_1 ||
 		verifiertype==VERIFIER_TYPE_11G_2 ||
 		verifiertype==VERIFIER_TYPE_12C);
@@ -375,7 +412,7 @@ static char *hexEncodeUpper(const byte_t *in, uint64_t insize) {
 	return hex;
 }
 
-static bool o5logonParameters(const char *password,
+static bool o5logonParameters(const char *user, const char *password,
 				parameterstring *p,
 				uint32_t *verifiertype,
 				byte_t *passwordhash,
@@ -395,8 +432,9 @@ static bool o5logonParameters(const char *password,
 				charstring::convertToUnsignedInteger(
 					p->getValue("authpbkdf2vgencount"));
 
-	bool	retval=(vfrdatasize &&
-			passwordHash(password,*verifiertype,
+	// the 10g verifier has no verifier salt
+	bool	retval=((vfrdatasize || *verifiertype==VERIFIER_TYPE_10G) &&
+			passwordHash(user,password,*verifiertype,
 					vfrdata,vfrdatasize,vgencount,
 					passwordhash,passwordhashsize));
 
@@ -407,7 +445,7 @@ static bool o5logonParameters(const char *password,
 	return retval;
 }
 
-static bool o5logonChallenge(const char *password,
+static bool o5logonChallenge(const char *user, const char *password,
 				const char *extra,
 				stringbuffer *challenge) {
 
@@ -418,7 +456,7 @@ static bool o5logonChallenge(const char *password,
 	byte_t		passwordhash[32];
 	size_t		passwordhashsize=0;
 	size_t		sesskeysize=0;
-	if (!o5logonParameters(password,&p,&verifiertype,
+	if (!o5logonParameters(user,password,&p,&verifiertype,
 				passwordhash,&passwordhashsize,&sesskeysize)) {
 		return false;
 	}
@@ -426,7 +464,7 @@ static bool o5logonChallenge(const char *password,
 	// For an 11g verifier the plaintext isn't 48 random bytes.  Real oracle
 	// sends 40 bytes of key material plus 8 bytes of 0x08 - pkcs#7 padding
 	// up to the 48 byte boundary - and the client rejects the login if the
-	// padding isn't there.  A 12c verifier has no padding.
+	// padding isn't there.  A 12c or 10g verifier has no padding.
 	size_t	padsize=(sesskeysize==SESSION_KEY_SIZE_11G)?
 					SESSION_KEY_PAD_SIZE_11G:0;
 	size_t	materialsize=sesskeysize-padsize;
@@ -488,6 +526,30 @@ static bool o5logonComboKey(uint32_t verifiertype,
 		return retval;
 	}
 
+	if (verifiertype==VERIFIER_TYPE_10G) {
+
+		// combo_key = md5(part_a[16..31] xor part_b[16..31])
+		byte_t	b[16];
+		for (size_t i=0; i<sizeof(b); i++) {
+			b[i]=parta[16+i]^partb[16+i];
+		}
+
+		md5	m;
+		bool	retval=m.append(b,sizeof(b));
+		if (retval) {
+			const byte_t	*hash=m.getHash();
+			retval=(hash!=NULL);
+			if (retval) {
+				bytestring::copy(combokey,hash,16);
+				*combokeysize=16;
+			}
+		}
+
+		bytestring::zero(b,sizeof(b));
+
+		return retval;
+	}
+
 	// b = part_a[16..39] xor part_b[16..39]
 	// combo_key = (md5(b[0..15]) || md5(b[16..23]))[0..23]
 	byte_t	b[24];
@@ -514,7 +576,7 @@ static bool o5logonComboKey(uint32_t verifiertype,
 	return retval;
 }
 
-static bool o5logonComboKeyFromExtra(const char *password,
+static bool o5logonComboKeyFromExtra(const char *user, const char *password,
 					parameterstring *p,
 					byte_t *combokey,
 					size_t *combokeysize) {
@@ -523,7 +585,7 @@ static bool o5logonComboKeyFromExtra(const char *password,
 	byte_t		passwordhash[32];
 	size_t		passwordhashsize=0;
 	size_t		sesskeysize=0;
-	if (!o5logonParameters(password,p,&verifiertype,
+	if (!o5logonParameters(user,password,p,&verifiertype,
 				passwordhash,&passwordhashsize,&sesskeysize)) {
 		return false;
 	}
@@ -554,6 +616,7 @@ static bool o5logonComboKeyFromExtra(const char *password,
 }
 
 static bool o5logonVerify(const char *authpassword,
+				const char *user,
 				const char *password,
 				const char *extra,
 				stringbuffer *supplied) {
@@ -563,7 +626,8 @@ static bool o5logonVerify(const char *authpassword,
 
 	byte_t	combokey[32];
 	size_t	combokeysize=0;
-	if (!o5logonComboKeyFromExtra(password,&p,combokey,&combokeysize)) {
+	if (!o5logonComboKeyFromExtra(user,password,&p,
+					combokey,&combokeysize)) {
 		return false;
 	}
 
@@ -612,7 +676,8 @@ static bool o5logonVerify(const char *authpassword,
 	return ok;
 }
 
-static bool o5logonServerResponse(const char *password,
+static bool o5logonServerResponse(const char *user,
+					const char *password,
 					const char *extra,
 					stringbuffer *response) {
 
@@ -621,7 +686,8 @@ static bool o5logonServerResponse(const char *password,
 
 	byte_t	combokey[32];
 	size_t	combokeysize=0;
-	if (!o5logonComboKeyFromExtra(password,&p,combokey,&combokeysize)) {
+	if (!o5logonComboKeyFromExtra(user,password,&p,
+					combokey,&combokeysize)) {
 		return false;
 	}
 
@@ -1277,7 +1343,7 @@ bool sqlrauth_oracle_userlist::compare(const char *suppliedresponse,
 
 	if (!getDebug()) {
 		return (o5logon)?
-			o5logonVerify(suppliedresponse,
+			o5logonVerify(suppliedresponse,user,
 					validpassword,extra,NULL):
 			o3logonVerify(suppliedresponse,user,
 					validpassword,extra,NULL);
@@ -1285,7 +1351,7 @@ bool sqlrauth_oracle_userlist::compare(const char *suppliedresponse,
 
 	stringbuffer	supplied;
 	bool		retval=(o5logon)?
-			o5logonVerify(suppliedresponse,
+			o5logonVerify(suppliedresponse,user,
 					validpassword,extra,&supplied):
 			o3logonVerify(suppliedresponse,user,
 					validpassword,extra,&supplied);
@@ -1325,6 +1391,8 @@ bool sqlrauth_oracle_userlist::challenge(sqlrcredentials *cred,
 	// this builds.  The crypto each needs is gated separately - O5LOGON's
 	// pbkdf2-hmac-sha512 has no non-openssl fallback in rudiments, and
 	// O3LOGON's des and 3des may or may not be there on their own.
+	// O5LOGON under the 10g verifier needs des too, which
+	// supportedVerifierType() checks once the verifier type is known.
 	bool	serverresponse=
 			!charstring::compare(method,"O5LOGON-SERVER-RESPONSE");
 	bool	o5logon=(serverresponse ||
@@ -1350,8 +1418,9 @@ bool sqlrauth_oracle_userlist::challenge(sqlrcredentials *cred,
 		retval=(o3logon)?
 			o3logonChallenge(user,validpassword,extra,challenge):
 			((serverresponse)?
-			o5logonServerResponse(validpassword,extra,challenge):
-			o5logonChallenge(validpassword,extra,challenge));
+			o5logonServerResponse(user,validpassword,
+							extra,challenge):
+			o5logonChallenge(user,validpassword,extra,challenge));
 	}
 	delete[] validpassword;
 

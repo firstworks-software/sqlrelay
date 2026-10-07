@@ -26,7 +26,7 @@ The ceiling fixes:
 
 * the Oracle version the module reports to clients, including the version banner
 * the capabilities it advertises to clients, including the logon types it supports
-* the newest password verifier it can offer: 12c at 12.1, 11g at 11.2, and only the older O3LOGON exchange at 10.2
+* the newest password verifier it can offer: 12c at 12.1, 11g at 11.2, and 10g at 10.2
 
 Each client negotiates:
 
@@ -44,15 +44,15 @@ The verifier is how the client and the module prove the password to each other w
 ||= Client =||= 10.2 =||= 11.2 =||= 12.1 =||
 ||A genuine OCI7 era client (older than Oracle 10g)||O3LOGON, 9i verifier||O3LOGON, 9i verifier||O3LOGON, 9i verifier||
 ||An OCI7 interface call from a modern OCI client||O3LOGON, 10g verifier||O3LOGON, 10g verifier||O3LOGON, 10g verifier||
-||A modern OCI, ojdbc or thin driver client||O3LOGON, 10g verifier||O5LOGON, 11g verifier||O5LOGON, 12c verifier||
-||A client that advertises O5LOGON only||O3LOGON, 10g verifier||O5LOGON, 11g verifier||O5LOGON, 11g verifier||
+||A modern OCI, ojdbc or thin driver client||O5LOGON, 10g verifier||O5LOGON, 11g verifier||O5LOGON, 12c verifier||
+||A client that advertises O5LOGON only||O5LOGON, 10g verifier||O5LOGON, 11g verifier||O5LOGON, 11g verifier||
 
 Notes on the table:
 
 * A client older than Oracle 10g doesn't say that it supports O5LOGON, so it gets the 9i verifier.  So does any other client that doesn't say it.
 * A modern OCI client can also use the old OCI7 call interface.  Its login call is a "classic" one, which has no O5LOGON form, so it gets O3LOGON, with the 10g verifier.
 * A modern client gets 12c when the ceiling is 12.1 and the client says it supports 12c.  ojdbc and OCI 23.26 copy the logon types the module advertises, so they ask for 12c at 12.1 and for 11g at 11.2.  A client that doesn't support 12c gets 11g at both.
-* At 10.2 every client gets O3LOGON, because Oracle 10.2 has no O5LOGON.
+* Oracle 10.2 has no 11g or 12c verifier.  So at 10.2 a modern client gets O5LOGON with the 10g verifier, as it does from a real Oracle 10.2 server.
 * The logon types the module advertises follow the ceiling: O7LOGON, the 12c bit, is in the list only at 12.1.
 
 O3LOGON is the older exchange.  See [#oracleallowedlogonversion Allowed Logon Version] if you want to refuse it.
@@ -65,12 +65,12 @@ Which clients work at which ceiling:
 ||= Client =||= 10.2 =||= 11.2 =||= 12.1 =||
 ||OCI7 interface calls from a modern OCI client||Yes||Yes||Yes||
 ||Genuine Oracle 9i OCI7 client (9.0.1 and 9.2)||Yes||Yes||Yes||
-||OCI 23.26||No||Yes||Yes||
-||ojdbc||Not tested||Yes||Yes||
+||OCI 23.26||Partly||Yes||Yes||
+||ojdbc||Partly||Yes||Yes||
 ||python-oracledb and node-oracledb||No||No||Yes||
 
-* python-oracledb and node-oracledb need 12.1, the default.  At 11.2 and 10.2 their logins hang.
-* OCI 23.26 and ojdbc work at 11.2 and 12.1.  At 10.2, OCI 23.26's own (OCI8) login currently fails.
+* python-oracledb and node-oracledb need 12.1, the default.  At 11.2 their logins hang, and they don't work at 10.2 either.
+* OCI 23.26 and ojdbc work at 11.2 and 12.1.  At 10.2 they log in and run queries, but TIMESTAMP WITH TIME ZONE values and LOBs aren't supported yet.  For OCI 23.26 that means its own (OCI8) calls, not its OCI7 interface calls.  ojdbc has only been tested at 10.2 with a login and a simple query.
 * Modern clients that use the OCI7 call interface work at any ceiling.
 * Genuine Oracle 9i OCI7 clients, 9.0.1 and 9.2, work at any ceiling.  The Oracle 9i sqlplus logs in at any ceiling too, but currently fails after its first query.
 
@@ -108,7 +108,7 @@ Because the module negotiates down, any client can ask for an older verifier.  O
 
 * 11 refuses O3LOGON.  It also refuses genuine pre-10g clients and OCI7 interface calls from modern OCI clients, since both log in with O3LOGON.
 * 12a allows only the 12c verifier.  It needs a ceiling of 12.1.  At 11.2, every login is refused.
-* 11 and 12 at a ceiling of 10.2 refuse every login too, since every login there is O3LOGON.
+* 11 and 12 at a ceiling of 10.2 refuse every login too, since every login there uses the 9i or 10g verifier.
 
 ----
 

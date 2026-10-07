@@ -2416,6 +2416,23 @@ missing bytes silently.
                                       ORA-03114 locally (#10538, also at
                                       10.2) (#10541)
 
+    10554-dev-oci23-native-ociselect-realserver-oracle102.oraproxy
+                                     ociselect (OCI 23.26, OCI8 calls,
+                                      native encoding), "select 1 from
+                                      dual", against the real 10.2
+                                      server.  It logs in with the tagged
+                                      0x76 call, and the server runs it
+                                      as O5LOGON with the 10g verifier:
+                                      the challenge at [0014] has two
+                                      pairs, a 64 hex AUTH_SESSKEY and an
+                                      empty AUTH_VFR_DATA whose flags are
+                                      0x0939, the client sends its own
+                                      AUTH_SESSKEY at [0015], and the
+                                      answer at [0016] has 35 pairs,
+                                      AUTH_VERSION_SQL 20 and
+                                      AUTH_SVR_RESPONSE among them
+                                      (#10554)
+
 The three real Oracle test servers on this network
 --------------------------------------------------
 

@@ -206,7 +206,8 @@
 // client whose CCAP_LOGON_TYPES byte advertises o5logon: a 32 byte session
 // key, and aes-128 in place of 3des.  unlike VERIFIER_TYPE_9I this one is a
 // real oracle constant, and it is what tells the auth module which of the two
-// to run
+// to run.  it is also the verifier a tagged o5logon login runs under at 10.2,
+// sent in AUTH_VFR_DATA's flags like the 11g and 12c ones
 #define VERIFIER_TYPE_10G	0x0939
 #define SESSION_KEY_SIZE_10G	32
 
@@ -537,11 +538,14 @@
 
 // 0x0a200100 is 10.2.0.1.0, what the reference server reports in packet
 // [0006] of both test/protocol/oracle/samples/oracle102-oci7-*-login-select.cap
-// and in the packed version its tti version response carries.  there's no
-// AUTH_VERSION_SQL beside it because o5logon came in 11.1, so every login at
-// 10.2 is an o3logon one, and the o3logon login answer sends no auth fields at
-// all - see sendAuthenticationSuccess().
+// and in the packed version its tti version response carries.  AUTH_VERSION_NO
+// and AUTH_VERSION_SQL only go out in a tagged o5logon login's answer, and the
+// reference server answers OCI 23.26's with AUTH_VERSION_SQL 20, in packet
+// [0016] of samples/10554-dev-oci23-native-ociselect-realserver-
+// oracle102.oraproxy.  an o3logon login's answer sends no auth fields at all -
+// see sendAuthenticationSuccess().
 #define SERVER_VERSION_NO_10_2		"169869568"
+#define SERVER_VERSION_SQL_10_2		"20"
 
 // datatype request encoding flags
 #define ENCODING_MULTI_BYTE		0x01
@@ -1728,8 +1732,8 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_oracle : public sqlrprotocol {
 		// in the first phase of a login
 		void	chooseVerifierType();
 
-		// true if the session's verifier type is an o3logon one, 9i
-		// or 10g
+		// true if the session's login is an o3logon one: the 9i
+		// verifier, or the 10g verifier in a classic login
 		bool	isO3Logon();
 
 		// true if the "allowedlogonversion" listener attribute allows
@@ -2222,8 +2226,7 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_oracle : public sqlrprotocol {
 		char		*requestedservice;
 
 		// the oracle version the module imitates, from the
-		// "serverversion" listener attribute.  serverversionsql is
-		// NULL at 10.2, which never sends it
+		// "serverversion" listener attribute
 		byte_t		serverfieldversion;
 		const char	*serverversionno;
 		const char	*serverversionsql;
@@ -2678,13 +2681,14 @@ sqlrprotocol_oracle::sqlrprotocol_oracle(sqlrservercontroller *cont,
 	// unconditionally, and ojdbc 23.26 and OCI 23.26 work either way.  so
 	// 12.1 is the default.
 	//
-	// 10.2 predates o5logon, so every login there is an o3logon one, and
-	// it sends a real 10.2 server's own capability arrays
+	// 10.2 has neither the 11g nor the 12c verifier, so a tagged o5logon
+	// login there runs under the 10g verifier and every other login is an
+	// o3logon one, and it sends a real 10.2 server's own capability arrays
 	const char	*sv=parameters->getAttributeValue("serverversion");
 	if (!charstring::compare(sv,"10.2")) {
 		serverfieldversion=CCAP_FIELD_VERSION_10_2;
 		serverversionno=SERVER_VERSION_NO_10_2;
-		serverversionsql=NULL;
+		serverversionsql=SERVER_VERSION_SQL_10_2;
 	} else if (!charstring::compare(sv,"11.2")) {
 		serverfieldversion=CCAP_FIELD_VERSION_11_2;
 		serverversionno=SERVER_VERSION_NO_11_2;
@@ -2698,7 +2702,7 @@ sqlrprotocol_oracle::sqlrprotocol_oracle(sqlrservercontroller *cont,
 	// the oldest logon protocol a client may log in with, named and valued
 	// like oracle's SQLNET.ALLOWED_LOGON_VERSION_SERVER.  8 (the default,
 	// and anything unrecognized) allows every client, 10 refuses the
-	// pre-10g des exchange, 11 and 12 refuse o3logon altogether, and 12a
+	// pre-10g des exchange, 11 and 12 refuse both des verifiers, and 12a
 	// allows only the 12c verifier.  oracle treats 9 like 8, and so does
 	// this.  see logonVersionAllowed()
 	const char	*alv=parameters->getAttributeValue(
@@ -8676,19 +8680,22 @@ bool sqlrprotocol_oracle::recvAuthenticationRequest(bool secondphase) {
 
 void sqlrprotocol_oracle::chooseVerifierType() {
 
-	// o3logon for a classic login, for a client whose CCAP_LOGON_TYPES
-	// lacks o5logon, and for everybody at 10.2, which predates o5logon.
-	// a classic login has no o5logon form, and a client without the bit
-	// can't answer an o5logon challenge.
+	// the 10g or 9i verifier for a classic login, for a client whose
+	// CCAP_LOGON_TYPES lacks o5logon, and for everybody at 10.2, which
+	// has neither the 11g nor the 12c verifier.  a classic login has no
+	// o5logon form, and a client without the bit can't answer an o5logon
+	// challenge.
 	//
-	// which half of the o3logon login the client gets follows the same
-	// bit.  a genuine OCI7 era client sends 0x05 - legacy bits only - and
-	// gets the 3des exchange.  a modern client driving the legacy OCI7
-	// call interface sends 0xef, with the o5logon bit set, and wants the
-	// 10g/DES verifier instead: a 32 byte session key under aes-128.
-	// rewriting that one byte 0xef -> 0x05 mid connection makes a real
-	// 10.2 server drop from a 64 hex challenge to a 32 hex one, so the
-	// byte selects the key size rather than just correlating with it.
+	// which of the two the client gets follows the same bit.  a genuine
+	// OCI7 era client sends 0x05 - legacy bits only - and gets the 9i
+	// verifier's 3des o3logon exchange.  a modern client driving the
+	// legacy OCI7 call interface sends 0xef, with the o5logon bit set, and
+	// wants the 10g/DES verifier instead: a 32 byte session key under
+	// aes-128.  rewriting that one byte 0xef -> 0x05 mid connection makes
+	// a real 10.2 server drop from a 64 hex challenge to a 32 hex one, so
+	// the byte selects the key size rather than just correlating with it.
+	// the 10g verifier runs as o3logon for a classic login and as o5logon
+	// for a tagged one - see isO3Logon().
 	//
 	// otherwise o5logon: the 12c verifier for a client that sets
 	// CCAP_O7LOGON, if the server version is new enough to have one, and
@@ -8729,8 +8736,9 @@ void sqlrprotocol_oracle::chooseVerifierType() {
 	// down.  the two move together on every client measured, so they are
 	// gated together: leaving the field out starves an o5logon-capable
 	// client's error block parser and hangs its login, and sending it to a
-	// genuine OCI7 client would break the shape that one reads
-	oci7endtoendseqnumber=(verifiertype==VERIFIER_TYPE_10G);
+	// genuine OCI7 client would break the shape that one reads.  a tagged
+	// 10g login is an o5logon one, and gets the modern objects instead
+	oci7endtoendseqnumber=(verifiertype==VERIFIER_TYPE_10G && classiclogon);
 
 	// an oci client is the only client measured that offers more than one
 	// representation for a type - it offers its platform's and then the
@@ -8759,21 +8767,25 @@ void sqlrprotocol_oracle::chooseVerifierType() {
 }
 
 bool sqlrprotocol_oracle::isO3Logon() {
+	// a real 10.2 server runs the 10g verifier as o5logon for a tagged
+	// login (samples/10554-dev-oci23-native-ociselect-realserver-
+	// oracle102.oraproxy), and a classic login has no o5logon form
 	return (verifiertype==VERIFIER_TYPE_9I ||
-			verifiertype==VERIFIER_TYPE_10G);
+			(verifiertype==VERIFIER_TYPE_10G && classiclogon));
 }
 
 bool sqlrprotocol_oracle::logonVersionAllowed() {
 
-	// oracle's SQLNET.ALLOWED_LOGON_VERSION_SERVER lets a 10g client in at
-	// 10, and the 10g/DES verifier is the o3logon exchange a 10g client
-	// runs, so 10 only refuses the pre-10g one
+	// oracle's SQLNET.ALLOWED_LOGON_VERSION_SERVER lets the 10g verifier
+	// in at 10, so 10 only refuses the pre-10g one.  11 and 12 refuse the
+	// 10g verifier too, whether it runs as o3logon or as o5logon
 	switch (allowedlogonversion) {
 		case ORACLELOGONVERSION_10:
 			return (verifiertype!=VERIFIER_TYPE_9I);
 		case ORACLELOGONVERSION_11:
 		case ORACLELOGONVERSION_12:
-			return !isO3Logon();
+			return (verifiertype!=VERIFIER_TYPE_9I &&
+					verifiertype!=VERIFIER_TYPE_10G);
 		case ORACLELOGONVERSION_12A:
 			return (verifiertype==VERIFIER_TYPE_12C);
 		default:
@@ -8797,15 +8809,19 @@ bool sqlrprotocol_oracle::sendAuthenticationChallenge() {
 
 	bool	pbkdf2=(verifiertype==VERIFIER_TYPE_12C);
 	bool	o3logon=isO3Logon();
+	bool	des10g=(verifiertype==VERIFIER_TYPE_10G);
 
 	// a real server's AUTH_VFR_DATA is the user's stored verifier salt.
 	// SQL Relay has none, so it generates a fresh one per login.
-	// o3logon has no verifier salt at all - its session key is encrypted
-	// under the account's des password hash, which is its own salt.
+	// the 9i and 10g verifiers have no verifier salt at all - the session
+	// key is encrypted under the account's des password hash, which is its
+	// own salt.  so o3logon sends no AUTH_VFR_DATA, and a tagged 10g login
+	// sends an empty one.
 	delete[] authvfrdata;
 	authvfrdata=(o3logon)?NULL:
+			((des10g)?charstring::duplicate(""):
 			generateHex((pbkdf2)?VFR_DATA_SIZE_12C:
-						VFR_DATA_SIZE_11G);
+						VFR_DATA_SIZE_11G));
 	delete[] authpbkdf2csksalt;
 	authpbkdf2csksalt=(pbkdf2)?generateHex(PBKDF2_CSK_SALT_SIZE):NULL;
 
@@ -8830,12 +8846,10 @@ bool sqlrprotocol_oracle::sendAuthenticationChallenge() {
 		debugWrite("challenge failed, fabricating one");
 		// the size the real one would have been, or an unknown user
 		// looks different from a wrong password
-		char	*fake=generateHex((o3logon)?
-					((verifiertype==VERIFIER_TYPE_10G)?
-							SESSION_KEY_SIZE_10G:
-							SESSION_KEY_SIZE_9I):
+		char	*fake=generateHex((des10g)?SESSION_KEY_SIZE_10G:
+					((o3logon)?SESSION_KEY_SIZE_9I:
 					((pbkdf2)?SESSION_KEY_SIZE_12C:
-					SESSION_KEY_SIZE_11G));
+					SESSION_KEY_SIZE_11G)));
 		challenge.append(fake);
 		delete[] fake;
 	}
@@ -8855,9 +8869,8 @@ bool sqlrprotocol_oracle::sendAuthenticationChallenge() {
 	debugWrite("data flags: 0x%04x",dataflags);
 	debugTtcCode(ttccode);
 	debugWrite("verifier type: %d (%s)",verifiertype,
-			(o3logon)?((verifiertype==VERIFIER_TYPE_10G)?
-							"10g":"9i"):
-			((pbkdf2)?"12c":"11g"));
+			(des10g)?"10g":((o3logon)?"9i":
+			((pbkdf2)?"12c":"11g")));
 	if (!o3logon) {
 		debugWrite("authvfrdata: %s",authvfrdata);
 	}
@@ -8902,21 +8915,18 @@ bool sqlrprotocol_oracle::sendAuthenticationChallenge() {
 			putAuthCount(1,2);
 			putAuthField("AUTH_SESSKEY",serverauthsesskey);
 
-			// a genuine 9i client reads every summary object without
-			// the end to end field, this one included, and a real
-			// 10.2 server sends it the oci7 summary here (packet
-			// [0012] of samples/10273-redhat9x86-sqlplus-query-
+			// a tagged o3logon login is always a 9i one.  a genuine
+			// 9i client reads every summary object without the end
+			// to end field, this one included, and a real 10.2
+			// server sends it the oci7 summary here (packet [0012]
+			// of samples/10273-redhat9x86-sqlplus-query-
 			// we8iso8859p1-realserver-oracle102-r8b).  reading
 			// putAuthTrailer()'s object, which has the field, the
 			// client takes the zero ahead of the call number as the
 			// call number, and the call number as the length of the
 			// field after it, so anything but 01 there leaves it
 			// waiting for a byte that never comes
-			if (verifiertype==VERIFIER_TYPE_9I) {
-				putO3LogonSummary();
-			} else {
-				putAuthTrailer(false);
-			}
+			putO3LogonSummary();
 		}
 
 		debugEnd();
@@ -8925,7 +8935,7 @@ bool sqlrprotocol_oracle::sendAuthenticationChallenge() {
 
 	// a request's pair count is 8 bytes in the native encoding, a
 	// response's is 2
-	putAuthCount((pbkdf2)?6:3,2);
+	putAuthCount((pbkdf2)?6:((des10g)?2:3),2);
 
 	// AUTH_SESSKEY is 48 bytes for an 11g verifier and 32 for a 12c one,
 	// and the client picks its code path from that length, not from the
@@ -8942,9 +8952,12 @@ bool sqlrprotocol_oracle::sendAuthenticationChallenge() {
 		putAuthField("AUTH_PBKDF2_SDER_COUNT",PBKDF2_SDER_COUNT);
 	}
 
-	// constant per database on a real server, and only informational
-	putAuthField("AUTH_GLOBALLY_UNIQUE_DBID",
-			"00000000000000000000000000000000");
+	// constant per database on a real server, and only informational.  a
+	// real 10.2 server doesn't send it
+	if (!des10g) {
+		putAuthField("AUTH_GLOBALLY_UNIQUE_DBID",
+				"00000000000000000000000000000000");
+	}
 
 	putAuthTrailer(false);
 
@@ -13740,7 +13753,25 @@ bool sqlrprotocol_oracle::getQuery3Request(const byte_t *rp,
 	// test/protocol/oracle/oracleprotocolclient.cpp writes
 	// this same shape (it negotiates no representation for the pointer
 	// datatype, which leaves pointersize at its universal default)
+	//
+	// below the 11.2 field version only the registration id and the first
+	// two pointers are there, and the long form's last pointer read would
+	// land on the query text's length byte.  the client shapes the request
+	// by the negotiated field version, so that decides it, not
+	// serverversion.  the evidence is captures of OCI 23.26 against a
+	// real 10.2 server, in the universal encoding.  the module only ever
+	// gets OCI 23.26 in that encoding (see nativeencoding), so the short
+	// form is only read there
 	if (pointersize==POINTER_SIZE_UNIVERSAL &&
+		fieldversion<CCAP_FIELD_VERSION_11_2 &&
+		(!getLenPreInt(rp,&end,&unused,&rp) ||
+		!getPointer(rp,end,&pointer,&rp) ||
+		!getPointer(rp,end,&pointer,&rp))) {
+		debugWrite("truncated query3 request");
+		return false;
+	}
+	if (pointersize==POINTER_SIZE_UNIVERSAL &&
+		fieldversion>=CCAP_FIELD_VERSION_11_2 &&
 		(!getLenPreInt(rp,&end,&unused,&rp) ||
 		!getPointer(rp,end,&pointer,&rp) ||
 		!getPointer(rp,end,&pointer,&rp) ||
@@ -15127,11 +15158,18 @@ void sqlrprotocol_oracle::putDescribeInfo(sqlrservercursor *cursor,
 	// 01 17 to OCI, with the 23 bytes identical either way.  given the
 	// wrong one, OCI takes the block for an integer, runs 22 bytes past
 	// the end of the field, and answers with a marker packet - an
-	// ORA-03113
+	// ORA-03113.
+	//
+	// a real 10.2 server sends OCI the single length byte too, and OCI
+	// 23.26 reads it that way.  this, the query cache key and the uds flags
+	// follow the negotiated field version rather than serverversion, so a
+	// client below 11.2's gets the 10.2 shape at any serverversion.  the
+	// evidence is only real 10.2 server captures, where the two agree, but
+	// the client parses by the field version it negotiated
 	byte_t	prologue[23];
 	bytestring::zero(prologue,sizeof(prologue));
 	putOracleDate(prologue+16);
-	if (ociclient) {
+	if (ociclient && fieldversion>=CCAP_FIELD_VERSION_11_2) {
 		writeLenPreInt(&reqpacket,(uint32_t)sizeof(prologue));
 		write(&reqpacket,(const char *)prologue,sizeof(prologue));
 	} else {
@@ -15182,7 +15220,13 @@ void sqlrprotocol_oracle::putDescribeInfoBody(sqlrservercursor *cursor,
 	writeLenPreInt(&reqpacket,DCB_MAX_DATA_BLOCK_SIZE);
 	writeLenPreInt(&reqpacket,DCB_MIN_PREFETCH);
 	writeLenPreInt(&reqpacket,DCB_MAX_PREFETCH);
-	writeLenPreInt(&reqpacket,0);
+
+	// the query cache key, which a real 10.2 server doesn't send - its
+	// describe ends at the max prefetch.  gated on the negotiated field
+	// version - see putDescribeInfo()
+	if (fieldversion>=CCAP_FIELD_VERSION_11_2) {
+		writeLenPreInt(&reqpacket,0);
+	}
 }
 
 void sqlrprotocol_oracle::putColumnMetadata(sqlrservercursor *cursor,
@@ -15261,7 +15305,14 @@ void sqlrprotocol_oracle::putColumnMetadata(sqlrservercursor *cursor,
 	writeLenPreInt(&reqpacket,0);
 	writeLenPreInt(&reqpacket,0);
 	writeLenPreInt(&reqpacket,column);
-	writeLenPreInt(&reqpacket,0);
+
+	// the uds flags, which a real 10.2 server doesn't send - the column
+	// position is the last field there, and OCI 23.26 reads the next
+	// column's type from the byte that would carry them.  gated on the
+	// negotiated field version - see putDescribeInfo()
+	if (fieldversion>=CCAP_FIELD_VERSION_11_2) {
+		writeLenPreInt(&reqpacket,0);
+	}
 
 	debugStart("column %d",column);
 	debugColumnType(columntypestring,wiretype);

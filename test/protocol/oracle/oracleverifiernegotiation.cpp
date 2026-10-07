@@ -17,10 +17,11 @@
 // Which verifier a client actually gets is picked per client, in phase one
 // of each login, by chooseVerifierType() in src/protocols/oracle.cpp:
 //
-//	- o3logon for a 0x52 classic login, for a client whose
-//	  CCAP_LOGON_TYPES byte lacks O5LOGON (0x08), and for every client
-//	  at 10.2.  the 10g verifier for a client that sets O5LOGON, the 9i
-//	  one for a client that doesn't
+//	- the 9i verifier for a client whose CCAP_LOGON_TYPES byte lacks
+//	  O5LOGON (0x08), always under o3logon
+//	- the 10g verifier for a client that sets O5LOGON, for a 0x52
+//	  classic login or at 10.2.  o3logon for a classic login, and
+//	  o5logon for a tagged 0x76 one, as a real 10.2 server does it
 //	- otherwise o5logon: the 12c verifier at 12.1 for a client that sets
 //	  O7LOGON (0x20), and the 11g verifier for any other
 //
@@ -54,10 +55,12 @@
 // -native runs the same cases in the native encoding, which is where the
 // trailer is a marshalled struct with the call number at offset 49.  The
 // module reads and answers a 0x76 o3logon login in the portable encoding
-// only, so a native run checks what those cases advertise and stops there.
+// only, so a native run checks what the 0x05 cases advertise and stops there.
 
 // the verifier types - the VERIFIER_TYPE_* defines in
-// src/protocols/oracle.cpp.  only the two o5logon ones go out on the wire
+// src/protocols/oracle.cpp.  only the ones that run under o5logon go out on
+// the wire
+static const uint32_t	ORA_VERIFIER_TYPE_10G=0x0939;
 static const uint32_t	ORA_VERIFIER_TYPE_11G=0x1b25;
 static const uint32_t	ORA_VERIFIER_TYPE_12C=0x4815;
 
@@ -199,7 +202,7 @@ static const testcase	testcases[]={
 	{LISTENER_11_2,LOGON_TYPES_11G,VERIFIER_11G,false,true},
 	{LISTENER_11_2,LOGON_TYPES_12C,VERIFIER_11G,false,false},
 
-	// at 10.2, o3logon for everybody, 10g for an o5logon client
+	// at 10.2, nothing newer than 10g
 	{LISTENER_10_2,LOGON_TYPES_9I,VERIFIER_9I,false,false},
 	{LISTENER_10_2,LOGON_TYPES_11G,VERIFIER_10G,false,false},
 	{LISTENER_10_2,LOGON_TYPES_12C,VERIFIER_10G,false,false},
@@ -270,7 +273,7 @@ static bool checkField(oracleprotocolclient *client, const char *name,
 		ok=(ok && isHex(actual,hexsize));
 	}
 	if (value) {
-		ok=(ok && !charstring::compare(actual,value));
+		ok=(ok && !charstring::compare((actual)?actual:"",value));
 	}
 	if (!ok) {
 		stdoutput.printf("    %s: %s (flags 0x%04x)\n",
@@ -366,10 +369,10 @@ static void checkChallenge(oracleprotocolclient *client,
 		return;
 	}
 
-	bool		o3logon=(expected==VERIFIER_9I ||
-					expected==VERIFIER_10G);
-	uint32_t	expectedcount=(o3logon)?1:
-				((expected==VERIFIER_12C)?6:3);
+	bool		o3logon=(expected==VERIFIER_9I);
+	bool		des10g=(expected==VERIFIER_10G);
+	uint32_t	expectedcount=(o3logon)?1:((des10g)?2:
+				((expected==VERIFIER_12C)?6:3));
 	uint32_t	count=0;
 	l.clear();
 	l.append(label)->append(" pair count is ")->append(expectedcount);
@@ -404,6 +407,22 @@ static void checkChallenge(oracleprotocolclient *client,
 		l.clear();
 		l.append(label)->append(" has no AUTH_VFR_DATA");
 		report(l.getString(),!hasField(client,"AUTH_VFR_DATA"));
+
+	} else if (des10g) {
+
+		// the shape a real 10.2 server sends a tagged o5logon login: an
+		// empty AUTH_VFR_DATA carrying the verifier type, since the des
+		// verifier has no salt, and no AUTH_GLOBALLY_UNIQUE_DBID
+		l.clear();
+		l.append(label)->append(" AUTH_VFR_DATA is empty, flags 0x0939");
+		report(l.getString(),
+			checkField(client,"AUTH_VFR_DATA",0,"",
+					ORA_VERIFIER_TYPE_10G));
+
+		l.clear();
+		l.append(label)->append(" has no AUTH_GLOBALLY_UNIQUE_DBID");
+		report(l.getString(),
+			!hasField(client,"AUTH_GLOBALLY_UNIQUE_DBID"));
 
 	} else {
 
@@ -554,8 +573,7 @@ static void runCase(size_t index) {
 
 	const testcase		*tc=&testcases[index];
 	const listenerinfo	*li=&listeners[tc->listener];
-	bool			o3logon=(tc->expected==VERIFIER_9I ||
-					tc->expected==VERIFIER_10G);
+	bool			o3logon=(tc->expected==VERIFIER_9I);
 
 	// a sequence number per case, so an echo can't pass by accident
 	unsigned char	seqnumber=(unsigned char)(0x10+2*index);
