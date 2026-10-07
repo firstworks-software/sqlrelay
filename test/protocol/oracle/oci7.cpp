@@ -3190,31 +3190,15 @@ int main(int argc, char **argv) {
 
 	if (!isfetchatonce) {
 
-		stdoutput.printf("oexec - error mid-fetch\n");
-		// this used to assert oexec() succeeding and the error landing
-		// on the first ofen() instead (#10053), reasoning that an OCI7
-		// client's oexec() puts a bare TTI_EXECUTE on the wire, not
-		// TTI_QUERY3, and TTI_EXECUTE has no inline prefetch of its
-		// own.  that part is still true at the wire level - a real
-		// capture shows this oexec() as TTI_QUERY2/OPTION_EXECUTE, no
-		// OPTION_FETCH - but it's not the reason the error surfaces
-		// where it does.  real farm hardware (redhat9x86, solaris8sparc)
-		// consistently shows this error landing at oexec, and #10061
-		// traced it to the connection module itself: independent of
-		// what's on the wire, fetchatonce (10 by default - see
-		// FETCH_AT_ONCE in sqlrserverconnection.cpp, the batching
-		// feature from #9585/#9601) makes executeQuery() eagerly
-		// array-fetch up to that many rows from the real backend as
-		// part of the execute.  this result set has only 3 rows, well
-		// under that batch size, so row 2's divide by zero is pulled in
-		// during the execute and fails it outright.  a real Oracle
-		// server has no such eager prefetch and always defers this
-		// error to whichever fetch actually reaches the bad row -
-		// confirmed directly against the real backend, this exact
-		// odefin-before-oexec shape included - so this is sqlrelay's
-		// fetchatonce diverging from real-server timing by design, not
-		// a defect.  the fetchatonce=1 instance below avoids the
-		// divergence, fetching one row per backend round trip instead
+		stdoutput.printf("oexec/ofen - error mid-fetch\n");
+		// this instance runs the default fetchatonce, which makes the
+		// connection fetch up to that many rows from the backend as
+		// part of the execute.  this result set is smaller than that,
+		// so where the error lands depends on whether the backend
+		// client library evaluates the bad row inside that execute-time
+		// batch.  Instant Client 23 defers it to the first fetch, and
+		// older OCI has been seen failing at oexec.  either is accepted.
+		// the fetchatonce=1 instance below fetches one row at a time
 		assertEquals(check(&errcda,
 				oparse(&errcda,(text *)divzero,
 						(sb4)-1,0,(ub4)2)),0);
@@ -3229,7 +3213,10 @@ int main(int argc, char **argv) {
 					SQLT_STR,-1,&errind,
 					(text *)0,-1,-1,
 					&errlen,&errcode)),0);
-		assertTrue(oexec(&errcda)!=0);
+		if (oexec(&errcda)==0) {
+			// the error was deferred to the first fetch
+			assertTrue(ofen(&errcda,1)!=0);
+		}
 		// ORA-01476, divisor is equal to zero
 		assertEquals(errorCode(&errcda),1476);
 		stdoutput.printf("\n\n");
