@@ -2470,6 +2470,36 @@ missing bytes silently.
                                       server sends python-oracledb the
                                       UTC form too (#10555)
 
+    10564-dev-oci23-native-earlydates-realserver-oracle102.oraproxy
+                                     an OCI 23.26 OCI8 client (a scratch
+                                      program defining TIMESTAMP WITH
+                                      TIME ZONE and TIMESTAMP columns as
+                                      OCIDateTime and DATE as SQLT_DAT)
+                                      against the real 10.2 server,
+                                      through oraproxy with
+                                      ORAPROXY_UNIVERSAL_REPS=1.  One
+                                      select, eight rows of TIMESTAMP(6)
+                                      WITH TIME ZONE, TIMESTAMP(6) and
+                                      DATE: [0019] holds the describe and
+                                      1500-03-01 00:30 +01:00, sent as
+                                      UTC on the julian leap day (0d 73
+                                      64 02 1d 18 1f 01 00 00 00 00 15
+                                      3c), [0021] 1500-02-29 23:30 -01:00
+                                      (UTC 1500-03-01 00:30, 13 3c) and
+                                      0001-01-01 (64 65 ...), [0023]
+                                      1949-06-01 (77 95 ...) and
+                                      1950-01-01 (77 96 ...), [0025]
+                                      1582-10-15 00:30 +01:00 (UTC
+                                      1582-10-04 23:30, 73 b6 0a 04 18)
+                                      and 2049-12-31 12:00, and [0027]
+                                      2005-05-05 05:05:05.555555 -05:00.
+                                      A TIMESTAMP whose fraction is zero
+                                      goes out 7 bytes long, not 11.  A
+                                      real 12.2 server sends OCI 23.26
+                                      the same dates in the local form
+                                      (offset hour biased by 84)
+                                      (#10564)
+
 The three real Oracle test servers on this network
 --------------------------------------------------
 

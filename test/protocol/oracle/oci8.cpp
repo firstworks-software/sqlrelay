@@ -1875,6 +1875,232 @@ int main(int argc, char **argv) {
 	stdoutput.printf("\n\n");
 
 
+	// #10564 - a timestamp with time zone, timestamp or date from before
+	// 1950 lost its century through the module (1500 came back as 2000,
+	// 1949 as 2049), and year 1 came back as 2001.  the 1500 and 1582
+	// values also cross the julian/gregorian switch when the module shifts
+	// them to utc, which it does at serverversion 10.2 and for clients
+	// that don't set RCAP_TTC bit 0x02.  year 1 gets a negative offset,
+	// since its utc form would otherwise fall in year 0, which can't be
+	// encoded.  the expected values match a real 10.2 server's, from
+	// samples/10564-dev-oci23-native-earlydates-realserver-oracle102.oraproxy
+	stdoutput.printf("timestamp with time zone, timestamp and date - "
+				"early years\n");
+	struct earlydate {
+		int	year;
+		int	month;
+		int	day;
+		int	hour;
+		int	minute;
+		int	second;
+		int	fsecond;
+		int	tzhour;
+		int	tzminute;
+	};
+	const earlydate	earlydates[]={
+		{1500,3,1,0,30,0,0,1,0},
+		{1500,2,29,23,30,0,0,-1,0},
+		{1,1,1,0,0,0,0,-1,0},
+		{1949,6,1,12,34,56,654321000,0,0},
+		{1950,1,1,0,0,0,0,0,0},
+		{1582,10,15,0,30,0,0,1,0}
+	};
+	const int	earlydatecount=sizeof(earlydates)/sizeof(earlydate);
+	const char	*earlyquery=
+		"select * from ("
+		"select 1 n,"
+		"cast(to_timestamp_tz('1500-03-01 00:30:00 +01:00',"
+			"'YYYY-MM-DD HH24:MI:SS TZH:TZM') "
+			"as timestamp(6) with time zone) tstz,"
+		"cast(to_timestamp('1500-03-01 00:30:00',"
+			"'YYYY-MM-DD HH24:MI:SS') as timestamp(6)) ts,"
+		"to_date('1500-03-01 00:30:00',"
+			"'YYYY-MM-DD HH24:MI:SS') d from dual "
+		"union all "
+		"select 2,"
+		"cast(to_timestamp_tz('1500-02-29 23:30:00 -01:00',"
+			"'YYYY-MM-DD HH24:MI:SS TZH:TZM') "
+			"as timestamp(6) with time zone),"
+		"cast(to_timestamp('1500-02-29 23:30:00',"
+			"'YYYY-MM-DD HH24:MI:SS') as timestamp(6)),"
+		"to_date('1500-02-29 23:30:00',"
+			"'YYYY-MM-DD HH24:MI:SS') from dual "
+		"union all "
+		"select 3,"
+		"cast(to_timestamp_tz('0001-01-01 00:00:00 -01:00',"
+			"'YYYY-MM-DD HH24:MI:SS TZH:TZM') "
+			"as timestamp(6) with time zone),"
+		"cast(to_timestamp('0001-01-01 00:00:00',"
+			"'YYYY-MM-DD HH24:MI:SS') as timestamp(6)),"
+		"to_date('0001-01-01 00:00:00',"
+			"'YYYY-MM-DD HH24:MI:SS') from dual "
+		"union all "
+		"select 4,"
+		"cast(to_timestamp_tz('1949-06-01 12:34:56.654321 +00:00',"
+			"'YYYY-MM-DD HH24:MI:SS.FF TZH:TZM') "
+			"as timestamp(6) with time zone),"
+		"cast(to_timestamp('1949-06-01 12:34:56.654321',"
+			"'YYYY-MM-DD HH24:MI:SS.FF') as timestamp(6)),"
+		"to_date('1949-06-01 12:34:56',"
+			"'YYYY-MM-DD HH24:MI:SS') from dual "
+		"union all "
+		"select 5,"
+		"cast(to_timestamp_tz('1950-01-01 00:00:00 +00:00',"
+			"'YYYY-MM-DD HH24:MI:SS TZH:TZM') "
+			"as timestamp(6) with time zone),"
+		"cast(to_timestamp('1950-01-01 00:00:00',"
+			"'YYYY-MM-DD HH24:MI:SS') as timestamp(6)),"
+		"to_date('1950-01-01 00:00:00',"
+			"'YYYY-MM-DD HH24:MI:SS') from dual "
+		"union all "
+		"select 6,"
+		"cast(to_timestamp_tz('1582-10-15 00:30:00 +01:00',"
+			"'YYYY-MM-DD HH24:MI:SS TZH:TZM') "
+			"as timestamp(6) with time zone),"
+		"cast(to_timestamp('1582-10-15 00:30:00',"
+			"'YYYY-MM-DD HH24:MI:SS') as timestamp(6)),"
+		"to_date('1582-10-15 00:30:00',"
+			"'YYYY-MM-DD HH24:MI:SS') from dual"
+		") order by n";
+	OCIStmt	*earlystmt=NULL;
+	assertEquals(
+		OCIHandleAlloc(env,(void **)&earlystmt,OCI_HTYPE_STMT,0,NULL),
+		OCI_SUCCESS);
+	assertEquals(
+		OCIStmtPrepare(earlystmt,err,(text *)earlyquery,
+				charstring::getLength(earlyquery),
+				OCI_NTV_SYNTAX,OCI_DEFAULT),
+		OCI_SUCCESS);
+	assertEquals(
+		OCIStmtExecute(svc,earlystmt,err,0,0,NULL,NULL,OCI_DEFAULT),
+		OCI_SUCCESS);
+	OCIDefine	*earlydef[4];
+	sb2		earlyind[4];
+	sb4		earlyn=0;
+	OCIDateTime	*earlytstz=NULL;
+	OCIDateTime	*earlyts=NULL;
+	ub1		earlyd[7];
+	bytestring::zero(earlydef,sizeof(earlydef));
+	bytestring::zero(earlyind,sizeof(earlyind));
+	assertEquals(
+		OCIDescriptorAlloc(env,(void **)&earlytstz,
+					OCI_DTYPE_TIMESTAMP_TZ,0,NULL),
+		OCI_SUCCESS);
+	assertEquals(
+		OCIDescriptorAlloc(env,(void **)&earlyts,
+					OCI_DTYPE_TIMESTAMP,0,NULL),
+		OCI_SUCCESS);
+	assertEquals(
+		OCIDefineByPos(earlystmt,&earlydef[0],err,1,
+				&earlyn,sizeof(earlyn),SQLT_INT,
+				&earlyind[0],NULL,NULL,OCI_DEFAULT),
+		OCI_SUCCESS);
+	assertEquals(
+		OCIDefineByPos(earlystmt,&earlydef[1],err,2,
+				&earlytstz,0,SQLT_TIMESTAMP_TZ,
+				&earlyind[1],NULL,NULL,OCI_DEFAULT),
+		OCI_SUCCESS);
+	assertEquals(
+		OCIDefineByPos(earlystmt,&earlydef[2],err,3,
+				&earlyts,0,SQLT_TIMESTAMP,
+				&earlyind[2],NULL,NULL,OCI_DEFAULT),
+		OCI_SUCCESS);
+	assertEquals(
+		OCIDefineByPos(earlystmt,&earlydef[3],err,4,
+				earlyd,sizeof(earlyd),SQLT_DAT,
+				&earlyind[3],NULL,NULL,OCI_DEFAULT),
+		OCI_SUCCESS);
+	for (int i=0; i<earlydatecount; i++) {
+
+		const earlydate	*e=&earlydates[i];
+		bytestring::zero(earlyd,sizeof(earlyd));
+		assertEquals(
+			OCIStmtFetch2(earlystmt,err,1,OCI_FETCH_NEXT,
+							0,OCI_DEFAULT),
+			OCI_SUCCESS);
+		assertEquals((int)earlyn,i+1);
+		for (int j=0; j<4; j++) {
+			assertEquals((int)earlyind[j],OCI_IND_NOTNULL);
+		}
+
+		// timestamp with time zone, as wall time in its own zone
+		sb2	year=0;
+		ub1	month=0;
+		ub1	day=0;
+		ub1	hour=0;
+		ub1	minute=0;
+		ub1	second=0;
+		ub4	fsecond=0;
+		sb1	tzhour=0;
+		sb1	tzminute=0;
+		assertEquals(
+			OCIDateTimeGetDate(env,err,earlytstz,
+						&year,&month,&day),
+			OCI_SUCCESS);
+		assertEquals(
+			OCIDateTimeGetTime(env,err,earlytstz,
+					&hour,&minute,&second,&fsecond),
+			OCI_SUCCESS);
+		assertEquals(
+			OCIDateTimeGetTimeZoneOffset(env,err,earlytstz,
+						&tzhour,&tzminute),
+			OCI_SUCCESS);
+		assertEquals((int)year,e->year);
+		assertEquals((int)month,e->month);
+		assertEquals((int)day,e->day);
+		assertEquals((int)hour,e->hour);
+		assertEquals((int)minute,e->minute);
+		assertEquals((int)second,e->second);
+		assertEquals((int)fsecond,e->fsecond);
+		assertEquals((int)tzhour,e->tzhour);
+		assertEquals((int)tzminute,e->tzminute);
+
+		// timestamp
+		year=0;
+		month=0;
+		day=0;
+		hour=0;
+		minute=0;
+		second=0;
+		fsecond=0;
+		assertEquals(
+			OCIDateTimeGetDate(env,err,earlyts,
+						&year,&month,&day),
+			OCI_SUCCESS);
+		assertEquals(
+			OCIDateTimeGetTime(env,err,earlyts,
+					&hour,&minute,&second,&fsecond),
+			OCI_SUCCESS);
+		assertEquals((int)year,e->year);
+		assertEquals((int)month,e->month);
+		assertEquals((int)day,e->day);
+		assertEquals((int)hour,e->hour);
+		assertEquals((int)minute,e->minute);
+		assertEquals((int)second,e->second);
+		assertEquals((int)fsecond,e->fsecond);
+
+		// date, as the 7 byte oracle date
+		assertEquals((int)earlyd[0],e->year/100+100);
+		assertEquals((int)earlyd[1],e->year%100+100);
+		assertEquals((int)earlyd[2],e->month);
+		assertEquals((int)earlyd[3],e->day);
+		assertEquals((int)earlyd[4],e->hour+1);
+		assertEquals((int)earlyd[5],e->minute+1);
+		assertEquals((int)earlyd[6],e->second+1);
+	}
+	assertEquals(
+		OCIStmtFetch2(earlystmt,err,1,OCI_FETCH_NEXT,0,OCI_DEFAULT),
+		OCI_NO_DATA);
+	assertEquals(
+		OCIDescriptorFree(earlytstz,OCI_DTYPE_TIMESTAMP_TZ),
+		OCI_SUCCESS);
+	assertEquals(
+		OCIDescriptorFree(earlyts,OCI_DTYPE_TIMESTAMP),
+		OCI_SUCCESS);
+	assertEquals(OCIHandleFree(earlystmt,OCI_HTYPE_STMT),OCI_SUCCESS);
+	stdoutput.printf("\n\n");
+
+
 
 	stdoutput.printf("\n============ Long-form CLR ===========\n\n");
 

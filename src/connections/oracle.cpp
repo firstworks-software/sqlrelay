@@ -20,7 +20,8 @@
 
 #define MAX_BYTES_PER_CHAR	4
 
-// max size of a date, converted to text using date_to_text_format
+// max size of a date or timestamp, converted to text using
+// date_to_text_format, timestamp_to_text_format or timestamp_tz_to_text_format
 #define MAX_DATE_TEXT_SIZE	128
 
 #ifdef OCI_STMT_CACHE
@@ -57,6 +58,7 @@ extern "C" {
 	#define BLOB_TYPE 113
 	#define BFILE_TYPE 114
 	#define TIMESTAMP_TYPE 187
+	#define TIMESTAMP_TZ_TYPE 188
 	// oci describes a timestamp with local time zone as its own code,
 	// but nothing distinguishes its value from a plain timestamp's once
 	// it arrives as text, so it's reported as the same datatype
@@ -83,6 +85,8 @@ struct describe {
 	ub1		precision;
 	ub1		scale;
 	ub1		nullok;
+	// descriptor type of a column defined as an OCIDateTime, or 0
+	ub4		datetimetype;
 };
 
 struct datebind {
@@ -111,6 +115,14 @@ class SQLRSERVER_DLLSPEC oracleconnection : public sqlrserverconnection {
 		#endif
 		bool		logIn(const char **error, const char **warning);
 		const char	*logInError(const char *errmsg);
+		#ifdef OCI_DTYPE_TIMESTAMP
+		bool		validTimestampToTextFormat(
+						const char *parameter,
+						const char *format,
+						ub1 formatlen,
+						ub4 dtype,
+						const char **error);
+		#endif
 		sqlrservercursor	*newCursor(uint16_t id);
 		void		deleteCursor(sqlrservercursor *curs);
 		void		logOut();
@@ -212,6 +224,10 @@ class SQLRSERVER_DLLSPEC oracleconnection : public sqlrserverconnection {
 		const char	*nlslang;
 		const char	*datetotextformat;
 		ub1		datetotextformatlen;
+		const char	*timestamptotextformat;
+		ub1		timestamptotextformatlen;
+		const char	*timestamptztotextformat;
+		ub1		timestamptztotextformatlen;
 		ucs2_t		*ucs2user;
 		ucs2_t		*ucs2password;
 
@@ -431,6 +447,9 @@ class SQLRSERVER_DLLSPEC oraclecursor : public sqlrservercursor {
 		ub2		**def_col_retlen;
 		ub2		**def_col_retcode;
 		OCIDate		**def_date;
+		#ifdef OCI_DTYPE_TIMESTAMP
+		OCIDateTime	***def_datetime;
+		#endif
 		text		**def_datebuf;
 
 		uint16_t	maxbindcount;
@@ -509,6 +528,10 @@ oracleconnection::oracleconnection(sqlrservercontroller *cont) :
 	nlslang=NULL;
 	datetotextformat=NULL;
 	datetotextformatlen=0;
+	timestamptotextformat=NULL;
+	timestamptotextformatlen=0;
+	timestamptztotextformat=NULL;
+	timestamptztotextformatlen=0;
 	ucs2user=NULL;
 	ucs2password=NULL;
 
@@ -1021,6 +1044,28 @@ void oracleconnection::handleConnectString() {
 		datetotextformatlen=(len>255)?255:(ub1)len;
 	}
 
+	// handle timestamp-to-text conversion formats
+	#ifdef OCI_DTYPE_TIMESTAMP
+	timestamptotextformat=
+		cont->getConnectStringValue("timestamp_to_text_format");
+	if (charstring::isNullOrEmpty(timestamptotextformat)) {
+		timestamptotextformat=NULL;
+		timestamptotextformatlen=0;
+	} else {
+		size_t	len=charstring::getLength(timestamptotextformat);
+		timestamptotextformatlen=(len>255)?255:(ub1)len;
+	}
+	timestamptztotextformat=
+		cont->getConnectStringValue("timestamp_tz_to_text_format");
+	if (charstring::isNullOrEmpty(timestamptztotextformat)) {
+		timestamptztotextformat=NULL;
+		timestamptztotextformatlen=0;
+	} else {
+		size_t	len=charstring::getLength(timestamptztotextformat);
+		timestamptztotextformatlen=(len>255)?255:(ub1)len;
+	}
+	#endif
+
 	// override max field size if it was set too small
 	if (cont->getMaxFieldSize()<MAX_BYTES_PER_CHAR) {
 		cont->setMaxFieldSize(MAX_BYTES_PER_CHAR);
@@ -1263,6 +1308,26 @@ bool oracleconnection::logIn(const char **error, const char **warning) {
 			return false;
 		}
 	}
+
+	// validate the timestamp-to-text formats
+	#ifdef OCI_DTYPE_TIMESTAMP
+	if ((timestamptotextformat &&
+		!validTimestampToTextFormat("timestamp_to_text_format",
+						timestamptotextformat,
+						timestamptotextformatlen,
+						OCI_DTYPE_TIMESTAMP,
+						error)) ||
+		(timestamptztotextformat &&
+		!validTimestampToTextFormat("timestamp_tz_to_text_format",
+						timestamptztotextformat,
+						timestamptztotextformatlen,
+						OCI_DTYPE_TIMESTAMP_TZ,
+						error))) {
+		OCIHandleFree(err,OCI_HTYPE_ERROR);
+		OCIHandleFree(env,OCI_HTYPE_ENV);
+		return false;
+	}
+	#endif
 
 	// allocate a server handle
 	if (OCIHandleAlloc((dvoid *)env,(dvoid **)&srv,
@@ -1577,6 +1642,50 @@ bool oracleconnection::logIn(const char **error, const char **warning) {
 	#endif
 	return true;
 }
+
+#ifdef OCI_DTYPE_TIMESTAMP
+bool oracleconnection::validTimestampToTextFormat(const char *parameter,
+							const char *format,
+							ub1 formatlen,
+							ub4 dtype,
+							const char **error) {
+
+	if (charstring::getLength(format)>255) {
+		errormessage.clear();
+		errormessage.append(parameter);
+		errormessage.append(" is longer than 255 characters.");
+		*error=errormessage.getString();
+		return false;
+	}
+
+	// convert a test value of the given type
+	OCIDateTime	*testdatetime=NULL;
+	if (OCIDescriptorAlloc((dvoid *)env,(dvoid **)&testdatetime,
+					dtype,(size_t)0,(dvoid **)0)!=OCI_SUCCESS) {
+		*error=logInError("OCIDescriptorAlloc() failed");
+		return false;
+	}
+	const char	*tz=(dtype==OCI_DTYPE_TIMESTAMP)?NULL:"+00:00";
+	text		testbuf[MAX_DATE_TEXT_SIZE];
+	ub4		testbufsize=sizeof(testbuf);
+	bool		valid=
+		(OCIDateTimeConstruct((dvoid *)env,err,testdatetime,
+				2003,3,3,3,3,3,0,
+				(OraText *)tz,
+				charstring::getLength(tz))==OCI_SUCCESS &&
+		OCIDateTimeToText((dvoid *)env,err,testdatetime,
+				(const OraText *)format,formatlen,6,
+				(const OraText *)NULL,0,
+				&testbufsize,testbuf)==OCI_SUCCESS);
+	if (!valid) {
+		stringbuffer	errmsg;
+		errmsg.append("Invalid ")->append(parameter);
+		*error=logInError(errmsg.getString());
+	}
+	OCIDescriptorFree(testdatetime,dtype);
+	return valid;
+}
+#endif
 
 const char *oracleconnection::logInError(const char *errmsg) {
 
@@ -3728,6 +3837,9 @@ void oraclecursor::allocateResultSetBuffers(int32_t columncount) {
 		def_col_retlen=NULL;
 		def_col_retcode=NULL;
 		def_date=NULL;
+		#ifdef OCI_DTYPE_TIMESTAMP
+		def_datetime=NULL;
+		#endif
 		def_datebuf=NULL;
 	} else {
 		this->columncount=columncount;
@@ -3742,6 +3854,17 @@ void oraclecursor::allocateResultSetBuffers(int32_t columncount) {
 		def_datebuf=NULL;
 		if (oracleconn->datetotextformat) {
 			def_date=new OCIDate *[columncount];
+		}
+		#ifdef OCI_DTYPE_TIMESTAMP
+		def_datetime=NULL;
+		if (oracleconn->timestamptotextformat ||
+				oracleconn->timestamptztotextformat) {
+			def_datetime=new OCIDateTime **[columncount];
+		}
+		#endif
+		if (oracleconn->datetotextformat ||
+				oracleconn->timestamptotextformat ||
+				oracleconn->timestamptztotextformat) {
 			def_datebuf=new text *[columncount];
 		}
 		uint32_t	fetchatonce=getFetchAtOnce();
@@ -3757,6 +3880,16 @@ void oraclecursor::allocateResultSetBuffers(int32_t columncount) {
 			def_col_retcode[i]=new ub2[fetchatonce];
 			if (def_date) {
 				def_date[i]=new OCIDate[fetchatonce];
+			}
+			#ifdef OCI_DTYPE_TIMESTAMP
+			if (def_datetime) {
+				def_datetime[i]=new OCIDateTime *[fetchatonce];
+				for (uint32_t j=0; j<fetchatonce; j++) {
+					def_datetime[i][j]=NULL;
+				}
+			}
+			#endif
+			if (def_datebuf) {
 				def_datebuf[i]=new text[fetchatonce*
 							MAX_DATE_TEXT_SIZE];
 			}
@@ -3776,6 +3909,13 @@ void oraclecursor::deallocateResultSetBuffers() {
 			delete[] def_buf[i];
 			if (def_date) {
 				delete[] def_date[i];
+			}
+			#ifdef OCI_DTYPE_TIMESTAMP
+			if (def_datetime) {
+				delete[] def_datetime[i];
+			}
+			#endif
+			if (def_datebuf) {
 				delete[] def_datebuf[i];
 			}
 		}
@@ -3783,6 +3923,10 @@ void oraclecursor::deallocateResultSetBuffers() {
 		delete[] def_date;
 		def_datebuf=NULL;
 		def_date=NULL;
+		#ifdef OCI_DTYPE_TIMESTAMP
+		delete[] def_datetime;
+		def_datetime=NULL;
+		#endif
 		delete[] def_col_retcode;
 		delete[] def_col_retlen;
 		delete[] def_indp;
@@ -4994,6 +5138,7 @@ bool oraclecursor::executeQueryOrFetchFromBindCursor(const char *query,
 				return false;
 			}
 			desc[i].scale=(ub1)scale;
+			desc[i].datetimetype=0;
 
 			// get whether the column is nullable
 			if (OCIAttrGet((dvoid *)desc[i].paramd,
@@ -5064,6 +5209,45 @@ bool oraclecursor::executeQueryOrFetchFromBindCursor(const char *query,
 					defbufsize=(sb4)sizeof(OCIDate);
 					deftype=SQLT_ODT;
 				}
+
+				// define timestamp columns as oracle
+				// datetimes, converted to text in getField()
+				#ifdef OCI_DTYPE_TIMESTAMP
+				if (oracleconn->timestamptotextformat &&
+					desc[i].dbtype==TIMESTAMP_TYPE) {
+					desc[i].datetimetype=
+						OCI_DTYPE_TIMESTAMP;
+					deftype=SQLT_TIMESTAMP;
+				} else if (
+					oracleconn->timestamptztotextformat &&
+					desc[i].dbtype==TIMESTAMP_TZ_TYPE) {
+					desc[i].datetimetype=
+						OCI_DTYPE_TIMESTAMP_TZ;
+					deftype=SQLT_TIMESTAMP_TZ;
+				} else if (
+					oracleconn->timestamptotextformat &&
+					desc[i].dbtype==TIMESTAMP_LTZ_TYPE) {
+					desc[i].datetimetype=
+						OCI_DTYPE_TIMESTAMP_LTZ;
+					deftype=SQLT_TIMESTAMP_LTZ;
+				}
+				if (desc[i].datetimetype) {
+					for (uint32_t j=0;
+						j<getFetchAtOnce(); j++) {
+						if (OCIDescriptorAlloc(
+							(void *)oracleconn->env,
+							(void **)
+							&def_datetime[i][j],
+							desc[i].datetimetype,
+							0,0)!=OCI_SUCCESS) {
+							def_datetime[i][j]=NULL;
+							return false;
+						}
+					}
+					defbuf=(dvoid *)def_datetime[i];
+					defbufsize=(sb4)sizeof(OCIDateTime *);
+				}
+				#endif
 
 				// if the column is not a LOB, define it,
 				// translated to a NULL terminated string
@@ -5441,6 +5625,39 @@ void oraclecursor::getField(uint32_t col,
 		return;
 	}
 
+	// handle timestamps, when a timestamp-to-text format was configured
+	#ifdef OCI_DTYPE_TIMESTAMP
+	if (desc[col].datetimetype) {
+		const char	*format=oracleconn->timestamptotextformat;
+		ub1		formatlen=oracleconn->timestamptotextformatlen;
+		if (desc[col].datetimetype==OCI_DTYPE_TIMESTAMP_TZ) {
+			format=oracleconn->timestamptztotextformat;
+			formatlen=oracleconn->timestamptztotextformatlen;
+		}
+		text	*buf=&def_datebuf[col][row*MAX_DATE_TEXT_SIZE];
+		ub4	bufsize=MAX_DATE_TEXT_SIZE-1;
+		if (OCIDateTimeToText((dvoid *)oracleconn->session,
+				oracleconn->err,
+				def_datetime[col][row],
+				(const OraText *)format,formatlen,
+				desc[col].scale,
+				(const OraText *)NULL,0,
+				&bufsize,buf)!=OCI_SUCCESS) {
+			if (oracleconn->cont->getDebug()) {
+				oracleconn->cont->raiseDebugWriteEvent(
+					"timestamp-to-text conversion failed");
+			}
+			*null=true;
+			return;
+		}
+		buf[bufsize]='\0';
+		def_col_retlen[col][row]=(ub2)bufsize;
+		*field=(const char *)buf;
+		*fieldsize=def_col_retlen[col][row];
+		return;
+	}
+	#endif
+
 	// handle normal datatypes
 	*field=(const char *)&def_buf[col][row*conn->cont->getMaxFieldSize()];
 	*fieldsize=def_col_retlen[col][row];
@@ -5566,6 +5783,20 @@ void oraclecursor::closeResultSet() {
 					def_lob[i][j]=NULL;
 				}
 			}
+
+			// free timestamp resources
+			#ifdef OCI_DTYPE_TIMESTAMP
+			if (def_datetime) {
+				for (uint32_t j=0; j<getFetchAtOnce(); j++) {
+					if (def_datetime[i][j]) {
+						OCIDescriptorFree(
+							def_datetime[i][j],
+							desc[i].datetimetype);
+						def_datetime[i][j]=NULL;
+					}
+				}
+			}
+			#endif
 
 			// Members of the def[] array should not be freed
 			// here using OCIHandleFree as def[] array are just

@@ -203,8 +203,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   nothing on the wire tells apart from go-ora v2, which did.  on
   forces big chunks for any tti 6 session, whatever the client
   advertises
-- added a date_to_text_format connect string parameter to the oracle
-  connection module.  when it's set, date columns are fetched
+- added date_to_text_format, timestamp_to_text_format and
+  timestamp_tz_to_text_format connect string parameters to the oracle
+  connection module.  when one is set, its columns are fetched
   as oracle dates and converted to text with the given format,
   client-side, so a date keeps its time of day.  when it's
   unset, the default, date columns are fetched as text using
@@ -2948,6 +2949,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   client's sequence number
 - fixed OCI clients hanging or failing to log in to the oracle protocol
   module at serverversion 12.1
+- fixed the oracle protocol module returning the wrong century for
+  years before 1950 and for year 0001
 
 ### Security
 - fixed an authentication hole in the des password encryption module

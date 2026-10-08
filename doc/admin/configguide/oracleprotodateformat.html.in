@@ -18,7 +18,21 @@ http://www.gnu.org/software/src-highlite -->
 <pre><tt><font color="#990000">&lt;</font><font color="#008080">connection</font> string<font color="#990000">=</font><font color="#FF0000">"user=exampleuser;password=examplepassword;oracle_sid=ora1;date_to_text_format=YYYY-MM-DD HH24:MI:SS"</font><font color="#990000">/&gt;</font></tt></pre>
 
 </blockquote>
-<p>DATE columns are then returned in that format.  TIMESTAMP columns, and how dates in queries are parsed, are unaffected.  Use a numeric, fixed-width format, with only /, - and : as delimiters, like the one above, or the date may not be parsed correctly.</p>
+<p>DATE columns are then returned in that format.  How dates in queries are parsed is unaffected.  Use a numeric, fixed-width format, with only /, -, . and : as delimiters, like the one above, or the date may not be parsed correctly.</p>
+
+<p>TIMESTAMP columns have the same problem in a different form.  An Oracle back-end's default timestamp formats usually have a 2-digit year, so a year outside of 1950-2049 comes back in the wrong century.  To keep the century, also set the <i>timestamp_to_text_format</i> parameter (for TIMESTAMP and TIMESTAMP WITH LOCAL TIME ZONE columns) and the <i>timestamp_tz_to_text_format</i> parameter (for TIMESTAMP WITH TIME ZONE columns), for example:</p>
+
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt><font color="#990000">&lt;</font><font color="#008080">connection</font> string<font color="#990000">=</font><font color="#FF0000">"user=exampleuser;password=examplepassword;oracle_sid=ora1;date_to_text_format=YYYY-MM-DD HH24:MI:SS;timestamp_to_text_format=YYYY-MM-DD HH24:MI:SS.FF;timestamp_tz_to_text_format=YYYY-MM-DD HH24:MI:SS.FF TZH:TZM"</font><font color="#990000">/&gt;</font></tt></pre>
+
+</blockquote>
+<p>Use YYYY rather than SYYYY, as years BC are not supported.  TIMESTAMP WITH TIME ZONE values must be printed with TZH:TZM.  A value stored with a named time zone region is then sent to the client as its offset from UTC, as the region itself (TZR) can't be encoded.</p>
+
+<p>Without these parameters, a 2-digit year is given a century using Oracle's RR rule, the same way the back-end would interpret it.  Years 00-49 and 50-99 are taken to fall in the current century and the previous one (or the next one and the current one, during the second half of a century), so any year outside of that 100 year window is still returned in the wrong century.</p>
 
 <hr/>
 

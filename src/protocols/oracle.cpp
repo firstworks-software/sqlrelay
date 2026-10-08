@@ -1676,6 +1676,19 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_oracle : public sqlrprotocol {
 						uint32_t *size,
 						const byte_t **rpout);
 		void	putDalc(const char *bytes, uint32_t size);
+
+		// parses date text the way datetime::parse() does, but takes
+		// a 3 or 4 digit year as written and gives a 1 or 2 digit
+		// year a century by oracle's RR rule
+		bool	parseOracleDate(const char *text,
+						int16_t *year,
+						int16_t *month,
+						int16_t *day,
+						int16_t *hour,
+						int16_t *minute,
+						int16_t *second,
+						int32_t *usec,
+						bool *isnegative);
 		bool	getOracleDate(const char *field,
 						uint64_t fieldsize,
 						byte_t *out);
@@ -7669,6 +7682,92 @@ void sqlrprotocol_oracle::putDalc(const char *bytes, uint32_t size) {
 	}
 }
 
+bool sqlrprotocol_oracle::parseOracleDate(const char *text,
+						int16_t *year,
+						int16_t *month,
+						int16_t *day,
+						int16_t *hour,
+						int16_t *minute,
+						int16_t *second,
+						int32_t *usec,
+						bool *isnegative) {
+
+	// FIXME: set ddmm and yyyyddmm somehow
+	if (!datetime::parse(text,false,false,"/-.:",false,
+				year,month,day,hour,minute,second,
+				usec,isnegative)) {
+		return false;
+	}
+
+	// find the year as the text has it - in the first space-separated
+	// part that isn't a time but is delimited like a date, the first
+	// piece if it's 4 characters long and the third otherwise, the same
+	// choice datetime::parse() makes
+	bool		found=false;
+	size_t		yearlen=0;
+	const char	*p=text;
+	while (*p && !found) {
+		while (*p==' ') {
+			p++;
+		}
+		const char	*start=p;
+		bool		colon=false;
+		bool		slash=false;
+		bool		dot=false;
+		bool		dash=false;
+		while (*p && *p!=' ') {
+			if (*p==':') {
+				colon=true;
+			} else if (*p=='/') {
+				slash=true;
+			} else if (*p=='.') {
+				dot=true;
+			} else if (*p=='-') {
+				dash=true;
+			}
+			p++;
+		}
+		if (colon || (!slash && !dot && !dash)) {
+			continue;
+		}
+		found=true;
+		char		delimiter=(slash)?'/':((dot)?'.':'-');
+		const char	*piece=start;
+		for (uint16_t i=0; ; i++) {
+			const char	*pieceend=piece;
+			while (pieceend<p && *pieceend!=delimiter) {
+				pieceend++;
+			}
+			size_t	len=(size_t)(pieceend-piece);
+			if ((i==0 && len==4) || i==2) {
+				yearlen=len;
+				break;
+			}
+			if (pieceend==p) {
+				break;
+			}
+			piece=pieceend+1;
+		}
+	}
+
+	// give a 1 or 2 digit year a century by oracle's RR rule
+	if (*year>=0 && ((found)?(yearlen==1 || yearlen==2):(*year<100))) {
+		datetime	dt;
+		dt.initFromSystemDateTime();
+		int32_t	currentyear=dt.getYear();
+		int32_t	century=currentyear/100*100;
+		int32_t	currentyy=currentyear%100;
+		int32_t	rryear=century+*year;
+		if (*year<50 && currentyy>=50) {
+			rryear+=100;
+		} else if (*year>=50 && currentyy<50) {
+			rryear-=100;
+		}
+		*year=(int16_t)rryear;
+	}
+	return true;
+}
+
 bool sqlrprotocol_oracle::getOracleDate(const char *field,
 					uint64_t fieldsize,
 					byte_t *out) {
@@ -7681,12 +7780,7 @@ bool sqlrprotocol_oracle::getOracleDate(const char *field,
 	int16_t	second;
 	int32_t	usec;
 	bool	isnegative;
-	// FIXME: set ddmm and yyyyddmm somehow
-	//
-	// a 2-digit year needs century inference - oracle's default date
-	// text conversion (eg. "03-MAR-03") carries no century of its own
-	if (!datetime::parse(field,false,false,"/-.:",true,
-				&year,&month,&day,
+	if (!parseOracleDate(field,&year,&month,&day,
 				&hour,&minute,&second,
 				&usec,&isnegative)) {
 		debugWrite("date (failed to parse): \"%.*s\"",
@@ -17686,11 +17780,13 @@ bool sqlrprotocol_oracle::putTimestampField(const char *field,
 	debugWrite("input: %.*s",(int)fieldsize,field);
 
 	// the backend hands a timestamp over in the text form oracle prints
-	// one as - the session's date, then the time on a 12 hour clock,
-	// then the fraction, then the half of the day, and then, for a
-	// timestamp with time zone, the offset - and the wire wants the
-	// fixed width binary form behind a length byte.  captured from a
-	// live 12.2 server talking to OCI 23.26:
+	// one as - by default the session's date, then the time on a 12 hour
+	// clock, then the fraction, then the half of the day, and then, for
+	// a timestamp with time zone, the offset, or else in the connection
+	// module's timestamp_to_text_format or timestamp_tz_to_text_format,
+	// if one is configured - and the wire wants the fixed width binary
+	// form behind a length byte.  captured from a live 12.2 server
+	// talking to OCI 23.26:
 	//
 	//	2004-04-04 04:04:04.444444
 	//		-> 0b 78 68 04 04 05 05 05 1a 7d ad 60
@@ -17734,9 +17830,9 @@ bool sqlrprotocol_oracle::putTimestampField(const char *field,
 	const char	*f=field;
 	const char	*end=field+fieldsize;
 
-	// the date runs to the first space, and datetime::parse() reads it
-	// the same way getOracleDate() reads a date column, century
-	// inference for a 2 digit year and all
+	// the date runs to the first space, and parseOracleDate() reads it
+	// the same way getOracleDate() reads a date column, RR rule for a 1
+	// or 2 digit year and all
 	const char	*datestart=f;
 	while (f<end && *f!=' ') {
 		f++;
@@ -17759,8 +17855,7 @@ bool sqlrprotocol_oracle::putTimestampField(const char *field,
 	int16_t	parsedsecond;
 	int32_t	usec;
 	bool	isnegative;
-	if (!datetime::parse(datebuffer,false,false,"/-.:",true,
-				&year,&month,&day,
+	if (!parseOracleDate(datebuffer,&year,&month,&day,
 				&parsedhour,&parsedminute,&parsedsecond,
 				&usec,&isnegative)) {
 		debugWrite("bad date");

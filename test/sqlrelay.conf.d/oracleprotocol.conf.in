@@ -51,7 +51,7 @@
 			</auth>
 		</auths>
 		<connections>
-			<connection string="oracle_sid=(DESCRIPTION = (ADDRESS = (PROTOCOL = TCP)(HOST = oracle)(PORT = 1521)) (CONNECT_DATA = (SERVER = DEDICATED) (SERVICE_NAME = ora1)));user=@HOSTNAME@;password=testpassword;date_to_text_format=YYYY-MM-DD HH24:MI:SS"/>
+			<connection string="oracle_sid=(DESCRIPTION = (ADDRESS = (PROTOCOL = TCP)(HOST = oracle)(PORT = 1521)) (CONNECT_DATA = (SERVER = DEDICATED) (SERVICE_NAME = ora1)));user=@HOSTNAME@;password=testpassword;date_to_text_format=YYYY-MM-DD HH24:MI:SS;timestamp_to_text_format=YYYY-MM-DD HH24:MI:SS.FF;timestamp_tz_to_text_format=YYYY-MM-DD HH24:MI:SS.FF TZH:TZM"/>
 		</connections>
 	</instance>
 
@@ -70,7 +70,7 @@
 			</auth>
 		</auths>
 		<connections>
-			<connection string="oracle_sid=(DESCRIPTION = (ADDRESS = (PROTOCOL = TCP)(HOST = oracle)(PORT = 1521)) (CONNECT_DATA = (SERVER = DEDICATED) (SERVICE_NAME = ora1)));user=@HOSTNAME@;password=testpassword;date_to_text_format=YYYY-MM-DD HH24:MI:SS"/>
+			<connection string="oracle_sid=(DESCRIPTION = (ADDRESS = (PROTOCOL = TCP)(HOST = oracle)(PORT = 1521)) (CONNECT_DATA = (SERVER = DEDICATED) (SERVICE_NAME = ora1)));user=@HOSTNAME@;password=testpassword;date_to_text_format=YYYY-MM-DD HH24:MI:SS;timestamp_to_text_format=YYYY-MM-DD HH24:MI:SS.FF;timestamp_tz_to_text_format=YYYY-MM-DD HH24:MI:SS.FF TZH:TZM"/>
 		</connections>
 	</instance>
 
@@ -89,7 +89,7 @@
 			</auth>
 		</auths>
 		<connections>
-			<connection string="oracle_sid=(DESCRIPTION = (ADDRESS = (PROTOCOL = TCP)(HOST = oracle)(PORT = 1521)) (CONNECT_DATA = (SERVER = DEDICATED) (SERVICE_NAME = ora1)));user=@HOSTNAME@;password=testpassword;date_to_text_format=YYYY-MM-DD HH24:MI:SS"/>
+			<connection string="oracle_sid=(DESCRIPTION = (ADDRESS = (PROTOCOL = TCP)(HOST = oracle)(PORT = 1521)) (CONNECT_DATA = (SERVER = DEDICATED) (SERVICE_NAME = ora1)));user=@HOSTNAME@;password=testpassword;date_to_text_format=YYYY-MM-DD HH24:MI:SS;timestamp_to_text_format=YYYY-MM-DD HH24:MI:SS.FF;timestamp_tz_to_text_format=YYYY-MM-DD HH24:MI:SS.FF TZH:TZM"/>
 		</connections>
 	</instance>
 
@@ -103,7 +103,7 @@
 			<listener protocol="oracle" port="@ORACLEPROTOCOLPORT4@" sid="ora1"/>
 		</listeners>
 		<connections>
-			<connection string="oracle_sid=(DESCRIPTION = (ADDRESS = (PROTOCOL = TCP)(HOST = oracle)(PORT = 1521)) (CONNECT_DATA = (SERVER = DEDICATED) (SERVICE_NAME = ora1)));user=testuser;password=testpassword;date_to_text_format=YYYY-MM-DD HH24:MI:SS"/>
+			<connection string="oracle_sid=(DESCRIPTION = (ADDRESS = (PROTOCOL = TCP)(HOST = oracle)(PORT = 1521)) (CONNECT_DATA = (SERVER = DEDICATED) (SERVICE_NAME = ora1)));user=testuser;password=testpassword;date_to_text_format=YYYY-MM-DD HH24:MI:SS;timestamp_to_text_format=YYYY-MM-DD HH24:MI:SS.FF;timestamp_tz_to_text_format=YYYY-MM-DD HH24:MI:SS.FF TZH:TZM"/>
 		</connections>
 	</instance>
 
@@ -126,7 +126,7 @@
 			</auth>
 		</auths>
 		<connections>
-			<connection string="oracle_sid=(DESCRIPTION = (ADDRESS = (PROTOCOL = TCP)(HOST = oracle)(PORT = 1521)) (CONNECT_DATA = (SERVER = DEDICATED) (SERVICE_NAME = ora1)));user=@HOSTNAME@;password=testpassword;date_to_text_format=YYYY-MM-DD HH24:MI:SS;fetchatonce=1"/>
+			<connection string="oracle_sid=(DESCRIPTION = (ADDRESS = (PROTOCOL = TCP)(HOST = oracle)(PORT = 1521)) (CONNECT_DATA = (SERVER = DEDICATED) (SERVICE_NAME = ora1)));user=@HOSTNAME@;password=testpassword;date_to_text_format=YYYY-MM-DD HH24:MI:SS;timestamp_to_text_format=YYYY-MM-DD HH24:MI:SS.FF;timestamp_tz_to_text_format=YYYY-MM-DD HH24:MI:SS.FF TZH:TZM;fetchatonce=1"/>
 		</connections>
 	</instance>
 
@@ -153,7 +153,7 @@
 			</auth>
 		</auths>
 		<connections>
-			<connection string="oracle_sid=(DESCRIPTION = (ADDRESS = (PROTOCOL = TCP)(HOST = oracle)(PORT = 1521)) (CONNECT_DATA = (SERVER = DEDICATED) (SERVICE_NAME = ora1)));user=@HOSTNAME@;password=testpassword;date_to_text_format=YYYY-MM-DD HH24:MI:SS;nls_lang=AMERICAN_AMERICA.AL32UTF8"/>
+			<connection string="oracle_sid=(DESCRIPTION = (ADDRESS = (PROTOCOL = TCP)(HOST = oracle)(PORT = 1521)) (CONNECT_DATA = (SERVER = DEDICATED) (SERVICE_NAME = ora1)));user=@HOSTNAME@;password=testpassword;date_to_text_format=YYYY-MM-DD HH24:MI:SS;timestamp_to_text_format=YYYY-MM-DD HH24:MI:SS.FF;timestamp_tz_to_text_format=YYYY-MM-DD HH24:MI:SS.FF TZH:TZM;nls_lang=AMERICAN_AMERICA.AL32UTF8"/>
 		</connections>
 	</instance>
 
@@ -205,7 +205,7 @@
 			     OCI7-tested backend (#9664 comment 21); its hostname
 			     isn't recorded anywhere else in this tree, so HOST is
 			     given as the confirmed IP (10.0.2.3) instead. -->
-			<connection string="oracle_sid=(DESCRIPTION = (ADDRESS = (PROTOCOL = TCP)(HOST = 10.0.2.3)(PORT = 1521)) (CONNECT_DATA = (SERVER = DEDICATED) (SERVICE_NAME = ora1)));user=@HOSTNAME@;password=testpassword;date_to_text_format=YYYY-MM-DD HH24:MI:SS"/>
+			<connection string="oracle_sid=(DESCRIPTION = (ADDRESS = (PROTOCOL = TCP)(HOST = 10.0.2.3)(PORT = 1521)) (CONNECT_DATA = (SERVER = DEDICATED) (SERVICE_NAME = ora1)));user=@HOSTNAME@;password=testpassword;date_to_text_format=YYYY-MM-DD HH24:MI:SS;timestamp_to_text_format=YYYY-MM-DD HH24:MI:SS.FF;timestamp_tz_to_text_format=YYYY-MM-DD HH24:MI:SS.FF TZH:TZM"/>
 		</connections>
 	</instance>
 
@@ -233,7 +233,7 @@
 			</auth>
 		</auths>
 		<connections>
-			<connection string="oracle_sid=(DESCRIPTION = (ADDRESS = (PROTOCOL = TCP)(HOST = oracle)(PORT = 1521)) (CONNECT_DATA = (SERVER = DEDICATED) (SERVICE_NAME = ora1)));user=@HOSTNAME@;password=testpassword;date_to_text_format=YYYY-MM-DD HH24:MI:SS;nls_lang=AMERICAN_AMERICA.AL32UTF8"/>
+			<connection string="oracle_sid=(DESCRIPTION = (ADDRESS = (PROTOCOL = TCP)(HOST = oracle)(PORT = 1521)) (CONNECT_DATA = (SERVER = DEDICATED) (SERVICE_NAME = ora1)));user=@HOSTNAME@;password=testpassword;date_to_text_format=YYYY-MM-DD HH24:MI:SS;timestamp_to_text_format=YYYY-MM-DD HH24:MI:SS.FF;timestamp_tz_to_text_format=YYYY-MM-DD HH24:MI:SS.FF TZH:TZM;nls_lang=AMERICAN_AMERICA.AL32UTF8"/>
 		</connections>
 	</instance>
 
