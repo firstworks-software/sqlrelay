@@ -633,9 +633,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   interval day to second column can legally declare a leading
   field precision of 0, which reads back identically to a plain
   timestamp's (size 11, precision 0), so the old guess
-  misidentified one as the other and lost the interval's value;
-  a timestamp(0) column, which describes narrower than a normal
-  timestamp's binary form, is left alone as before
+  misidentified one as the other and lost the interval's value
 - oracle protocol module: putRowData() only encodes a real oracle
   timestamp, timestamp with time zone, or interval's binary form
   for a genuine oracle backend (per getNativeDbType(), the same

@@ -29,6 +29,8 @@ TIMESTAMP columns have the same problem in a different form.  An Oracle back-end
 
 Use YYYY rather than SYYYY, as years BC are not supported.  TIMESTAMP WITH TIME ZONE values must be printed with TZH:TZM.  A value stored with a named time zone region is then sent to the client as its offset from UTC, as the region itself (TZR) can't be encoded.
 
+A column with no fractional seconds, like a TIMESTAMP(0), has no digits for FF to print, but Oracle itself still prints the . before it, so its values end in a . (for example 2005-05-05 05:05:05.).  Clients that fetch the column as a timestamp, like most OCI8 clients, never see the text and are unaffected.  Clients that fetch it as text, like OCI7 clients, see the trailing . just as they would from an Oracle server.
+
 Without these parameters, a 2-digit year is given a century using Oracle's RR rule, the same way the back-end would interpret it.  Years 00-49 and 50-99 are taken to fall in the current century and the previous one (or the next one and the current one, during the second half of a century), so any year outside of that 100 year window is still returned in the wrong century.
 
 ----

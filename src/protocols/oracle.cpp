@@ -737,9 +737,11 @@
 // a timestamp's binary form is a date's 7 bytes and then 4 more for the
 // nanoseconds, and a timestamp with time zone's is those 11 and then 2 more
 // for the offset - its minutes biased by 60, and its hours biased by 20, plus
-// 64 more when the date and time are local rather than utc.  see
-// putTimestampField()
+// 64 more when the date and time are local rather than utc.  a plain
+// timestamp with no fraction goes out as just the date's 7 bytes, and a
+// timestamp(0) column is described that wide too.  see putTimestampField()
 #define ORACLE_TIMESTAMP_SIZE		11
+#define ORACLE_TIMESTAMP_NOFRACTION_SIZE	7
 #define ORACLE_TIMESTAMPTZ_SIZE		13
 #define ORACLE_TZ_HOUR_BIAS		20
 #define ORACLE_TZ_LOCAL_HOUR_BIAS	84
@@ -747,10 +749,10 @@
 #define ORACLE_TIMESTAMP_FRACTION_DIGITS	9
 #define MAX_TIMESTAMP_DATE_TEXT		32
 
-// a timestamp column is described the 11 bytes its value really takes, but
-// a timestamp with time zone is described 1 byte wide the way an interval
-// is, and oci works the 13 it reports back out from the type.  a live 12.2
-// server sends both of those
+// a timestamp column is described the 11 bytes its value really takes (7 for
+// a timestamp(0)), but a timestamp with time zone is described 1 byte wide
+// the way an interval is, and oci works the 13 it reports back out from the
+// type.  a live 12.2 server sends both of those
 #define ORACLE_TIMESTAMPTZ_WIRE_SIZE	1
 
 // what a column with no size of its own is described as
@@ -15539,12 +15541,11 @@ uint16_t sqlrprotocol_oracle::getWireColumnType(uint16_t columntype) {
 			// src/connections/oracle.cpp gives a timestamp with
 			// local time zone its own datatype rather than folding
 			// it into a plain timestamp, so a real column reaches
-			// here as this type.  getWireColumnSize() and
-			// putColumnMetadata()'s fullencoding flag both have a
-			// case of their own for it too, matching plain
-			// TIMESTAMP's 11-byte binary wire size - a local-time-
-			// zone value carries no stored offset of its own, so it
-			// takes the same width
+			// here as this type.  getWireColumnSize() describes it
+			// as wide as a plain timestamp - a local-time-zone
+			// value carries no stored offset of its own - and
+			// putColumnMetadata()'s fullencoding flag has a case
+			// of its own for it
 			wiretype=ORACLE_TYPE_TIMESTAMPLTZ;
 			break;
 		case ORACLE_TYPE_LOB_CLOB:
@@ -15683,25 +15684,27 @@ uint32_t sqlrprotocol_oracle::getWireColumnSize(sqlrservercursor *cursor,
 		// server describes either interval 1 byte wide, and oci
 		// works the size it reports out from the type
 		size=ORACLE_INTERVAL_SIZE;
-	} else if (wiretype==ORACLE_TYPE_TIMESTAMP) {
-		// the 11 bytes the binary form really takes, which is what
-		// a live 12.2 server describes a timestamp column as
+	} else if (wiretype==ORACLE_TYPE_TIMESTAMP ||
+			wiretype==ORACLE_TYPE_TIMESTAMPLTZ) {
+		// the 11 bytes the binary form really takes, or 7 for a
+		// timestamp(0), which is what a live server describes a
+		// timestamp column as.  a timestamp with local time zone is
+		// the same width, not the 1-byte form timestamp with time
+		// zone and the intervals get - its value carries no offset of
+		// its own to widen it.  only an oracle backend's own column
+		// size is known to tell the two widths apart
 		size=ORACLE_TIMESTAMP_SIZE;
+		if (!charstring::compare(cont->getNativeDbType(),"oracle") &&
+			cont->getColumnSize(cursor,column)==
+					ORACLE_TIMESTAMP_NOFRACTION_SIZE) {
+			size=ORACLE_TIMESTAMP_NOFRACTION_SIZE;
+		}
 	} else if (wiretype==ORACLE_TYPE_TIMESTAMPTZ) {
 		// not the 13 bytes the binary form takes - a live 12.2
 		// server describes a timestamp with time zone 1 byte wide,
 		// the way it does an interval, and oci works the 13 it
 		// reports back out from the type
 		size=ORACLE_TIMESTAMPTZ_WIRE_SIZE;
-	} else if (wiretype==ORACLE_TYPE_TIMESTAMPLTZ) {
-		// the same 11 bytes as a plain timestamp, not the 1-byte form
-		// timestamp with time zone and the intervals get - a local-
-		// time-zone value carries no stored offset of its own to
-		// widen it.  before this type had its own datatype it was
-		// always described as a plain ORACLE_TYPE_TIMESTAMP, and the
-		// size a real client saw was never wrong, only the type
-		// code was
-		size=ORACLE_TIMESTAMP_SIZE;
 	} else if (wiretype==ORACLE_TYPE_CLOB ||
 			wiretype==ORACLE_TYPE_BLOB) {
 		// not the width of the lob, which has no bound - the width of
@@ -17826,7 +17829,14 @@ bool sqlrprotocol_oracle::putTimestampField(const char *field,
 	//
 	// a live 12.2 server sends the same to a client that leaves the bit
 	// clear.  the seconds and the fraction never change, and, as the last
-	// one shows, a date before 1582-10-15 is a julian one
+	// one shows, a date before 1582-10-15 is a julian one.
+	//
+	// a live 10.2 or 12.2 server leaves the nanoseconds off a plain
+	// timestamp with no fraction, at any precision, but never off a
+	// timestamp with time zone:
+	//
+	//	2005-05-05 05:05:05
+	//		-> 07 78 69 05 05 06 06 06
 	const char	*f=field;
 	const char	*end=field+fieldsize;
 
@@ -17997,9 +18007,12 @@ bool sqlrprotocol_oracle::putTimestampField(const char *field,
 	}
 
 	byte_t		out[ORACLE_TIMESTAMPTZ_SIZE];
-	uint32_t	outsize=(withtimezone)?
-				ORACLE_TIMESTAMPTZ_SIZE:
-				ORACLE_TIMESTAMP_SIZE;
+	uint32_t	outsize=ORACLE_TIMESTAMPTZ_SIZE;
+	if (!withtimezone) {
+		outsize=(nanoseconds)?
+				ORACLE_TIMESTAMP_SIZE:
+				ORACLE_TIMESTAMP_NOFRACTION_SIZE;
+	}
 	bytestring::zero(out,sizeof(out));
 
 	// shift to utc, unless the session takes local time

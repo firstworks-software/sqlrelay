@@ -5454,23 +5454,16 @@ uint16_t oraclecursor::getColumnNameSize(uint32_t col) {
 
 uint16_t oraclecursor::getColumnType(uint32_t col) {
 
-	// a timestamp(0) column - no fractional seconds - describes 7 bytes
-	// wide instead of the usual 11; the protocol module's binary
-	// encoder for a real timestamp only knows the 11-byte form, so a
-	// narrower one is left to fall through to UNKNOWN/text below rather
-	// than guess at an encoding nothing has verified
-	if (desc[col].dbtype==TIMESTAMP_TYPE && desc[col].dbsize==11) {
+	// a timestamp column is 11 bytes wide, or 7 if it has no fractional
+	// seconds (timestamp(0)).  a timestamp with local time zone gets a
+	// datatype of its own, rather than the plain timestamp one, so the
+	// protocol modules can tell the two apart
+	if (desc[col].dbtype==TIMESTAMP_TYPE &&
+		(desc[col].dbsize==7 || desc[col].dbsize==11)) {
 		return TIMESTAMP_DATATYPE;
 	}
-
-	// a timestamp with local time zone used to be folded into the same
-	// TIMESTAMP_DATATYPE as a plain timestamp above, which lost the one
-	// bit of information that distinguishes it - live #9704 evidence
-	// showed the oci7 protocol module then describing it to a real
-	// client as a plain timestamp (wire type 180) rather than 231. it
-	// gets its own datatype instead, the same way #9704 gave it its own
-	// wire type
-	if (desc[col].dbtype==TIMESTAMP_LTZ_TYPE && desc[col].dbsize==11) {
+	if (desc[col].dbtype==TIMESTAMP_LTZ_TYPE &&
+		(desc[col].dbsize==7 || desc[col].dbsize==11)) {
 		return TIMESTAMPLTZ_DATATYPE;
 	}
 

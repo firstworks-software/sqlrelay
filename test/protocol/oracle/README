@@ -2500,6 +2500,65 @@ missing bytes silently.
                                       (offset hour biased by 84)
                                       (#10564)
 
+    10567-dev-oci23-native-timestamp0-realserver-oracle102.oraproxy
+                                     an OCI 23.26 OCI8 client (a scratch
+                                      program defining every datetime
+                                      column as an OCIDateTime) against
+                                      the real 10.2 server, through
+                                      oraproxy with
+                                      ORAPROXY_UNIVERSAL_REPS=1.  One
+                                      select from dual, two rows of
+                                      casts to TIMESTAMP(0), TIMESTAMP(0)
+                                      WITH TIME ZONE, TIMESTAMP(3),
+                                      TIMESTAMP(6) and TIMESTAMP(0) WITH
+                                      LOCAL TIME ZONE.  A cast of a
+                                      literal keeps its precision in the
+                                      describe, so no table is needed.
+                                      [0018] holds the describe, max row
+                                      size 49 (01 31, which counts 13
+                                      for the time zone column) and the
+                                      columns as type, flags, precision,
+                                      scale, size: TIMESTAMP(0) b4 00 00
+                                      00 01 07 (size 7), TIMESTAMP(0)
+                                      WITH TIME ZONE b5 00 00 00 01 01
+                                      (size 1, like any timestamp with
+                                      time zone), TIMESTAMP(3) b4 00 00
+                                      01 03 01 0b, TIMESTAMP(6) b4 00 00
+                                      01 06 01 0b and the local time
+                                      zone column e7 00 00 00 01 07.
+                                      Row 1, 2005-05-05 05:05:05 with no
+                                      fraction, also in [0018]: every
+                                      plain timestamp goes out 7 bytes
+                                      long, TIMESTAMP(3) and
+                                      TIMESTAMP(6) included (07 78 69 05
+                                      05 06 06 06), the -05:00 one 13
+                                      bytes long in UTC (0d 78 69 05 05
+                                      0b 06 06 00 00 00 00 0f 3c) and
+                                      the local time zone one 7 bytes
+                                      long in UTC (07 78 69 05 05 0a 06
+                                      06, from a -04:00 session).
+                                      [0020] is row 2,
+                                      2006-06-06 06:06:06.666666: the
+                                      precision 0 columns round to
+                                      06:06:07 and still go out 7 (or
+                                      13) bytes long (07 78 6a 06 06 07
+                                      07 08; +05:30 is 0d 78 6a 06 06
+                                      01 25 08 00 00 00 00 19 5a), and
+                                      TIMESTAMP(3) and TIMESTAMP(6) go
+                                      out 11 bytes long (27 c1 9c c0 and
+                                      27 bc 84 10).  A real 12.2 server
+                                      describes the five columns the
+                                      same way and sends the same
+                                      values, except for the time zone
+                                      column's local form (4f 3c and
+                                      59 5a).  OCI reports size 7, 13,
+                                      11, 11 and 7, all with precision
+                                      0, and OCIDateTimeToText and
+                                      to_char with .FF print a
+                                      precision 0 value with a trailing
+                                      dot (05:05:05.) on both servers,
+                                      though SSXFF prints none (#10567)
+
 The three real Oracle test servers on this network
 --------------------------------------------------
 

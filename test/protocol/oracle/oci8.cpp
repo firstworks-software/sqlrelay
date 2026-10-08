@@ -2101,6 +2101,234 @@ int main(int argc, char **argv) {
 	stdoutput.printf("\n\n");
 
 
+	// #10567 - a timestamp(0) column describes 7 bytes wide rather than
+	// 11, and still has to reach the client as a timestamp, not as text.
+	// a real server describes it as a timestamp of size 7 and sends a
+	// plain timestamp with no fraction as 7 bytes at any precision, and a
+	// timestamp with time zone always as 13.
+	// casting .666666 to precision 0 rounds the second up.  the expected
+	// values match a real 10.2 and 12.2 server's, from
+	// samples/10567-dev-oci23-native-timestamp0-realserver-oracle102.oraproxy
+	stdoutput.printf("timestamp(0), timestamp(0) with time zone and "
+				"timestamp(6)\n");
+	struct ts0value {
+		int	year;
+		int	month;
+		int	day;
+		int	hour;
+		int	minute;
+		int	second;
+		int	tzhour;
+		int	tzminute;
+		int	ts6second;
+		int	ts6fsecond;
+	};
+	const ts0value	ts0values[]={
+		{2005,5,5,5,5,5,-5,0,5,0},
+		{2006,6,6,6,6,7,5,30,6,666666000}
+	};
+	const int	ts0count=sizeof(ts0values)/sizeof(ts0value);
+	const char	*ts0query=
+		"select * from ("
+		"select 1 n,"
+		"cast(timestamp '2005-05-05 05:05:05' "
+			"as timestamp(0)) ts0,"
+		"cast(timestamp '2005-05-05 05:05:05 -05:00' "
+			"as timestamp(0) with time zone) tstz0,"
+		"cast(timestamp '2005-05-05 05:05:05' "
+			"as timestamp(6)) ts6 from dual "
+		"union all "
+		"select 2,"
+		"cast(timestamp '2006-06-06 06:06:06.666666' "
+			"as timestamp(0)),"
+		"cast(timestamp '2006-06-06 06:06:06.666666 +05:30' "
+			"as timestamp(0) with time zone),"
+		"cast(timestamp '2006-06-06 06:06:06.666666' "
+			"as timestamp(6)) from dual"
+		") order by n";
+	OCIStmt	*ts0stmt=NULL;
+	assertEquals(
+		OCIHandleAlloc(env,(void **)&ts0stmt,OCI_HTYPE_STMT,0,NULL),
+		OCI_SUCCESS);
+	assertEquals(
+		OCIStmtPrepare(ts0stmt,err,(text *)ts0query,
+				charstring::getLength(ts0query),
+				OCI_NTV_SYNTAX,OCI_DEFAULT),
+		OCI_SUCCESS);
+	assertEquals(
+		OCIStmtExecute(svc,ts0stmt,err,0,0,NULL,NULL,OCI_DEFAULT),
+		OCI_SUCCESS);
+	assertColumn(ts0stmt,2,"TS0",SQLT_TIMESTAMP,7,0,0);
+	assertColumn(ts0stmt,3,"TSTZ0",SQLT_TIMESTAMP_TZ,13,0,0);
+	assertColumn(ts0stmt,4,"TS6",SQLT_TIMESTAMP,11,0,6);
+	OCIDefine	*ts0def[4];
+	sb2		ts0ind[4];
+	sb4		ts0n=0;
+	OCIDateTime	*ts0ts=NULL;
+	OCIDateTime	*ts0tstz=NULL;
+	OCIDateTime	*ts0ts6=NULL;
+	bytestring::zero(ts0def,sizeof(ts0def));
+	bytestring::zero(ts0ind,sizeof(ts0ind));
+	assertEquals(
+		OCIDescriptorAlloc(env,(void **)&ts0ts,
+					OCI_DTYPE_TIMESTAMP,0,NULL),
+		OCI_SUCCESS);
+	assertEquals(
+		OCIDescriptorAlloc(env,(void **)&ts0tstz,
+					OCI_DTYPE_TIMESTAMP_TZ,0,NULL),
+		OCI_SUCCESS);
+	assertEquals(
+		OCIDescriptorAlloc(env,(void **)&ts0ts6,
+					OCI_DTYPE_TIMESTAMP,0,NULL),
+		OCI_SUCCESS);
+	assertEquals(
+		OCIDefineByPos(ts0stmt,&ts0def[0],err,1,
+				&ts0n,sizeof(ts0n),SQLT_INT,
+				&ts0ind[0],NULL,NULL,OCI_DEFAULT),
+		OCI_SUCCESS);
+	assertEquals(
+		OCIDefineByPos(ts0stmt,&ts0def[1],err,2,
+				&ts0ts,0,SQLT_TIMESTAMP,
+				&ts0ind[1],NULL,NULL,OCI_DEFAULT),
+		OCI_SUCCESS);
+	assertEquals(
+		OCIDefineByPos(ts0stmt,&ts0def[2],err,3,
+				&ts0tstz,0,SQLT_TIMESTAMP_TZ,
+				&ts0ind[2],NULL,NULL,OCI_DEFAULT),
+		OCI_SUCCESS);
+	assertEquals(
+		OCIDefineByPos(ts0stmt,&ts0def[3],err,4,
+				&ts0ts6,0,SQLT_TIMESTAMP,
+				&ts0ind[3],NULL,NULL,OCI_DEFAULT),
+		OCI_SUCCESS);
+	for (int i=0; i<ts0count; i++) {
+
+		const ts0value	*t=&ts0values[i];
+		assertEquals(
+			OCIStmtFetch2(ts0stmt,err,1,OCI_FETCH_NEXT,
+							0,OCI_DEFAULT),
+			OCI_SUCCESS);
+		assertEquals((int)ts0n,i+1);
+		for (int j=0; j<4; j++) {
+			assertEquals((int)ts0ind[j],OCI_IND_NOTNULL);
+		}
+
+		// timestamp(0)
+		sb2	year=0;
+		ub1	month=0;
+		ub1	day=0;
+		ub1	hour=0;
+		ub1	minute=0;
+		ub1	second=0;
+		ub4	fsecond=1;
+		assertEquals(
+			OCIDateTimeGetDate(env,err,ts0ts,
+						&year,&month,&day),
+			OCI_SUCCESS);
+		assertEquals(
+			OCIDateTimeGetTime(env,err,ts0ts,
+					&hour,&minute,&second,&fsecond),
+			OCI_SUCCESS);
+		assertEquals((int)year,t->year);
+		assertEquals((int)month,t->month);
+		assertEquals((int)day,t->day);
+		assertEquals((int)hour,t->hour);
+		assertEquals((int)minute,t->minute);
+		assertEquals((int)second,t->second);
+		assertEquals((int)fsecond,0);
+
+		// timestamp(0) with time zone, as wall time in its own zone
+		sb1	tzhour=0;
+		sb1	tzminute=0;
+		year=0;
+		month=0;
+		day=0;
+		hour=0;
+		minute=0;
+		second=0;
+		fsecond=1;
+		assertEquals(
+			OCIDateTimeGetDate(env,err,ts0tstz,
+						&year,&month,&day),
+			OCI_SUCCESS);
+		assertEquals(
+			OCIDateTimeGetTime(env,err,ts0tstz,
+					&hour,&minute,&second,&fsecond),
+			OCI_SUCCESS);
+		assertEquals(
+			OCIDateTimeGetTimeZoneOffset(env,err,ts0tstz,
+						&tzhour,&tzminute),
+			OCI_SUCCESS);
+		assertEquals((int)year,t->year);
+		assertEquals((int)month,t->month);
+		assertEquals((int)day,t->day);
+		assertEquals((int)hour,t->hour);
+		assertEquals((int)minute,t->minute);
+		assertEquals((int)second,t->second);
+		assertEquals((int)fsecond,0);
+		assertEquals((int)tzhour,t->tzhour);
+		assertEquals((int)tzminute,t->tzminute);
+
+		// timestamp(6)
+		year=0;
+		month=0;
+		day=0;
+		hour=0;
+		minute=0;
+		second=0;
+		fsecond=1;
+		assertEquals(
+			OCIDateTimeGetDate(env,err,ts0ts6,
+						&year,&month,&day),
+			OCI_SUCCESS);
+		assertEquals(
+			OCIDateTimeGetTime(env,err,ts0ts6,
+					&hour,&minute,&second,&fsecond),
+			OCI_SUCCESS);
+		assertEquals((int)year,t->year);
+		assertEquals((int)month,t->month);
+		assertEquals((int)day,t->day);
+		assertEquals((int)hour,t->hour);
+		assertEquals((int)minute,t->minute);
+		assertEquals((int)second,t->ts6second);
+		assertEquals((int)fsecond,t->ts6fsecond);
+	}
+	assertEquals(
+		OCIStmtFetch2(ts0stmt,err,1,OCI_FETCH_NEXT,0,OCI_DEFAULT),
+		OCI_NO_DATA);
+	assertEquals(
+		OCIDescriptorFree(ts0ts,OCI_DTYPE_TIMESTAMP),
+		OCI_SUCCESS);
+	assertEquals(
+		OCIDescriptorFree(ts0tstz,OCI_DTYPE_TIMESTAMP_TZ),
+		OCI_SUCCESS);
+	assertEquals(
+		OCIDescriptorFree(ts0ts6,OCI_DTYPE_TIMESTAMP),
+		OCI_SUCCESS);
+	stdoutput.printf("\n\n");
+
+
+	// a timestamp(0) with local time zone describes 7 bytes wide too.  its
+	// values aren't checked here, since the module still sends those as
+	// text
+	stdoutput.printf("timestamp(0) with local time zone - describe\n");
+	const char	*ltz0query=
+		"select cast(timestamp '2005-05-05 05:05:05' "
+			"as timestamp(0) with local time zone) ltz0 from dual";
+	assertEquals(
+		OCIStmtPrepare(ts0stmt,err,(text *)ltz0query,
+				charstring::getLength(ltz0query),
+				OCI_NTV_SYNTAX,OCI_DEFAULT),
+		OCI_SUCCESS);
+	assertEquals(
+		OCIStmtExecute(svc,ts0stmt,err,0,0,NULL,NULL,
+				OCI_DESCRIBE_ONLY),
+		OCI_SUCCESS);
+	assertColumn(ts0stmt,1,"LTZ0",SQLT_TIMESTAMP_LTZ,7,0,0);
+	assertEquals(OCIHandleFree(ts0stmt,OCI_HTYPE_STMT),OCI_SUCCESS);
+	stdoutput.printf("\n\n");
+
+
 
 	stdoutput.printf("\n============ Long-form CLR ===========\n\n");
 
