@@ -4,8 +4,8 @@
 	<!-- These instances run at the module's default serverversion
 	     (12.1), except for oracleprotocol11g, which is the 11.2
 	     coverage, and one 10.2 listener on oracleprotocol, which only
-	     oracleverifiernegotiation uses.  oracleprotocol12c spells out
-	     12.1.  The verifier each client gets depends on what that
+	     oracleverifiernegotiation and the oci8 sqlrelay10g run use.
+	     oracleprotocol12c spells out 12.1.  The verifier each client gets depends on what that
 	     client advertises, so an OCI or thin-mode client gets the 12c
 	     verifier here, the raw-socket test client, which advertises
 	     O5LOGON alone, gets 11g, and a client using the OCI7 calls gets

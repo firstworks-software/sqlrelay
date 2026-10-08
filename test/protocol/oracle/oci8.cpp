@@ -203,7 +203,11 @@ int main(int argc, char **argv) {
 	bool	isfetchatonce=false;
 
 	// select verifier-specific sqlrelay target, if given
-	if (argc==2 && !charstring::compare(argv[1],"sqlrelay11g")) {
+	if (argc==2 && !charstring::compare(argv[1],"sqlrelay10g")) {
+		sid="sqlrelay10g";
+		badsid="sqlrelay10gbad";
+		nosid="sqlrelay10gnosid";
+	} else if (argc==2 && !charstring::compare(argv[1],"sqlrelay11g")) {
 		sid="sqlrelay11g";
 		badsid="sqlrelay11gbad";
 		nosid="sqlrelay11gnosid";
@@ -315,10 +319,11 @@ int main(int argc, char **argv) {
 
 	stdoutput.printf("\n=========== Authentication ===========\n\n");
 
-	// This section, run against the sqlrelay11g and sqlrelay12c targets
-	// (see test.sh.in), is the verifier-type coverage.  The listener
-	// behind each of those is at serverversion="11.2" and "12.1", which
-	// give this client the 11g and 12c verifiers, and the
+	// This section, run against the sqlrelay10g, sqlrelay11g and
+	// sqlrelay12c targets (see test.sh.in), is the verifier-type
+	// coverage.  The listener behind each of those is at
+	// serverversion="10.2", "11.2" and "12.1", which give this client
+	// the 10g, 11g and 12c verifiers, and the
 	// correct-password login below succeeding is the proof that that
 	// verifier's O5LOGON crypto path ran end to end.  The server dictates
 	// the type and the client picks its crypto from what is presented, so
@@ -566,10 +571,14 @@ int main(int argc, char **argv) {
 				(text *)versionbuf,sizeof(versionbuf),
 				OCI_HTYPE_SVCCTX),
 		OCI_SUCCESS);
-	// the sqlrelay11g target's listener sets serverversion="11.2" and the
-	// others run at the default 12.1, which the protocol module packs as
-	// 0x0b200100 and 0x0c100200 and expands into these exact banners
+	// the sqlrelay10g and sqlrelay11g targets' listeners set
+	// serverversion="10.2" and "11.2" and the others run at the default
+	// 12.1, which the protocol module packs as 0x0a200100, 0x0b200100 and
+	// 0x0c100200 and expands into these exact banners
 	assertEquals(versionbuf,
+		(!charstring::compare(sid,"sqlrelay10g"))?
+		"Oracle Database 10g Enterprise Edition "
+		"Release 10.2.0.1.0 - 64bit Production":
 		(!charstring::compare(sid,"sqlrelay11g"))?
 		"Oracle Database 11g Enterprise Edition "
 		"Release 11.2.0.1.0 - 64bit Production":

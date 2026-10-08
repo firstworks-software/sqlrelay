@@ -2470,6 +2470,46 @@ missing bytes silently.
                                       server sends python-oracledb the
                                       UTC form too (#10555)
 
+    10556-dev-oci23-native-lobs-realserver-oracle102.oraproxy
+                                     an OCI 23.26 OCI8 client (a scratch
+                                      program running oci8.cpp's Lobs
+                                      section) against the real 10.2
+                                      server, through oraproxy with
+                                      ORAPROXY_UNIVERSAL_REPS=1.  The
+                                      compile caps at [0010] carry 0x3f
+                                      in byte 23 (CCAP_LOB), without
+                                      0x40 (lob prefetch length), so the
+                                      row at [0041] sends each clob and
+                                      blob as the locator's length and
+                                      the locator alone (01 56 56 00 54
+                                      ...), with no lob length or chunk
+                                      size in front, and the bfile the
+                                      same way (01 2b 2b 00 29 ...).
+                                      The clob and blob locators are 86
+                                      bytes, version 1.  [0042] to
+                                      [0045] are OCILobGetLength (08,
+                                      the locator; the clob answers
+                                      03 01 86 a0, the blob 02 02 00).
+                                      [0046] reads 25 characters and
+                                      [0047] answers inline, in one
+                                      packet: 0e, the clr long form (fe
+                                      19, the bytes, 00), 08, the
+                                      locator, 01 19.  [0048] reads
+                                      50000 characters the same way over
+                                      many packets.  There are no data
+                                      descriptor packets, since the
+                                      runtime caps have no RCAP_TTC
+                                      byte.  The writes and the trim at
+                                      [0104] to [0109] work on a real
+                                      server, and OCILobFileExists at
+                                      [0114] gets ORA-22285.  A real
+                                      12.2 server does the same for OCI
+                                      23.26 when byte 23's 0x40 is
+                                      cleared on both sides (no prefix
+                                      in the row) or RCAP_TTC's 0x01 is
+                                      cleared on both sides (inline
+                                      reads) (#10556)
+
     10564-dev-oci23-native-earlydates-realserver-oracle102.oraproxy
                                      an OCI 23.26 OCI8 client (a scratch
                                       program defining TIMESTAMP WITH

@@ -44,6 +44,15 @@ sqlrelayconnectstrings =
     (CONNECT_DATA = (SID = ora1))
   )
 
+# the oracleprotocol instance's serverversion="10.2" listener (see
+# test/sqlrelay.conf.d/oracleprotocol.conf.in)
+
+sqlrelay10g =
+  (DESCRIPTION =
+    (ADDRESS = (PROTOCOL= TCP)(Host= localhost)(Port= @ORACLEPROTOCOLPORT12@))
+    (CONNECT_DATA = (SID = ora1))
+  )
+
 # the oracleprotocolfetchatonce instance (see
 # test/sqlrelay.conf.d/oracleprotocol.conf.in) - fetchatonce=1 on its
 # connection string forces a real second fetch call, driving
@@ -78,6 +87,12 @@ ora1bad =
 sqlrelaybad =
   (DESCRIPTION =
     (ADDRESS = (PROTOCOL= TCP)(Host= localhost)(Port= @ORACLEPROTOCOLPORT1@))
+    (CONNECT_DATA = (SID = nosuchsid))
+  )
+
+sqlrelay10gbad =
+  (DESCRIPTION =
+    (ADDRESS = (PROTOCOL= TCP)(Host= localhost)(Port= @ORACLEPROTOCOLPORT12@))
     (CONNECT_DATA = (SID = nosuchsid))
   )
 
@@ -123,6 +138,12 @@ ora1nosid =
 sqlrelaynosid =
   (DESCRIPTION =
     (ADDRESS = (PROTOCOL= TCP)(Host= localhost)(Port= @ORACLEPROTOCOLPORT1@))
+    (CONNECT_DATA = (SERVER = DEDICATED))
+  )
+
+sqlrelay10gnosid =
+  (DESCRIPTION =
+    (ADDRESS = (PROTOCOL= TCP)(Host= localhost)(Port= @ORACLEPROTOCOLPORT12@))
     (CONNECT_DATA = (SERVER = DEDICATED))
   )
 

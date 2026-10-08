@@ -65,12 +65,13 @@ Which clients work at which ceiling:
 ||= Client =||= 10.2 =||= 11.2 =||= 12.1 =||
 ||OCI7 interface calls from a modern OCI client||Yes||Yes||Yes||
 ||Genuine Oracle 9i OCI7 client (9.0.1 and 9.2)||Yes||Yes||Yes||
-||OCI 23.26||Partly||Yes||Yes||
+||OCI 23.26||Yes||Yes||Yes||
 ||ojdbc||Partly||Yes||Yes||
 ||python-oracledb and node-oracledb||No||No||Yes||
 
 * python-oracledb and node-oracledb need 12.1, the default.  At 11.2 their logins hang, and they don't work at 10.2 either.
-* OCI 23.26 and ojdbc work at 11.2 and 12.1.  At 10.2 they log in and run queries, but LOBs aren't supported yet.  For OCI 23.26 that means its own (OCI8) calls, not its OCI7 interface calls.  ojdbc has only been tested at 10.2 with a login and a simple query.
+* OCI 23.26 works at any ceiling, including LOB fetch and read.  Executing a query with a prefetched LOB row, and creating temporary LOBs, don't work yet.
+* ojdbc works at 11.2 and 12.1, but selecting a LOB column through it doesn't work yet, at any ceiling.  ojdbc has only been tested at 10.2 with a login and a simple query.
 * Modern clients that use the OCI7 call interface work at any ceiling.
 * Genuine Oracle 9i OCI7 clients, 9.0.1 and 9.2, work at any ceiling.  The Oracle 9i sqlplus logs in at any ceiling too, but currently fails after its first query.
 

@@ -1214,7 +1214,10 @@ run_protocol_test() {
 	# ORACLEPROTOCOLPORT5), which covers a backend error landing on a
 	# row past the first fetch (#9601).  the ports are 1521 through 1525
 	# by default; the test reaches each one through its tnsnames.ora
-	# alias, which carries whatever port the run picked.  it also runs
+	# alias, which carries whatever port the run picked.  it runs the
+	# oracle test a sixth time against the default instance's
+	# serverversion="10.2" listener (sqlrelay10g, ORACLEPROTOCOLPORT12),
+	# so a modern OCI client is covered at 10.2 too (#10556).  it also runs
 	# oracledescribeonly, a raw-socket test (a hand-built login and wire
 	# protocol, no OCI) for #9606 - the re-execute guard from #9599 can't
 	# be reached through OCI, which answers a describe-only request on an
@@ -1491,11 +1494,13 @@ run_protocol_test() {
 	# clients that send 0x05 only run on the buildfarm.  it reads the
 	# ports straight from the environment, so it needs neither $server
 	# nor TNS_ADMIN.
-	# all thirty runs have to succeed for the instance to pass
+	# all thirty-one runs have to succeed for the instance to pass
 	if ( test "$instance" = "oracleprotocol" )
 	then
 		./$prog
 		resultdefault="$?"
+		./$prog sqlrelay10g
+		result10g="$?"
 		./$prog sqlrelay11g
 		result11g="$?"
 		./$prog sqlrelay12c
@@ -1578,7 +1583,7 @@ run_protocol_test() {
 			echo "no oci7inlinelob test found (built only with HAVE_OCI7), or no db2 module built"
 			resultoci7inlinelob="0"
 		fi
-		if ( test "$resultdefault" = "0" ) && ( test "$result11g" = "0" ) && ( test "$result12c" = "0" ) && ( test "$resultconnectstrings" = "0" ) && ( test "$resultfetchatonce" = "0" ) && ( test "$resultdescribeonly" = "0" ) && ( test "$resultdescribe" = "0" ) && ( test "$resultdescribenative" = "0" ) && ( test "$resultmidfetchdescribe" = "0" ) && ( test "$resultmidfetchdescribenative" = "0" ) && ( test "$resultlegacyfetch" = "0" ) && ( test "$resulttransaction" = "0" ) && ( test "$resulttransactionnative" = "0" ) && ( test "$resultreexecuteandfetch" = "0" ) && ( test "$resultverifiernegotiation" = "0" ) && ( test "$resultverifiernegotiationnative" = "0" ) && ( test "$resultclrchunks" = "0" ) && ( test "$resultiterations0" = "0" ) && ( test "$resultbigchunksoff" = "0" ) && ( test "$resultrefcursorreuse" = "0" ) && ( test "$resultsplitrequest" = "0" ) && ( test "$resultsplitquery3" = "0" ) && ( test "$resultsplitresponse" = "0" ) && ( test "$resultmaxdescriptors" = "0" ) && ( test "$resultmaxfetchrowcount" = "0" ) && ( test "$resultutf8clob" = "0" ) && ( test "$resultinlinelob" = "0" ) && ( test "$resultoci7" = "0" ) && ( test "$resultoci7utf8clob" = "0" ) && ( test "$resultoci7inlinelob" = "0" )
+		if ( test "$resultdefault" = "0" ) && ( test "$result10g" = "0" ) && ( test "$result11g" = "0" ) && ( test "$result12c" = "0" ) && ( test "$resultconnectstrings" = "0" ) && ( test "$resultfetchatonce" = "0" ) && ( test "$resultdescribeonly" = "0" ) && ( test "$resultdescribe" = "0" ) && ( test "$resultdescribenative" = "0" ) && ( test "$resultmidfetchdescribe" = "0" ) && ( test "$resultmidfetchdescribenative" = "0" ) && ( test "$resultlegacyfetch" = "0" ) && ( test "$resulttransaction" = "0" ) && ( test "$resulttransactionnative" = "0" ) && ( test "$resultreexecuteandfetch" = "0" ) && ( test "$resultverifiernegotiation" = "0" ) && ( test "$resultverifiernegotiationnative" = "0" ) && ( test "$resultclrchunks" = "0" ) && ( test "$resultiterations0" = "0" ) && ( test "$resultbigchunksoff" = "0" ) && ( test "$resultrefcursorreuse" = "0" ) && ( test "$resultsplitrequest" = "0" ) && ( test "$resultsplitquery3" = "0" ) && ( test "$resultsplitresponse" = "0" ) && ( test "$resultmaxdescriptors" = "0" ) && ( test "$resultmaxfetchrowcount" = "0" ) && ( test "$resultutf8clob" = "0" ) && ( test "$resultinlinelob" = "0" ) && ( test "$resultoci7" = "0" ) && ( test "$resultoci7utf8clob" = "0" ) && ( test "$resultoci7inlinelob" = "0" )
 		then
 			printf "    % 8s: success\n" "protocol" >> "$RESULTSLOG"
 			cd ../..
@@ -1587,6 +1592,10 @@ run_protocol_test() {
 		if ( test "$resultdefault" != "0" )
 		then
 			printf "    % 8s: failed (default)\n" "protocol" >> "$RESULTSLOG"
+		fi
+		if ( test "$result10g" != "0" )
+		then
+			printf "    % 8s: failed (serverversion 10.2)\n" "protocol" >> "$RESULTSLOG"
 		fi
 		if ( test "$result11g" != "0" )
 		then

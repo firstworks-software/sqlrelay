@@ -490,6 +490,12 @@
 #define CCAP_EXPLICIT_BOUNDARY		0x40
 #define CCAP_TTC3_TZ_VERSION		0x02
 #define CCAP_TTC3_BIG_CHUNK_CLR		0x20
+#define CCAP_LOB_UB8_SIZE		0x01
+#define CCAP_LOB_ENCS			0x02
+#define CCAP_LOB_PREFETCH_DATA		0x04
+#define CCAP_LOB_TEMP_SIZE		0x08
+#define CCAP_LOB_PREFETCH_LENGTH	0x40
+#define CCAP_LOB_12C			0x80
 
 // server runtime capability array indices
 #define RCAP_COMPAT			0
@@ -2315,6 +2321,14 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_oracle : public sqlrprotocol {
 		// recvDataTypeRequest() and reset by init()
 		bool		localdatetimes;
 
+		// whether a lob column in a row carries the lob's length and
+		// chunk size ahead of the locator, and whether a lob read is
+		// answered with data descriptor packets rather than inline.
+		// decided per session in recvDataTypeRequest() and reset by
+		// init()
+		bool		lobprefetchlength;
+		bool		lobzerocopy;
+
 		// whether the clr long form frames each chunk's length as a
 		// count prefixed ub4 rather than as a raw byte.  decided per
 		// session in recvDataTypeRequest() and reset by init() - the
@@ -3020,6 +3034,8 @@ void sqlrprotocol_oracle::init() {
 	clientwantstzversion=false;
 	clienttzversion=0;
 	localdatetimes=false;
+	lobprefetchlength=false;
+	lobzerocopy=false;
 	bigchunks=false;
 	ub2datatypes=false;
 	verifiertype=(serverfieldversion==CCAP_FIELD_VERSION_10_2)?
@@ -6222,6 +6238,33 @@ bool sqlrprotocol_oracle::recvDataTypeRequest() {
 			(runtimecaps[RCAP_TTC]&
 				RCAP_TTC_LOCAL_DATETIMES)!=0);
 
+	// whether a lob column carries the lob's length and chunk size ahead
+	// of its locator.  both sides have to set CCAP_LOB_PREFETCH_LENGTH.
+	// a version 5 response sends no capability arrays, the 10.2 array,
+	// like a real 10.2 server's, has the bit clear, and a pre-10g client's
+	// array is too short to reach CCAP_LOB.
+	const byte_t	*servercompilecaps=
+			(serverfieldversion==CCAP_FIELD_VERSION_10_2)?
+				ttiservercompilecaps10_2:ttiservercompilecaps;
+	lobprefetchlength=(ttiversion>=6 &&
+			(servercompilecaps[CCAP_LOB]&
+				CCAP_LOB_PREFETCH_LENGTH)!=0 &&
+			compilecapssize>CCAP_LOB &&
+			(compilecaps[CCAP_LOB]&
+				CCAP_LOB_PREFETCH_LENGTH)!=0);
+
+	// whether a lob read is answered with data descriptor packets rather
+	// than inline.  both sides have to set RCAP_TTC_ZERO_COPY, which, like
+	// RCAP_TTC_LOCAL_DATETIMES above, the module can only have sent in a
+	// version 6 response's full runtime caps array.
+	lobzerocopy=(ttiversion>=6 &&
+			serverfieldversion!=CCAP_FIELD_VERSION_10_2 &&
+			(ttiserverruntimecaps[RCAP_TTC]&
+				RCAP_TTC_ZERO_COPY)!=0 &&
+			runtimecapssize>RCAP_TTC &&
+			(runtimecaps[RCAP_TTC]&
+				RCAP_TTC_ZERO_COPY)!=0);
+
 	// the clr long form's chunk framing.  left at auto, three things have
 	// to line up: the module has to advertise the bit, the client has to
 	// answer with it, and the version has to be 6.  the version matters
@@ -6350,6 +6393,10 @@ bool sqlrprotocol_oracle::recvDataTypeRequest() {
 		debugWrite("big chunks: %s",(bigchunks)?"true":"false");
 		debugWrite("local datetimes: %s",
 					(localdatetimes)?"true":"false");
+		debugWrite("lob prefetch length: %s",
+					(lobprefetchlength)?"true":"false");
+		debugWrite("lob zero copy: %s",
+					(lobzerocopy)?"true":"false");
 		debugWrite("ub2 data types: %s",
 					(ub2datatypes)?"true":"false");
 		if (clientwantsdbtimezone) {
@@ -16056,22 +16103,13 @@ void sqlrprotocol_oracle::putLobLocator(sqlrservercursor *cursor,
 						bool null) {
 
 	// writes what a lob column carries in a row: the locator's length, the
-	// lob's length, the chunk size, the length again as a raw byte, and the
-	// locator itself.  a null lob is the length alone, as zero
+	// lob's length and the chunk size if lobprefetchlength says so, the
+	// length again as a raw byte, and the locator itself.  a null lob is
+	// the length alone, as zero
 	if (null) {
 		debugWrite("null lob");
 		writeLenPreInt(&reqpacket,(uint32_t)0);
 		return;
-	}
-
-	// characters for a clob and bytes for a blob, which is what
-	// getLobFieldLength() answers either way.  a bfile's length isn't
-	// available without opening the file, and a real server sends 0 for
-	// one
-	uint64_t	loblength=0;
-	if (wiretype!=ORACLE_TYPE_BFILE &&
-		!cont->getLobFieldLength(cursor,column,&loblength)) {
-		loblength=0;
 	}
 
 	byte_t		locator[LOB_LOCATOR_SIZE];
@@ -16079,14 +16117,27 @@ void sqlrprotocol_oracle::putLobLocator(sqlrservercursor *cursor,
 			buildLobLocator(cursor,column,wiretype,locator);
 
 	writeLenPreInt(&reqpacket,locatorsize);
-	putLenPreUB8(loblength);
-	if (wiretype!=ORACLE_TYPE_BFILE) {
-		writeLenPreInt(&reqpacket,(uint32_t)LOB_CHUNK_SIZE);
+	if (lobprefetchlength) {
+
+		// characters for a clob and bytes for a blob, which is what
+		// getLobFieldLength() answers either way.  a bfile's length
+		// isn't available without opening the file, and a real server
+		// sends 0 for one
+		uint64_t	loblength=0;
+		if (wiretype!=ORACLE_TYPE_BFILE &&
+			!cont->getLobFieldLength(cursor,column,&loblength)) {
+			loblength=0;
+		}
+
+		putLenPreUB8(loblength);
+		if (wiretype!=ORACLE_TYPE_BFILE) {
+			writeLenPreInt(&reqpacket,(uint32_t)LOB_CHUNK_SIZE);
+		}
+		debugWrite("lob length: %lld",(long long)loblength);
 	}
 	write(&reqpacket,(byte_t)locatorsize);
 	write(&reqpacket,(const byte_t *)locator,(size_t)locatorsize);
 
-	debugWrite("lob length: %lld",(long long)loblength);
 	debugWrite("locator size: %d",locatorsize);
 }
 
@@ -16481,22 +16532,24 @@ bool sqlrprotocol_oracle::sendLobReadResponse(sqlrservercursor *cursor,
 						uint64_t offset,
 						uint64_t amount) {
 
-	// a read of the pinned row's lob column.  a real 12.2 server answers
-	// an OCI client with the marker, then a chunk per packet, then the
-	// ordinary answer - what sendLobDataMarker()/sendLobDataChunk()
-	// implement (#9589, confirmed again for a small sdu by #10005).  but
-	// against the same server, python-oracledb thin's TNS_MSG_TYPE_LOB_DATA
-	// parser wants the value inline, as an ordinary clr long-form run (the
-	// 0xfe marker, a chunk per read, then the closing empty chunk),
-	// immediately followed by the ordinary lob operation answer, all in one
-	// packet - a bare marker with nothing behind it is all thin ever got
-	// before this, and it had no way to parse that (#10323). clientstring,
-	// populated from the client's self-reported driver name during
-	// protocol negotiation, is the only signal on hand that tells the two
-	// apart
-	bool		singlepacket=(clientstring!=NULL &&
+	// a read of the pinned row's lob column.  with RCAP_TTC_ZERO_COPY
+	// agreed, a real 12.2 server answers an OCI client with the marker,
+	// then a chunk per packet, then the ordinary answer - what
+	// sendLobDataMarker()/sendLobDataChunk() implement.  without it, as
+	// always at 10.2, the value goes inline, as an ordinary clr long-form
+	// run (the 0xfe marker, a chunk per read, then the closing empty
+	// chunk), immediately followed by the ordinary lob operation answer,
+	// all in one packet.
+	//
+	// python-oracledb thin sets RCAP_TTC_ZERO_COPY, but only parses the
+	// inline form, and a real 12.2 server sends it that form anyway.
+	// clientstring, populated from the client's self-reported driver name
+	// during protocol negotiation, is the only signal on hand that tells
+	// it apart.
+	bool		singlepacket=(!lobzerocopy ||
+				(clientstring!=NULL &&
 				charstring::contains(clientstring,
-							"python-oracledb"));
+							"python-oracledb")));
 
 	// a clob's characters go out two bytes each and a blob's or a
 	// bfile's one, so a chunk of the negotiated size carries half as many
@@ -16666,9 +16719,9 @@ bool sqlrprotocol_oracle::sendLobOperationResponse(const byte_t *locator,
 	// what every lob operation that worked gets back: the locator it
 	// quoted, the operation's result, and the same summary object the rest
 	// of the modern path ends a call with.  appendtoopenpacket, set by
-	// sendLobReadResponse() for python-oracledb (#10323), folds this into
-	// a packet sendLobReadResponse() already opened and filled with the
-	// lob data inline, rather than starting a fresh one
+	// sendLobReadResponse() for an inline read, folds this into a packet
+	// sendLobReadResponse() already opened and filled with the lob data,
+	// rather than starting a fresh one
 	uint16_t	dataflags=0;
 	byte_t		ttccode=TTC_OK;
 
