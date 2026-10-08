@@ -6147,11 +6147,7 @@ int main(int argc, char **argv) {
 	assertEqualStmt(stmt,(const char *)colname,"TESTCLOB");
 	assertEqualStmt(stmt,(int)colnamelen,8);
 	assertEqualStmt(stmt,(int)datatype,SQL_LONGVARCHAR);
-	if (issqlrelay) {
-		assertEqualStmt(stmt,(int)colsize,32768);
-	} else {
-		assertEqualStmt(stmt,(int)colsize,2147483647);
-	}
+	assertEqualStmt(stmt,(int)colsize,2147483647);
 	assertEqualStmt(stmt,(int)decdigits,0);
 	assertEqualStmt(stmt,(int)nullable,SQL_NULLABLE);
 
