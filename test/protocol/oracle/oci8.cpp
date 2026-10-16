@@ -122,6 +122,35 @@ static int countRows(const char *table) {
 	return count;
 }
 
+// fetch the first column of a query's first row as text, leaving the buffer
+// empty if the query fails
+static void fetchText(const char *query, char *buffer, ub4 buffersize) {
+
+	clearErrors();
+
+	bytestring::zero(buffer,buffersize);
+
+	OCIStmt	*stmt=NULL;
+	if (OCIHandleAlloc(env,(void **)&stmt,
+				OCI_HTYPE_STMT,0,NULL)!=OCI_SUCCESS) {
+		return;
+	}
+
+	OCIDefine	*def=NULL;
+	if (OCIStmtPrepare(stmt,err,(text *)query,
+				charstring::getLength(query),
+				OCI_NTV_SYNTAX,OCI_DEFAULT)!=OCI_SUCCESS ||
+		OCIDefineByPos(stmt,&def,err,1,
+				buffer,buffersize,SQLT_STR,
+				NULL,NULL,NULL,OCI_DEFAULT)!=OCI_SUCCESS ||
+		OCIStmtExecute(svc,stmt,err,1,0,NULL,NULL,
+				OCI_DEFAULT)!=OCI_SUCCESS) {
+		bytestring::zero(buffer,buffersize);
+	}
+
+	OCIHandleFree(stmt,OCI_HTYPE_STMT);
+}
+
 // the error code of the most recent failure
 static sb4 errorCode() {
 	text	message[1024];
@@ -1293,6 +1322,64 @@ int main(int argc, char **argv) {
 	stdoutput.printf("\n\n");
 
 
+	// #10562 - a bind with no indicator variable went out with flags 0x00,
+	// which the module took for an output-only bind and skipped, so the
+	// execute failed with ORA-01008.  a real server takes the value.
+	stdoutput.printf("OCIBindByName - no indicator\n");
+	assertEquals(
+		OCIStmtPrepare(bindstmt,err,(text *)bindinsert,
+				charstring::getLength(bindinsert),
+				OCI_NTV_SYNTAX,OCI_DEFAULT),
+		OCI_SUCCESS);
+	bindnumber=60;
+	charstring::copy(bindchar,"noindchar");
+	charstring::copy(bindvarchar,"noindvarchar");
+	assertEquals(
+		OCIBindByName(bindstmt,&bnd[0],err,(text *)":num",4,
+				&bindnumber,sizeof(bindnumber),SQLT_INT,
+				NULL,NULL,NULL,0,NULL,OCI_DEFAULT),
+		OCI_SUCCESS);
+	assertEquals(
+		OCIBindByName(bindstmt,&bnd[1],err,(text *)":chr",4,
+				bindchar,sizeof(bindchar),SQLT_STR,
+				NULL,NULL,NULL,0,NULL,OCI_DEFAULT),
+		OCI_SUCCESS);
+	assertEquals(
+		OCIBindByName(bindstmt,&bnd[2],err,(text *)":vchr",5,
+				bindvarchar,sizeof(bindvarchar),SQLT_STR,
+				NULL,NULL,NULL,0,NULL,OCI_DEFAULT),
+		OCI_SUCCESS);
+	assertEquals(
+		OCIStmtExecute(svc,bindstmt,err,1,0,NULL,NULL,OCI_DEFAULT),
+		OCI_SUCCESS);
+	assertEquals(
+		countRows("protocoltestbind where testnumber=60 and "
+				"testchar='noindchar' and "
+				"testvarchar='noindvarchar'"),1);
+	stdoutput.printf("\n\n");
+
+
+	// a real server answers an in-out bind with no indicator with the
+	// value alone, no trailing indicator byte
+	stdoutput.printf("OCIBindByName - in-out bind, no indicator\n");
+	assertEquals(
+		OCIStmtPrepare(bindstmt,err,(text *)inoutblock,
+				charstring::getLength(inoutblock),
+				OCI_NTV_SYNTAX,OCI_DEFAULT),
+		OCI_SUCCESS);
+	inoutvalue=8;
+	assertEquals(
+		OCIBindByName(bindstmt,&bnd[0],err,(text *)":v",2,
+				&inoutvalue,sizeof(inoutvalue),SQLT_INT,
+				NULL,NULL,NULL,0,NULL,OCI_DEFAULT),
+		OCI_SUCCESS);
+	assertEquals(
+		OCIStmtExecute(svc,bindstmt,err,1,0,NULL,NULL,OCI_DEFAULT),
+		OCI_SUCCESS);
+	assertEquals((int)inoutvalue,16);
+	stdoutput.printf("\n\n");
+
+
 	stdoutput.printf("OCIStmtExecute - no such placeholder\n");
 	assertEquals(
 		OCIStmtPrepare(bindstmt,err,(text *)bindinsert,
@@ -2335,6 +2422,398 @@ int main(int argc, char **argv) {
 		OCI_SUCCESS);
 	assertColumn(ts0stmt,1,"LTZ0",SQLT_TIMESTAMP_LTZ,7,0,0);
 	assertEquals(OCIHandleFree(ts0stmt,OCI_HTYPE_STMT),OCI_SUCCESS);
+	stdoutput.printf("\n\n");
+
+
+
+	stdoutput.printf("\n=========== Datetime binds ===========\n\n");
+
+	// #10562 - an OCIDateTime bind failed with "truncated bind descriptor"
+	// and ORA-03113, since OCI sends the descriptor's scale in counted form.
+	// past that, the module kept only the 7 date bytes of the value,
+	// dropping the fraction and the time zone.  the stored values are
+	// checked with to_char.  the module still sends a timestamp with local
+	// time zone as text, so that column is only read through to_char, at
+	// +00:00.
+	struct dtbindvalue {
+		int		year;
+		int		month;
+		int		day;
+		int		hour;
+		int		minute;
+		int		second;
+		int		fsecond;
+		const char	*tz;
+		int		tzhour;
+		int		tzminute;
+		const char	*tstext;
+		const char	*tstztext;
+		const char	*utctext;
+	};
+	// the third crosses a day and year boundary in utc, the fourth crosses
+	// a day boundary in the julian calendar
+	const dtbindvalue	dtbindvalues[]={
+		{2005,5,5,5,5,5,555555000,"-05:00",-5,0,
+			"2005-05-05 05:05:05.555555",
+			"2005-05-05 05:05:05.555555 -05:00",
+			"2005-05-05 10:05:05.555555 +00:00"},
+		{2006,6,6,6,6,6,666666000,"+05:30",5,30,
+			"2006-06-06 06:06:06.666666",
+			"2006-06-06 06:06:06.666666 +05:30",
+			"2006-06-06 00:36:06.666666 +00:00"},
+		{2007,1,1,3,0,0,1000,"+09:00",9,0,
+			"2007-01-01 03:00:00.000001",
+			"2007-01-01 03:00:00.000001 +09:00",
+			"2006-12-31 18:00:00.000001 +00:00"},
+		{1500,2,29,23,30,0,123456000,"-01:00",-1,0,
+			"1500-02-29 23:30:00.123456",
+			"1500-02-29 23:30:00.123456 -01:00",
+			"1500-03-01 00:30:00.123456 +00:00"}
+	};
+	const int	dtbindcount=sizeof(dtbindvalues)/sizeof(dtbindvalue);
+
+	OCIStmt	*dtbindstmt=NULL;
+	assertEquals(
+		OCIHandleAlloc(env,(void **)&dtbindstmt,OCI_HTYPE_STMT,0,NULL),
+		OCI_SUCCESS);
+	OCIBind		*dtbnd[4];
+	sb2		dtbindind[4];
+	sb4		dtbindid=0;
+	OCIDateTime	*dtbindts=NULL;
+	OCIDateTime	*dtbindtstz=NULL;
+	OCIDateTime	*dtbindtsltz=NULL;
+	bytestring::zero(dtbnd,sizeof(dtbnd));
+	bytestring::zero(dtbindind,sizeof(dtbindind));
+	assertEquals(
+		OCIDescriptorAlloc(env,(void **)&dtbindts,
+					OCI_DTYPE_TIMESTAMP,0,NULL),
+		OCI_SUCCESS);
+	assertEquals(
+		OCIDescriptorAlloc(env,(void **)&dtbindtstz,
+					OCI_DTYPE_TIMESTAMP_TZ,0,NULL),
+		OCI_SUCCESS);
+	assertEquals(
+		OCIDescriptorAlloc(env,(void **)&dtbindtsltz,
+					OCI_DTYPE_TIMESTAMP_LTZ,0,NULL),
+		OCI_SUCCESS);
+	char	dtquery[256];
+	char	dttext[64];
+
+
+	stdoutput.printf("create table\n");
+	execImmediate("drop table protocoltestdtbind");
+	assertEquals(
+		execImmediate("create table protocoltestdtbind ("
+				"id number(10),"
+				"testts timestamp(6),"
+				"testtstz timestamp(6) with time zone,"
+				"testtsltz timestamp(6) with local time zone)"),
+		OCI_SUCCESS);
+	stdoutput.printf("\n\n");
+
+
+	stdoutput.printf("OCIBindByName - timestamp, timestamp with time zone "
+				"and timestamp with local time zone\n");
+	const char	*dtbindinsert="insert into protocoltestdtbind "
+					"(id,testts,testtstz,testtsltz) "
+					"values (:id,:ts,:tstz,:tsltz)";
+	assertEquals(
+		OCIStmtPrepare(dtbindstmt,err,(text *)dtbindinsert,
+				charstring::getLength(dtbindinsert),
+				OCI_NTV_SYNTAX,OCI_DEFAULT),
+		OCI_SUCCESS);
+	assertEquals(
+		OCIBindByName(dtbindstmt,&dtbnd[0],err,(text *)":id",3,
+				&dtbindid,sizeof(dtbindid),SQLT_INT,
+				&dtbindind[0],NULL,NULL,0,NULL,OCI_DEFAULT),
+		OCI_SUCCESS);
+	assertEquals(
+		OCIBindByName(dtbindstmt,&dtbnd[1],err,(text *)":ts",3,
+				&dtbindts,sizeof(dtbindts),SQLT_TIMESTAMP,
+				&dtbindind[1],NULL,NULL,0,NULL,OCI_DEFAULT),
+		OCI_SUCCESS);
+	assertEquals(
+		OCIBindByName(dtbindstmt,&dtbnd[2],err,(text *)":tstz",5,
+				&dtbindtstz,sizeof(dtbindtstz),
+				SQLT_TIMESTAMP_TZ,
+				&dtbindind[2],NULL,NULL,0,NULL,OCI_DEFAULT),
+		OCI_SUCCESS);
+	assertEquals(
+		OCIBindByName(dtbindstmt,&dtbnd[3],err,(text *)":tsltz",6,
+				&dtbindtsltz,sizeof(dtbindtsltz),
+				SQLT_TIMESTAMP_LTZ,
+				&dtbindind[3],NULL,NULL,0,NULL,OCI_DEFAULT),
+		OCI_SUCCESS);
+	for (int i=0; i<dtbindcount; i++) {
+
+		const dtbindvalue	*v=&dtbindvalues[i];
+		dtbindid=i+1;
+		assertEquals(
+			OCIDateTimeConstruct(env,err,dtbindts,
+					v->year,v->month,v->day,
+					v->hour,v->minute,v->second,
+					v->fsecond,NULL,0),
+			OCI_SUCCESS);
+		assertEquals(
+			OCIDateTimeConstruct(env,err,dtbindtstz,
+					v->year,v->month,v->day,
+					v->hour,v->minute,v->second,
+					v->fsecond,(OraText *)v->tz,
+					charstring::getLength(v->tz)),
+			OCI_SUCCESS);
+
+		// the local time zone value is the same instant as the time
+		// zone value, in whatever the session time zone is
+		assertEquals(
+			OCIDateTimeConvert(session,err,dtbindtstz,dtbindtsltz),
+			OCI_SUCCESS);
+
+		assertEquals(
+			OCIStmtExecute(svc,dtbindstmt,err,1,0,NULL,NULL,
+								OCI_DEFAULT),
+			OCI_SUCCESS);
+	}
+	assertEquals(execImmediate("commit"),OCI_SUCCESS);
+	assertEquals(countRows("protocoltestdtbind"),dtbindcount);
+	for (int i=0; i<dtbindcount; i++) {
+
+		const dtbindvalue	*v=&dtbindvalues[i];
+
+		charstring::printf(dtquery,sizeof(dtquery),
+			"select to_char(testts,"
+				"'YYYY-MM-DD HH24:MI:SS.FF6') "
+			"from protocoltestdtbind where id=%d",i+1);
+		fetchText(dtquery,dttext,sizeof(dttext));
+		assertEquals((const char *)dttext,v->tstext);
+
+		charstring::printf(dtquery,sizeof(dtquery),
+			"select to_char(testtstz,"
+				"'YYYY-MM-DD HH24:MI:SS.FF6 TZH:TZM') "
+			"from protocoltestdtbind where id=%d",i+1);
+		fetchText(dtquery,dttext,sizeof(dttext));
+		assertEquals((const char *)dttext,v->tstztext);
+
+		charstring::printf(dtquery,sizeof(dtquery),
+			"select to_char(testtsltz at time zone '+00:00',"
+				"'YYYY-MM-DD HH24:MI:SS.FF6 TZH:TZM') "
+			"from protocoltestdtbind where id=%d",i+1);
+		fetchText(dtquery,dttext,sizeof(dttext));
+		assertEquals((const char *)dttext,v->utctext);
+	}
+	stdoutput.printf("\n\n");
+
+
+	stdoutput.printf("OCIBindByName - null datetime binds\n");
+	dtbindid=dtbindcount+1;
+	dtbindind[1]=OCI_IND_NULL;
+	dtbindind[2]=OCI_IND_NULL;
+	dtbindind[3]=OCI_IND_NULL;
+	assertEquals(
+		OCIStmtExecute(svc,dtbindstmt,err,1,0,NULL,NULL,OCI_DEFAULT),
+		OCI_SUCCESS);
+	charstring::printf(dtquery,sizeof(dtquery),
+			"protocoltestdtbind where id=%d and "
+			"testts is null and testtstz is null and "
+			"testtsltz is null",dtbindcount+1);
+	assertEquals(countRows(dtquery),1);
+	dtbindind[1]=OCI_IND_NOTNULL;
+	dtbindind[2]=OCI_IND_NOTNULL;
+	dtbindind[3]=OCI_IND_NOTNULL;
+	stdoutput.printf("\n\n");
+
+
+	// the same no-indicator case as in the Binds section, with an
+	// OCIDateTime
+	stdoutput.printf("OCIBindByName - timestamp with time zone, "
+				"no indicator\n");
+	const char	*dtnoindinsert="insert into protocoltestdtbind "
+					"(id,testtstz) values (:id,:tstz)";
+	assertEquals(
+		OCIStmtPrepare(dtbindstmt,err,(text *)dtnoindinsert,
+				charstring::getLength(dtnoindinsert),
+				OCI_NTV_SYNTAX,OCI_DEFAULT),
+		OCI_SUCCESS);
+	dtbindid=dtbindcount+2;
+	assertEquals(
+		OCIDateTimeConstruct(env,err,dtbindtstz,
+				2008,8,8,8,8,8,888888000,
+				(OraText *)"+05:30",6),
+		OCI_SUCCESS);
+	assertEquals(
+		OCIBindByName(dtbindstmt,&dtbnd[0],err,(text *)":id",3,
+				&dtbindid,sizeof(dtbindid),SQLT_INT,
+				NULL,NULL,NULL,0,NULL,OCI_DEFAULT),
+		OCI_SUCCESS);
+	assertEquals(
+		OCIBindByName(dtbindstmt,&dtbnd[1],err,(text *)":tstz",5,
+				&dtbindtstz,sizeof(dtbindtstz),
+				SQLT_TIMESTAMP_TZ,
+				NULL,NULL,NULL,0,NULL,OCI_DEFAULT),
+		OCI_SUCCESS);
+	assertEquals(
+		OCIStmtExecute(svc,dtbindstmt,err,1,0,NULL,NULL,OCI_DEFAULT),
+		OCI_SUCCESS);
+	charstring::printf(dtquery,sizeof(dtquery),
+			"select to_char(testtstz,"
+				"'YYYY-MM-DD HH24:MI:SS.FF6 TZH:TZM') "
+			"from protocoltestdtbind where id=%d",dtbindcount+2);
+	fetchText(dtquery,dttext,sizeof(dttext));
+	assertEquals((const char *)dttext,"2008-08-08 08:08:08.888888 +05:30");
+	assertEquals(execImmediate("commit"),OCI_SUCCESS);
+	stdoutput.printf("\n\n");
+
+
+	// the values come back through OCIDateTime defines, so this covers
+	// the define descriptor's counted scale too
+	stdoutput.printf("OCIStmtExecute - timestamp and timestamp with time "
+				"zone, bound and selected back\n");
+	const char	*dtselect="select :ts, :tstz from dual";
+	assertEquals(
+		OCIStmtPrepare(dtbindstmt,err,(text *)dtselect,
+				charstring::getLength(dtselect),
+				OCI_NTV_SYNTAX,OCI_DEFAULT),
+		OCI_SUCCESS);
+	OCIDefine	*dtdef[2];
+	sb2		dtdefind[2];
+	OCIDateTime	*dtdefts=NULL;
+	OCIDateTime	*dtdeftstz=NULL;
+	bytestring::zero(dtdef,sizeof(dtdef));
+	bytestring::zero(dtdefind,sizeof(dtdefind));
+	assertEquals(
+		OCIDescriptorAlloc(env,(void **)&dtdefts,
+					OCI_DTYPE_TIMESTAMP,0,NULL),
+		OCI_SUCCESS);
+	assertEquals(
+		OCIDescriptorAlloc(env,(void **)&dtdeftstz,
+					OCI_DTYPE_TIMESTAMP_TZ,0,NULL),
+		OCI_SUCCESS);
+	assertEquals(
+		OCIBindByName(dtbindstmt,&dtbnd[0],err,(text *)":ts",3,
+				&dtbindts,sizeof(dtbindts),SQLT_TIMESTAMP,
+				&dtbindind[1],NULL,NULL,0,NULL,OCI_DEFAULT),
+		OCI_SUCCESS);
+	assertEquals(
+		OCIBindByName(dtbindstmt,&dtbnd[1],err,(text *)":tstz",5,
+				&dtbindtstz,sizeof(dtbindtstz),
+				SQLT_TIMESTAMP_TZ,
+				&dtbindind[2],NULL,NULL,0,NULL,OCI_DEFAULT),
+		OCI_SUCCESS);
+	for (int i=0; i<dtbindcount; i++) {
+
+		const dtbindvalue	*v=&dtbindvalues[i];
+		assertEquals(
+			OCIDateTimeConstruct(env,err,dtbindts,
+					v->year,v->month,v->day,
+					v->hour,v->minute,v->second,
+					v->fsecond,NULL,0),
+			OCI_SUCCESS);
+		assertEquals(
+			OCIDateTimeConstruct(env,err,dtbindtstz,
+					v->year,v->month,v->day,
+					v->hour,v->minute,v->second,
+					v->fsecond,(OraText *)v->tz,
+					charstring::getLength(v->tz)),
+			OCI_SUCCESS);
+		assertEquals(
+			OCIStmtExecute(svc,dtbindstmt,err,0,0,NULL,NULL,
+								OCI_DEFAULT),
+			OCI_SUCCESS);
+		assertEquals(
+			OCIDefineByPos(dtbindstmt,&dtdef[0],err,1,
+					&dtdefts,0,SQLT_TIMESTAMP,
+					&dtdefind[0],NULL,NULL,OCI_DEFAULT),
+			OCI_SUCCESS);
+		assertEquals(
+			OCIDefineByPos(dtbindstmt,&dtdef[1],err,2,
+					&dtdeftstz,0,SQLT_TIMESTAMP_TZ,
+					&dtdefind[1],NULL,NULL,OCI_DEFAULT),
+			OCI_SUCCESS);
+		assertEquals(
+			OCIStmtFetch2(dtbindstmt,err,1,OCI_FETCH_NEXT,
+							0,OCI_DEFAULT),
+			OCI_SUCCESS);
+		assertEquals((int)dtdefind[0],OCI_IND_NOTNULL);
+		assertEquals((int)dtdefind[1],OCI_IND_NOTNULL);
+
+		// timestamp
+		sb2	year=0;
+		ub1	month=0;
+		ub1	day=0;
+		ub1	hour=0;
+		ub1	minute=0;
+		ub1	second=0;
+		ub4	fsecond=0;
+		assertEquals(
+			OCIDateTimeGetDate(env,err,dtdefts,
+						&year,&month,&day),
+			OCI_SUCCESS);
+		assertEquals(
+			OCIDateTimeGetTime(env,err,dtdefts,
+					&hour,&minute,&second,&fsecond),
+			OCI_SUCCESS);
+		assertEquals((int)year,v->year);
+		assertEquals((int)month,v->month);
+		assertEquals((int)day,v->day);
+		assertEquals((int)hour,v->hour);
+		assertEquals((int)minute,v->minute);
+		assertEquals((int)second,v->second);
+		assertEquals((int)fsecond,v->fsecond);
+
+		// timestamp with time zone, as wall time in its own zone
+		sb1	tzhour=0;
+		sb1	tzminute=0;
+		year=0;
+		month=0;
+		day=0;
+		hour=0;
+		minute=0;
+		second=0;
+		fsecond=0;
+		assertEquals(
+			OCIDateTimeGetDate(env,err,dtdeftstz,
+						&year,&month,&day),
+			OCI_SUCCESS);
+		assertEquals(
+			OCIDateTimeGetTime(env,err,dtdeftstz,
+					&hour,&minute,&second,&fsecond),
+			OCI_SUCCESS);
+		assertEquals(
+			OCIDateTimeGetTimeZoneOffset(env,err,dtdeftstz,
+						&tzhour,&tzminute),
+			OCI_SUCCESS);
+		assertEquals((int)year,v->year);
+		assertEquals((int)month,v->month);
+		assertEquals((int)day,v->day);
+		assertEquals((int)hour,v->hour);
+		assertEquals((int)minute,v->minute);
+		assertEquals((int)second,v->second);
+		assertEquals((int)fsecond,v->fsecond);
+		assertEquals((int)tzhour,v->tzhour);
+		assertEquals((int)tzminute,v->tzminute);
+
+		assertEquals(
+			OCIStmtFetch2(dtbindstmt,err,1,OCI_FETCH_NEXT,
+							0,OCI_DEFAULT),
+			OCI_NO_DATA);
+	}
+	stdoutput.printf("\n\n");
+
+
+	stdoutput.printf("OCIDescriptorFree\n");
+	assertEquals(
+		OCIDescriptorFree(dtbindts,OCI_DTYPE_TIMESTAMP),OCI_SUCCESS);
+	assertEquals(
+		OCIDescriptorFree(dtbindtstz,OCI_DTYPE_TIMESTAMP_TZ),
+		OCI_SUCCESS);
+	assertEquals(
+		OCIDescriptorFree(dtbindtsltz,OCI_DTYPE_TIMESTAMP_LTZ),
+		OCI_SUCCESS);
+	assertEquals(
+		OCIDescriptorFree(dtdefts,OCI_DTYPE_TIMESTAMP),OCI_SUCCESS);
+	assertEquals(
+		OCIDescriptorFree(dtdeftstz,OCI_DTYPE_TIMESTAMP_TZ),
+		OCI_SUCCESS);
+	assertEquals(OCIHandleFree(dtbindstmt,OCI_HTYPE_STMT),OCI_SUCCESS);
 	stdoutput.printf("\n\n");
 
 
@@ -3509,6 +3988,8 @@ int main(int argc, char **argv) {
 	assertEquals(execImmediate("drop table protocoltestlob"),OCI_SUCCESS);
 	assertEquals(execImmediate("drop table protocoltestarray"),OCI_SUCCESS);
 	assertEquals(execImmediate("drop table protocoltestclr"),OCI_SUCCESS);
+	assertEquals(
+		execImmediate("drop table protocoltestdtbind"),OCI_SUCCESS);
 	stdoutput.printf("\n\n");
 
 

@@ -1549,7 +1549,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   result); negative fields are now floored to 0 first, like
   the mysql connection module already did
 - fixed the oracle connection module's input date/timestamp bind
-  silently dropping the caller's microsecond value; since the
+  silently dropping the caller's microsecond value and time zone
+  (a bind with a time zone now goes through a TIMESTAMP WITH TIME
+  ZONE descriptor); since the
   OCIDate/SQLT_ODT type it used has no sub-second component
   at all, input date/timestamp binds now go through an
   OCIDateTime/SQLT_TIMESTAMP descriptor instead when the OCI
@@ -2949,6 +2951,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   module at serverversion 12.1
 - fixed the oracle protocol module returning the wrong century for
   years before 1950 and for year 0001
+- fixed the oracle protocol module's OCI8 timestamp binds and defines,
+  binds without an indicator, and define-only queries at 12.1
 
 ### Security
 - fixed an authentication hole in the des password encryption module

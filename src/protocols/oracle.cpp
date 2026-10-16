@@ -268,6 +268,12 @@
 #define ORA_NO_DATA_FOUND		1403
 #define ORA_NO_DATA_FOUND_MESSAGE	"ORA-01403: no data found\n"
 
+// what a real server ends a call in when a null goes into an out bind the
+// client has no indicator for
+#define ORA_FETCHED_COLUMN_NULL		1405
+#define ORA_FETCHED_COLUMN_NULL_MESSAGE \
+	"ORA-01405: fetched column value is NULL\n"
+
 // the oracle error for a cursor id the module has no cursor open for
 #define ORA_INVALID_CURSOR		1001
 #define ORA_INVALID_CURSOR_MESSAGE	"ORA-01001: invalid cursor\n"
@@ -364,6 +370,14 @@
 #define ORA_MULTIPLE_ROW_DATA_BLOCKS		20006
 #define ORA_MULTIPLE_ROW_DATA_BLOCKS_MESSAGE \
 	"ORA-20006: Multiple row data blocks not supported for this call.\n"
+
+// what an execute gets back when a timestamp with time zone bind is in a named
+// region and in local time.  converting it takes oracle's table of regions,
+// which this module has no copy of, so it gets a number from the same
+// user-defined range, and for the same reason, as ORA_QUERY_FAILED above
+#define ORA_LOCAL_REGION_BIND		20007
+#define ORA_LOCAL_REGION_BIND_MESSAGE \
+	"ORA-20007: Time zone region bind in local time not supported.\n"
 
 // what a request this module could only read part of gets back, just ahead of
 // the session being dropped - a real server's answer to a ttc request it
@@ -615,9 +629,11 @@
 // large
 #define OCI7_MAX_DEFINE_BUFFER_SIZE	65536
 
-// bind descriptor flags.  0x01 says a normal bound value follows, 0x80 says
-// the statement has the placeholder but the client never bound anything to
-// it - and that no row data follows at all
+// bind descriptor flags.  0x01 says the client has an indicator for the bind,
+// so an out value goes back with one behind it.  a bind without one still
+// sends its value, but its out value goes back bare, and a null one ends the
+// call in ORA-01405.  0x80 says the statement has the placeholder but the
+// client never bound anything to it - and that no row data follows at all
 #define BIND_FLAG_USE_INDICATORS	0x01
 #define BIND_FLAG_UNBOUND		0x80
 
@@ -754,6 +770,20 @@
 #define ORACLE_TZ_MINUTE_BIAS		60
 #define ORACLE_TIMESTAMP_FRACTION_DIGITS	9
 #define MAX_TIMESTAMP_DATE_TEXT		32
+
+// what the offset's hours byte holds besides the hours: the 64 more of local
+// date and time, or, for a named region rather than an offset, the high bit.
+// a region's id is that byte's low 7 bits and then the minutes byte's top 6,
+// and the minutes byte's low 2 bits mark local date and time and daylight
+// saving time.  see getOracleTimestampBindValue()
+#define ORACLE_TZ_LOCAL			0x40
+#define ORACLE_TZ_REGION		0x80
+#define ORACLE_TZ_REGION_ID_SHIFT	6
+#define ORACLE_TZ_REGION_LOCAL		0x01
+#define ORACLE_TZ_REGION_DST		0x02
+
+// a bind's time zone in the form the backend takes it, "+hh:mm"
+#define ORACLE_TZ_TEXT_SIZE		6
 
 // a timestamp column is described the 11 bytes its value really takes (7 for
 // a timestamp(0)), but a timestamp with time zone is described 1 byte wide
@@ -1489,6 +1519,10 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_oracle : public sqlrprotocol {
 					const byte_t **end,
 					uint32_t *value,
 					const byte_t **rpout);
+		bool	getLenPreSignedInt(const byte_t *rp,
+					const byte_t **end,
+					int32_t *value,
+					const byte_t **rpout);
 		void	readHost(const byte_t *rp,
 					uint16_t *value,
 					const byte_t **rpout);
@@ -1711,6 +1745,12 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_oracle : public sqlrprotocol {
 		bool	getOracleDateBindValue(const byte_t *value,
 						uint32_t valuesize,
 						sqlrserverbindvar *bv);
+		bool	getOracleTimestampBindValue(const byte_t *value,
+						uint32_t valuesize,
+						byte_t type,
+						memorypool *bindpool,
+						sqlrserverbindvar *bv,
+						bool *localregion);
 		void	putAuthField(const char *fieldname,
 						const char *field,
 						uint32_t flags);
@@ -1908,6 +1948,7 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_oracle : public sqlrprotocol {
 							const char **name,
 							uint16_t *namesize);
 		bool	sendNotAllVariablesBoundError(uint32_t cursorid);
+		bool	sendLocalRegionBindError(uint32_t cursorid);
 		bool	sendMaxBindCountExceededError(uint32_t cursorid);
 		bool	sendMaxResponseError(uint32_t cursorid,
 							uint32_t oranum,
@@ -1920,7 +1961,7 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_oracle : public sqlrprotocol {
 		bool	hasLongColumn(sqlrservercursor *cursor,
 							uint32_t colcount);
 		void	putIoVector();
-		void	putOutBindValues(sqlrservercursor *cursor);
+		bool	putOutBindValues(sqlrservercursor *cursor);
 		void	putRefCursorBindValue(sqlrservercursor *child);
 		bool	fetchFromRefCursors(sqlrservercursor *cursor,
 						sqlrservercursor **failed);
@@ -2015,7 +2056,8 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_oracle : public sqlrprotocol {
 							uint32_t oranum,
 							uint32_t rowcount,
 							const char *message,
-							uint32_t messagesize);
+							uint32_t messagesize,
+							uint32_t arrayerror=0);
 		void	putSummaryExtension(uint32_t oranum,
 							uint32_t rowcount);
 		void	putNumberField(const char *field,
@@ -2634,6 +2676,11 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_oracle : public sqlrprotocol {
 		// execute
 		bool		query3unbound;
 
+		// whether a bind value was a timestamp with time zone in a
+		// named region and in local time, which is an ORA-20007
+		// rather than an execute - see installQuery3Binds()
+		bool		query3localregion;
+
 		// whether the request's bind section named more binds than
 		// maxbindcount allows, which ends the call in an error
 		// instead of a statement - see query3() and getQuery3Binds()
@@ -2839,6 +2886,7 @@ sqlrprotocol_oracle::sqlrprotocol_oracle(sqlrservercontroller *cont,
 	query3bindvalueavail=0;
 	query3blocks=0;
 	query3unbound=false;
+	query3localregion=false;
 	query3toomanybinds=false;
 	query3affectedrows=0;
 	query3knowsaffectedrows=false;
@@ -3830,6 +3878,39 @@ bool sqlrprotocol_oracle::getLenPreInt(const byte_t *rp,
 	}
 
 	return readLenPreInt(rp,*end,value,rpout);
+}
+
+bool sqlrprotocol_oracle::getLenPreSignedInt(const byte_t *rp,
+						const byte_t **end,
+						int32_t *value,
+						const byte_t **rpout) {
+
+	// a count prefixed integer that may be negative.  oracle marks a
+	// negative one with the count byte's high bit and sends the magnitude
+	// (81 7f is -127), and writeLenPreInt(int32_t) sends the 4-byte two's
+	// complement form, so both are taken
+	*value=0;
+	*rpout=rp;
+
+	if (!have(rp,1,end)) {
+		return false;
+	}
+	byte_t	count=*rp;
+	bool	negative=((count&0x80)!=0);
+	count&=0x7f;
+	if (count>sizeof(uint32_t) || !have(rp,(size_t)count+1,end)) {
+		return false;
+	}
+	rp++;
+
+	uint32_t	magnitude=0;
+	for (byte_t i=0; i<count; i++) {
+		magnitude=(magnitude<<8)|*rp;
+		rp++;
+	}
+	*value=(int32_t)((negative)?(0-magnitude):magnitude);
+	*rpout=rp;
+	return true;
 }
 
 void sqlrprotocol_oracle::readHost(const byte_t *rp,
@@ -7926,6 +8007,128 @@ bool sqlrprotocol_oracle::getOracleDateBindValue(const byte_t *value,
 	bv->value.dateval.tz=NULL;
 	bv->value.dateval.isnegative=false;
 
+	return true;
+}
+
+bool sqlrprotocol_oracle::getOracleTimestampBindValue(const byte_t *value,
+							uint32_t valuesize,
+							byte_t type,
+							memorypool *bindpool,
+							sqlrserverbindvar *bv,
+							bool *localregion) {
+
+	// the inverse of putTimestampField() - a date's 7 bytes, then, unless
+	// the fraction is zero, 4 bytes of nanoseconds, then, for a timestamp
+	// with time zone, 2 bytes of zone.  the bind takes microseconds, so
+	// the last 3 digits of the fraction are lost.  false on a value of
+	// any other size, or on one in a region and in local time, which
+	// also sets localregion
+	*localregion=false;
+
+	if (valuesize!=ORACLE_TIMESTAMP_NOFRACTION_SIZE &&
+		valuesize!=ORACLE_TIMESTAMP_SIZE &&
+		valuesize!=ORACLE_TIMESTAMPTZ_SIZE) {
+		debugWrite("bad timestamp size: %d",valuesize);
+		return false;
+	}
+
+	getOracleDateBindValue(value,valuesize,bv);
+
+	uint32_t	nanoseconds=0;
+	if (valuesize>=ORACLE_TIMESTAMP_SIZE) {
+		const byte_t	*rp=value+ORACLE_DATE_SIZE;
+		readBE(rp,&nanoseconds,&rp);
+	}
+	bv->value.dateval.microsecond=(int32_t)(nanoseconds/1000);
+	debugWrite("fraction: %d nanoseconds",nanoseconds);
+
+	// a local time zone timestamp is always utc, and a plain one has no
+	// zone at all
+	if (type==ORACLE_TYPE_TIMESTAMPLTZ) {
+		bv->value.dateval.tz=(char *)
+				bindpool->allocate(ORACLE_TZ_TEXT_SIZE+1);
+		charstring::copy(bv->value.dateval.tz,"+00:00");
+		debugWrite("time zone: +00:00 (utc)");
+		return true;
+	}
+	if (type!=ORACLE_TYPE_TIMESTAMPTZ ||
+			valuesize!=ORACLE_TIMESTAMPTZ_SIZE) {
+		return true;
+	}
+
+	// the zone is a region, or else an offset biased one way for local
+	// date and time and another for utc.  the form goes by these bytes
+	// alone - whether a client sends local date and time depends on its
+	// time zone file version as well as RCAP_TTC_LOCAL_DATETIMES
+	byte_t	hourbyte=value[ORACLE_TIMESTAMP_SIZE];
+	byte_t	minutebyte=value[ORACLE_TIMESTAMP_SIZE+1];
+	int32_t	offset=0;
+	bool	utc=true;
+	if (hourbyte&ORACLE_TZ_REGION) {
+
+		uint16_t	regionid=(uint16_t)
+				(((uint16_t)(hourbyte&0x7f)<<
+					ORACLE_TZ_REGION_ID_SHIFT)|
+				(minutebyte>>(8-ORACLE_TZ_REGION_ID_SHIFT)));
+		bool		local=((minutebyte&ORACLE_TZ_REGION_LOCAL)!=0);
+		debugWrite("time zone region: %d (%s%s)",regionid,
+				(local)?"local":"utc",
+				(minutebyte&ORACLE_TZ_REGION_DST)?", dst":"");
+
+		// a region in utc binds as the same instant at +00:00, but
+		// a region in local time can't be converted without the
+		// region's rules
+		if (local) {
+			*localregion=true;
+			return false;
+		}
+
+	} else {
+
+		int32_t	tzhour=(int32_t)hourbyte;
+		if (hourbyte&ORACLE_TZ_LOCAL) {
+			tzhour-=ORACLE_TZ_LOCAL_HOUR_BIAS;
+			utc=false;
+		} else {
+			tzhour-=ORACLE_TZ_HOUR_BIAS;
+		}
+		int32_t	tzminute=(int32_t)minutebyte-ORACLE_TZ_MINUTE_BIAS;
+
+		// one of a day or more couldn't be shifted with a single carry
+		if (tzhour<-23 || tzhour>23 || tzminute<-59 || tzminute>59) {
+			debugWrite("time zone out of range: %d:%d",
+							tzhour,tzminute);
+			return false;
+		}
+		offset=tzhour*60+tzminute;
+		debugWrite("time zone: %d:%d (%s)",tzhour,tzminute,
+						(utc)?"utc":"local");
+	}
+
+	// shift utc to the zone's local time, with carries
+	if (utc && offset) {
+		int32_t	minutes=(int32_t)bv->value.dateval.hour*60+
+				(int32_t)bv->value.dateval.minute+offset;
+		if (minutes<0) {
+			minutes+=24*60;
+			shiftDate(&(bv->value.dateval.year),
+					&(bv->value.dateval.month),
+					&(bv->value.dateval.day),false);
+		} else if (minutes>=24*60) {
+			minutes-=24*60;
+			shiftDate(&(bv->value.dateval.year),
+					&(bv->value.dateval.month),
+					&(bv->value.dateval.day),true);
+		}
+		bv->value.dateval.hour=(int16_t)(minutes/60);
+		bv->value.dateval.minute=(int16_t)(minutes%60);
+	}
+
+	uint32_t	absoffset=(uint32_t)((offset<0)?-offset:offset);
+	bv->value.dateval.tz=(char *)bindpool->allocate(ORACLE_TZ_TEXT_SIZE+1);
+	charstring::printf(bv->value.dateval.tz,ORACLE_TZ_TEXT_SIZE+1,
+				"%c%02d:%02d",(offset<0)?'-':'+',
+				(int)(absoffset/60),(int)(absoffset%60));
 	return true;
 }
 
@@ -13774,7 +13977,9 @@ bool sqlrprotocol_oracle::query3(const byte_t *rp) {
 					updateQuery3CallStatus(cursor,
 								true,false);
 				}
-				return sendNotAllVariablesBoundError(cursorid);
+				return (query3localregion)?
+					sendLocalRegionBindError(cursorid):
+					sendNotAllVariablesBoundError(cursorid);
 			}
 
 			if (!cont->executeQuery(cursor,true,true,true,true)) {
@@ -13955,6 +14160,20 @@ bool sqlrprotocol_oracle::getQuery3Request(const byte_t *rp,
 		!getPointer(rp,end,&pointer,&rp) ||
 		!getLenPreInt(rp,&end,&unused,&rp) ||
 		!getLenPreInt(rp,&end,&unused,&rp))) {
+		debugWrite("truncated query3 request");
+		return false;
+	}
+
+	// From the 12.1 field version on, the client also sends the array dml
+	// row count pointer, length and pointer - OCI 23.26 does, and so does
+	// python-oracledb.  The zero-skip below covers them when there is
+	// query text, but without query text they would be read as the start
+	// of the al8i4 vector, and the descriptors behind it 3 bytes early.
+	if (pointersize==POINTER_SIZE_UNIVERSAL &&
+		fieldversion>=CCAP_FIELD_VERSION_12_1 &&
+		(!getPointer(rp,end,&pointer,&rp) ||
+		!getLenPreInt(rp,&end,&unused,&rp) ||
+		!getPointer(rp,end,&pointer,&rp))) {
 		debugWrite("truncated query3 request");
 		return false;
 	}
@@ -14344,7 +14563,7 @@ bool sqlrprotocol_oracle::getQuery3BindDescriptor(const byte_t *rp,
 	*rpout=rp;
 
 	byte_t		precision=0;
-	byte_t		scale=0;
+	int32_t		scale=0;
 	byte_t		csfrm=0;
 	uint32_t	maxelements=0;
 	uint32_t	contflags=0;
@@ -14354,14 +14573,29 @@ bool sqlrprotocol_oracle::getQuery3BindDescriptor(const byte_t *rp,
 	uint32_t	maxdatasize=0;
 	uint32_t	oaccolid=0;
 
-	if (!have(rp,4,&end)) {
+	if (!have(rp,3,&end)) {
 		debugWrite("truncated bind descriptor");
 		return false;
 	}
 	read(rp,type,&rp);
 	read(rp,flags,&rp);
 	read(rp,&precision,&rp);
-	read(rp,&scale,&rp);
+
+	// the scale takes the same form here that putColumnPrecisionScale()
+	// sends it in.  OCI 23.26 sends a timestamp's scale as 01 09 though
+	// it sets ENCODING_CONV_LENGTH, ojdbc sends 01 09 without the flag,
+	// and python-oracledb sends a raw 00 with it
+	if ((encodingflags&ENCODING_CONV_LENGTH) && !ociclient) {
+		if (!have(rp,1,&end)) {
+			debugWrite("truncated bind descriptor");
+			return false;
+		}
+		scale=(int8_t)*rp;
+		rp++;
+	} else if (!getLenPreSignedInt(rp,&end,&scale,&rp)) {
+		debugWrite("truncated bind descriptor");
+		return false;
+	}
 
 	if (!getLenPreInt(rp,&end,buffersize,&rp) ||
 		!getLenPreInt(rp,&end,&maxelements,&rp) ||
@@ -14472,10 +14706,8 @@ void sqlrprotocol_oracle::classifyQuery3Binds(uint32_t options,
 			continue;
 		}
 
-		if (!(bd->flags&BIND_FLAG_USE_INDICATORS)) {
-			continue;
-		}
-
+		// a bind with no indicator travels the same way as one with
+		// an indicator - only the out value that goes back differs
 		switch (bd->type) {
 			case ORACLE_TYPE_NUMBER:
 			case ORACLE_TYPE_VARNUM:
@@ -14617,6 +14849,8 @@ bool sqlrprotocol_oracle::installQuery3Binds(sqlrservercursor *cursor,
 	uint16_t	incount=0;
 	uint16_t	outcount=0;
 
+	query3localregion=false;
+
 	// query3() refuses a request with more descriptors than maxbindcount
 	// before this runs, so the count checks here and below are just bounds
 	// on the fixed-size arrays they index
@@ -14625,13 +14859,6 @@ bool sqlrprotocol_oracle::installQuery3Binds(sqlrservercursor *cursor,
 		oraclequery3bind	*bd=&(query3binds[i]);
 
 		bd->outindex=-1;
-
-		// an output-only bind still takes a value slot on the wire,
-		// but there's no input value to install
-		if (!(bd->flags&BIND_FLAG_USE_INDICATORS) &&
-			bd->type!=ORACLE_TYPE_RESULT_SET) {
-			continue;
-		}
 
 		const char	*name=NULL;
 		uint16_t	namesize=0;
@@ -14758,15 +14985,27 @@ bool sqlrprotocol_oracle::installQuery3Binds(sqlrservercursor *cursor,
 									'\0';
 					break;
 				case ORACLE_TYPE_DATE:
-				case ORACLE_TYPE_TIMESTAMP:
-				case ORACLE_TYPE_TIMESTAMPTZ:
-				case ORACLE_TYPE_TIMESTAMPLTZ:
 					if (!getOracleDateBindValue(
 							v->value,v->size,bv)) {
 						debugWrite("truncated date");
 						bv->type=
 						SQLRSERVERBINDVARTYPE_NULL;
 					}
+					break;
+				case ORACLE_TYPE_TIMESTAMP:
+				case ORACLE_TYPE_TIMESTAMPTZ:
+				case ORACLE_TYPE_TIMESTAMPLTZ:
+					if (getOracleTimestampBindValue(
+							v->value,v->size,
+							bd->type,bindpool,bv,
+							&query3localregion)) {
+						break;
+					}
+					if (query3localregion) {
+						debugEnd();
+						return false;
+					}
+					bv->type=SQLRSERVERBINDVARTYPE_NULL;
 					break;
 				case ORACLE_TYPE_RAW:
 				case ORACLE_TYPE_LONG_RAW:
@@ -14809,13 +15048,16 @@ bool sqlrprotocol_oracle::installQuery3Binds(sqlrservercursor *cursor,
 			if (bv->type==SQLRSERVERBINDVARTYPE_NULL) {
 				debugWrite("value: NULL");
 			} else if (bv->type==SQLRSERVERBINDVARTYPE_DATE) {
-				debugWrite("value: %d-%d-%d %d:%d:%d",
+				debugWrite("value: %d-%d-%d %d:%d:%d.%06d %s",
 					bv->value.dateval.year,
 					bv->value.dateval.month,
 					bv->value.dateval.day,
 					bv->value.dateval.hour,
 					bv->value.dateval.minute,
-					bv->value.dateval.second);
+					bv->value.dateval.second,
+					bv->value.dateval.microsecond,
+					(bv->value.dateval.tz)?
+						bv->value.dateval.tz:"");
 			} else {
 				debugWrite("value: %.*s",
 					(int)bv->valuesize,
@@ -15043,9 +15285,10 @@ bool sqlrprotocol_oracle::sendQuery3Response(sqlrservercursor *cursor,
 	// else the response carries.  a statement with out binds has no
 	// result set of its own, so this never runs alongside the describe
 	// and rows below
+	bool	nullwithoutindicator=false;
 	if ((options&OPTION_SNDIOV) && hasQuery3OutBinds()) {
 		putIoVector();
-		putOutBindValues(cursor);
+		nullwithoutindicator=putOutBindValues(cursor);
 	}
 
 	uint32_t	rowsfetched=0;
@@ -15176,9 +15419,17 @@ bool sqlrprotocol_oracle::sendQuery3Response(sqlrservercursor *cursor,
 		rowcount=query3affectedrows;
 	}
 
-	// a prefetch that ran out of rows ends in ORA-01403, which the client
-	// reads as "no more rows"; one that filled it ends clean
-	if (endofrows) {
+	// a null in an out bind without an indicator ends in ORA-01405, with
+	// no row count.  a prefetch that ran out of rows ends in ORA-01403,
+	// which the client reads as "no more rows"; one that filled it ends
+	// clean
+	if (nullwithoutindicator) {
+		putSummary(cursorid,ORA_FETCHED_COLUMN_NULL,0,
+				ORA_FETCHED_COLUMN_NULL_MESSAGE,
+				charstring::getLength(
+					ORA_FETCHED_COLUMN_NULL_MESSAGE),
+				ORA_FETCHED_COLUMN_NULL);
+	} else if (endofrows) {
 		putSummary(cursorid,ORA_NO_DATA_FOUND,
 					rowcount,
 					ORA_NO_DATA_FOUND_MESSAGE);
@@ -15223,16 +15474,21 @@ void sqlrprotocol_oracle::putIoVector() {
 	debugEnd();
 }
 
-void sqlrprotocol_oracle::putOutBindValues(sqlrservercursor *cursor) {
+bool sqlrprotocol_oracle::putOutBindValues(sqlrservercursor *cursor) {
 
 	// what the statement left in each out bind, in descriptor order.  an
 	// in-only bind contributes nothing here - the client isn't expecting
-	// one for it - and every value carries a signed indicator behind it
+	// one for it - and a value carries a signed indicator behind it when
+	// the client bound one.  a null in a bind without one goes out as an
+	// empty value, and the call ends in ORA-01405, which the return value
+	// tells the caller to send
 	// see "Oracle Wire Protocol - Query3"
 	write(&reqpacket,(byte_t)TTC_ROW_DATA);
 
 	sqlrserverbindvar	*outbinds=cont->getOutputBinds(cursor);
 	uint16_t		outbindcount=cont->getOutputBindCount(cursor);
+
+	bool	nullwithoutindicator=false;
 
 	debugStart("out bind values");
 
@@ -15272,9 +15528,15 @@ void sqlrprotocol_oracle::putOutBindValues(sqlrservercursor *cursor) {
 			continue;
 		}
 
+		bool	indicator=((bd->flags&BIND_FLAG_USE_INDICATORS)!=0);
+
 		if (!bv || cont->getBindValueIsNull(bv->isnull)) {
 			debugWrite("bind %d: NULL",i+1);
 			write(&reqpacket,(byte_t)0);
+			if (!indicator) {
+				nullwithoutindicator=true;
+				continue;
+			}
 			write(&reqpacket,
 				(byte_t)OUT_BIND_NULL_INDICATOR_COUNT);
 			write(&reqpacket,
@@ -15295,10 +15557,14 @@ void sqlrprotocol_oracle::putOutBindValues(sqlrservercursor *cursor) {
 		} else {
 			putLenBytes(value,size);
 		}
-		write(&reqpacket,(byte_t)0);
+		if (indicator) {
+			write(&reqpacket,(byte_t)0);
+		}
 	}
 
 	debugEnd();
+
+	return nullwithoutindicator;
 }
 
 void sqlrprotocol_oracle::putRefCursorBindValue(sqlrservercursor *child) {
@@ -17077,7 +17343,8 @@ void sqlrprotocol_oracle::putSummary(uint32_t cursorid,
 						uint32_t oranum,
 						uint32_t rowcount,
 						const char *message,
-						uint32_t messagesize) {
+						uint32_t messagesize,
+						uint32_t arrayerror) {
 
 	// the same field sequence sendAuthenticationError() emits - captured
 	// whole from a live 11.2 server - written out one field at a time.
@@ -17101,7 +17368,11 @@ void sqlrprotocol_oracle::putSummary(uint32_t cursorid,
 	writeLenPreInt(&reqpacket,rowcount);
 	writeLenPreInt(&reqpacket,oranum);
 	writeLenPreInt(&reqpacket,0);
-	writeLenPreInt(&reqpacket,0);
+
+	// a real server repeats the error number here for an ORA-01405 on an
+	// out bind, but leaves it 0 for an ORA-01403 ending a fetch
+	writeLenPreInt(&reqpacket,arrayerror);
+
 	writeLenPreInt(&reqpacket,cursorid);
 	writeLenPreInt(&reqpacket,0);
 	write(&reqpacket,(byte_t)3);
@@ -17149,6 +17420,7 @@ void sqlrprotocol_oracle::putSummary(uint32_t cursorid,
 	debugWrite("call number: %d",callnumber);
 	debugWrite("row count: %d",rowcount);
 	debugWrite("error: %d",oranum);
+	debugWrite("array error: %d",arrayerror);
 	if (oranum) {
 		debugWrite("message: %.*s",(int)messagesize,message);
 	}
@@ -18438,7 +18710,9 @@ bool sqlrprotocol_oracle::reexecute(const byte_t *rp) {
 		if (block<query3blocks &&
 			!installQuery3Binds(cursor,block)) {
 			updateQuery3CallStatus(cursor,true,false);
-			return sendNotAllVariablesBoundError(cursorid);
+			return (query3localregion)?
+				sendLocalRegionBindError(cursorid):
+				sendNotAllVariablesBoundError(cursorid);
 		}
 
 		if (!cont->executeQuery(cursor,true,true,true,true)) {
@@ -18494,13 +18768,24 @@ bool sqlrprotocol_oracle::sendReexecuteResponse(sqlrservercursor *cursor,
 
 	// the out bind values, but no io vector - the client learned the
 	// directions from the full execute that came before this
+	bool	nullwithoutindicator=false;
 	if (hasQuery3OutBinds()) {
-		putOutBindValues(cursor);
+		nullwithoutindicator=putOutBindValues(cursor);
 	}
 
 	uint32_t	rowcount=(query3knowsaffectedrows)?query3affectedrows:0;
 
-	putSummary(cursorid,0,rowcount,NULL);
+	// as in sendQuery3Response()
+	if (nullwithoutindicator) {
+		rowcount=0;
+		putSummary(cursorid,ORA_FETCHED_COLUMN_NULL,0,
+				ORA_FETCHED_COLUMN_NULL_MESSAGE,
+				charstring::getLength(
+					ORA_FETCHED_COLUMN_NULL_MESSAGE),
+				ORA_FETCHED_COLUMN_NULL);
+	} else {
+		putSummary(cursorid,0,rowcount,NULL);
+	}
 
 	debugStart("re-execute response");
 	debugWrite("data flags: 0x%04x",dataflags);
@@ -18646,7 +18931,9 @@ bool sqlrprotocol_oracle::reexecuteAndFetch(const byte_t *rp) {
 		if (block<query3blocks &&
 			!installQuery3Binds(cursor,block)) {
 			updateQuery3CallStatus(cursor,true,false);
-			return sendNotAllVariablesBoundError(cursorid);
+			return (query3localregion)?
+				sendLocalRegionBindError(cursorid):
+				sendNotAllVariablesBoundError(cursorid);
 		}
 
 		if (!cont->executeQuery(cursor,true,true,true,true)) {
@@ -21812,6 +22099,27 @@ bool sqlrprotocol_oracle::sendNotAllVariablesBoundError(uint32_t cursorid) {
 
 	putSummary(cursorid,ORA_NOT_ALL_VARIABLES_BOUND,0,
 				ORA_NOT_ALL_VARIABLES_BOUND_MESSAGE);
+
+	return sendPacket(true);
+}
+
+bool sqlrprotocol_oracle::sendLocalRegionBindError(uint32_t cursorid) {
+
+	// answers an execute with a timestamp with time zone bind that's in
+	// a named region and in local time - see getOracleTimestampBindValue()
+
+	resetSendPacketBuffer(PACKET_DATA);
+
+	uint16_t	dataflags=0;
+	writeBE(&reqpacket,dataflags);
+
+	debugStart("local region bind error");
+	debugWrite("data flags: 0x%04x",dataflags);
+	debugWrite("cursor id: %d",cursorid);
+	debugEnd();
+
+	putSummary(cursorid,ORA_LOCAL_REGION_BIND,0,
+				ORA_LOCAL_REGION_BIND_MESSAGE);
 
 	return sendPacket(true);
 }

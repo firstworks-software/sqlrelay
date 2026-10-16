@@ -2510,6 +2510,179 @@ missing bytes silently.
                                       cleared on both sides (inline
                                       reads) (#10556)
 
+    10562-dev-oci23-native-dtbinds-realserver-oracle102.oraproxy
+                                     an OCI 23.26 OCI8 client (a scratch
+                                      program binding OCIDateTime
+                                      descriptors, session time zone
+                                      -04:00) against the real 10.2
+                                      server, through oraproxy with
+                                      ORAPROXY_UNIVERSAL_REPS=1.  [0019]
+                                      to [0041] run "select :1 from dual"
+                                      once per value: TIMESTAMP (11
+                                      bytes, 7 at [0021] when the
+                                      fraction is zero), TIMESTAMP WITH
+                                      TIME ZONE at -05:00, +05:30, across
+                                      a year end each way, 1500-03-01 and
+                                      1582-10-15 at +01:00, and +00:00
+                                      (always 13 bytes, UTC, offset hour
+                                      biased by 20 and minute by 60),
+                                      TIMESTAMP WITH LOCAL TIME ZONE at
+                                      [0037] (11 bytes, UTC), and
+                                      US/Eastern in summer and winter at
+                                      [0039] and [0041] (UTC, 89 90).
+                                      Every descriptor sends the scale
+                                      count prefixed (b5 01 00 01 09 01
+                                      03 00 04 08 00 00 00 ...).  [0043]
+                                      binds all twelve at once, [0045] to
+                                      [0060] insert them and [0061] reads
+                                      them back.  [0073] and [0075] bind
+                                      a number and a string with no
+                                      indicator variable: flags 00, and
+                                      the value is sent.  [0077] binds a
+                                      pl/sql out number with no
+                                      indicator, and [0078] answers with
+                                      no indicator byte after the value
+                                      (07 02 c1 2b 08); [0079] and [0080]
+                                      are the same with an indicator (07
+                                      02 c1 2b 00 08).  [0081] and [0082]
+                                      are in-out (io vector 30), [0083]
+                                      and [0084] a string, and [0085] and
+                                      [0086] a null into a bind with no
+                                      indicator (07 00, then ORA-01405).
+                                      [0087] binds a TIMESTAMP WITH TIME
+                                      ZONE with no indicator (b5 00 00 01
+                                      09 ...) (#10562)
+
+    10562-dev-oci23-native-dtbinds-tzv26-realserver-oracle122.oraproxy
+                                     the same program and statements
+                                      against the real 12.2 server, with
+                                      ORA_TZFILE pointing at a copy of
+                                      the server's own timezlrg_26.dat.
+                                      Taken without
+                                      ORAPROXY_UNIVERSAL_REPS: OCI 23.26
+                                      sends a 12.2 server a short data
+                                      type list with nothing to rewrite,
+                                      and the rewrite then matches inside
+                                      a later bind request and gets
+                                      ORA-03137.  So the integers are in
+                                      OCI's native fixed width form,
+                                      scale included (b4 01 00 09 28 00
+                                      00 00 ...).  Both sides set
+                                      RCAP_TTC bit 0x02, the client sends
+                                      time zone file version 26 at [0011]
+                                      (... 1a d0 07) and the server
+                                      answers 26 at [0012], and every
+                                      bind at [0017] to [0041] and every
+                                      row and out bind is in the UTC
+                                      form, the same bytes as the 10.2
+                                      capture.  [0075] to [0078] are the
+                                      pl/sql out number without and with
+                                      an indicator (natively two bytes,
+                                      00 00), and [0083] and [0084] the
+                                      null (ORA-01405) (#10562)
+
+    10562-dev-oci23-native-dtbinds-tzv45-realserver-oracle122.oraproxy
+                                     the same against the real 12.2
+                                      server with OCI 23.26's own time
+                                      zone file, version 45 ([0011] ends
+                                      2d d0 07; the server still answers
+                                      26).  Now both sides use the local
+                                      form: [0017] and [0018] select a
+                                      -05:00 literal and get local time
+                                      with the offset hour biased by 84
+                                      (4f 3c), [0019] and [0020] a
+                                      US/Eastern literal (local time, 89
+                                      93 - 0x01 in byte 12 marks a local
+                                      region value and 0x02 daylight
+                                      saving), and the binds at [0021] to
+                                      [0043] go out local too (4f 3c, 59
+                                      5a, and 89 93 in summer, 89 91 in
+                                      winter).  OCIDateTimeConstruct
+                                      fails the region values with
+                                      ORA-01805, but they still go out.
+                                      TIMESTAMP and TIMESTAMP WITH LOCAL
+                                      TIME ZONE binds are unchanged
+                                      (#10562)
+
+    10562-dev-oci23-native-dtbinds-tzv26-rewritten45-realserver-oracle122.oraproxy
+                                     the tzv26 run again, through a
+                                      scratch copy of oraproxy that
+                                      rewrote the version the server
+                                      answers at [0012] from 26 to 45
+                                      (the capture holds the rewritten
+                                      bytes), so the client sees
+                                      mismatched versions and the server
+                                      matched ones.  Each side then goes
+                                      by its own reading, never by the
+                                      bytes: [0020] answers a -05:00
+                                      literal in the UTC form (0f 3c),
+                                      and OCI breaks at [0021] and
+                                      reports ORA-01891; the binds at
+                                      [0033] to [0051] go out local (4f
+                                      3c, 89 93), and the rows inserted
+                                      at [0053] read back at [0069] as
+                                      2005-05-07 16:05:05.555555 +59:00
+                                      and, for US/Eastern, four hours
+                                      early (#10562)
+
+    10562-dev-oci23-portable-dtbinds-sqlrelay102.oraproxy
+    10562-dev-oci23-portable-dtbinds-tzv45-sqlrelay121.oraproxy
+    10562-dev-oci23-portable-dtbinds-tzv11-sqlrelay121.oraproxy
+                                     the program's twelve bind select
+                                      against -buildtree listeners at
+                                      serverversion 10.2 and 12.1, backed
+                                      by oracle122.  At 10.2 no time
+                                      zone file version goes either way
+                                      and [0017] is in the UTC form.  At
+                                      12.1 the module answers version 11
+                                      at [0012] and both sides set
+                                      RCAP_TTC bit 0x02.  OCI with its
+                                      own version 45 sends the local form
+                                      at [0017]; with ORA_TZFILE pointing
+                                      at a timezlrg_11.dat copied from
+                                      oracle122, it sends the UTC form.
+                                      Every bind and define descriptor
+                                      sends the scale count prefixed (b4
+                                      01 00 01 09 01 28 00 04 08 00 00 00
+                                      ...), and the module drops the
+                                      session with "truncated bind
+                                      descriptor" (#10562)
+
+    10562-dev-ojdbc-dtbinds-realserver-oracle122.oraproxy
+                                     ojdbc 23.26 (a scratch program,
+                                      "select :1 from dual" with
+                                      setObject) against the real 12.2
+                                      server.  A Timestamp at [0015]
+                                      sends the scale count prefixed (b4
+                                      03 00 01 09 01 0b ...), though
+                                      ojdbc leaves ENCODING_CONV_LENGTH
+                                      clear, and one with no fraction at
+                                      [0017] goes out 7 bytes long.
+                                      OffsetDateTime at -05:00 and +05:30
+                                      at [0019] and [0021] (b5 03 00 00
+                                      01 0d ..., scale 0) and a
+                                      ZonedDateTime in US/Eastern at
+                                      [0023] (89 90) are in the UTC form,
+                                      and a TIMESTAMPLTZ at [0029] (e7 03
+                                      00 00 01 0b ...) is 11 bytes of
+                                      UTC.  ojdbc never sets RCAP_TTC bit
+                                      0x02 (#10562)
+
+    10562-dev-pythonoracledb-thin-dtbinds-realserver-oracle122.oraproxy
+                                     python-oracledb 4.0.2 thin against
+                                      the real 12.2 server.  A plain
+                                      datetime binds as a DATE at [0013]
+                                      (0c 01 00 00 01 07 ...).
+                                      DB_TYPE_TIMESTAMP_TZ at [0017] (b5
+                                      01 00 00 01 0d ..., scale 0) sends
+                                      the wall time at +00:00 (14 3c) and
+                                      drops the tzinfo, and
+                                      DB_TYPE_TIMESTAMP_LTZ at [0021] (e7
+                                      01 00 00 01 0b ...) sends the wall
+                                      time as 11 bytes.  [0015] and
+                                      [0019] re-execute (TTI 0x4e) with
+                                      just the new value (#10562)
+
     10564-dev-oci23-native-earlydates-realserver-oracle102.oraproxy
                                      an OCI 23.26 OCI8 client (a scratch
                                       program defining TIMESTAMP WITH
