@@ -2972,6 +2972,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - fixed the oracle protocol module losing the first character of an ojdbc
   statement that is as long as that character's code (eg. a 98 character
   begin block, ORA-00900)
+- fixed the oracle protocol module answering only one spelling of
+  dbms_lob.fileGetName() on a bound bfile locator locally, and not a
+  statement run again
 
 ### Security
 - fixed an authentication hole in the des password encryption module

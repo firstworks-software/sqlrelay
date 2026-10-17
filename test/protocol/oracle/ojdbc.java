@@ -797,6 +797,40 @@ class ojdbc {
 		}
 		rs.close();
 
+		// the same call in other spellings (ojdbc rewrites ? as ":1 ",
+		// and a hand-written one can differ in case, whitespace, bind
+		// names and the sys. prefix), each on one statement reused for
+		// both rows (#10709)
+		String[]	spellings={
+			"begin sys.dbms_lob.fileGetName(:1, :2, :3); end;",
+			"begin sys.dbms_lob.fileGetName(?,?,?); end;",
+			"begin dbms_lob.filegetname(?,?,?); end;",
+			"BEGIN   SYS.DBMS_LOB.FILEGETNAME( :a , :b , :c ) ;"+
+								" END ;\n"
+		};
+		for (int i=0; i<spellings.length; i++) {
+			OracleCallableStatement	cs=
+				(OracleCallableStatement)con.prepareCall(
+								spellings[i]);
+			cs.registerOutParameter(2,Types.VARCHAR);
+			cs.registerOutParameter(3,Types.VARCHAR);
+			rs=st.executeQuery("select id,f from "+
+					"protocoltestojdbcbf order by id");
+			while (rs.next()) {
+				int	id=rs.getInt(1);
+				cs.setBFILE(1,((OracleResultSet)rs).getBFILE(2));
+				cs.execute();
+				String	alias=cs.getString(2);
+				String	name=cs.getString(3);
+				check("spelling "+i+" row "+id+" names",
+					expectedalias(id).equals(alias) &&
+					expectedfile(id).equals(name),
+					"got \""+alias+"\", \""+name+"\"");
+			}
+			rs.close();
+			cs.close();
+		}
+
 		// a query that still works after the bfiles
 		rs=st.executeQuery("select 1 from dual");
 		check("query after bfiles",rs.next() && rs.getInt(1)==1,"");

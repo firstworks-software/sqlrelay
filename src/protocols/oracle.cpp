@@ -972,6 +972,14 @@
 // TNS_EXEC_OPTION_COMMIT_REEXECUTE, set when autocommit is on
 #define REEXECUTE_OPTION_COMMIT	(1<<0)
 
+// the three shapes dbms_lob.fileGetName()'s local answer takes: a query3
+// execute that asked for the io vector, one that didn't (the statement ran
+// before, so the client has it), and a TTI 0x4e re-execute, which has no
+// return parameters either
+#define FILEGETNAME_SHAPE_IOVECTOR	0
+#define FILEGETNAME_SHAPE_NOIOVECTOR	1
+#define FILEGETNAME_SHAPE_REEXECUTE	2
+
 // one odefin() rides in the query2 request as a descriptor: four raw bytes -
 // the wire datatype, a flag, a precision and a scale - and then this many
 // counts, of which the first is the client's buffer size and the sixth the
@@ -2120,6 +2128,8 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_oracle : public sqlrprotocol {
 		// returns true if the query3 request being handled runs
 		// dbms_lob.fileGetName() on a bound bfile locator, and finds
 		// the names in it
+		bool	isFileGetNameText(const char *query,
+							uint32_t querysize);
 		bool	isFileGetNameCall(sqlrservercursor *cursor,
 							uint32_t options,
 							const byte_t **diralias,
@@ -2130,6 +2140,7 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_oracle : public sqlrprotocol {
 							uint32_t options,
 							uint32_t cursorid,
 							bool rowcounts,
+							uint16_t shape,
 							const byte_t *diralias,
 							uint16_t diraliassize,
 							const byte_t *filename,
@@ -14310,9 +14321,12 @@ bool sqlrprotocol_oracle::query3(const byte_t *rp) {
 						&diralias,&diraliassize,
 						&filename,&filenamesize)) {
 			return sendFileGetNameResponse(cursor,options,
-						cursorid,rowcounts,
-						diralias,diraliassize,
-						filename,filenamesize);
+					cursorid,rowcounts,
+					(options&OPTION_SNDIOV)?
+						FILEGETNAME_SHAPE_IOVECTOR:
+						FILEGETNAME_SHAPE_NOIOVECTOR,
+					diralias,diraliassize,
+					filename,filenamesize);
 		}
 
 		// execute the query, once per row data block - the wire's
@@ -16175,6 +16189,75 @@ bool sqlrprotocol_oracle::putOutBindValues(sqlrservercursor *cursor) {
 	return nullwithoutindicator;
 }
 
+// skips whitespace, then the word if it's next, whatever its case
+static bool skipFileGetNameWord(const char **ptr, const char *end,
+						const char *word) {
+	const char	*p=*ptr;
+	while (p<end && character::isWhitespace(*p)) {
+		p++;
+	}
+	size_t	size=charstring::getLength(word);
+	if ((size_t)(end-p)<size ||
+		charstring::compareIgnoringCase(p,word,size)) {
+		return false;
+	}
+	*ptr=p+size;
+	return true;
+}
+
+// skips whitespace, then a bind variable's marker and name
+static bool skipFileGetNameBind(const char **ptr, const char *end) {
+	if (!skipFileGetNameWord(ptr,end,":")) {
+		return false;
+	}
+	const char	*p=*ptr;
+	while (p<end && (character::isAlphanumeric(*p) || *p=='_')) {
+		p++;
+	}
+	if (p==*ptr) {
+		return false;
+	}
+	*ptr=p;
+	return true;
+}
+
+bool sqlrprotocol_oracle::isFileGetNameText(const char *query,
+						uint32_t querysize) {
+
+	// begin [sys.]dbms_lob.filegetname(:a, :b, :c); end; - any case,
+	// any whitespace between the tokens, any bind names, and only
+	// whitespace after.  ojdbc rewrites the ? markers of a prepareCall()
+	// as ":1 , :2 , :3 ", and the module's own tests send the call
+	// as "(:1, :2, :3)"
+	const char	*ptr=query;
+	const char	*end=query+querysize;
+
+	if (!skipFileGetNameWord(&ptr,end,"begin") ||
+		ptr==end || !character::isWhitespace(*ptr)) {
+		return false;
+	}
+	skipFileGetNameWord(&ptr,end,"sys.");
+	if (!skipFileGetNameWord(&ptr,end,"dbms_lob.filegetname") ||
+		!skipFileGetNameWord(&ptr,end,"(")) {
+		return false;
+	}
+	for (uint16_t i=0; i<3; i++) {
+		if (!skipFileGetNameBind(&ptr,end) ||
+			!skipFileGetNameWord(&ptr,end,(i<2)?",":")")) {
+			return false;
+		}
+	}
+	if (!skipFileGetNameWord(&ptr,end,";") ||
+		!skipFileGetNameWord(&ptr,end,"end") ||
+		!skipFileGetNameWord(&ptr,end,";")) {
+		return false;
+	}
+	while (ptr<end && character::isWhitespace(*ptr)) {
+		ptr++;
+	}
+	return (ptr==end);
+}
+
 bool sqlrprotocol_oracle::isFileGetNameCall(sqlrservercursor *cursor,
 						uint32_t options,
 						const byte_t **diralias,
@@ -16186,32 +16269,27 @@ bool sqlrprotocol_oracle::isFileGetNameCall(sqlrservercursor *cursor,
 	// locator on :1 and varchar out binds on :2 and :3 - [0021] of
 	// test/protocol/oracle/samples/10696-dev-ojdbc-bfile-realserver-
 	// oracle122.oraproxy.  anything else, a null locator included, runs
-	// as usual
-	static const char	filegetname[]=
-			"begin sys.dbms_lob.fileGetName(:1, :2, :3); end;";
-
+	// as usual.  a call written by hand gets the same answer whatever its
+	// whitespace, case, bind names and sys. prefix - see
+	// isFileGetNameText()
+	//
+	// the binds have to have been classified out for the last two, which
+	// is the io vector request of the first execute, or the directions
+	// the cursor saved from it when the statement runs again
 	*diralias=NULL;
 	*diraliassize=0;
 	*filename=NULL;
 	*filenamesize=0;
 
-	if (!(options&OPTION_SNDIOV) ||
-			query3binddescs!=3 || query3blocks!=1) {
+	if (query3binddescs!=3 || query3blocks!=1 ||
+		!(query3binds[1].direction&BIND_DIRECTION_OUT) ||
+		!(query3binds[2].direction&BIND_DIRECTION_OUT)) {
 		return false;
 	}
 
-	// the text, then nothing but whitespace
-	const char	*query=cont->getQueryBuffer(cursor);
-	uint32_t	querysize=cont->getQuerySize(cursor);
-	uint32_t	textsize=sizeof(filegetname)-1;
-	if (querysize<textsize ||
-		charstring::compare(query,filegetname,textsize)) {
+	if (!isFileGetNameText(cont->getQueryBuffer(cursor),
+					cont->getQuerySize(cursor))) {
 		return false;
-	}
-	for (uint32_t i=textsize; i<querysize; i++) {
-		if (!character::isWhitespace(query[i])) {
-			return false;
-		}
 	}
 
 	if (query3binds[0].type!=ORACLE_TYPE_BFILE) {
@@ -16247,6 +16325,7 @@ bool sqlrprotocol_oracle::sendFileGetNameResponse(sqlrservercursor *cursor,
 						uint32_t options,
 						uint32_t cursorid,
 						bool rowcounts,
+						uint16_t shape,
 						const byte_t *diralias,
 						uint16_t diraliassize,
 						const byte_t *filename,
@@ -16274,7 +16353,9 @@ bool sqlrprotocol_oracle::sendFileGetNameResponse(sqlrservercursor *cursor,
 	query3binds[0].direction=BIND_DIRECTION_IN;
 	query3binds[1].direction=BIND_DIRECTION_OUT;
 	query3binds[2].direction=BIND_DIRECTION_OUT;
-	putIoVector();
+	if (shape==FILEGETNAME_SHAPE_IOVECTOR) {
+		putIoVector();
+	}
 
 	// an empty name goes back as a null, the way putOutBindValues()
 	// sends one
@@ -16304,7 +16385,9 @@ bool sqlrprotocol_oracle::sendFileGetNameResponse(sqlrservercursor *cursor,
 	}
 	debugEnd();
 
-	putReturnParameters(cursorid);
+	if (shape!=FILEGETNAME_SHAPE_REEXECUTE) {
+		putReturnParameters(cursorid);
+	}
 
 	if (nullwithoutindicator) {
 		putSummary(cursorid,ORA_FETCHED_COLUMN_NULL,0,
@@ -20702,6 +20785,21 @@ bool sqlrprotocol_oracle::reexecute(const byte_t *rp) {
 	restoreQuery3Binds(cursor);
 	if (!getQuery3BindValues(rp,end,query3binddescs,iterations)) {
 		return false;
+	}
+
+	// dbms_lob.fileGetName() on a bound locator is answered here too,
+	// since the backend can't take the locator
+	const byte_t	*diralias;
+	uint16_t	diraliassize;
+	const byte_t	*filename;
+	uint16_t	filenamesize;
+	if (isFileGetNameCall(cursor,0,&diralias,&diraliassize,
+						&filename,&filenamesize)) {
+		return sendFileGetNameResponse(cursor,
+				(moreoptions&REEXECUTE_OPTION_COMMIT)?
+							OPTION_COMMIT:0,
+				cursorid,false,FILEGETNAME_SHAPE_REEXECUTE,
+				diralias,diraliassize,filename,filenamesize);
 	}
 
 	// a fresh execute means a new result set - re-start the running

@@ -3886,6 +3886,35 @@ that statement, except where noted.
                                       same two to_char results as the
                                       real server's (#10692)
 
+    10709-dev-ojdbc-filegetname-spellings-realserver-oracle122.oraproxy
+                                     ojdbc 23.26 (a scratch program: a
+                                      CallableStatement on a BFILE locator
+                                      from "select bfilename(...) from
+                                      dual", run for two locators on the
+                                      one statement, for four spellings of
+                                      the call - the exact text, ojdbc's
+                                      "?" rewrite, "dbms_lob.filegetname"
+                                      without sys., and an upper case one
+                                      with odd whitespace and bind names)
+                                      against the real 12.2 server.  Each
+                                      spelling's first execute is [0019],
+                                      [0031] and so on, and its reuse for
+                                      the second locator is the next
+                                      request of 102 bytes (options 0x0520,
+                                      the io vector request included,
+                                      no text and no descriptors); the
+                                      answer to the reuse has the same
+                                      shape as the first, io vector
+                                      included (#10709)
+
+    10709-dev-ojdbc-filegetname-spellings-sqlrelay121.oraproxy
+                                     the same program against a -buildtree
+                                      listener at serverversion 12.1, after
+                                      the fix: all four spellings answer
+                                      locally, the reuse too.  Before it
+                                      only the exact text did, and the
+                                      others got PLS-00306 (#10709)
+
     10700-dev-ojdbc-failedstmt-realserver-oracle122.oraproxy
                                      ojdbc 23.26 (a scratch program: each
                                       failure shape seven times on one
