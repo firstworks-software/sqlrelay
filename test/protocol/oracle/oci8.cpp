@@ -1405,6 +1405,81 @@ int main(int argc, char **argv) {
 	stdoutput.printf("\n\n");
 
 
+	// #10692 - a null in an out bind with no indicator ends in ORA-01405,
+	// on the first execute and on a second one on the same statement,
+	// which OCI sends as the whole request again without asking for an io
+	// vector.  the module used to answer the second with a plain success
+	// and no out value, which OCI took for a short answer and sent again
+	// until the session was dropped
+	stdoutput.printf("OCIBindByName - null out bind, no indicator\n");
+	const char	*nullnoindblock="begin :v := null; end;";
+	assertEquals(
+		OCIStmtPrepare(bindstmt,err,(text *)nullnoindblock,
+				charstring::getLength(nullnoindblock),
+				OCI_NTV_SYNTAX,OCI_DEFAULT),
+		OCI_SUCCESS);
+	char	nulloutbuf[64];
+	assertEquals(
+		OCIBindByName(bindstmt,&bnd[0],err,(text *)":v",2,
+				nulloutbuf,sizeof(nulloutbuf),SQLT_STR,
+				NULL,NULL,NULL,0,NULL,OCI_DEFAULT),
+		OCI_SUCCESS);
+	for (uint16_t i=0; i<3; i++) {
+		charstring::copy(nulloutbuf,"x");
+		assertEquals(
+			OCIStmtExecute(svc,bindstmt,err,1,0,NULL,NULL,
+								OCI_DEFAULT),
+			OCI_ERROR);
+		assertEquals((int)errorCode(),1405);
+	}
+	stdoutput.printf("\n\n");
+
+	// with an indicator the null comes back as one, and both runs succeed
+	stdoutput.printf("OCIBindByName - null out bind, indicator\n");
+	sb2	nulloutind=0;
+	assertEquals(
+		OCIBindByName(bindstmt,&bnd[0],err,(text *)":v",2,
+				nulloutbuf,sizeof(nulloutbuf),SQLT_STR,
+				&nulloutind,NULL,NULL,0,NULL,OCI_DEFAULT),
+		OCI_SUCCESS);
+	for (uint16_t i=0; i<3; i++) {
+		charstring::copy(nulloutbuf,"x");
+		nulloutind=0;
+		assertEquals(
+			OCIStmtExecute(svc,bindstmt,err,1,0,NULL,NULL,
+								OCI_DEFAULT),
+			OCI_SUCCESS);
+		assertEquals((int)nulloutind,OCI_IND_NULL);
+	}
+	stdoutput.printf("\n\n");
+
+	// a bind the statement only reads, with an empty value and no
+	// indicator, is not an out bind: a real server runs the block, and
+	// the module cannot tell it from an out bind that went in null, so it
+	// answers with success rather than ORA-01405 for both
+	stdoutput.printf("OCIBindByName - in-only empty bind, no indicator\n");
+	const char	*inemptyblock=
+		"declare n number; begin n := length(:v); end;";
+	assertEquals(
+		OCIStmtPrepare(bindstmt,err,(text *)inemptyblock,
+				charstring::getLength(inemptyblock),
+				OCI_NTV_SYNTAX,OCI_DEFAULT),
+		OCI_SUCCESS);
+	assertEquals(
+		OCIBindByName(bindstmt,&bnd[0],err,(text *)":v",2,
+				nulloutbuf,sizeof(nulloutbuf),SQLT_STR,
+				NULL,NULL,NULL,0,NULL,OCI_DEFAULT),
+		OCI_SUCCESS);
+	for (uint16_t i=0; i<3; i++) {
+		charstring::copy(nulloutbuf,"");
+		assertEquals(
+			OCIStmtExecute(svc,bindstmt,err,1,0,NULL,NULL,
+								OCI_DEFAULT),
+			OCI_SUCCESS);
+	}
+	stdoutput.printf("\n\n");
+
+
 	stdoutput.printf("OCIStmtExecute - no such placeholder\n");
 	assertEquals(
 		OCIStmtPrepare(bindstmt,err,(text *)bindinsert,
@@ -2796,7 +2871,13 @@ int main(int argc, char **argv) {
 		{1500,2,29,23,30,0,123456000,"-01:00",-1,0,
 			"1500-02-29 23:30:00.123456",
 			"1500-02-29 23:30:00.123456 -01:00",
-			"1500-03-01 00:30:00.123456 +00:00"}
+			"1500-03-01 00:30:00.123456 +00:00"},
+		// no fraction at all, which OCI sends in the 7 byte form, in
+		// a zone that is exactly utc (#10692)
+		{2010,10,10,10,10,10,0,"+00:00",0,0,
+			"2010-10-10 10:10:10.000000",
+			"2010-10-10 10:10:10.000000 +00:00",
+			"2010-10-10 10:10:10.000000 +00:00"}
 	};
 	const int	dtbindcount=sizeof(dtbindvalues)/sizeof(dtbindvalue);
 

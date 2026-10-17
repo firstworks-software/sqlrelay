@@ -350,6 +350,20 @@ class ojdbc {
 		updatecount(st,"delete reuse rows",
 			"delete from protocoltestojdbcdml where v='q'",6);
 
+		// the same with a CallableStatement and an out parameter: the
+		// re-executes carry the new in value and expect the out value
+		// back with no io vector (#10705, #10692)
+		CallableStatement	cs=con.prepareCall(
+					"begin ? := ? * 2; end;");
+		cs.registerOutParameter(1,Types.INTEGER);
+		for (int i=1; i<=3; i++) {
+			cs.setInt(2,i*10);
+			cs.execute();
+			check("reuse callable "+i,cs.getInt(1)==i*20,
+							"got "+cs.getInt(1));
+		}
+		cs.close();
+
 		// rollback
 		con.setAutoCommit(false);
 		updatecount(st,"insert before rollback",

@@ -3832,6 +3832,60 @@ that statement, except where noted.
                                       data, and re-ran the first values
                                       (#10705)
 
+    10692-dev-oci23-native-nullout-realserver-oracle122.oraproxy
+                                     OCI 23.26 (a scratch program: five
+                                      PL/SQL blocks, each executed twice on
+                                      one statement handle with the bind
+                                      value put back between the runs -
+                                      "begin :v := null; end;" with and
+                                      without an indicator, "declare n
+                                      number; begin n := length(:v); end;"
+                                      with an empty and a non-empty value,
+                                      and "begin :v := 'hi'; end;") against
+                                      the real 12.2 server, native
+                                      encoding.  Without an indicator the
+                                      null block ends in ORA-01405 both
+                                      times and the length block succeeds.
+                                      The second execute of a statement is
+                                      the whole TTI_QUERY3 again, with the
+                                      parse option and the text but not
+                                      OPTION_SNDIOV (options 0x29, where the
+                                      first is 0x040429), and the server
+                                      still answers with the out values,
+                                      or the error, and no io vector
+                                      (#10692)
+
+    10692-dev-oci23-nullout-sqlrelay121.oraproxy
+                                     the same program against a -buildtree
+                                      listener at serverversion 12.1, after
+                                      the fix, same results.  Before it the
+                                      module classified the second execute's
+                                      binds as in-only because it carried no
+                                      io vector flag, sent a success with no
+                                      out value and no error, and OCI sent
+                                      the execute again until the session
+                                      was dropped (#10692)
+
+    10692-dev-nodeoracledb-thin-tsbinds-realserver-oracle122.oraproxy
+                                     node-oracledb thin binding a
+                                      TIMESTAMP and a TIMESTAMP WITH TIME
+                                      ZONE from one JavaScript Date in
+                                      "select to_char(:1,...),
+                                      to_char(:2,...) from dual", against
+                                      the real 12.2 server.  Its bind
+                                      descriptors carry the scale the same
+                                      way python-oracledb's do (a raw
+                                      byte, with ENCODING_CONV_LENGTH
+                                      set), which the module's descriptor
+                                      parse takes for a non-OCI client
+                                      (#10692)
+
+    10692-dev-nodeoracledb-thin-tsbinds-sqlrelay121.oraproxy
+                                     the same against a -buildtree
+                                      listener at serverversion 12.1: the
+                                      same two to_char results as the
+                                      real server's (#10692)
+
     10700-dev-ojdbc-failedstmt-realserver-oracle122.oraproxy
                                      ojdbc 23.26 (a scratch program: each
                                       failure shape seven times on one

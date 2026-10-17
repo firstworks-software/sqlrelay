@@ -1992,6 +1992,10 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_oracle : public sqlrprotocol {
 							const byte_t **rpout);
 		void	saveQuery3Defines(sqlrservercursor *cursor);
 		void	classifyQuery3Binds(uint32_t options,
+							uint32_t cursorid,
+							const char *query,
+							uint32_t querysize);
+		void	inheritQuery3BindDirections(uint32_t cursorid,
 							const char *query,
 							uint32_t querysize);
 		bool	hasQuery3OutBinds();
@@ -14818,7 +14822,7 @@ bool sqlrprotocol_oracle::getQuery3Binds(const byte_t *rp,
 	query3defines=definecount;
 
 	// which way each of them travels
-	classifyQuery3Binds(options,query,querysize);
+	classifyQuery3Binds(options,cursorid,query,querysize);
 
 	// an unbound placeholder means no row data at all
 	if (!bindcount || query3unbound) {
@@ -15077,6 +15081,7 @@ bool sqlrprotocol_oracle::getQuery3BindDescriptor(const byte_t *rp,
 }
 
 void sqlrprotocol_oracle::classifyQuery3Binds(uint32_t options,
+						uint32_t cursorid,
 						const char *query,
 						uint32_t querysize) {
 
@@ -15090,10 +15095,22 @@ void sqlrprotocol_oracle::classifyQuery3Binds(uint32_t options,
 	// keeping the in bit also keeps a re-execute's request shape unchanged
 	// - oci sends a value for every bind that has it
 	// see "Oracle Wire Protocol - Query3"
-	// a client that didn't ask for an io vector isn't expecting out binds,
-	// and a request that didn't carry the text says nothing about what
+	// OCI executing the same statement handle again sends the whole
+	// request, parse option and text included, but without OPTION_SNDIOV.
+	// a real server still sends the out values back (without an io vector,
+	// the client already has one), and a null in a bind with no indicator
+	// still ends in ORA-01405 - see test/protocol/oracle/samples/
+	// 10692-dev-oci23-native-nullout-realserver-oracle122.oraproxy.  so the
+	// directions the statement had the last time it ran on this cursor
+	// carry over, when the text and the bind count are the same
+	if (!(options&OPTION_SNDIOV)) {
+		inheritQuery3BindDirections(cursorid,query,querysize);
+		return;
+	}
+
+	// a request that didn't carry the text says nothing about what
 	// the statement does with its placeholders
-	if (!(options&OPTION_SNDIOV) || (options&OPTION_NOPLSQL) ||
+	if ((options&OPTION_NOPLSQL) ||
 						!query || !querysize) {
 		return;
 	}
@@ -15152,6 +15169,30 @@ void sqlrprotocol_oracle::classifyQuery3Binds(uint32_t options,
 					i+1,query3binds[i].direction);
 		}
 		debugEnd();
+	}
+}
+
+void sqlrprotocol_oracle::inheritQuery3BindDirections(uint32_t cursorid,
+							const char *query,
+							uint32_t querysize) {
+
+	if (!cursorid || !query || !querysize) {
+		return;
+	}
+	sqlrservercursor	*cursor=wireIdToCursor(cursorid);
+	if (!cursor) {
+		return;
+	}
+	uint16_t	curid=cont->getId(cursor);
+	if (cursorbindcounts[curid]!=query3binddescs ||
+		cont->getQuerySize(cursor)!=querysize ||
+		charstring::compare(cont->getQueryBuffer(cursor),
+						query,querysize)) {
+		return;
+	}
+	const oraclequery3bind	*saved=cursorbinds[curid];
+	for (uint32_t i=0; i<query3binddescs; i++) {
+		query3binds[i].direction=saved[i].direction;
 	}
 }
 
@@ -15739,9 +15780,14 @@ bool sqlrprotocol_oracle::sendQuery3Response(sqlrservercursor *cursor,
 	// else the response carries.  a statement with out binds has no
 	// result set of its own, so this never runs alongside the describe
 	// and rows below
+	// the io vector only goes to a request that asked for it - one that
+	// didn't is a statement that ran before, and the client already
+	// knows which binds are out
 	bool	nullwithoutindicator=false;
-	if ((options&OPTION_SNDIOV) && hasQuery3OutBinds()) {
-		putIoVector();
+	if (hasQuery3OutBinds()) {
+		if (options&OPTION_SNDIOV) {
+			putIoVector();
+		}
 		nullwithoutindicator=putOutBindValues(cursor);
 	}
 
@@ -16046,7 +16092,22 @@ bool sqlrprotocol_oracle::putOutBindValues(sqlrservercursor *cursor) {
 			debugWrite("bind %d: NULL",i+1);
 			write(&reqpacket,(byte_t)0);
 			if (!indicator) {
-				nullwithoutindicator=true;
+
+				// the wire can't tell an in-only bind from an
+				// out one, so a bind that went in null and
+				// came back null might be a statement that
+				// only reads it, which a real server answers
+				// with success.  one that went in with a value
+				// and came back null can only be an out bind
+				bool	wentinnull=(query3blocks &&
+					query3bindvalues[(query3blocks-1)*
+						query3binddescs+i].isnull);
+				if (wentinnull) {
+					debugWrite("bind %d: was null going in, "
+							"no ORA-01405",i+1);
+				} else {
+					nullwithoutindicator=true;
+				}
 				continue;
 			}
 			write(&reqpacket,

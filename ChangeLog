@@ -2964,6 +2964,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   serverversion 12.1, and array dml row counts
 - fixed the oracle protocol module running a re-executed ojdbc or OCI
   statement with the first execution's bind values
+- fixed the oracle protocol module hanging an OCI client that executes a
+  PL/SQL block with out binds a second time, and ORA-01405 on a PL/SQL bind
+  with no indicator that went in NULL and is only read
 
 ### Security
 - fixed an authentication hole in the des password encryption module
