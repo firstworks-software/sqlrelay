@@ -1504,9 +1504,10 @@ run_protocol_test() {
 	# the ports from the environment too.  then ojdbc, three times, for
 	# #10569 - an ojdbc (thin driver) check of getDatabaseProductVersion()
 	# and of CLOB and BLOB selects at the driver's default lob prefetch
-	# size and at 0 and -1,
-	# against the 12.1 (ORACLEPROTOCOLPORT1), 10.2 (ORACLEPROTOCOLPORT12)
-	# and 11.2 (ORACLEPROTOCOLPORT2) listeners.  ojdbc asks for prefetched
+	# size and at 0 and -1 - and for #10701, of plain dml update counts,
+	# batches, commit and rollback - against the 12.1 (ORACLEPROTOCOLPORT1),
+	# 10.2 (ORACLEPROTOCOLPORT12) and 11.2 (ORACLEPROTOCOLPORT2)
+	# listeners.  ojdbc asks for prefetched
 	# lob data inside the row, which no OCI client here does.  it connects
 	# to the ports directly, so it needs neither $server nor TNS_ADMIN.
 	# ojdbc.class is built only when a jdk is configured, so the runs are

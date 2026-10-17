@@ -2337,7 +2337,8 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_oracle : public sqlrprotocol {
 
 		void	putGenericFooter();
 
-		bool	sendQueryError(sqlrservercursor *cursor);
+		bool	sendQueryError(sqlrservercursor *cursor,
+						bool rowcounts=false);
 		bool	sendCursorNotOpenError(uint32_t cursorid=0);
 		bool	sendMaxOpenCursorsError();
 		bool	sendUnimplementedFunctionError();
@@ -2844,6 +2845,15 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_oracle : public sqlrprotocol {
 		uint32_t	query3affectedrows;
 		bool		query3knowsaffectedrows;
 
+		// whether the query3 request set the array dml row count
+		// pointer, and if so, the rows each of its execution
+		// iterations affected, which the return parameters then carry
+		// - see putReturnParameters()
+		bool		query3dmlrowcounts;
+		uint64_t	*query3rowcounts;
+		uint32_t	query3rowcountavail;
+		uint32_t	query3rowcountcount;
+
 		// what this module's own cursor ids are shifted by to make
 		// the ids it puts on the wire, and back - see
 		// CURSOR_ID_OFFSET.  it follows the session's verifier type,
@@ -3033,6 +3043,10 @@ sqlrprotocol_oracle::sqlrprotocol_oracle(sqlrservercontroller *cont,
 	query3toomanybinds=false;
 	query3affectedrows=0;
 	query3knowsaffectedrows=false;
+	query3dmlrowcounts=false;
+	query3rowcounts=NULL;
+	query3rowcountavail=0;
+	query3rowcountcount=0;
 
 	maxcursorcount=cont->getConfig()->getMaxCursors();
 	maxquerysize=cont->getConfig()->getMaxQuerySize();
@@ -3192,6 +3206,7 @@ sqlrprotocol_oracle::~sqlrprotocol_oracle() {
 	delete[] query3binds;
 	delete[] query3bindvalues;
 	delete[] query3definelist;
+	delete[] query3rowcounts;
 
 	delete resppacketpool;
 	delete[] resppacketbuffer;
@@ -14065,6 +14080,7 @@ bool sqlrprotocol_oracle::query3(const byte_t *rp) {
 
 	query3affectedrows=0;
 	query3knowsaffectedrows=false;
+	query3rowcountcount=0;
 
 	if (!getQuery3Request(rp,resppacket+resppacketsize,
 					&options,&cursorid,&prefetchrows,
@@ -14208,6 +14224,15 @@ bool sqlrprotocol_oracle::query3(const byte_t *rp) {
 			cont->setOutputBindCount(cursor,0);
 		}
 
+		// make room for each iteration's row count
+		bool		rowcounts=(executing && query3dmlrowcounts);
+		uint32_t	rowcountsneeded=(blocks)?blocks:1;
+		if (rowcounts && rowcountsneeded>query3rowcountavail) {
+			delete[] query3rowcounts;
+			query3rowcounts=new uint64_t[rowcountsneeded];
+			query3rowcountavail=rowcountsneeded;
+		}
+
 		// execute the query, once per row data block - the wire's
 		// array bind is many complete bind rows rather than one bind
 		// with many elements, so each block is its own execution
@@ -14230,7 +14255,7 @@ bool sqlrprotocol_oracle::query3(const byte_t *rp) {
 					updateQuery3CallStatus(cursor,
 								true,false);
 				}
-				return sendQueryError(cursor);
+				return sendQueryError(cursor,rowcounts);
 			}
 
 			// per block, so an earlier block's dml still counts if
@@ -14247,10 +14272,15 @@ bool sqlrprotocol_oracle::query3(const byte_t *rp) {
 							failed:cursor);
 			}
 
+			uint64_t	affectedrows=0;
 			if (cont->knowsAffectedRows(cursor)) {
+				affectedrows=cont->getAffectedRows(cursor);
 				query3knowsaffectedrows=true;
-				query3affectedrows+=(uint32_t)
-					cont->getAffectedRows(cursor);
+				query3affectedrows+=(uint32_t)affectedrows;
+			}
+			if (rowcounts) {
+				query3rowcounts[query3rowcountcount++]=
+								affectedrows;
 			}
 		}
 	}
@@ -14411,13 +14441,23 @@ bool sqlrprotocol_oracle::getQuery3Request(const byte_t *rp,
 	// python-oracledb.  The zero-skip below covers them when there is
 	// query text, but without query text they would be read as the start
 	// of the al8i4 vector, and the descriptors behind it 3 bytes early.
+	//
+	// A set pointer asks for each iteration's row count in the answer.
+	// ojdbc sets it for every plain dml statement, python-oracledb for
+	// arraydmlrowcounts=True, and OCI for OCI_RETURN_ROW_COUNT_ARRAY -
+	// [0019] and [0045] of test/protocol/oracle/samples/
+	// 10701-dev-ojdbc-dml-realserver-oracle122.oraproxy.
+	query3dmlrowcounts=false;
 	if (pointersize==POINTER_SIZE_UNIVERSAL &&
-		fieldversion>=CCAP_FIELD_VERSION_12_1 &&
-		(!getPointer(rp,end,&pointer,&rp) ||
-		!getLenPreInt(rp,&end,&unused,&rp) ||
-		!getPointer(rp,end,&pointer,&rp))) {
-		debugWrite("truncated query3 request");
-		return false;
+		fieldversion>=CCAP_FIELD_VERSION_12_1) {
+		uint32_t	dmlrowcountpointer=0;
+		if (!getPointer(rp,end,&dmlrowcountpointer,&rp) ||
+			!getLenPreInt(rp,&end,&unused,&rp) ||
+			!getPointer(rp,end,&pointer,&rp)) {
+			debugWrite("truncated query3 request");
+			return false;
+		}
+		query3dmlrowcounts=(dmlrowcountpointer!=0);
 	}
 
 	if (*querysize) {
@@ -14539,6 +14579,8 @@ bool sqlrprotocol_oracle::getQuery3Request(const byte_t *rp,
 		debugWrite("prefetch rows: %d",*prefetchrows);
 		debugWrite("bind count: %d",bindcount);
 		debugWrite("define count: %d",definecount);
+		debugWrite("array dml row counts: %s",
+					(query3dmlrowcounts)?"yes":"no");
 		debugWrite("query size: %d",*querysize);
 		if (*query) {
 			debugWrite("query: \"%.*s\"",(int)*querysize,*query);
@@ -18011,10 +18053,29 @@ void sqlrprotocol_oracle::putReturnParameters(uint32_t cursorid) {
 		writeLenPreInt(&reqpacket,0);
 	}
 
+	// a request that set the array dml row count pointer gets a ub4 count
+	// of the iterations that ran and a ub8 row count for each one, as
+	// [0020], [0046] and [0048] of test/protocol/oracle/samples/10701-dev-
+	// ojdbc-dml-realserver-oracle122.oraproxy show.  without them, ojdbc
+	// reads the summary as the count and waits for the rest
+	if (query3dmlrowcounts) {
+		writeLenPreInt(&reqpacket,query3rowcountcount);
+		for (uint32_t i=0; i<query3rowcountcount; i++) {
+			putLenPreUB8(query3rowcounts[i]);
+		}
+	}
+
 	debugStart("return parameters");
 	debugWrite("count: %d",(uint32_t)AL8O4_COUNT);
 	for (uint16_t i=0; i<AL8O4_COUNT; i++) {
 		debugWrite("param %d: %d",i,al8o4[i]);
+	}
+	if (query3dmlrowcounts) {
+		debugWrite("array dml row counts: %d",query3rowcountcount);
+		for (uint32_t i=0; i<query3rowcountcount; i++) {
+			debugWrite("iteration %d: %lld",i,
+					(long long)query3rowcounts[i]);
+		}
 	}
 	debugEnd();
 }
@@ -23704,7 +23765,8 @@ void sqlrprotocol_oracle::putGenericFooter() {
 	debugEnd();
 }
 
-bool sqlrprotocol_oracle::sendQueryError(sqlrservercursor *cursor) {
+bool sqlrprotocol_oracle::sendQueryError(sqlrservercursor *cursor,
+							bool rowcounts) {
 
 	// get the error the failed prepare/execute left on the cursor
 	const char	*errorstring;
@@ -23753,9 +23815,24 @@ bool sqlrprotocol_oracle::sendQueryError(sqlrservercursor *cursor) {
 	// a query3 session gets a summary object, like a fetch does; an
 	// older session gets the oci7 one, like a fetch does
 	if (query3session) {
-		putSummary(wireCursorId(cursor),oranum,
-					rowssent[cont->getId(cursor)],
-					message,messagesize);
+
+		// an execute that asked for row counts gets the return
+		// parameters first, with the counts of the iterations that ran
+		// before the failure, and the summary gets their total -
+		// [0070] and [0075] of test/protocol/oracle/samples/10701-dev-
+		// ojdbc-dml-realserver-oracle122.oraproxy.  a real server
+		// answers a parse error with the summary alone ([0065] there),
+		// but the backend may not report one until the execute, so a
+		// parse error can get the return parameters here too, which
+		// clients take the same way
+		uint32_t	rowcount=rowssent[cont->getId(cursor)];
+		if (rowcounts) {
+			putReturnParameters(wireCursorId(cursor));
+			rowcount=query3affectedrows;
+		}
+
+		putSummary(wireCursorId(cursor),oranum,rowcount,
+						message,messagesize);
 	} else {
 		oci7executed=true;
 		putOci7Error(wireCursorId(cursor),oci7CommandType(cursor),

@@ -2960,6 +2960,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   timestamp with time zone values in the oracle protocol module
 - fixed 9i sqlplus and 9i OCI8 selects through the oracle protocol module,
   and select for update row locks it left held after the session ended
+- fixed ojdbc plain insert, update and delete at oracle protocol
+  serverversion 12.1, and array dml row counts
 
 ### Security
 - fixed an authentication hole in the des password encryption module

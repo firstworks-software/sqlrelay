@@ -6,8 +6,9 @@ import java.util.Arrays;
 import java.util.Properties;
 
 // ojdbc (thin driver) checks against an oracle protocol listener: the version
-// call, and CLOB/BLOB selects at the driver's default lob prefetch size and
-// with prefetch set to 0 (length only) and -1 (locator only)
+// call, plain dml update counts, batches and transactions, and CLOB/BLOB
+// selects at the driver's default lob prefetch size and with prefetch set to
+// 0 (length only) and -1 (locator only)
 //
 // usage: java -cp ojdbc8.jar:. ojdbc port majorversion
 class ojdbc {
@@ -73,18 +74,22 @@ class ojdbc {
 		return sb.toString();
 	}
 
-	// PL/SQL that inserts clobdata(pieces/2) and blobdata(pieces)
-	static String insertsql(int id, int pieces) {
-		return "insert into protocoltestojdbc values "+
-				"("+id+","+clobsql(pieces/2)+",empty_blob()) "+
-				"returning b into b; "+
-			"for i in 0.."+(pieces-1)+" loop "+
-				"dbms_lob.writeappend(b,2000,utl_raw.copies("+
-				"hextoraw(lpad(to_char(i,'fmXX'),2,'0')),2000)); "+
-			"end loop; ";
+	// inserts clobdata(pieces/2), built by the database, and
+	// blobdata(pieces), bound, and returns the update count
+	static int insertlobs(Connection con, int id, int pieces)
+							throws Exception {
+		PreparedStatement	ps=con.prepareStatement(
+				"insert into protocoltestojdbc values "+
+				"(?,"+clobsql(pieces/2)+",?)");
+		ps.setInt(1,id);
+		ps.setBytes(2,blobdata(pieces));
+		int	result=ps.executeUpdate();
+		ps.close();
+		return result;
 	}
 
 	static void setup(String port) throws Exception {
+		System.out.println("setup:");
 		Connection	con=connect(port,null);
 		Statement	st=con.createStatement();
 		st.execute("begin execute immediate "+
@@ -92,18 +97,21 @@ class ojdbc {
 				"exception when others then null; end;");
 		st.execute("create table protocoltestojdbc "+
 				"(id number, c clob, b blob)");
+		st.execute("begin execute immediate "+
+				"'drop table protocoltestojdbcdml'; "+
+				"exception when others then null; end;");
+		st.execute("create table protocoltestojdbcdml "+
+				"(id number, v varchar2(20))");
 
-		// at serverversion 12.1 the module never answers ojdbc's plain
-		// dml, but dml inside a pl/sql block works (#10701)
-		st.execute("declare b blob; begin "+
-				insertsql(1,4)+
-				insertsql(2,20)+
+		check("row 1 insert",insertlobs(con,1,4)==1,"");
+		check("row 2 insert",insertlobs(con,2,20)==1,"");
+		check("row 3 insert",st.executeUpdate(
 				"insert into protocoltestojdbc values "+
-					"(3,empty_clob(),empty_blob()); "+
+				"(3,empty_clob(),empty_blob())")==1,"");
+		check("row 4 insert",st.executeUpdate(
 				"insert into protocoltestojdbc values "+
-					"(4,to_clob('hello'),"+
-					"to_blob(hextoraw('0102030405'))); "+
-				"commit; end;");
+				"(4,to_clob('hello'),"+
+				"to_blob(hextoraw('0102030405')))")==1,"");
 		st.close();
 		con.close();
 	}
@@ -112,6 +120,7 @@ class ojdbc {
 		Connection	con=connect(port,null);
 		Statement	st=con.createStatement();
 		st.execute("drop table protocoltestojdbc");
+		st.execute("drop table protocoltestojdbcdml");
 		st.close();
 		con.close();
 	}
@@ -162,6 +171,126 @@ class ojdbc {
 		int	m=md.getDatabaseMajorVersion();
 		check("major version",Integer.toString(m).equals(major),
 				"got "+m);
+		con.close();
+	}
+
+	static void updatecount(Statement st, String label, String sql,
+							int expected) throws Exception {
+		int	result=st.executeUpdate(sql);
+		check(label,result==expected,"got "+result);
+	}
+
+	static int count(Connection con, String where) throws Exception {
+		Statement	st=con.createStatement();
+		ResultSet	rs=st.executeQuery("select count(*) from "+
+					"protocoltestojdbcdml where "+where);
+		rs.next();
+		int	result=rs.getInt(1);
+		rs.close();
+		st.close();
+		return result;
+	}
+
+	// executeBatch() gets a row count per statement only from 12.1 on,
+	// an older server gives SUCCESS_NO_INFO (-2) for each
+	static void checkbatch(String label, int[] result,
+					int[] expected, String major) {
+		if (Integer.parseInt(major)<12) {
+			expected=new int[expected.length];
+			Arrays.fill(expected,Statement.SUCCESS_NO_INFO);
+		}
+		check(label,Arrays.equals(expected,result),
+					"got "+Arrays.toString(result));
+	}
+
+	static void dml(String port, String major) throws Exception {
+		System.out.println("dml:");
+		Connection	con=connect(port,null);
+		Statement	st=con.createStatement();
+
+		// executeUpdate
+		updatecount(st,"insert",
+			"insert into protocoltestojdbcdml values (1,'a')",1);
+		updatecount(st,"insert select",
+			"insert into protocoltestojdbcdml "+
+			"select level+1,'a' from dual connect by level<=4",4);
+		updatecount(st,"update",
+			"update protocoltestojdbcdml set v='b' where id<=3",3);
+		updatecount(st,"delete 0 rows",
+			"delete from protocoltestojdbcdml where id=99",0);
+		updatecount(st,"delete 2 rows",
+			"delete from protocoltestojdbcdml where id>=4",2);
+
+		// execute and getUpdateCount
+		boolean	result=st.execute(
+			"update protocoltestojdbcdml set v='c' where id>=2");
+		int	updatecount=st.getUpdateCount();
+		check("execute update",!result && updatecount==2,
+				"got "+result+", update count "+updatecount);
+
+		// prepared executeUpdate
+		PreparedStatement	ps=con.prepareStatement(
+				"insert into protocoltestojdbcdml values (?,?)");
+		ps.setInt(1,10);
+		ps.setString(2,"p");
+		updatecount=ps.executeUpdate();
+		check("prepared insert",updatecount==1,"got "+updatecount);
+		ps.close();
+
+		// executeBatch
+		ps=con.prepareStatement(
+				"insert into protocoltestojdbcdml values (?,?)");
+		for (int i=20; i<23; i++) {
+			ps.setInt(1,i);
+			ps.setString(2,"x");
+			ps.addBatch();
+		}
+		checkbatch("batch insert",ps.executeBatch(),
+						new int[] {1,1,1},major);
+		ps.close();
+		ps=con.prepareStatement(
+			"update protocoltestojdbcdml set v=? where id>=?");
+		ps.setString(1,"x");
+		ps.setInt(2,10);
+		ps.addBatch();
+		ps.setString(1,"y");
+		ps.setInt(2,22);
+		ps.addBatch();
+		ps.setString(1,"z");
+		ps.setInt(2,99);
+		ps.addBatch();
+		checkbatch("batch update",ps.executeBatch(),
+						new int[] {4,1,0},major);
+		ps.close();
+		int	rows=count(con,"v='x'");
+		check("batch update rows x",rows==3,"got "+rows);
+		rows=count(con,"v='y'");
+		check("batch update rows y",rows==1,"got "+rows);
+
+		// rollback
+		con.setAutoCommit(false);
+		updatecount(st,"insert before rollback",
+			"insert into protocoltestojdbcdml values (30,'r')",1);
+		con.rollback();
+		rows=count(con,"id=30");
+		check("rolled back",rows==0,"got "+rows);
+
+		// commit, with a second session that sees the row only after
+		updatecount(st,"insert before commit",
+			"insert into protocoltestojdbcdml values (31,'c')",1);
+		Connection	other=connect(port,null);
+		rows=count(other,"id=31");
+		check("not visible before commit",rows==0,"got "+rows);
+		con.commit();
+		rows=count(other,"id=31");
+		check("visible after commit",rows==1,"got "+rows);
+		other.close();
+		con.setAutoCommit(true);
+
+		rows=count(con,"1=1");
+		check("row count",rows==8,"got "+rows);
+
+		st.close();
 		con.close();
 	}
 
@@ -261,6 +390,11 @@ class ojdbc {
 			setup(port);
 		} catch (Exception e) {
 			check("setup",false,e.toString());
+		}
+		try {
+			dml(port,major);
+		} catch (Exception e) {
+			check("dml",false,e.toString());
 		}
 		String[]	prefetches={null,"0","-1"};
 		for (int i=0; i<prefetches.length; i++) {

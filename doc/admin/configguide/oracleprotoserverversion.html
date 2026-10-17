@@ -219,7 +219,7 @@ http://www.gnu.org/software/src-highlite -->
 </td>
     <td>Yes
 </td>
-    <td>Partly
+    <td>Yes
 </td>
   </tr>
   <tr>
@@ -237,7 +237,7 @@ http://www.gnu.org/software/src-highlite -->
 <br/><ul>
   <li>python-oracledb and node-oracledb need 12.1, the default.  At 11.2 their logins hang, and they don't work at 10.2 either.</li>
   <li>OCI 23.26 works at any ceiling, including LOB fetch and read.  Creating temporary LOBs doesn't work yet.</li>
-  <li>ojdbc can select CLOB and BLOB columns and call getDatabaseProductVersion() at any ceiling.  At 12.1, though, plain INSERT, UPDATE and DELETE statements get no answer.  They work inside a PL/SQL block, and they work at 10.2 and 11.2.  At any ceiling, each failed statement leaks a cursor, and after five failed statements every statement fails with ORA-01000 until the session ends.  Other gaps: NULL LOB columns come back as empty LOBs, BFILE getDirAlias() and getName() don't work, and NCLOB data reads as empty.</li>
+  <li>ojdbc can select CLOB and BLOB columns and call getDatabaseProductVersion() at any ceiling.  Each failed statement leaks a cursor, and after five failed statements every statement fails with ORA-01000 until the session ends.  Other gaps: NULL LOB columns come back as empty LOBs, BFILE getDirAlias() and getName() don't work, and NCLOB data reads as empty.</li>
   <li>Modern clients that use the OCI7 call interface work at any ceiling.</li>
   <li>Genuine Oracle 9i OCI7 clients, 9.0.1 and 9.2, work at any ceiling.  The Oracle 9i sqlplus (9.0.1 and 9.2) works at any ceiling too, from login through queries to exit.  Oracle 9i OCI8 clients can run selects at any ceiling.  Two things don't work yet from a 9i client: reading a CLOB fails with ORA-03120, and so does a CLOB column defined as a string.</li>
 </ul>

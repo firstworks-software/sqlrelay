@@ -101,9 +101,18 @@ configured) is the oracleprotocol suite's ojdbc check. It logs in as
 testuser, checks getDatabaseProductVersion() and
 getDatabaseMajorVersion(), then creates protocoltestojdbc with CLOB and
 BLOB rows of 8000+ characters/bytes, 40000 (past ojdbc's default 32768
-lob prefetch), empty and short values, and reads them back with
-getString/getBytes and getClob/getBlob at the default prefetch size and
-with oracle.jdbc.defaultLobPrefetchSize set to 0 and -1. test.sh runs it
+lob prefetch), empty and short values, all with plain inserts (each CLOB
+built by the database, each BLOB a bound byte array). Then it checks plain
+dml on protocoltestojdbcdml: the update counts of executeUpdate() for an
+insert, an insert-select, a multi-row update and deletes of 0 and 2 rows,
+execute() with getUpdateCount(), a prepared insert, executeBatch() for an
+insert and an update, and, with autocommit off, a rollback and a commit
+(a second session sees the row only after the commit). executeBatch()
+expects a count per statement at version 12 and SUCCESS_NO_INFO (-2) per
+statement below that, since ojdbc only asks for the counts from field
+version 12.1 on. Last it reads the lob rows back with getString/getBytes
+and getClob/getBlob at the default prefetch size and with
+oracle.jdbc.defaultLobPrefetchSize set to 0 and -1. test.sh runs it
 against the 12.1, 10.2 and 11.2 listeners. To run it by hand:
 
     java -cp ojdbc8.jar:. ojdbc PORT MAJORVERSION
@@ -3616,6 +3625,100 @@ that statement, except where noted.
                                       the version 11 client would give it
                                       +60:00 and +69:30 offsets for the
                                       first two values (#10690)
+
+    10701-dev-ojdbc-dml-realserver-oracle122.oraproxy
+                                     ojdbc 23.26 (a scratch program: plain
+                                      inserts, updates and deletes through
+                                      Statement.executeUpdate, autocommit
+                                      off with a rollback and a commit,
+                                      PreparedStatement inserts and updates,
+                                      two three-row executeBatch calls,
+                                      Statement.execute, a PL/SQL block, and
+                                      three failing statements) against the
+                                      real 12.2 server, through oraproxy
+                                      without ORAPROXY_UNIVERSAL_REPS.
+                                      Every dml OALL8 sets the array dml row
+                                      count fields that field version 12.1
+                                      added after the 11.2 trailer: a
+                                      pointer, a ub4 holding the iteration
+                                      count and a pointer, 01 01 01 01 at
+                                      [0019] and 01 01 03 01 for the batches
+                                      at [0045] and [0047].  The pl/sql
+                                      block, the ddl and the selects send 00
+                                      00 00 ([0015], [0017], [0033]).  The
+                                      answer to a request that sets them has
+                                      a ub4 count and one ub8 per iteration
+                                      between the return parameters'
+                                      registration id and the summary: 01 01
+                                      01 01 at [0020] (one row), 01 03 01 01
+                                      01 01 01 01 at [0046], and 01 03 01 03
+                                      01 01 00 at [0048] (3, 1 and 0 rows -
+                                      the summary's row count is their sum,
+                                      4).  An answer to 00 00 00 has no
+                                      array.  A parse error (ORA-00942 at
+                                      [0061]) is answered by the summary
+                                      alone at [0065].  An execution error,
+                                      after the break markers, gets the
+                                      return parameters, the counts of the
+                                      iterations that succeeded, and the
+                                      error summary: a count of 0 for the
+                                      ORA-00001 at [0070], and a count of 1
+                                      and 1 row for the batch that fails on
+                                      its second row at [0075] (#10701)
+
+    10701-dev-ojdbc-dml-sqlrelay121.oraproxy
+                                     the same program against a -buildtree
+                                      listener at serverversion 12.1, backed
+                                      by oracle122, before the fix.  The
+                                      insert at [0019] sets the same 01 01
+                                      01 01, with no 12.2 fields behind it
+                                      (field version 7).  [0020] goes from
+                                      the registration id straight to the
+                                      summary (00 00 00 04 01 05 01 07 ...).
+                                      ojdbc reads 04 01 05 01 07 as the
+                                      array's count (17105159), runs out of
+                                      packet reading ub8s, and waits for the
+                                      rest until its 20 second read timeout
+                                      (ORA-18730).  The module had already
+                                      run and committed the insert.  Every
+                                      dml ojdbc sends at 12.1 does the same,
+                                      and pl/sql blocks, ddl and selects
+                                      work (#10701)
+
+    10701-dev-ojdbc-dml-sqlrelay112.oraproxy
+                                     the same program against a -buildtree
+                                      listener at serverversion 11.2 (field
+                                      version 6).  ojdbc leaves the three
+                                      fields out, so [0019] goes from the
+                                      11.2 trailer (00 00 01 00 00 00 00 00)
+                                      straight to the text, expects no
+                                      array, and every statement finishes.
+                                      executeBatch returns -2
+                                      (SUCCESS_NO_INFO) for each row, where
+                                      the real server's answers give it the
+                                      counts (#10701)
+
+    10701-dev-pythonoracledb-thin-dml-realserver-oracle122.oraproxy
+                                     python-oracledb 4.0.2 thin against the
+                                      real 12.2 server, on one connection: a
+                                      plain insert at [0013], an executemany
+                                      insert of three rows at [0015], and an
+                                      executemany update of three rows with
+                                      arraydmlrowcounts=True at [0017].
+                                      Only [0017] sets the fields (01 01 03
+                                      01), and only its answer at [0018]
+                                      carries the array (01 03 01 03 01 01
+                                      00).  [0014] and [0016] go from the
+                                      registration id straight to the
+                                      summary, though [0016] answers a
+                                      three-iteration insert.  So the server
+                                      sends the array when the request asks
+                                      for it, not for every dml.  OCI 23.26,
+                                      through python-oracledb thick, asks
+                                      the same way, for
+                                      OCI_RETURN_ROW_COUNT_ARRAY only, as
+                                      the module's debug log showed (not
+                                      captured) (#10701)
 
 The v11 time zone file for the oci8 run
 ---------------------------------------
