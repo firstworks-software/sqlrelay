@@ -1980,6 +1980,7 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_oracle : public sqlrprotocol {
 							uint32_t bindcount,
 							uint32_t definecount,
 							uint32_t options,
+							uint32_t cursorid,
 							const char *query,
 							uint32_t querysize);
 		bool	getQuery3BindDescriptor(const byte_t *rp,
@@ -14640,7 +14641,7 @@ bool sqlrprotocol_oracle::getQuery3Request(const byte_t *rp,
 	// the al8i4 vector, the bind and define descriptors, and the bind
 	// values all follow the query text
 	return getQuery3Binds(rp,end,vectorsize,bindcount,definecount,
-						*options,*query,*querysize);
+					*options,*cursorid,*query,*querysize);
 }
 
 bool sqlrprotocol_oracle::getQuery3Binds(const byte_t *rp,
@@ -14649,6 +14650,7 @@ bool sqlrprotocol_oracle::getQuery3Binds(const byte_t *rp,
 						uint32_t bindcount,
 						uint32_t definecount,
 						uint32_t options,
+						uint32_t cursorid,
 						const char *query,
 						uint32_t querysize) {
 
@@ -14664,9 +14666,22 @@ bool sqlrprotocol_oracle::getQuery3Binds(const byte_t *rp,
 	query3unbound=false;
 	query3toomanybinds=false;
 
-	// nothing else in the request needs reading
+	// a request with no descriptors of its own is a re-execute of an
+	// open statement unless it carries nothing else.  ojdbc re-executing
+	// a PreparedStatement with new values sends options 0x8120, no
+	// descriptors and a row data block per iteration behind the vector -
+	// the values for the descriptors the statement was parsed with, the
+	// same as reexecute() reads.  see #10705
+	sqlrservercursor	*reusecursor=NULL;
 	if (!bindcount && !definecount) {
-		return true;
+		if ((options&OPTION_PARSE) || !cursorid) {
+			return true;
+		}
+		reusecursor=wireIdToCursor(cursorid);
+		if (!reusecursor ||
+			!cursorbindcounts[cont->getId(reusecursor)]) {
+			return true;
+		}
 	}
 
 	debugStart("query3 binds");
@@ -14716,6 +14731,25 @@ bool sqlrprotocol_oracle::getQuery3Binds(const byte_t *rp,
 		debugWrite("descriptor counts out of range");
 		debugEnd();
 		return false;
+	}
+
+	// a re-execute with new values only: nothing to wait for unless row
+	// data has already arrived behind the vector, since a bare re-execute
+	// of a bound statement (with the values it already has) sends none
+	if (reusecursor) {
+		if (rp>=end || *rp!=TTC_ROW_DATA) {
+			debugEnd();
+			return true;
+		}
+		restoreQuery3Binds(reusecursor);
+		debugWrite("re-execute with new values for %d saved binds",
+							query3binddescs);
+		if (!getQuery3BindValues(rp,end,query3binddescs,iterations)) {
+			debugEnd();
+			return false;
+		}
+		debugEnd();
+		return true;
 	}
 
 	// the bind descriptors

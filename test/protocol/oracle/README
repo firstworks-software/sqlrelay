@@ -3804,6 +3804,34 @@ that statement, except where noted.
                                       the module's debug log showed (not
                                       captured) (#10701)
 
+    10705-dev-ojdbc-reuse-realserver-oracle122.oraproxy
+                                     ojdbc 23.26 (a scratch program: one
+                                      PreparedStatement insert executed
+                                      singly at [0022], again with new
+                                      values at [0024], as a three-row
+                                      executeBatch at [0026] and [0028],
+                                      and singly once more at [0030])
+                                      against the real 12.2 server.  Every
+                                      execute after the first is a TTI_QUERY3
+                                      with options 0x8120 (execute, no
+                                      parse), the first execute's cursor id,
+                                      no query text, bind count 0, define
+                                      count 0 and no descriptors, then the
+                                      13 element al8i4 vector (iterations
+                                      in the second) and a row data block
+                                      per iteration (#10705)
+
+    10705-dev-ojdbc-reuse-sqlrelay121.oraproxy
+                                     the same program against a -buildtree
+                                      listener at serverversion 12.1, after
+                                      the fix: the same requests, and the
+                                      rows come out 10 11 20 21 22 30 31
+                                      32 40.  Before it the module returned
+                                      from the request on bind count 0 and
+                                      define count 0, never read the row
+                                      data, and re-ran the first values
+                                      (#10705)
+
     10700-dev-ojdbc-failedstmt-realserver-oracle122.oraproxy
                                      ojdbc 23.26 (a scratch program: each
                                       failure shape seven times on one

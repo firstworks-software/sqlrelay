@@ -315,6 +315,41 @@ class ojdbc {
 		rows=count(con,"v='y'");
 		check("batch update rows y",rows==1,"got "+rows);
 
+		// one PreparedStatement re-executed with new values, singly and
+		// as a batch - ojdbc re-executes with no bind descriptors, only
+		// the new row data (#10705)
+		ps=con.prepareStatement(
+				"insert into protocoltestojdbcdml values (?,?)");
+		ps.setInt(1,60);
+		ps.setString(2,"q");
+		updatecount=ps.executeUpdate();
+		check("reuse first insert",updatecount==1,"got "+updatecount);
+		ps.setInt(1,61);
+		ps.setString(2,"q");
+		updatecount=ps.executeUpdate();
+		check("reuse second insert",updatecount==1,"got "+updatecount);
+		for (int i=62; i<65; i++) {
+			ps.setInt(1,i);
+			ps.setString(2,"q");
+			ps.addBatch();
+		}
+		checkbatch("reuse batch insert",ps.executeBatch(),
+						new int[] {1,1,1},major);
+		ps.setInt(1,65);
+		ps.setString(2,"q");
+		updatecount=ps.executeUpdate();
+		check("reuse insert after batch",updatecount==1,
+							"got "+updatecount);
+		ps.close();
+		rows=count(con,"v='q'");
+		check("reuse rows",rows==6,"got "+rows);
+		for (int i=60; i<66; i++) {
+			rows=count(con,"id="+i);
+			check("reuse row "+i,rows==1,"got "+rows);
+		}
+		updatecount(st,"delete reuse rows",
+			"delete from protocoltestojdbcdml where v='q'",6);
+
 		// rollback
 		con.setAutoCommit(false);
 		updatecount(st,"insert before rollback",
