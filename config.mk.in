@@ -892,13 +892,13 @@ ifneq ($(strip $(SYBASELIBS)),)
 TDSTESTALLTARGETS += tds-sap
 endif
 
-# oracle and teradata protocol tests build a java client too, but only
+# oracle and teradata protocol tests build java clients too, but only
 # if a jdk is configured, and the oracle protocol test also builds oci7,
 # oci7describe and oci7bind, but only if the legacy OCI7 call interface
 # was detected at configure time
 ORACLEPROTOCOLTESTTARGETS =
 ifneq ($(HAVE_JAVA),)
-ORACLEPROTOCOLTESTTARGETS += oracle.class
+ORACLEPROTOCOLTESTTARGETS += oracle.class ojdbc.class
 endif
 ifneq ($(strip $(HAVE_OCI7)),)
 ORACLEPROTOCOLTESTTARGETS += oci7 oci7describe oci7bind oci7utf8clob oci7inlinelob oci7transaction

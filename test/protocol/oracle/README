@@ -78,6 +78,21 @@ length are read straight off the wire instead of inferred from login
 success. The two sqlrelay instances need to be started first (sqlr-start
 against oracleprotocol.conf, or ./test.sh oracleprotocol).
 
+ojdbc
+-----
+
+ojdbc.java (built into ojdbc.class by `make` here when a jdk is
+configured) is the oracleprotocol suite's ojdbc check. It logs in as
+testuser, checks getDatabaseProductVersion() and
+getDatabaseMajorVersion(), then creates protocoltestojdbc with CLOB and
+BLOB rows of 8000+ characters/bytes, 40000 (past ojdbc's default 32768
+lob prefetch), empty and short values, and reads them back with
+getString/getBytes and getClob/getBlob at the default prefetch size and
+with oracle.jdbc.defaultLobPrefetchSize set to 0 and -1. test.sh runs it
+against the 12.1, 10.2 and 11.2 listeners. To run it by hand:
+
+    java -cp ojdbc8.jar:. ojdbc PORT MAJORVERSION
+
 ociselect and ocibannerrewritetest
 -----------------------------------
 
@@ -2903,6 +2918,271 @@ missing bytes silently.
                                       precision 0 value with a trailing
                                       dot (05:05:05.) on both servers,
                                       though SSXFF prints none (#10567)
+
+    10569-dev-ojdbc-version-realserver-oracle122.oraproxy
+                                     ojdbc 23.26 (a scratch program:
+                                      login, then
+                                      getDatabaseProductVersion,
+                                      getDatabaseMajorVersion and
+                                      getDatabaseMinorVersion) against
+                                      the real 12.2 server, through
+                                      oraproxy without
+                                      ORAPROXY_UNIVERSAL_REPS.  ojdbc
+                                      offers no second representation
+                                      for the rewrite to take away, and
+                                      the rewrite's pattern matches runs
+                                      of zeros in its query3 requests
+                                      and turns a 00 into a 01, so ojdbc
+                                      is captured without it.  [0009] is
+                                      the datatype request: charset 873
+                                      and encoding flags 0x01 (69 03 69
+                                      03 01), ENCODING_MULTI_BYTE
+                                      without ENCODING_CONV_LENGTH.
+                                      [0015] is the TTI_VERSION request
+                                      (3b 03 01 02 01 00 01 01, a 256
+                                      byte buffer).  [0016] answers it
+                                      with the banner's length and then
+                                      the raw text, with no clr length
+                                      byte in front of the text (08 01
+                                      4c 4f 72 61 63 6c 65 ... 6e), then
+                                      the packed version (04 0c 20 01
+                                      00) and 09 01 01 01 03.  ojdbc's
+                                      T4C7Oversion.readRPA() reads a ub2
+                                      length and calls unmarshalCHR(),
+                                      which reads raw bytes unless the
+                                      type rep's conversion flag 0x02 is
+                                      set, and ojdbc sends that same
+                                      flag byte as its encoding flags.
+                                      OCI 23.26 sends 0x02, and the same
+                                      server answers it with a dalc (01
+                                      4c 4c 4f ...) at [0016] of the
+                                      universalreps login-version-select
+                                      capture listed above (#10569)
+
+    10569-dev-ojdbc-version-realserver-oracle102.oraproxy
+                                     the same against the real 10.2
+                                      server, which ojdbc 23.26 logs in
+                                      to.  [0009] carries charset 31 and
+                                      encoding flags 0x01 (1f 00 1f 00
+                                      01), and [0018] answers [0017]'s
+                                      TTI_VERSION the same raw way, with
+                                      a 122 byte banner that has a
+                                      newline in it (08 01 7a 4f 72 ...
+                                      0a 57 69 74 68 ... 73, then 04 0a
+                                      20 01 00 and 09 01 01 01 03)
+                                      (#10569)
+
+    10569-dev-ojdbc-version-sqlrelay121.oraproxy
+                                     the same against a -buildtree
+                                      listener at serverversion 12.1,
+                                      backed by oracle122, before the
+                                      fix.  [0016] answers with a dalc
+                                      (08 01 4c 4c 4f ...).  ojdbc reads
+                                      4c 4f ... 69 6f as the 76 bytes of
+                                      text, takes the banner's last byte
+                                      (6e) as the length of the packed
+                                      version and fails with an
+                                      ArrayIndexOutOfBoundsException.
+                                      The rest of the answer stays in
+                                      its buffer, so the next call reads
+                                      01 as a message code and fails
+                                      with ORA-17401 ("[ 1, ]") (#10569)
+
+    10569-dev-ojdbc-lobs-realserver-oracle122.oraproxy
+                                     ojdbc 23.26 (the same scratch
+                                      program, default
+                                      oracle.jdbc.defaultLobPrefetchSize
+                                      of 32768) against the real 12.2
+                                      server, without
+                                      ORAPROXY_UNIVERSAL_REPS, selecting
+                                      from a table t10569 (id number, c
+                                      clob, b blob, n nclob).  Both
+                                      sides set compile cap byte 23 bit
+                                      0x40, so ojdbc asks for the lob
+                                      data in the row.  [0015] executes
+                                      "select c from t10569 where id=1"
+                                      with no defines (options 0x8021)
+                                      and [0016] answers with the
+                                      describe alone: max row size 0, a
+                                      max char length of 0 for the clob
+                                      and min and max prefetch 0.
+                                      [0017] defines and fetches
+                                      (options 0x8050), and the define
+                                      is 70 03 00 00 02 0f a0 00 04 02
+                                      00 00 00 00 00 02 03 69 01 02 80
+                                      00 00: contflags 0x02000000 and a
+                                      max data size of 32768, the
+                                      prefetch size, then the 12.2
+                                      oaccolid.  [0018] to [0020] answer
+                                      with the row and ORA-01403.  The
+                                      clob is the locator's length (01
+                                      72), the lob's length in
+                                      characters (02 1f 40), the chunk
+                                      size (02 1f 7c), 01 and the data's
+                                      charset (02 07 d0, AL16UTF16), the
+                                      form of use (01), the data as a
+                                      clr (fe 02 3e 80, 16000 bytes of
+                                      UTF-16, 00) and then the locator
+                                      (72 ...), and ojdbc makes no lob
+                                      call for it.  [0024] answers
+                                      "select id,c,b ... where id in
+                                      (2,3,5)": a null lob is 00 alone,
+                                      an empty one has length 0 and an
+                                      empty clr (01 72 00 02 1f 7c 01 02
+                                      07 d0 01 00 72 ...), an 11
+                                      character clob with two accented
+                                      letters is 01 72 01 0b 02 1f 7c 01
+                                      02 07 d0 01 16, 22 bytes and the
+                                      locator, and a blob has no charset
+                                      or form (01 72 01 05 02 1f 7c 05
+                                      00 01 02 03 04 72 ...).  [0028] is
+                                      the nclob, with 00 for the charset
+                                      flag, so no charset follows, and
+                                      form 02 (01 72 01 64 02 1f 7c 00
+                                      02 c8 ...).  [0031] defines a
+                                      bfilename() column the same way
+                                      and [0032] sends 01 27 00 00 27
+                                      ...: the length (0) and one pad
+                                      byte, and no chunk size.  [0033]
+                                      to [0036] are ojdbc's
+                                      getDirAlias() and getName(), which
+                                      run "begin
+                                      sys.dbms_lob.fileGetName(:1, :2,
+                                      :3); end;" with the locator bound.
+                                      [0040] carries the first 10 of 12
+                                      rows, [0041] is a plain fetch (05
+                                      14 01 05 01 0a) and [0042] carries
+                                      the last two, which still have the
+                                      lob data in them, so the defines
+                                      stay with the cursor (#10569)
+
+    10569-dev-ojdbc-lobs-prefetch4000-realserver-oracle122.oraproxy
+                                     the same table with
+                                      oracle.jdbc.defaultLobPrefetchSize=4000,
+                                      "select id,c,b from t10569 where
+                                      id=1" read through getClob() and
+                                      getBlob().  [0017]'s lob defines
+                                      carry a max data size of 02 0f a0.
+                                      The row at [0018] sends the full
+                                      lengths (8000) but only the first
+                                      4000 characters of the clob (fe 02
+                                      1f 40, 8000 bytes, 00) and the
+                                      first 4000 bytes of the blob (fe
+                                      02 0f a0 ...).  [0020] reads the
+                                      rest of the clob (offset 4001,
+                                      amount 4000) and the answer comes
+                                      in the zero copy form (0e, then
+                                      data descriptor packets).
+                                      getSubString(7990,11) reads again
+                                      (offset 7990, amount 11), and the
+                                      rest of the blob is read from
+                                      offset 4001.  oradecode loses the
+                                      server side after the first data
+                                      descriptor packet (#10569)
+
+    10569-dev-ojdbc-lobs-prefetch0-realserver-oracle122.oraproxy
+                                     the same with
+                                      oracle.jdbc.defaultLobPrefetchSize=0,
+                                      "select id,c,b ... where id in
+                                      (1,5)".  [0017]'s lob defines
+                                      carry contflags 0x02000000 and a
+                                      max data size of 0, and [0018]'s
+                                      rows carry the lob length and
+                                      chunk size with no charset, form
+                                      or data (01 72 02 1f 40 02 1f 7c
+                                      72 ...).  ojdbc makes no getLength
+                                      call and reads each lob from
+                                      offset 1 for its whole length
+                                      (#10569)
+
+    10569-dev-ojdbc-lobs-noprefetch-realserver-oracle122.oraproxy
+                                     the same with
+                                      oracle.jdbc.defaultLobPrefetchSize=-1.
+                                      ojdbc sends no defines: [0017] is
+                                      a plain fetch after the describe,
+                                      and [0018] sends each lob as the
+                                      locator's length and the locator
+                                      alone (01 72 72 ...), though both
+                                      sides set the capability bit, so
+                                      the lob length and chunk size go
+                                      out per define, not per session.
+                                      ojdbc then calls getLength
+                                      ([0019]) before each read (#10569)
+
+    10569-dev-ojdbc-lobs-realserver-oracle102.oraproxy
+                                     ojdbc 23.26 against the real 10.2
+                                      server, where compile cap byte 23
+                                      has no 0x40, so ojdbc sends no
+                                      defines.  [0019] is a plain fetch
+                                      after [0017]'s execute, and
+                                      [0020]'s rows send each lob as the
+                                      locator's length and the locator
+                                      (01 6a 6a ..., 106 bytes), a null
+                                      one as 00.  getString() calls lob
+                                      operation 0x4000 (getChunkSize) at
+                                      [0021], which [0022] answers with
+                                      08, the locator, 02 1f c4 (8132)
+                                      and the status, then reads 32528
+                                      characters (four chunks) at
+                                      [0023], answered inline in single
+                                      byte characters.  [0029] is
+                                      getLength for the blob.  Rows 3
+                                      and 5 get the chunk size too
+                                      ([0037] and [0039]) but no read:
+                                      the empty one has nothing to read,
+                                      and a value this small rides
+                                      inside a real 10.2 server's
+                                      locator, so the 113 byte one
+                                      carries the 11 characters (#10569)
+
+    10569-dev-ojdbc-lobs-sqlrelay121.oraproxy
+                                     ojdbc 23.26 running "select c from
+                                      t10569 where id=1" against a
+                                      -buildtree listener at
+                                      serverversion 12.1, backed by
+                                      oracle122, before the fix.  [0017]
+                                      defines the clob with a max data
+                                      size of 32768, and [0018] sends
+                                      the lob length and chunk size with
+                                      no charset, form or data (01 72 02
+                                      1f 40 02 1f 7c 72 ...).  ojdbc
+                                      reads 72 as the charset flag, 00
+                                      as the form and 70 as the length
+                                      of the data, and fails with
+                                      ORA-17401 ("[ 6, 7, 0, ]").  At
+                                      11.2 it fails the same way
+                                      (#10569)
+
+    10569-dev-ojdbc-lobs-noprefetch-sqlrelay121.oraproxy
+                                     the same with
+                                      oracle.jdbc.defaultLobPrefetchSize=-1.
+                                      [0017] is a plain fetch with no
+                                      defines, and [0018] still sends
+                                      the lob length and chunk size,
+                                      where a real 12.2 server sends the
+                                      locator alone, so ojdbc fails with
+                                      ORA-17401 ("[ 6, 7, 2, 0, ]")
+                                      (#10569)
+
+    10569-dev-ojdbc-lobs-sqlrelay102.oraproxy
+                                     the same select against a
+                                      -buildtree listener at
+                                      serverversion 10.2, backed by
+                                      oracle122, before the fix.
+                                      [0018]'s row has the right shape
+                                      (01 72 72 ...), but [0019] asks
+                                      for the chunk size (lob operation
+                                      0x4000) and [0020] answers
+                                      ORA-03001.  ojdbc then puts its
+                                      cancel-cursors piggyback (11 78)
+                                      in front of its logoff at [0021],
+                                      the module answers the piggyback
+                                      as if it were a call of its own
+                                      (09 01 01, at [0022]) and drops
+                                      the rest of the packet, and ojdbc
+                                      waits for the rest of a logoff
+                                      answer that never comes.  That is
+                                      the 10.2 hang (#10569)
 
     10570-dev-oci23-native-ociselectlob-realserver-oracle102.oraproxy
                                      ociselect with OCISELECT_LOB=1 (OCI

@@ -1493,13 +1493,22 @@ run_protocol_test() {
 	# back.  no real client can send all three bytes, and the genuine 9i
 	# clients that send 0x05 only run on the buildfarm.  it reads the
 	# ports straight from the environment, so it needs neither $server
-	# nor TNS_ADMIN.  the last oci8 run is the default one again with
+	# nor TNS_ADMIN.  then ojdbc, three times, for #10569 - an ojdbc (thin
+	# driver) check of getDatabaseProductVersion() and of CLOB and BLOB
+	# selects at the driver's default lob prefetch size and at 0 and -1,
+	# against the 12.1 (ORACLEPROTOCOLPORT1), 10.2 (ORACLEPROTOCOLPORT12)
+	# and 11.2 (ORACLEPROTOCOLPORT2) listeners.  ojdbc asks for prefetched
+	# lob data inside the row, which no OCI client here does.  it connects
+	# to the ports directly, so it needs neither $server nor TNS_ADMIN.
+	# ojdbc.class is built only when a jdk is configured, so the runs are
+	# skipped, and treated as a pass, without it or without a java to run
+	# it with.  the last oci8 run is the default one again with
 	# ORA_TZFILE set to a v11 time zone file, for #10690 - the module
 	# announces v11, so it sends timestamps with time zones as utc to a
 	# client with that file, and a client that read them as local time
 	# would get wrong values.  the file comes from an Oracle server and
 	# isn't checked in (see the README), so the run is skipped without it.
-	# all thirty-two runs have to succeed for the instance to pass
+	# all thirty-five runs have to succeed for the instance to pass
 	if ( test "$instance" = "oracleprotocol" )
 	then
 		./$prog
@@ -1564,6 +1573,20 @@ run_protocol_test() {
 			echo "no oracleinlinelob test found, or no db2 module built"
 			resultinlinelob="0"
 		fi
+		if ( test -f ./ojdbc.class -a -x "`which java 2> /dev/null`" )
+		then
+			java -cp ojdbc8.jar:. ojdbc $ORACLEPROTOCOLPORT1 12
+			resultojdbc="$?"
+			java -cp ojdbc8.jar:. ojdbc $ORACLEPROTOCOLPORT12 10
+			resultojdbc10g="$?"
+			java -cp ojdbc8.jar:. ojdbc $ORACLEPROTOCOLPORT2 11
+			resultojdbc11g="$?"
+		else
+			echo "no ojdbc test found (built only with HAVE_JAVA), or no java found"
+			resultojdbc="0"
+			resultojdbc10g="0"
+			resultojdbc11g="0"
+		fi
 		if ( test -f ./timezlrg_11.dat )
 		then
 			ORA_TZFILE="`pwd`/timezlrg_11.dat" ./$prog
@@ -1596,7 +1619,7 @@ run_protocol_test() {
 			echo "no oci7inlinelob test found (built only with HAVE_OCI7), or no db2 module built"
 			resultoci7inlinelob="0"
 		fi
-		if ( test "$resultdefault" = "0" ) && ( test "$result10g" = "0" ) && ( test "$result11g" = "0" ) && ( test "$result12c" = "0" ) && ( test "$resultconnectstrings" = "0" ) && ( test "$resultfetchatonce" = "0" ) && ( test "$resultdescribeonly" = "0" ) && ( test "$resultdescribe" = "0" ) && ( test "$resultdescribenative" = "0" ) && ( test "$resultmidfetchdescribe" = "0" ) && ( test "$resultmidfetchdescribenative" = "0" ) && ( test "$resultlegacyfetch" = "0" ) && ( test "$resulttransaction" = "0" ) && ( test "$resulttransactionnative" = "0" ) && ( test "$resultreexecuteandfetch" = "0" ) && ( test "$resultverifiernegotiation" = "0" ) && ( test "$resultverifiernegotiationnative" = "0" ) && ( test "$resultclrchunks" = "0" ) && ( test "$resultiterations0" = "0" ) && ( test "$resultbigchunksoff" = "0" ) && ( test "$resultrefcursorreuse" = "0" ) && ( test "$resultsplitrequest" = "0" ) && ( test "$resultsplitquery3" = "0" ) && ( test "$resultsplitresponse" = "0" ) && ( test "$resultmaxdescriptors" = "0" ) && ( test "$resultmaxfetchrowcount" = "0" ) && ( test "$resultutf8clob" = "0" ) && ( test "$resultinlinelob" = "0" ) && ( test "$resulttzv11" = "0" ) && ( test "$resultoci7" = "0" ) && ( test "$resultoci7utf8clob" = "0" ) && ( test "$resultoci7inlinelob" = "0" )
+		if ( test "$resultdefault" = "0" ) && ( test "$result10g" = "0" ) && ( test "$result11g" = "0" ) && ( test "$result12c" = "0" ) && ( test "$resultconnectstrings" = "0" ) && ( test "$resultfetchatonce" = "0" ) && ( test "$resultdescribeonly" = "0" ) && ( test "$resultdescribe" = "0" ) && ( test "$resultdescribenative" = "0" ) && ( test "$resultmidfetchdescribe" = "0" ) && ( test "$resultmidfetchdescribenative" = "0" ) && ( test "$resultlegacyfetch" = "0" ) && ( test "$resulttransaction" = "0" ) && ( test "$resulttransactionnative" = "0" ) && ( test "$resultreexecuteandfetch" = "0" ) && ( test "$resultverifiernegotiation" = "0" ) && ( test "$resultverifiernegotiationnative" = "0" ) && ( test "$resultclrchunks" = "0" ) && ( test "$resultiterations0" = "0" ) && ( test "$resultbigchunksoff" = "0" ) && ( test "$resultrefcursorreuse" = "0" ) && ( test "$resultsplitrequest" = "0" ) && ( test "$resultsplitquery3" = "0" ) && ( test "$resultsplitresponse" = "0" ) && ( test "$resultmaxdescriptors" = "0" ) && ( test "$resultmaxfetchrowcount" = "0" ) && ( test "$resultutf8clob" = "0" ) && ( test "$resultinlinelob" = "0" ) && ( test "$resultojdbc" = "0" ) && ( test "$resultojdbc10g" = "0" ) && ( test "$resultojdbc11g" = "0" ) && ( test "$resulttzv11" = "0" ) && ( test "$resultoci7" = "0" ) && ( test "$resultoci7utf8clob" = "0" ) && ( test "$resultoci7inlinelob" = "0" )
 		then
 			printf "    % 8s: success\n" "protocol" >> "$RESULTSLOG"
 			cd ../..
@@ -1713,6 +1736,18 @@ run_protocol_test() {
 		if ( test "$resultinlinelob" != "0" )
 		then
 			printf "    % 8s: failed (inline lob)\n" "protocol" >> "$RESULTSLOG"
+		fi
+		if ( test "$resultojdbc" != "0" )
+		then
+			printf "    % 8s: failed (ojdbc)\n" "protocol" >> "$RESULTSLOG"
+		fi
+		if ( test "$resultojdbc10g" != "0" )
+		then
+			printf "    % 8s: failed (ojdbc, serverversion 10.2)\n" "protocol" >> "$RESULTSLOG"
+		fi
+		if ( test "$resultojdbc11g" != "0" )
+		then
+			printf "    % 8s: failed (ojdbc, serverversion 11.2)\n" "protocol" >> "$RESULTSLOG"
 		fi
 		if ( test "$resulttzv11" != "0" )
 		then

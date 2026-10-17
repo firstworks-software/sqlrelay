@@ -32,7 +32,7 @@ ORACLEPROTOCOLPORT12 ?= 1532
 .cpp.obj:
 	$(CXX) $(CXXFLAGS) $(CXXSTD) $(CPPTESTCPPFLAGS) $(ORACLEINCLUDES) $(OCI7INCLUDES) $(COMPILE) $<
 
-# oracle.class only builds if a jdk is configured - see
+# oracle.class and ojdbc.class only build if a jdk is configured - see
 # ORACLEPROTOCOLTESTTARGETS in config.mk.in
 #
 # oci7, oci7describe and oci7bind only build if the legacy OCI7 call
@@ -64,6 +64,9 @@ tnsnames.ora: tnsnames.ora.in
 
 oracle.class: oracle.java
 	$(JAVAC) $<
+
+ojdbc.class: ojdbc.java
+	$(JAVAC) -cp ojdbc8.jar $<
 
 oci8: oci8.cpp oci8.$(OBJ)
 	$(LTLINK) $(LINK) $(LDFLAGS) $(OUT)$@$(EXE) oci8.$(OBJ) $(ORACLELIBS) $(RUDIMENTSLIBS)

@@ -322,9 +322,10 @@
 	"ORA-22275: invalid LOB locator specified\n"
 
 // what sendQueryError() sends when the backend left no usable error number
-// (0, which putSummary() reads as success) or message - ORA-20000 through
-// ORA-20999 is oracle's user-defined exception range, the closest fit for
-// an error this module can't attribute to a real ORA number
+// (0, which putSummary() reads as success) or message, and what a row gets
+// when a lob's prefetched data can't be read from the backend - ORA-20000
+// through ORA-20999 is oracle's user-defined exception range, the closest fit
+// for an error this module can't attribute to a real ORA number
 #define ORA_QUERY_FAILED		20000
 #define ORA_QUERY_FAILED_MESSAGE	"ORA-20000: query failed\n"
 
@@ -637,6 +638,16 @@
 #define BIND_FLAG_USE_INDICATORS	0x01
 #define BIND_FLAG_UNBOUND		0x80
 
+// a define descriptor's continuation flag that asks for a lob column's length
+// and chunk size in the row, ahead of the locator, and, when the define's max
+// data size isn't 0, for that many of the lob's first characters (a clob's)
+// or bytes (a blob's) as well.  a real server sends neither without it, even
+// when both sides set CCAP_LOB_PREFETCH_LENGTH
+#define DEFINE_CONTFLAG_LOB_PREFETCH	0x02000000
+
+// a define descriptor's character set form for the national character set
+#define CSFRM_NCHAR			2
+
 // which way a bind's value travels, as the io vector reports it.  the wire's
 // bind descriptors say nothing about direction - every one of them looks the
 // same whether the client bound it in, out, or both - so the module works it
@@ -874,6 +885,7 @@
 #define LOB_OP_FILE_CLOSE		0x00400
 #define LOB_OP_FILE_EXISTS		0x00800
 #define LOB_OP_FILE_GET_NAME		0x01000
+#define LOB_OP_GET_CHUNK_SIZE		0x04000
 #define LOB_OP_CREATE_TEMPORARY		0x00110
 #define LOB_OP_FREE_TEMPORARY		0x00111
 #define LOB_OP_IS_OPEN			0x01100
@@ -1483,6 +1495,14 @@ struct oraclequery3bind {
 	int16_t		outindex;
 };
 
+// what a query3 request's define section says about one column that the rows
+// sent for it have to follow.  defines are positional too, one per column
+struct oraclequery3define {
+	uint32_t	contflags;
+	uint32_t	maxdatasize;
+	byte_t		csfrm;
+};
+
 // one placeholder's value for one execution iteration.  the bytes are left
 // where they are in the request packet, which outlives the call reading it
 struct oraclequery3bindvalue {
@@ -1929,7 +1949,9 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_oracle : public sqlrprotocol {
 							byte_t *type,
 							byte_t *flags,
 							uint32_t *buffersize,
+							oraclequery3define *define,
 							const byte_t **rpout);
+		void	saveQuery3Defines(sqlrservercursor *cursor);
 		void	classifyQuery3Binds(uint32_t options,
 							const char *query,
 							uint32_t querysize);
@@ -1953,6 +1975,7 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_oracle : public sqlrprotocol {
 		bool	sendMaxResponseError(uint32_t cursorid,
 							uint32_t oranum,
 							const char *message);
+		bool	sendLobPrefetchError(uint32_t cursorid);
 		bool	sendQuery3Response(sqlrservercursor *cursor,
 							uint32_t options,
 							uint32_t cursorid,
@@ -1998,10 +2021,14 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_oracle : public sqlrprotocol {
 							uint32_t column,
 							uint16_t wiretype,
 							byte_t *locator);
-		void	putLobLocator(sqlrservercursor *cursor,
+		bool	putLobLocator(sqlrservercursor *cursor,
 							uint32_t column,
 							uint16_t wiretype,
 							bool null);
+		bool	putLobPrefetchData(sqlrservercursor *cursor,
+							uint32_t column,
+							uint16_t wiretype,
+							uint64_t amount);
 		void	pinLobRow(sqlrservercursor *cursor,
 							uint32_t colcount);
 		void	releaseLobPin(sqlrservercursor *cursor);
@@ -2022,6 +2049,17 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_oracle : public sqlrprotocol {
 							uint64_t insize,
 							uint64_t chars,
 							byte_t *out);
+
+		// converts the "got" units getLobFieldSegment() left in
+		// lobbuffer to their wire form in "chunk", taking no more than
+		// "remaining" characters of a clob, and returns the byte count,
+		// with the characters or bytes it covered in "units"
+		uint32_t	convertLobSegment(bool clob,
+							bool utf8,
+							uint64_t got,
+							uint64_t remaining,
+							byte_t *chunk,
+							uint64_t *units);
 		uint32_t	stepUtf8Char(const byte_t *in,
 							const byte_t *end,
 							uint16_t *ch);
@@ -2226,8 +2264,11 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_oracle : public sqlrprotocol {
 		bool	version(const byte_t *rp, bool istticall);
 		bool	sendVersionResponse(uint32_t bufferlength);
 
-		// occa
-		bool	occa(const byte_t *rp, const byte_t **rpout);
+		// occa and ocana, the close cursors and cancel cursors
+		// piggybacks, which share a body.  "cancel" drops what each
+		// cursor's result set is holding instead of closing the cursor
+		bool	occa(const byte_t *rp, const byte_t **rpout,
+							bool cancel);
 		bool	switchSession(const byte_t *rp,
 						const byte_t **rpout);
 
@@ -2346,9 +2387,9 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_oracle : public sqlrprotocol {
 		bool		ociclient;
 
 		// whether a 9i client sends and expects its oci7 call text -
-		// login strings, sql text, the challenge key, the version
-		// banner, describe's column names - as raw bytes with exact
-		// sizes, rather than as clrs behind declared buffer sizes.
+		// login strings, sql text, the challenge key, describe's
+		// column names - as raw bytes with exact sizes, rather than as
+		// clrs behind declared buffer sizes.
 		// decided per session by chooseVerifierType() and reset by
 		// init()
 		bool		rawtextargs;
@@ -2366,8 +2407,9 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_oracle : public sqlrprotocol {
 		// recvDataTypeRequest() and reset by init()
 		bool		localdatetimes;
 
-		// whether a lob column in a row carries the lob's length and
-		// chunk size ahead of the locator, and whether a lob read is
+		// whether a lob column in a row may carry the lob's length and
+		// chunk size ahead of the locator - its define decides whether
+		// it does, see putLobLocator() - and whether a lob read is
 		// answered with data descriptor packets rather than inline.
 		// decided per session in recvDataTypeRequest() and reset by
 		// init()
@@ -2666,6 +2708,23 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_oracle : public sqlrprotocol {
 		uint32_t		query3defines;
 		uint32_t		query3iterations;
 
+		// the define descriptors themselves
+		oraclequery3define	*query3definelist;
+		uint32_t		query3defineavail;
+
+		// each cursor's defines from the last request that carried
+		// any.  a fetch carries none, but the rows it gets still follow
+		// them - see putLobLocator()
+		oraclequery3define	**cursordefines;
+		uint32_t		*cursordefinecounts;
+		uint32_t		*cursordefineavail;
+
+		// the error putRowData() failed with when a lob's prefetched
+		// data would have run the response past MAX_RESPONSE_SIZE, or
+		// couldn't be read from the backend, 0 otherwise
+		uint32_t		lobprefetcherror;
+		const char		*lobprefetcherrormessage;
+
 		// each cursor's descriptors from its last full execute.  a
 		// re-execute sends fresh values but no descriptors, so the
 		// ones that came with the statement have to be kept
@@ -2895,6 +2954,10 @@ sqlrprotocol_oracle::sqlrprotocol_oracle(sqlrservercontroller *cont,
 	query3blocks=0;
 	query3defines=0;
 	query3iterations=0;
+	query3definelist=NULL;
+	query3defineavail=0;
+	lobprefetcherror=0;
+	lobprefetcherrormessage=NULL;
 	query3unbound=false;
 	query3localregion=false;
 	query3toomanybinds=false;
@@ -2958,6 +3021,9 @@ sqlrprotocol_oracle::sqlrprotocol_oracle(sqlrservercontroller *cont,
 	lobpingeneration=new uint16_t[maxcursorcount];
 	cursorbinds=new oraclequery3bind *[maxcursorcount];
 	cursorbindcounts=new uint32_t[maxcursorcount];
+	cursordefines=new oraclequery3define *[maxcursorcount];
+	cursordefinecounts=new uint32_t[maxcursorcount];
+	cursordefineavail=new uint32_t[maxcursorcount];
 	refcursorids=new uint16_t *[maxcursorcount];
 	refcursorcounts=new uint16_t[maxcursorcount];
 	for (uint16_t i=0; i<maxcursorcount; i++) {
@@ -2972,6 +3038,9 @@ sqlrprotocol_oracle::sqlrprotocol_oracle(sqlrservercontroller *cont,
 		lobpingeneration[i]=0;
 		cursorbinds[i]=new oraclequery3bind[maxbindcount];
 		cursorbindcounts[i]=0;
+		cursordefines[i]=NULL;
+		cursordefinecounts[i]=0;
+		cursordefineavail[i]=0;
 		refcursorids[i]=new uint16_t[maxbindcount];
 		refcursorcounts[i]=0;
 		definecounts[i]=0;
@@ -3019,10 +3088,14 @@ sqlrprotocol_oracle::~sqlrprotocol_oracle() {
 		delete[] definetypes[i];
 		delete[] definebuffersizes[i];
 		delete[] cursorbinds[i];
+		delete[] cursordefines[i];
 		delete[] refcursorids[i];
 	}
 	delete[] cursorbinds;
 	delete[] cursorbindcounts;
+	delete[] cursordefines;
+	delete[] cursordefinecounts;
+	delete[] cursordefineavail;
 	delete[] refcursorids;
 	delete[] refcursorcounts;
 	delete[] query2cursorbindtypes;
@@ -3042,6 +3115,7 @@ sqlrprotocol_oracle::~sqlrprotocol_oracle() {
 
 	delete[] query3binds;
 	delete[] query3bindvalues;
+	delete[] query3definelist;
 
 	delete resppacketpool;
 	delete[] resppacketbuffer;
@@ -3251,9 +3325,21 @@ clientsessionexitstatus_t sqlrprotocol_oracle::clientSession(
 					rp=NULL;
 					break;
 				case TTI_CLOSE:
-				case TTI_CLOSE2:
 					loop=close(rp);
 					rp=NULL;
+					break;
+				case TTI_CLOSE2:
+					// ojdbc's cancel cursors (ocana) rides
+					// in front of another call, the way
+					// TTI_OCCA does, and gets no answer of
+					// its own
+					if (lastttccode==
+						TTC_PIGGYBACK_TTI_FUNCTION) {
+						loop=occa(rp,&rp,true);
+					} else {
+						loop=close(rp);
+						rp=NULL;
+					}
 					break;
 				case TTI_DISCONNECT:
 					loop=disconnect(rp);
@@ -3320,7 +3406,7 @@ clientsessionexitstatus_t sqlrprotocol_oracle::clientSession(
 					rp=NULL;
 					break;
 				case TTI_OCCA:
-					loop=occa(rp,&rp);
+					loop=occa(rp,&rp,false);
 					break;
 				case TTI_LOGON_PRESENT_PWD:
 				case TTI_LOGON_PRESENT_USER:
@@ -6332,8 +6418,9 @@ bool sqlrprotocol_oracle::recvDataTypeRequest() {
 			(runtimecaps[RCAP_TTC]&
 				RCAP_TTC_LOCAL_DATETIMES)!=0);
 
-	// whether a lob column carries the lob's length and chunk size ahead
-	// of its locator.  both sides have to set CCAP_LOB_PREFETCH_LENGTH.
+	// whether a lob column may carry the lob's length and chunk size ahead
+	// of its locator, which its define then decides - see putLobLocator().
+	// both sides have to set CCAP_LOB_PREFETCH_LENGTH.
 	// a version 5 response sends no capability arrays, the 10.2 array,
 	// like a real 10.2 server's, has the bit clear, and a pre-10g client's
 	// array is too short to reach CCAP_LOB.
@@ -9122,9 +9209,10 @@ void sqlrprotocol_oracle::chooseVerifierType() {
 	// al32utf8-realserver-r1 (raw) and strfetch-we8iso8859p1-realserver-
 	// r4 (clrs, 3x) captures in test/protocol/oracle/samples/.
 	//
-	// the o3logon term keeps modern clients out of it.  they share the
-	// version call, and ojdbc sends ENCODING_MULTI_BYTE alone but still
-	// reads the banner as a dalc.
+	// the o3logon term keeps modern clients out of it.  ojdbc sends
+	// ENCODING_MULTI_BYTE alone but still sends and reads this text as
+	// clrs.  the version banner is the exception, and follows the flag for
+	// every client - see sendVersionResponse().
 	rawtextargs=(isO3Logon() && !(encodingflags&ENCODING_CONV_LENGTH));
 
 	// whether the oci7 status and summary objects carry the end to end
@@ -13911,6 +13999,11 @@ bool sqlrprotocol_oracle::query3(const byte_t *rp) {
 		saveQuery3Binds(cursor);
 	}
 
+	// and a fetch will send no defines, so keep these too
+	if (query3defines || (options&OPTION_PARSE)) {
+		saveQuery3Defines(cursor);
+	}
+
 	if (options&OPTION_PARSE) {
 
 		// reset column type cache flag
@@ -14418,7 +14511,7 @@ bool sqlrprotocol_oracle::getQuery3Binds(const byte_t *rp,
 						&(query3binds[i].type),
 						&(query3binds[i].flags),
 						&(query3binds[i].buffersize),
-						&rp)) {
+						NULL,&rp)) {
 			debugEnd();
 			return false;
 		}
@@ -14443,15 +14536,31 @@ bool sqlrprotocol_oracle::getQuery3Binds(const byte_t *rp,
 	// of the request, since the packet has to be read either way
 	query3toomanybinds=(bindcount>maxbindcount);
 
-	// the define descriptors, which only need consuming and counting
+	// the define descriptors.  only what a lob column's rows depend on is
+	// kept - see putLobLocator()
+	if (definecount>query3defineavail) {
+		delete[] query3definelist;
+		query3definelist=new oraclequery3define[definecount];
+		query3defineavail=definecount;
+	}
 	for (uint32_t i=0; i<definecount; i++) {
 		byte_t		type=0;
 		byte_t		flags=0;
 		uint32_t	buffersize=0;
-		if (!getQuery3BindDescriptor(rp,end,&type,&flags,
-							&buffersize,&rp)) {
+		if (!getQuery3BindDescriptor(rp,end,&type,&flags,&buffersize,
+						&(query3definelist[i]),&rp)) {
 			debugEnd();
 			return false;
+		}
+		if (getDebug()) {
+			debugWrite("define %d:",i+1);
+			debugColumnType(type);
+			debugWrite("cont flags: 0x%08x",
+					query3definelist[i].contflags);
+			debugWrite("max data size: %d",
+					query3definelist[i].maxdatasize);
+			debugWrite("charset form: %d",
+					query3definelist[i].csfrm);
 		}
 	}
 	query3defines=definecount;
@@ -14578,6 +14687,7 @@ bool sqlrprotocol_oracle::getQuery3BindDescriptor(const byte_t *rp,
 						byte_t *type,
 						byte_t *flags,
 						uint32_t *buffersize,
+						oraclequery3define *define,
 						const byte_t **rpout) {
 
 	// a bind or define descriptor - twelve fields, no name and no position,
@@ -14587,6 +14697,11 @@ bool sqlrprotocol_oracle::getQuery3BindDescriptor(const byte_t *rp,
 	*flags=0;
 	*buffersize=0;
 	*rpout=rp;
+	if (define) {
+		define->contflags=0;
+		define->maxdatasize=0;
+		define->csfrm=0;
+	}
 
 	byte_t		precision=0;
 	int32_t		scale=0;
@@ -14670,6 +14785,12 @@ bool sqlrprotocol_oracle::getQuery3BindDescriptor(const byte_t *rp,
 			!getLenPreInt(rp,&end,&oaccolid,&rp)) {
 		debugWrite("truncated bind descriptor");
 		return false;
+	}
+
+	if (define) {
+		define->contflags=contflags;
+		define->maxdatasize=maxdatasize;
+		define->csfrm=csfrm;
 	}
 
 	*rpout=rp;
@@ -15275,6 +15396,35 @@ void sqlrprotocol_oracle::saveQuery3Binds(sqlrservercursor *cursor) {
 	cursorbindcounts[cont->getId(cursor)]=count;
 }
 
+void sqlrprotocol_oracle::saveQuery3Defines(sqlrservercursor *cursor) {
+
+	// a column past the last define that asks for a lob prefetch gets
+	// what it would get with no define at all, so only that many are kept,
+	// and no more than the cursor can have columns
+	uint32_t	count=0;
+	for (uint32_t i=0; i<query3defines; i++) {
+		if (query3definelist[i].contflags&
+					DEFINE_CONTFLAG_LOB_PREFETCH) {
+			count=i+1;
+		}
+	}
+	uint32_t	maxcolumncount=cont->getMaxColumnCount();
+	if (maxcolumncount && count>maxcolumncount) {
+		count=maxcolumncount;
+	}
+
+	uint16_t	curid=cont->getId(cursor);
+	if (count>cursordefineavail[curid]) {
+		delete[] cursordefines[curid];
+		cursordefines[curid]=new oraclequery3define[count];
+		cursordefineavail[curid]=count;
+	}
+	for (uint32_t i=0; i<count; i++) {
+		cursordefines[curid][i]=query3definelist[i];
+	}
+	cursordefinecounts[curid]=count;
+}
+
 void sqlrprotocol_oracle::restoreQuery3Binds(sqlrservercursor *cursor) {
 	uint32_t	count=cursorbindcounts[cont->getId(cursor)];
 	if (count>query3bindavail) {
@@ -15424,6 +15574,10 @@ bool sqlrprotocol_oracle::sendQuery3Response(sqlrservercursor *cursor,
 				debugStart("query3 response row");
 				if (!putRowData(cursor,colcount)) {
 					debugEnd();
+					if (lobprefetcherror) {
+						return sendLobPrefetchError(
+								cursorid);
+					}
 					return sendQueryError(cursor);
 				}
 				debugEnd();
@@ -16159,7 +16313,10 @@ bool sqlrprotocol_oracle::putRowData(sqlrservercursor *cursor,
 			wiretype==ORACLE_TYPE_BLOB ||
 			wiretype==ORACLE_TYPE_BFILE) {
 			debugWrite("lob");
-			putLobLocator(cursor,i,wiretype,(null || !lob));
+			if (!putLobLocator(cursor,i,wiretype,(null || !lob))) {
+				debugEnd();
+				return false;
+			}
 			if (!null && lob) {
 				rowhaslob=true;
 			}
@@ -16409,27 +16566,42 @@ uint32_t sqlrprotocol_oracle::buildLobLocator(sqlrservercursor *cursor,
 	return LOB_LOCATOR_SIZE;
 }
 
-void sqlrprotocol_oracle::putLobLocator(sqlrservercursor *cursor,
+bool sqlrprotocol_oracle::putLobLocator(sqlrservercursor *cursor,
 						uint32_t column,
 						uint16_t wiretype,
 						bool null) {
 
 	// writes what a lob column carries in a row: the locator's length, the
-	// lob's length and the chunk size if lobprefetchlength says so, the
-	// length again as a raw byte, and the locator itself.  a null lob is
-	// the length alone, as zero
+	// lob's length and the chunk size and then the start of its data if
+	// its define asks for them, the length again as a raw byte, and the
+	// locator itself.  a null lob is the length alone, as zero
 	if (null) {
 		debugWrite("null lob");
 		writeLenPreInt(&reqpacket,(uint32_t)0);
-		return;
+		return true;
 	}
 
 	byte_t		locator[LOB_LOCATOR_SIZE];
 	uint32_t	locatorsize=
 			buildLobLocator(cursor,column,wiretype,locator);
 
+	// a real server sends the lob's length only to a define that sets
+	// DEFINE_CONTFLAG_LOB_PREFETCH, with both sides setting
+	// CCAP_LOB_PREFETCH_LENGTH.  ojdbc sets it with its lob prefetch size
+	// as the max data size, OCI 23.26 with a max data size of 0, and
+	// python-oracledb on a clob or a blob but not on a bfile.  ojdbc sends
+	// no defines with prefetch turned off, and a real 12.2 server sends it
+	// the locator alone though both sides set the capability - samples/
+	// 10569-dev-ojdbc-lobs-noprefetch-realserver-oracle122
+	uint16_t		curid=cont->getId(cursor);
+	const oraclequery3define	*define=
+				(column<cursordefinecounts[curid])?
+				&(cursordefines[curid][column]):NULL;
+	bool	prefetch=(lobprefetchlength && define &&
+			(define->contflags&DEFINE_CONTFLAG_LOB_PREFETCH));
+
 	writeLenPreInt(&reqpacket,locatorsize);
-	if (lobprefetchlength) {
+	if (prefetch) {
 
 		// characters for a clob and bytes for a blob, which is what
 		// getLobFieldLength() answers either way.  a bfile's length
@@ -16446,11 +16618,99 @@ void sqlrprotocol_oracle::putLobLocator(sqlrservercursor *cursor,
 			writeLenPreInt(&reqpacket,(uint32_t)LOB_CHUNK_SIZE);
 		}
 		debugWrite("lob length: %lld",(long long)loblength);
+
+		// the start of the data, as a clr: a clob's in utf-16 behind
+		// its character set and form, a blob's bare.  a bfile has none
+		// to send, and a real server sends a pad byte in its place
+		if (define->maxdatasize) {
+			if (wiretype==ORACLE_TYPE_BFILE) {
+				write(&reqpacket,(byte_t)0);
+			} else {
+				if (wiretype==ORACLE_TYPE_CLOB &&
+					define->csfrm==CSFRM_NCHAR) {
+					write(&reqpacket,(byte_t)0);
+					write(&reqpacket,(byte_t)CSFRM_NCHAR);
+				} else if (wiretype==ORACLE_TYPE_CLOB) {
+					write(&reqpacket,(byte_t)1);
+					writeLenPreInt(&reqpacket,
+						(uint32_t)CHARSET_AL16UTF16);
+					write(&reqpacket,(byte_t)1);
+				}
+				uint64_t	amount=
+					(loblength<define->maxdatasize)?
+					loblength:define->maxdatasize;
+				if (!putLobPrefetchData(cursor,column,
+							wiretype,amount)) {
+					return false;
+				}
+			}
+		}
 	}
 	write(&reqpacket,(byte_t)locatorsize);
 	write(&reqpacket,(const byte_t *)locator,(size_t)locatorsize);
 
 	debugWrite("locator size: %d",locatorsize);
+
+	return true;
+}
+
+bool sqlrprotocol_oracle::putLobPrefetchData(sqlrservercursor *cursor,
+						uint32_t column,
+						uint16_t wiretype,
+						uint64_t amount) {
+
+	// a lob's prefetched data isn't bounded by a column width the way the
+	// rest of a row is, so it is held to MAX_RESPONSE_SIZE on its own
+	bool		clob=(wiretype==ORACLE_TYPE_CLOB);
+	uint64_t	size=(clob)?amount*LOB_CLOB_BYTES_PER_CHAR:amount;
+	if ((uint64_t)reqpacket.getSize()+size>MAX_RESPONSE_SIZE) {
+		debugWrite("prefetched lob data would exceed %d bytes",
+						MAX_RESPONSE_SIZE);
+		lobprefetcherror=ORA_MAX_RESPONSE_SIZE_EXCEEDED;
+		lobprefetcherrormessage=ORA_MAX_RESPONSE_SIZE_EXCEEDED_MESSAGE;
+		return false;
+	}
+
+	// read it a chunk at a time, the way sendLobReadResponse() does, and
+	// gather it so it can go out in the short form if it fits in one
+	bool		utf8=(clob && clientCharsetIsUtf8());
+	uint64_t	charsperchunk=(clob)?
+				LOB_CHUNK_SIZE/LOB_CLOB_BYTES_PER_CHAR:
+				LOB_CHUNK_SIZE;
+	bytebuffer	data;
+	byte_t		chunk[LOB_CHUNK_SIZE];
+	uint64_t	position=0;
+	uint64_t	remaining=amount;
+	while (remaining) {
+		uint64_t	toread=(remaining<charsperchunk)?
+						remaining:charsperchunk;
+		uint64_t	got=0;
+		if (!cont->getLobFieldSegment(cursor,column,
+					lobbuffer,sizeof(lobbuffer),
+					position,toread,&got)) {
+
+			// The lob's full length has already been sent, so data
+			// cut short here would read as the whole prefetch.
+			debugWrite("prefetched lob data read failed");
+			lobprefetcherror=ORA_QUERY_FAILED;
+			lobprefetcherrormessage=ORA_QUERY_FAILED_MESSAGE;
+			return false;
+		}
+		if (!got) {
+			break;
+		}
+		uint64_t	units=0;
+		uint32_t	chunksize=convertLobSegment(clob,utf8,got,
+							remaining,chunk,&units);
+		data.append(chunk,chunksize);
+		position=position+units;
+		remaining=remaining-units;
+	}
+
+	debugWrite("prefetched lob data: %lld bytes",
+					(long long)data.getSize());
+	putLenBytes((const char *)data.getBuffer(),(uint32_t)data.getSize());
+	return true;
 }
 
 void sqlrprotocol_oracle::pinLobRow(sqlrservercursor *cursor,
@@ -16977,33 +17237,9 @@ bool sqlrprotocol_oracle::sendLobReadResponse(sqlrservercursor *cursor,
 		}
 
 		// hold this one back
-		uint64_t	charsthischunk=got;
-		if (clob) {
-
-			// under a utf-8 client character set, OCILobRead
-			// reports how many bytes it read rather than how many
-			// characters, but position and charsread both count
-			// characters
-			if (utf8) {
-				charsthischunk=countUtf8Chars(lobbuffer,got);
-			}
-			// a character above the basic multilingual plane
-			// counts as up to 4 here but as 2 to OCILobRead, so
-			// the count can exceed what was asked for - clamp it
-			// so it can't overrun chunk or remaining
-			if (charsthischunk>sizeof(chunk)/LOB_CLOB_BYTES_PER_CHAR) {
-				charsthischunk=sizeof(chunk)/
-							LOB_CLOB_BYTES_PER_CHAR;
-			}
-			if (charsthischunk>remaining) {
-				charsthischunk=remaining;
-			}
-			chunksize=putUtf16Chars(lobbuffer,got,
-						charsthischunk,chunk);
-		} else {
-			chunksize=(uint32_t)got;
-			bytestring::copy(chunk,lobbuffer,(size_t)chunksize);
-		}
+		uint64_t	charsthischunk=0;
+		chunksize=convertLobSegment(clob,utf8,got,remaining,
+						chunk,&charsthischunk);
 		held=true;
 
 		charsread=charsread+charsthischunk;
@@ -17020,6 +17256,40 @@ bool sqlrprotocol_oracle::sendLobReadResponse(sqlrservercursor *cursor,
 
 	return sendLobOperationResponse(locator,locatorsize,
 					LOB_RESULT_UB8,charsread,singlepacket);
+}
+
+uint32_t sqlrprotocol_oracle::convertLobSegment(bool clob,
+						bool utf8,
+						uint64_t got,
+						uint64_t remaining,
+						byte_t *chunk,
+						uint64_t *units) {
+
+	if (!clob) {
+		bytestring::copy(chunk,lobbuffer,(size_t)got);
+		*units=got;
+		return (uint32_t)got;
+	}
+
+	// under a utf-8 client character set, OCILobRead reports how many
+	// bytes it read rather than how many characters, but the callers'
+	// positions count characters
+	uint64_t	chars=got;
+	if (utf8) {
+		chars=countUtf8Chars(lobbuffer,got);
+	}
+
+	// a character above the basic multilingual plane counts as up to 4
+	// here but as 2 to OCILobRead, so the count can exceed what was asked
+	// for - clamp it so it can't overrun chunk or remaining
+	if (chars>LOB_CHUNK_SIZE/LOB_CLOB_BYTES_PER_CHAR) {
+		chars=LOB_CHUNK_SIZE/LOB_CLOB_BYTES_PER_CHAR;
+	}
+	if (chars>remaining) {
+		chars=remaining;
+	}
+	*units=chars;
+	return putUtf16Chars(lobbuffer,got,chars,chunk);
 }
 
 bool sqlrprotocol_oracle::sendLobOperationResponse(const byte_t *locator,
@@ -17247,6 +17517,7 @@ bool sqlrprotocol_oracle::lobOperations(const byte_t *rp) {
 	// over
 	if (operation!=LOB_OP_GET_LENGTH &&
 		operation!=LOB_OP_READ &&
+		operation!=LOB_OP_GET_CHUNK_SIZE &&
 		operation!=LOB_OP_FILE_EXISTS &&
 		operation!=LOB_OP_OPEN &&
 		operation!=LOB_OP_FILE_OPEN &&
@@ -17284,6 +17555,13 @@ bool sqlrprotocol_oracle::lobOperations(const byte_t *rp) {
 						sourcelocator,sourcesize,
 						sourceoffset,
 						(amountpresent)?amount:0);
+	}
+
+	// the same chunk size a row sends ahead of a locator.  ojdbc asks for
+	// it before it reads a lob at 10.2, where rows carry none
+	if (operation==LOB_OP_GET_CHUNK_SIZE) {
+		return sendLobOperationResponse(sourcelocator,sourcesize,
+						LOB_RESULT_UB8,LOB_CHUNK_SIZE);
 	}
 
 	// no server side call opens a bfile and asks whether the file is
@@ -19912,6 +20190,9 @@ bool sqlrprotocol_oracle::sendFetch3Response(sqlrservercursor *cursor,
 			debugStart("fetch response row");
 			if (!putRowData(cursor,colcount)) {
 				debugEnd();
+				if (lobprefetcherror) {
+					return sendLobPrefetchError(cursorid);
+				}
 				return sendQueryError(cursor);
 			}
 			debugEnd();
@@ -21744,6 +22025,7 @@ void sqlrprotocol_oracle::resetCursorState(uint16_t curid) {
 	// that touches a live cursor would be working on one that no longer
 	// exists
 	cursorbindcounts[curid]=0;
+	cursordefinecounts[curid]=0;
 
 	// and the oci7 bind shape a query2 left on it.  cursor
 	// ids come back out of the pool for whatever opens next,
@@ -22518,12 +22800,16 @@ bool sqlrprotocol_oracle::sendVersionResponse(uint32_t bufferlength) {
 	// message a logoff gets
 	// see "Oracle Wire Protocol - Version"
 	//
-	// a 9i client that didn't send ENCODING_CONV_LENGTH reads the banner
-	// as the total size and then the raw text instead - "01 00 4f" in
-	// packet [0016] of samples/10273-redhat9x86-oci7-strfetch-al32utf8-
-	// realserver-r1, against "03 00 03 4f 72 61" in strfetch-we8iso8859p1-
-	// realserver-r4.  it answers a dalc with a marker and an ORA-03120
-	if (rawtextargs) {
+	// a client that didn't send ENCODING_CONV_LENGTH reads the banner as
+	// the total size and then the raw text instead, whatever its logon.
+	// a 9i client does - "01 00 4f" in packet [0016] of samples/10273-
+	// redhat9x86-oci7-strfetch-al32utf8-realserver-r1, against
+	// "03 00 03 4f 72 61" in strfetch-we8iso8859p1-realserver-r4 - and
+	// answers a dalc with a marker and an ORA-03120.  so does ojdbc, which
+	// sends ENCODING_MULTI_BYTE alone - "01 4c 4f 72" in packet [0016] of
+	// samples/10569-dev-ojdbc-version-realserver-oracle122 - and fails a
+	// dalc with an ArrayIndexOutOfBoundsException
+	if (!(encodingflags&ENCODING_CONV_LENGTH)) {
 		debugWrite("banner: %d",bannerlength);
 		debugHexDump((const byte_t *)serverversionbanner,bannerlength);
 		writeLenPreInt(&reqpacket,bannerlength);
@@ -22554,13 +22840,20 @@ bool sqlrprotocol_oracle::sendVersionResponse(uint32_t bufferlength) {
 	return sendPacket(true);
 }
 
-bool sqlrprotocol_oracle::occa(const byte_t *rp, const byte_t **rpout) {
+bool sqlrprotocol_oracle::occa(const byte_t *rp, const byte_t **rpout,
+							bool cancel) {
 
 	// the close-cursors piggyback, python-oracledb's
 	// _write_close_cursors_piggyback().  a client packs it in front of
 	// another call rather than sending it on its own, so the read has to
 	// stop exactly where the body ends or the call behind it is misread.
 	// there is no response.
+	//
+	// ojdbc's cancel-cursors piggyback, doOCANA(), has the same body, and
+	// a real 12.2 server answers only the call behind it - packets [0029]
+	// and [0030] of samples/10562-dev-ojdbc-dtbinds-realserver-oracle122.
+	// ojdbc sends it for a cursor it stopped fetching from before the rows
+	// ran out, there ahead of the close-cursors piggyback for that cursor
 	const byte_t	*end=resppacket+resppacketsize;
 
 	byte_t		seqnumber=0;
@@ -22578,7 +22871,7 @@ bool sqlrprotocol_oracle::occa(const byte_t *rp, const byte_t **rpout) {
 		return false;
 	}
 
-	debugStart("occa");
+	debugStart((cancel)?"ocana":"occa");
 	debugWrite("seq number: %d",seqnumber);
 	debugWrite("cursor count: %d",cursorcount);
 
@@ -22600,6 +22893,14 @@ bool sqlrprotocol_oracle::occa(const byte_t *rp, const byte_t **rpout) {
 			debugWrite("cursor id %d not found",cursorid);
 			continue;
 		}
+
+		// the cursor stays open for another execute, but the client
+		// is done with the row it was holding for a lob read
+		if (cancel) {
+			releaseLobPin(cursor);
+			continue;
+		}
+
 		uint16_t	closingid=cont->getId(cursor);
 		forgetRefCursor(closingid);
 		clearParams(cursor);
@@ -22893,9 +23194,9 @@ bool sqlrprotocol_oracle::sendMaxResponseError(uint32_t cursorid,
 	// answers a request that asked for more rows than MAX_FETCH_ROW_COUNT,
 	// whose batch ran past MAX_RESPONSE_SIZE while it was being built, or
 	// a re-execute-and-fetch's that carried more than one row data block
-	// (see reexecuteAndFetch()).  any of the callers can see any of these,
-	// so the answer takes the shape the session is in, the way
-	// sendQueryError() does
+	// (see reexecuteAndFetch()), and sendLobPrefetchError()'s too.  any of
+	// the callers can see any of these, so the answer takes the shape the
+	// session is in, the way sendQueryError() does
 
 	if (!query3session) {
 		return sendOci7StatementError(cursorid,oranum,message);
@@ -22915,6 +23216,15 @@ bool sqlrprotocol_oracle::sendMaxResponseError(uint32_t cursorid,
 	putSummary(cursorid,oranum,0,message);
 
 	return sendPacket(true);
+}
+
+bool sqlrprotocol_oracle::sendLobPrefetchError(uint32_t cursorid) {
+
+	// answers a request whose row couldn't carry a lob's prefetched data,
+	// with the error putLobPrefetchData() left
+	uint32_t	oranum=lobprefetcherror;
+	lobprefetcherror=0;
+	return sendMaxResponseError(cursorid,oranum,lobprefetcherrormessage);
 }
 
 bool sqlrprotocol_oracle::sendCursorNotOpenError(uint32_t cursorid) {

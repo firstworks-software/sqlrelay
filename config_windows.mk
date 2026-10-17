@@ -465,7 +465,7 @@ TDSTESTSAPLIBS = $(SYBASELIBS) $(RUDIMENTSLIBS)
 # windows always assumes a jdk (see JAVAC above), unlike unix's
 # HAVE_JAVA-gated ORACLEPROTOCOLTESTTARGETS / TERADATAPROTOCOLTESTTARGETS in
 # config.mk.in, so these are unconditional
-ORACLEPROTOCOLTESTTARGETS = oracle.class
+ORACLEPROTOCOLTESTTARGETS = oracle.class ojdbc.class
 TERADATAPROTOCOLTESTTARGETS = teradata.class
 
 # bench
