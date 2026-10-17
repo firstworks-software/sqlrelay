@@ -2772,6 +2772,63 @@ missing bytes silently.
                                       dot (05:05:05.) on both servers,
                                       though SSXFF prints none (#10567)
 
+    10570-dev-oci23-native-ociselectlob-realserver-oracle102.oraproxy
+                                     ociselect with OCISELECT_LOB=1 (OCI
+                                      23.26, OCI8 calls) against the real
+                                      10.2 server, through oraproxy with
+                                      ORAPROXY_UNIVERSAL_REPS=1.  [0019]
+                                      is the lob select that
+                                      OCIStmtExecute sends with one
+                                      iteration after the three columns
+                                      are defined: options 0x8071,
+                                      prefetch rows 0, three define
+                                      descriptors, and an al8i4
+                                      iteration count of 1.  [0020] and
+                                      [0021] answer it with the
+                                      describe, a row header and the row,
+                                      all on the execute.  The describe's
+                                      max row size is 0 (00 01 03 39
+                                      ...), and its closing date is
+                                      followed by 01 01, 02 1f e8 and a
+                                      min and max prefetch of 0 (00 00),
+                                      where "select 1 from dual" at
+                                      [0018] gets 01 02 01 02.  The clob
+                                      and blob come back as 502 and 2102
+                                      byte locators carrying the in-row
+                                      lob data (02 01 f6 fe ff 01 f4
+                                      ...), the bfile as 01 2b 2b ...,
+                                      and the summary has no ORA-01403.
+                                      Through the module the same
+                                      request got the describe and no
+                                      row, and every lob call after it
+                                      failed (#10570)
+
+    10570-dev-pythonoracledb-thin-lobselect-realserver-oracle122.oraproxy
+                                     python-oracledb 4.0.2 thin, two lob
+                                      selects on one connection, against
+                                      the real 12.2 server.  [0013]
+                                      executes "select c,b,f ..." with
+                                      prefetch rows 2 and no defines
+                                      (options 0x8061, al8i4 iteration
+                                      count 0), and [0014] answers with
+                                      the describe alone, max row size 0
+                                      and min and max prefetch 0, and no
+                                      row.  [0015] sends the three
+                                      defines with no execute (options
+                                      0x8010, iteration count 2), and
+                                      [0016] answers with the row and
+                                      ORA-01403: the clob as 01 72 02 01
+                                      90 02 1f 7c 72 and the locator
+                                      (lob length 400 and chunk size
+                                      8060 in front), the blob the same
+                                      with 02 07 d0, and the bfile as 01
+                                      2b 2b and the locator, with no lob
+                                      length or chunk size.
+                                      [0021] to [0024] do the same for
+                                      "select id,c ... order by id", and
+                                      [0024] carries both rows; the fetch
+                                      at [0029] gets ORA-01403 (#10570)
+
 The three real Oracle test servers on this network
 --------------------------------------------------
 

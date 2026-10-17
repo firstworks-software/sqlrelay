@@ -2658,6 +2658,11 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_oracle : public sqlrprotocol {
 		uint32_t		query3bindvalueavail;
 		uint32_t		query3blocks;
 
+		// how many define descriptors the request carried, and its
+		// al8i4 iteration count - see sendQuery3Response()
+		uint32_t		query3defines;
+		uint32_t		query3iterations;
+
 		// each cursor's descriptors from its last full execute.  a
 		// re-execute sends fresh values but no descriptors, so the
 		// ones that came with the statement have to be kept
@@ -2885,6 +2890,8 @@ sqlrprotocol_oracle::sqlrprotocol_oracle(sqlrservercontroller *cont,
 	query3bindvalues=NULL;
 	query3bindvalueavail=0;
 	query3blocks=0;
+	query3defines=0;
+	query3iterations=0;
 	query3unbound=false;
 	query3localregion=false;
 	query3toomanybinds=false;
@@ -14326,6 +14333,8 @@ bool sqlrprotocol_oracle::getQuery3Binds(const byte_t *rp,
 	// see "Oracle Wire Protocol - Query3"
 	query3binddescs=0;
 	query3blocks=0;
+	query3defines=0;
+	query3iterations=0;
 	query3unbound=false;
 	query3toomanybinds=false;
 
@@ -14361,6 +14370,7 @@ bool sqlrprotocol_oracle::getQuery3Binds(const byte_t *rp,
 		}
 	}
 	debugWrite("iterations: %d",iterations);
+	query3iterations=iterations;
 
 	// a descriptor is at least twelve bytes - four raw and eight one-byte
 	// counts - so a count that couldn't fit in the room left for the
@@ -14418,7 +14428,7 @@ bool sqlrprotocol_oracle::getQuery3Binds(const byte_t *rp,
 	// of the request, since the packet has to be read either way
 	query3toomanybinds=(bindcount>maxbindcount);
 
-	// the define descriptors, which need consuming but nothing else
+	// the define descriptors, which only need consuming and counting
 	for (uint32_t i=0; i<definecount; i++) {
 		byte_t		type=0;
 		byte_t		flags=0;
@@ -14429,6 +14439,7 @@ bool sqlrprotocol_oracle::getQuery3Binds(const byte_t *rp,
 			return false;
 		}
 	}
+	query3defines=definecount;
 
 	// which way each of them travels
 	classifyQuery3Binds(options,query,querysize);
@@ -15335,15 +15346,31 @@ bool sqlrprotocol_oracle::sendQuery3Response(sqlrservercursor *cursor,
 		// so a result set with a lob column in it sends one row per
 		// response, and that row stays current until the pin comes off.
 		//
-		// none at all go out on an execute, the same way none go out
-		// for a long: OCI allocates the lob descriptors its defines
-		// name as the answer to the execute comes in, and a locator
-		// that arrives ahead of them is ORA-24813 - "cannot send or
-		// receive an unsupported LOB" - which kills the call.  the
-		// fetch that follows carries the row instead
+		// a locator goes into the lob descriptor that the client's
+		// define for its column names, so rows only go out on a request
+		// that carries defines, and no more of them than its iteration
+		// count has room for.  a real server answers an OCI execute
+		// with defines and one iteration with the describe and the row,
+		// and a thin client's execute with no defines with the describe
+		// alone, sending the row on the request that carries them.  OCI
+		// takes a locator sent on an execute with no iterations as
+		// ORA-24813, which kills the call.
+		//
+		// rows sent without an execute are a fetch, so the client has
+		// moved on from whatever row is pinned
 		if (hasLobColumn(cursor,colcount)) {
-			debugWrite("lob column, no rows on the execute");
-			rowstofetch=0;
+			if (!query3defines) {
+				debugWrite("lob column, no defines, no rows");
+				rowstofetch=0;
+			} else if (rowstofetch>query3iterations) {
+				debugWrite("lob column, rows bounded by "
+						"iterations: %d",
+						query3iterations);
+				rowstofetch=query3iterations;
+			}
+			if (rowstofetch && !(options&OPTION_EXECUTE)) {
+				releaseLobPin(cursor);
+			}
 		}
 
 		if (rowstofetch) {
@@ -15627,9 +15654,13 @@ void sqlrprotocol_oracle::putDescribeInfoBody(sqlrservercursor *cursor,
 	// row size on.  a ref cursor's out bind slot carries the same fields
 	// with no ttc code and no prologue in front of them, so both writers
 	// share this
+	//
+	// a real server sends a max row size of 0, and a min and max prefetch
+	// of 0, for a result set with a lob column in it
 	uint16_t	curid=cont->getId(cursor);
+	bool		haslob=hasLobColumn(cursor,colcount);
 	uint32_t	maxrowsize=0;
-	for (uint32_t i=0; i<colcount; i++) {
+	for (uint32_t i=0; i<colcount && !haslob; i++) {
 		maxrowsize+=getWireColumnSize(cursor,i,
 				cont->getColumnTypeName(cursor,i),
 				columntypes[curid][i],
@@ -15659,8 +15690,8 @@ void sqlrprotocol_oracle::putDescribeInfoBody(sqlrservercursor *cursor,
 
 	writeLenPreInt(&reqpacket,0);
 	writeLenPreInt(&reqpacket,DCB_MAX_DATA_BLOCK_SIZE);
-	writeLenPreInt(&reqpacket,DCB_MIN_PREFETCH);
-	writeLenPreInt(&reqpacket,DCB_MAX_PREFETCH);
+	writeLenPreInt(&reqpacket,(haslob)?0:DCB_MIN_PREFETCH);
+	writeLenPreInt(&reqpacket,(haslob)?0:DCB_MAX_PREFETCH);
 
 	// the query cache key, which a real 10.2 server doesn't send - its
 	// describe ends at the max prefetch.  gated on the negotiated field

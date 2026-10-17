@@ -3419,6 +3419,122 @@ int main(int argc, char **argv) {
 	stdoutput.printf("\n\n");
 
 
+	stdoutput.printf("OCIStmtExecute - lob row prefetched by the execute\n");
+	// with iters=1 the row comes back on the execute's own answer rather
+	// than on a separate fetch, so the locators have to be usable straight
+	// out of the execute
+	OCIStmt		*lobprestmt=NULL;
+	OCILobLocator	*preclob=NULL;
+	OCILobLocator	*preblob=NULL;
+	OCILobLocator	*prebfile=NULL;
+	OCIDefine	*predef[3];
+	sb2		preind[3];
+	bytestring::zero(predef,sizeof(predef));
+	preind[0]=-1;
+	preind[1]=-1;
+	preind[2]=-1;
+	assertEquals(
+		OCIHandleAlloc(env,(void **)&lobprestmt,OCI_HTYPE_STMT,0,NULL),
+		OCI_SUCCESS);
+	assertEquals(
+		OCIDescriptorAlloc(env,(void **)&preclob,OCI_DTYPE_LOB,0,NULL),
+		OCI_SUCCESS);
+	assertEquals(
+		OCIDescriptorAlloc(env,(void **)&preblob,OCI_DTYPE_LOB,0,NULL),
+		OCI_SUCCESS);
+	assertEquals(
+		OCIDescriptorAlloc(env,(void **)&prebfile,OCI_DTYPE_FILE,0,NULL),
+		OCI_SUCCESS);
+	const char	*lobprequery="select testclob,testblob,testbfile "
+						"from protocoltestlob";
+	assertEquals(
+		OCIStmtPrepare(lobprestmt,err,(text *)lobprequery,
+				charstring::getLength(lobprequery),
+				OCI_NTV_SYNTAX,OCI_DEFAULT),
+		OCI_SUCCESS);
+	assertEquals(
+		OCIDefineByPos(lobprestmt,&predef[0],err,1,
+				&preclob,0,SQLT_CLOB,
+				&preind[0],NULL,NULL,OCI_DEFAULT),
+		OCI_SUCCESS);
+	assertEquals(
+		OCIDefineByPos(lobprestmt,&predef[1],err,2,
+				&preblob,0,SQLT_BLOB,
+				&preind[1],NULL,NULL,OCI_DEFAULT),
+		OCI_SUCCESS);
+	assertEquals(
+		OCIDefineByPos(lobprestmt,&predef[2],err,3,
+				&prebfile,0,SQLT_BFILEE,
+				&preind[2],NULL,NULL,OCI_DEFAULT),
+		OCI_SUCCESS);
+	assertEquals(
+		OCIStmtExecute(svc,lobprestmt,err,1,0,NULL,NULL,OCI_DEFAULT),
+		OCI_SUCCESS);
+	assertEquals((int)preind[0],OCI_IND_NOTNULL);
+	assertEquals((int)preind[1],OCI_IND_NOTNULL);
+	assertEquals((int)preind[2],OCI_IND_NOTNULL);
+	stdoutput.printf("\n\n");
+
+
+	stdoutput.printf("OCILobGetLength - prefetched clob and blob\n");
+	loblength=0;
+	assertEquals(
+		OCILobGetLength(svc,err,preclob,&loblength),OCI_SUCCESS);
+	assertEquals((int)loblength,(int)biglength);
+	loblength=0;
+	assertEquals(
+		OCILobGetLength(svc,err,preblob,&loblength),OCI_SUCCESS);
+	assertEquals((int)loblength,(int)sizeof(blobvalue));
+	stdoutput.printf("\n\n");
+
+
+	stdoutput.printf("OCILobRead - prefetched clob and blob\n");
+	bytestring::zero(bigbuffer,biglength+1);
+	clobamount=biglength;
+	assertEquals(
+		OCILobRead(svc,err,preclob,&clobamount,1,
+				bigbuffer,biglength,
+				NULL,NULL,0,SQLCS_IMPLICIT),
+		OCI_SUCCESS);
+	assertEquals((int)clobamount,(int)biglength);
+	assertEquals((const char *)bigbuffer,(const char *)bigvalue);
+	bytestring::zero(blobbuffer,sizeof(blobbuffer));
+	blobamount=sizeof(blobbuffer);
+	assertEquals(
+		OCILobRead(svc,err,preblob,&blobamount,1,
+				blobbuffer,sizeof(blobbuffer),
+				NULL,NULL,0,0),
+		OCI_SUCCESS);
+	assertEquals((int)blobamount,512);
+	assertTrue(!bytestring::compare(blobbuffer,blobvalue,
+						sizeof(blobvalue)));
+	stdoutput.printf("\n\n");
+
+
+	stdoutput.printf("OCILobFileExists - prefetched bfile\n");
+	bfileexists=1;
+	assertEquals(
+		OCILobFileExists(svc,err,prebfile,&bfileexists),
+		OCI_SUCCESS);
+	assertEquals((int)bfileexists,0);
+	stdoutput.printf("\n\n");
+
+
+	stdoutput.printf("OCIStmtFetch2 - past the prefetched lob row\n");
+	// the table holds one row, and the execute already returned it
+	assertEquals(
+		OCIStmtFetch2(lobprestmt,err,1,OCI_FETCH_NEXT,0,OCI_DEFAULT),
+		OCI_NO_DATA);
+	assertEquals(
+		OCIDescriptorFree(preclob,OCI_DTYPE_LOB),OCI_SUCCESS);
+	assertEquals(
+		OCIDescriptorFree(preblob,OCI_DTYPE_LOB),OCI_SUCCESS);
+	assertEquals(
+		OCIDescriptorFree(prebfile,OCI_DTYPE_FILE),OCI_SUCCESS);
+	assertEquals(OCIHandleFree(lobprestmt,OCI_HTYPE_STMT),OCI_SUCCESS);
+	stdoutput.printf("\n\n");
+
+
 	stdoutput.printf("OCIDescriptorFree - lob locators\n");
 	delete[] bigvalue;
 	delete[] bigbuffer;
