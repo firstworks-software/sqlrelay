@@ -917,6 +917,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - replaced master/slave with primary/replica in the documentation
 - oracle protocol module refuses a client that names no SID/SERVICE_NAME
   with ORA-12504 when sid is set now
+- oracle connection module formats timestamp with local time zone columns
+  with timestamp_tz_to_text_format, offset included, when it is set
 
 ### Removed
 - oracle protocol module: deleted cancel() (no wire input can reach it)
@@ -2953,6 +2955,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   years before 1950 and for year 0001
 - fixed the oracle protocol module's OCI8 timestamp binds and defines,
   binds without an indicator, and define-only queries at 12.1
+- fixed OCI8 timestamp with local time zone fetches and named-region
+  timestamp with time zone values in the oracle protocol module
 
 ### Security
 - fixed an authentication hole in the des password encryption module

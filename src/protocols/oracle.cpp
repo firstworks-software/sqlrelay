@@ -775,7 +775,7 @@
 // date and time, or, for a named region rather than an offset, the high bit.
 // a region's id is that byte's low 7 bits and then the minutes byte's top 6,
 // and the minutes byte's low 2 bits mark local date and time and daylight
-// saving time.  see getOracleTimestampBindValue()
+// saving time.  see putTimestampField() and getOracleTimestampBindValue()
 #define ORACLE_TZ_LOCAL			0x40
 #define ORACLE_TZ_REGION		0x80
 #define ORACLE_TZ_REGION_ID_SHIFT	6
@@ -2090,7 +2090,8 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_oracle : public sqlrprotocol {
 							bool negative);
 		bool	putTimestampField(const char *field,
 							uint64_t fieldsize,
-							bool withtimezone);
+							bool withtimezone,
+							bool localtimezone);
 		uint16_t	getTimestampDigits(const char **f,
 							const char *end,
 							uint32_t *value);
@@ -15882,14 +15883,10 @@ uint16_t sqlrprotocol_oracle::getWireColumnType(uint16_t columntype) {
 			wiretype=ORACLE_TYPE_REF_TYPE;
 			break;
 		case ORACLE_TYPE_TIMESTAMPLTZ:
-			// src/connections/oracle.cpp gives a timestamp with
-			// local time zone its own datatype rather than folding
-			// it into a plain timestamp, so a real column reaches
-			// here as this type.  getWireColumnSize() describes it
-			// as wide as a plain timestamp - a local-time-zone
-			// value carries no stored offset of its own - and
-			// putColumnMetadata()'s fullencoding flag has a case
-			// of its own for it
+			// a timestamp with local time zone keeps its own type.
+			// It is described as wide as a plain timestamp, and its
+			// value goes out in utc with no zone bytes - see
+			// putTimestampField()
 			wiretype=ORACLE_TYPE_TIMESTAMPLTZ;
 			break;
 		case ORACLE_TYPE_LOB_CLOB:
@@ -16250,7 +16247,8 @@ bool sqlrprotocol_oracle::putRowData(sqlrservercursor *cursor,
 				write(&reqpacket,(byte_t)0);
 			}
 		} else if (wiretype==ORACLE_TYPE_TIMESTAMP ||
-				wiretype==ORACLE_TYPE_TIMESTAMPTZ) {
+				wiretype==ORACLE_TYPE_TIMESTAMPTZ ||
+				wiretype==ORACLE_TYPE_TIMESTAMPLTZ) {
 			debugWrite("timestamp: %.*s",(int)fieldsize,field);
 			// same reasoning as the interval case just above -
 			// db2, mysql, firebird, postgresql, sap, odbc and
@@ -16261,10 +16259,13 @@ bool sqlrprotocol_oracle::putRowData(sqlrservercursor *cursor,
 			// real binary form for a genuine oracle backend
 			bool	withtimezone=
 				(wiretype==ORACLE_TYPE_TIMESTAMPTZ);
+			bool	localtimezone=
+				(wiretype==ORACLE_TYPE_TIMESTAMPLTZ);
 			if (charstring::compare(
 					cont->getNativeDbType(),"oracle") ||
 				!putTimestampField(field,fieldsize,
-							withtimezone)) {
+							withtimezone,
+							localtimezone)) {
 				// same as a date that won't parse - a
 				// timestamp the module can't take apart is
 				// no more use to the client than a null
@@ -18131,9 +18132,630 @@ uint16_t sqlrprotocol_oracle::getTimestampDigits(const char **f,
 	return digits;
 }
 
+// the time zone regions a timestamp with time zone can name, each with its
+// id and its standard offset in minutes.  pulled from a live 12.2 server,
+// whose time zone file is version 26, with:
+//
+//	select tzname,
+//		dump(from_tz(timestamp '2000-01-01 00:00:00',tzname)),
+//		least(extract(timezone_hour from
+//			from_tz(timestamp '2024-01-15 12:00:00',tzname))*60+
+//		extract(timezone_minute from
+//			from_tz(timestamp '2024-01-15 12:00:00',tzname)),
+//		extract(timezone_hour from
+//			from_tz(timestamp '2024-07-15 12:00:00',tzname))*60+
+//		extract(timezone_minute from
+//			from_tz(timestamp '2024-07-15 12:00:00',tzname)))
+//	from (select distinct tzname from v$timezone_names)
+//
+// the id is the dump's 17th byte plus 256 times its 18th, and the standard
+// offset is the smaller of the region's offsets in january and july.  only
+// the names in version 11 of the file are here, since that's the version
+// the module announces - see DB_TIMEZONE_VERSION - and a client with an
+// older file than the server's may not know a newer name.  ids are the same
+// in versions 11, 26 and 45.  sorted the way charstring::compareIgnoringCase()
+// orders them, for findTimeZoneRegion()
+struct oracletimezoneregion {
+	const char	*name;
+	uint16_t	id;
+	int16_t		standardoffset;
+};
+
+static const oracletimezoneregion	timezoneregions[]={
+	{"Africa/Abidjan",42,0},
+	{"Africa/Accra",50,0},
+	{"Africa/Addis_Ababa",47,180},
+	{"Africa/Algiers",30,60},
+	{"Africa/Asmara",46,180},
+	{"Africa/Asmera",558,180},
+	{"Africa/Bamako",58,0},
+	{"Africa/Bangui",37,60},
+	{"Africa/Banjul",49,0},
+	{"Africa/Bissau",52,0},
+	{"Africa/Blantyre",57,120},
+	{"Africa/Brazzaville",41,60},
+	{"Africa/Bujumbura",35,120},
+	{"Africa/Cairo",44,120},
+	{"Africa/Casablanca",61,0},
+	{"Africa/Ceuta",81,60},
+	{"Africa/Conakry",51,0},
+	{"Africa/Dakar",69,0},
+	{"Africa/Dar_es_Salaam",75,180},
+	{"Africa/Djibouti",43,180},
+	{"Africa/Douala",36,60},
+	{"Africa/El_Aaiun",62,0},
+	{"Africa/Freetown",70,0},
+	{"Africa/Gaborone",33,120},
+	{"Africa/Harare",80,120},
+	{"Africa/Johannesburg",72,120},
+	{"Africa/Kampala",78,180},
+	{"Africa/Khartoum",73,180},
+	{"Africa/Kigali",67,120},
+	{"Africa/Kinshasa",39,60},
+	{"Africa/Lagos",66,60},
+	{"Africa/Libreville",48,60},
+	{"Africa/Lome",76,0},
+	{"Africa/Luanda",31,60},
+	{"Africa/Lubumbashi",40,120},
+	{"Africa/Lusaka",79,120},
+	{"Africa/Malabo",45,60},
+	{"Africa/Maputo",63,120},
+	{"Africa/Maseru",54,120},
+	{"Africa/Mbabane",74,120},
+	{"Africa/Mogadishu",71,180},
+	{"Africa/Monrovia",55,0},
+	{"Africa/Nairobi",53,180},
+	{"Africa/Ndjamena",38,60},
+	{"Africa/Niamey",65,60},
+	{"Africa/Nouakchott",60,0},
+	{"Africa/Ouagadougou",34,0},
+	{"Africa/Porto-Novo",32,60},
+	{"Africa/Sao_Tome",68,0},
+	{"Africa/Timbuktu",570,0},
+	{"Africa/Tripoli",56,120},
+	{"Africa/Tunis",77,60},
+	{"Africa/Windhoek",64,60},
+	{"America/Adak",108,-600},
+	{"America/Anchorage",106,-540},
+	{"America/Anguilla",146,-240},
+	{"America/Antigua",147,-240},
+	{"America/Araguaina",186,-180},
+	{"America/Argentina/Buenos_Aires",687,-180},
+	{"America/Argentina/Catamarca",691,-180},
+	{"America/Argentina/ComodRivadavia",1203,-180},
+	{"America/Argentina/Cordoba",689,-180},
+	{"America/Argentina/Jujuy",690,-180},
+	{"America/Argentina/La_Rioja",99,-180},
+	{"America/Argentina/Mendoza",692,-180},
+	{"America/Argentina/Rio_Gallegos",98,-180},
+	{"America/Argentina/Salta",237,-180},
+	{"America/Argentina/San_Juan",229,-180},
+	{"America/Argentina/San_Luis",97,-180},
+	{"America/Argentina/Tucuman",228,-180},
+	{"America/Argentina/Ushuaia",176,-180},
+	{"America/Aruba",181,-240},
+	{"America/Asuncion",200,-240},
+	{"America/Atikokan",221,-300},
+	{"America/Atka",620,-600},
+	{"America/Bahia",90,-180},
+	{"America/Barbados",149,-240},
+	{"America/Belem",184,-180},
+	{"America/Belize",150,-360},
+	{"America/Blanc-Sablon",224,-240},
+	{"America/Boa_Vista",191,-240},
+	{"America/Bogota",195,-300},
+	{"America/Boise",110,-420},
+	{"America/Buenos_Aires",175,-180},
+	{"America/Cambridge_Bay",135,-420},
+	{"America/Campo_Grande",222,-240},
+	{"America/Cancun",140,-300},
+	{"America/Caracas",205,-240},
+	{"America/Catamarca",179,-180},
+	{"America/Cayenne",198,-180},
+	{"America/Cayman",151,-300},
+	{"America/Chicago",101,-360},
+	{"America/Chihuahua",142,-420},
+	{"America/Coral_Harbour",733,-300},
+	{"America/Cordoba",177,-180},
+	{"America/Costa_Rica",152,-360},
+	{"America/Cuiaba",189,-240},
+	{"America/Curacao",196,-240},
+	{"America/Danmarkshavn",223,0},
+	{"America/Dawson",139,-480},
+	{"America/Dawson_Creek",131,-420},
+	{"America/Denver",102,-420},
+	{"America/Detroit",116,-300},
+	{"America/Dominica",154,-240},
+	{"America/Edmonton",129,-420},
+	{"America/Eirunepe",225,-300},
+	{"America/El_Salvador",156,-360},
+	{"America/Ensenada",657,-480},
+	{"America/Fort_Wayne",623,-300},
+	{"America/Fortaleza",185,-180},
+	{"America/Glace_Bay",121,-240},
+	{"America/Godthab",207,-180},
+	{"America/Goose_Bay",119,-240},
+	{"America/Grand_Turk",172,-240},
+	{"America/Grenada",157,-240},
+	{"America/Guadeloupe",158,-240},
+	{"America/Guatemala",159,-360},
+	{"America/Guayaquil",197,-300},
+	{"America/Guyana",199,-240},
+	{"America/Halifax",120,-240},
+	{"America/Havana",153,-300},
+	{"America/Hermosillo",143,-420},
+	{"America/Indiana/Indianapolis",1647,-300},
+	{"America/Indiana/Knox",113,-360},
+	{"America/Indiana/Marengo",112,-300},
+	{"America/Indiana/Petersburg",210,-300},
+	{"America/Indiana/Tell_City",94,-360},
+	{"America/Indiana/Vevay",114,-300},
+	{"America/Indiana/Vincennes",209,-300},
+	{"America/Indiana/Winamac",218,-300},
+	{"America/Indianapolis",111,-300},
+	{"America/Inuvik",137,-420},
+	{"America/Iqaluit",133,-300},
+	{"America/Jamaica",162,-300},
+	{"America/Jujuy",178,-180},
+	{"America/Juneau",104,-540},
+	{"America/Kentucky/Louisville",627,-300},
+	{"America/Kentucky/Monticello",91,-300},
+	{"America/Knox_IN",625,-360},
+	{"America/La_Paz",182,-240},
+	{"America/Lima",201,-300},
+	{"America/Los_Angeles",103,-480},
+	{"America/Louisville",115,-300},
+	{"America/Maceio",187,-180},
+	{"America/Managua",165,-360},
+	{"America/Manaus",192,-240},
+	{"America/Marigot",670,-240},
+	{"America/Martinique",163,-240},
+	{"America/Mazatlan",144,-420},
+	{"America/Mendoza",180,-180},
+	{"America/Menominee",117,-360},
+	{"America/Merida",226,-360},
+	{"America/Mexico_City",141,-360},
+	{"America/Miquelon",170,-180},
+	{"America/Moncton",92,-240},
+	{"America/Monterrey",227,-360},
+	{"America/Montevideo",204,-180},
+	{"America/Montreal",122,-300},
+	{"America/Montserrat",164,-240},
+	{"America/Nassau",148,-300},
+	{"America/New_York",100,-300},
+	{"America/Nipigon",124,-300},
+	{"America/Nome",107,-540},
+	{"America/Noronha",183,-120},
+	{"America/North_Dakota/Center",88,-360},
+	{"America/North_Dakota/New_Salem",89,-360},
+	{"America/Panama",166,-300},
+	{"America/Pangnirtung",132,-300},
+	{"America/Paramaribo",202,-180},
+	{"America/Phoenix",109,-420},
+	{"America/Port-au-Prince",160,-300},
+	{"America/Port_of_Spain",203,-240},
+	{"America/Porto_Acre",193,-300},
+	{"America/Porto_Velho",190,-240},
+	{"America/Puerto_Rico",167,-240},
+	{"America/Rainy_River",125,-360},
+	{"America/Rankin_Inlet",134,-360},
+	{"America/Recife",86,-180},
+	{"America/Regina",127,-360},
+	{"America/Resolute",219,-360},
+	{"America/Rio_Branco",1217,-300},
+	{"America/Rosario",1201,-180},
+	{"America/Santiago",194,-240},
+	{"America/Santo_Domingo",155,-240},
+	{"America/Sao_Paulo",188,-180},
+	{"America/Scoresbysund",206,-60},
+	{"America/Shiprock",1638,-420},
+	{"America/St_Barthelemy",1182,-240},
+	{"America/St_Johns",118,-210},
+	{"America/St_Kitts",168,-240},
+	{"America/St_Lucia",169,-240},
+	{"America/St_Thomas",174,-240},
+	{"America/St_Vincent",171,-240},
+	{"America/Swift_Current",128,-360},
+	{"America/Tegucigalpa",161,-360},
+	{"America/Thule",208,-240},
+	{"America/Thunder_Bay",123,-300},
+	{"America/Tijuana",145,-480},
+	{"America/Toronto",220,-300},
+	{"America/Tortola",173,-240},
+	{"America/Vancouver",130,-480},
+	{"America/Virgin",686,-240},
+	{"America/Whitehorse",138,-480},
+	{"America/Winnipeg",126,-360},
+	{"America/Yakutat",105,-540},
+	{"America/Yellowknife",136,-420},
+	{"Antarctica/Casey",230,480},
+	{"Antarctica/Davis",231,420},
+	{"Antarctica/DumontDUrville",233,600},
+	{"Antarctica/Mawson",232,300},
+	{"Antarctica/McMurdo",236,720},
+	{"Antarctica/Palmer",235,-240},
+	{"Antarctica/South_Pole",748,720},
+	{"Antarctica/Syowa",234,180},
+	{"Arctic/Longyearbyen",909,60},
+	{"Asia/Aden",302,180},
+	{"Asia/Almaty",269,360},
+	{"Asia/Amman",268,120},
+	{"Asia/Anadyr",312,720},
+	{"Asia/Aqtau",271,300},
+	{"Asia/Aqtobe",270,300},
+	{"Asia/Ashgabat",297,300},
+	{"Asia/Ashkhabad",809,300},
+	{"Asia/Baghdad",265,180},
+	{"Asia/Bahrain",243,180},
+	{"Asia/Baku",242,240},
+	{"Asia/Bangkok",296,420},
+	{"Asia/Beirut",277,120},
+	{"Asia/Bishkek",272,360},
+	{"Asia/Brunei",246,480},
+	{"Asia/Calcutta",260,330},
+	{"Asia/Choibalsan",316,480},
+	{"Asia/Chongqing",763,480},
+	{"Asia/Chungking",251,480},
+	{"Asia/Colombo",293,330},
+	{"Asia/Dacca",244,360},
+	{"Asia/Damascus",294,120},
+	{"Asia/Dhaka",756,360},
+	{"Asia/Dili",259,540},
+	{"Asia/Dubai",298,240},
+	{"Asia/Dushanbe",295,300},
+	{"Asia/Gaza",285,120},
+	{"Asia/Harbin",249,480},
+	{"Asia/Ho_Chi_Minh",813,420},
+	{"Asia/Hong_Kong",254,480},
+	{"Asia/Hovd",280,420},
+	{"Asia/Irkutsk",307,480},
+	{"Asia/Istanbul",1431,120},
+	{"Asia/Jakarta",261,420},
+	{"Asia/Jayapura",263,540},
+	{"Asia/Jerusalem",266,120},
+	{"Asia/Kabul",240,270},
+	{"Asia/Kamchatka",311,720},
+	{"Asia/Karachi",284,300},
+	{"Asia/Kashgar",253,360},
+	{"Asia/Kathmandu",797,345},
+	{"Asia/Katmandu",282,345},
+	{"Asia/Kolkata",772,330},
+	{"Asia/Krasnoyarsk",306,420},
+	{"Asia/Kuala_Lumpur",278,480},
+	{"Asia/Kuching",279,480},
+	{"Asia/Kuwait",275,180},
+	{"Asia/Macao",256,480},
+	{"Asia/Macau",768,480},
+	{"Asia/Magadan",310,660},
+	{"Asia/Makassar",774,480},
+	{"Asia/Manila",286,480},
+	{"Asia/Muscat",283,240},
+	{"Asia/Nicosia",257,120},
+	{"Asia/Novosibirsk",305,360},
+	{"Asia/Omsk",304,360},
+	{"Asia/Oral",315,300},
+	{"Asia/Phnom_Penh",248,420},
+	{"Asia/Pontianak",313,420},
+	{"Asia/Pyongyang",274,510},
+	{"Asia/Qatar",287,180},
+	{"Asia/Qyzylorda",314,360},
+	{"Asia/Rangoon",247,390},
+	{"Asia/Riyadh",288,180},
+	{"Asia/Saigon",301,420},
+	{"Asia/Sakhalin",317,660},
+	{"Asia/Samarkand",299,300},
+	{"Asia/Seoul",273,540},
+	{"Asia/Shanghai",250,480},
+	{"Asia/Singapore",292,480},
+	{"Asia/Taipei",255,480},
+	{"Asia/Tashkent",300,300},
+	{"Asia/Tbilisi",258,240},
+	{"Asia/Tehran",264,210},
+	{"Asia/Tel_Aviv",778,120},
+	{"Asia/Thimbu",757,360},
+	{"Asia/Thimphu",245,360},
+	{"Asia/Tokyo",267,540},
+	{"Asia/Ujung_Pandang",262,480},
+	{"Asia/Ulaanbaatar",281,480},
+	{"Asia/Ulan_Bator",793,480},
+	{"Asia/Urumqi",252,360},
+	{"Asia/Vientiane",276,420},
+	{"Asia/Vladivostok",309,600},
+	{"Asia/Yakutsk",308,540},
+	{"Asia/Yekaterinburg",303,300},
+	{"Asia/Yerevan",241,240},
+	{"Atlantic/Azores",336,-60},
+	{"Atlantic/Bermuda",330,-240},
+	{"Atlantic/Canary",338,0},
+	{"Atlantic/Cape_Verde",339,-60},
+	{"Atlantic/Faeroe",845,0},
+	{"Atlantic/Faroe",333,0},
+	{"Atlantic/Jan_Mayen",1421,60},
+	{"Atlantic/Madeira",337,0},
+	{"Atlantic/Reykjavik",334,0},
+	{"Atlantic/South_Georgia",332,-120},
+	{"Atlantic/St_Helena",340,0},
+	{"Atlantic/Stanley",331,-180},
+	{"Australia/ACT",864,600},
+	{"Australia/Adelaide",349,570},
+	{"Australia/Brisbane",347,600},
+	{"Australia/Broken_Hill",353,570},
+	{"Australia/Canberra",1376,600},
+	{"Australia/Currie",355,600},
+	{"Australia/Darwin",345,570},
+	{"Australia/Eucla",356,525},
+	{"Australia/Hobart",350,600},
+	{"Australia/LHI",866,630},
+	{"Australia/Lindeman",348,600},
+	{"Australia/Lord_Howe",354,630},
+	{"Australia/Melbourne",351,600},
+	{"Australia/North",857,570},
+	{"Australia/NSW",1888,600},
+	{"Australia/Perth",346,480},
+	{"Australia/Queensland",859,600},
+	{"Australia/South",861,570},
+	{"Australia/Sydney",352,600},
+	{"Australia/Tasmania",862,600},
+	{"Australia/Victoria",863,600},
+	{"Australia/West",858,480},
+	{"Australia/Yancowinna",865,570},
+	{"Brazil/Acre",705,-300},
+	{"Brazil/DeNoronha",695,-120},
+	{"Brazil/East",700,-180},
+	{"Brazil/West",704,-240},
+	{"Canada/Atlantic",632,-240},
+	{"Canada/Central",638,-360},
+	{"Canada/East-Saskatchewan",639,-360},
+	{"Canada/Eastern",634,-300},
+	{"Canada/Mountain",641,-420},
+	{"Canada/Newfoundland",630,-210},
+	{"Canada/Pacific",642,-480},
+	{"Canada/Saskatchewan",1151,-360},
+	{"Canada/Yukon",650,-480},
+	{"CET",366,60},
+	{"Chile/Continental",706,-240},
+	{"Chile/EasterIsland",963,-360},
+	{"CST",1637,-360},
+	{"CST6CDT",215,-360},
+	{"Cuba",665,-300},
+	{"EET",368,120},
+	{"Egypt",556,120},
+	{"Eire",883,0},
+	{"EST",211,-300},
+	{"EST5EDT",214,-300},
+	{"Etc/GMT",1,0},
+	{"Etc/GMT+0",1025,0},
+	{"Etc/GMT+1",16,-60},
+	{"Etc/GMT+10",25,-600},
+	{"Etc/GMT+11",26,-660},
+	{"Etc/GMT+12",27,-720},
+	{"Etc/GMT+2",17,-120},
+	{"Etc/GMT+3",18,-180},
+	{"Etc/GMT+4",19,-240},
+	{"Etc/GMT+5",20,-300},
+	{"Etc/GMT+6",21,-360},
+	{"Etc/GMT+7",22,-420},
+	{"Etc/GMT+8",23,-480},
+	{"Etc/GMT+9",24,-540},
+	{"Etc/GMT-0",2049,0},
+	{"Etc/GMT-1",15,60},
+	{"Etc/GMT-10",6,600},
+	{"Etc/GMT-11",5,660},
+	{"Etc/GMT-12",4,720},
+	{"Etc/GMT-13",3,780},
+	{"Etc/GMT-14",2,840},
+	{"Etc/GMT-2",14,120},
+	{"Etc/GMT-3",13,180},
+	{"Etc/GMT-4",12,240},
+	{"Etc/GMT-5",11,300},
+	{"Etc/GMT-6",10,360},
+	{"Etc/GMT-7",9,420},
+	{"Etc/GMT-8",8,480},
+	{"Etc/GMT-9",7,540},
+	{"Etc/GMT0",3073,0},
+	{"Etc/Greenwich",4097,0},
+	{"Europe/Amsterdam",396,60},
+	{"Europe/Andorra",373,60},
+	{"Europe/Athens",385,120},
+	{"Europe/Belfast",370,0},
+	{"Europe/Belgrade",412,60},
+	{"Europe/Berlin",383,60},
+	{"Europe/Bratislava",890,60},
+	{"Europe/Brussels",376,60},
+	{"Europe/Bucharest",400,120},
+	{"Europe/Budapest",386,60},
+	{"Europe/Chisinau",393,120},
+	{"Europe/Copenhagen",379,60},
+	{"Europe/Dublin",371,0},
+	{"Europe/Gibraltar",384,60},
+	{"Europe/Guernsey",2417,0},
+	{"Europe/Helsinki",381,120},
+	{"Europe/Isle_of_Man",2929,0},
+	{"Europe/Istanbul",407,120},
+	{"Europe/Jersey",1905,0},
+	{"Europe/Kaliningrad",401,120},
+	{"Europe/Kiev",408,120},
+	{"Europe/Lisbon",399,0},
+	{"Europe/Ljubljana",924,60},
+	{"Europe/London",369,0},
+	{"Europe/Luxembourg",391,60},
+	{"Europe/Madrid",404,60},
+	{"Europe/Malta",392,60},
+	{"Europe/Mariehamn",893,120},
+	{"Europe/Minsk",375,180},
+	{"Europe/Monaco",395,60},
+	{"Europe/Moscow",402,180},
+	{"Europe/Nicosia",769,120},
+	{"Europe/Oslo",397,60},
+	{"Europe/Paris",382,60},
+	{"Europe/Podgorica",2972,60},
+	{"Europe/Prague",378,60},
+	{"Europe/Riga",388,120},
+	{"Europe/Rome",387,60},
+	{"Europe/Samara",403,240},
+	{"Europe/San_Marino",1411,60},
+	{"Europe/Sarajevo",1436,60},
+	{"Europe/Simferopol",411,180},
+	{"Europe/Skopje",1948,60},
+	{"Europe/Sofia",377,120},
+	{"Europe/Stockholm",405,60},
+	{"Europe/Tallinn",380,120},
+	{"Europe/Tirane",372,60},
+	{"Europe/Tiraspol",905,120},
+	{"Europe/Uzhgorod",409,120},
+	{"Europe/Vaduz",389,60},
+	{"Europe/Vatican",899,60},
+	{"Europe/Vienna",374,60},
+	{"Europe/Vilnius",390,120},
+	{"Europe/Volgograd",413,180},
+	{"Europe/Warsaw",398,60},
+	{"Europe/Zagreb",2460,60},
+	{"Europe/Zaporozhye",410,120},
+	{"Europe/Zurich",406,60},
+	{"GB",881,0},
+	{"GB-Eire",1393,0},
+	{"GMT",513,0},
+	{"GMT+0",1537,0},
+	{"GMT-0",2561,0},
+	{"GMT0",3585,0},
+	{"Greenwich",4609,0},
+	{"Hongkong",766,480},
+	{"HST",213,-600},
+	{"Iceland",846,0},
+	{"Indian/Antananarivo",438,180},
+	{"Indian/Chagos",436,360},
+	{"Indian/Christmas",439,420},
+	{"Indian/Cocos",440,390},
+	{"Indian/Comoro",441,180},
+	{"Indian/Kerguelen",435,300},
+	{"Indian/Mahe",442,240},
+	{"Indian/Maldives",437,300},
+	{"Indian/Mauritius",443,240},
+	{"Indian/Mayotte",444,180},
+	{"Indian/Reunion",445,240},
+	{"Iran",776,210},
+	{"Israel",1290,120},
+	{"Jamaica",674,-300},
+	{"Japan",779,540},
+	{"Kwajalein",976,720},
+	{"Libya",568,120},
+	{"MET",367,60},
+	{"Mexico/BajaNorte",1169,-480},
+	{"Mexico/BajaSur",656,-420},
+	{"Mexico/General",653,-360},
+	{"MST",212,-420},
+	{"MST7MDT",216,-420},
+	{"Navajo",614,-420},
+	{"NZ",983,720},
+	{"NZ-CHAT",984,765},
+	{"Pacific/Apia",479,780},
+	{"Pacific/Auckland",471,720},
+	{"Pacific/Chatham",472,765},
+	{"Pacific/Easter",451,-360},
+	{"Pacific/Efate",488,660},
+	{"Pacific/Enderbury",460,780},
+	{"Pacific/Fakaofo",482,780},
+	{"Pacific/Fiji",454,720},
+	{"Pacific/Funafuti",484,720},
+	{"Pacific/Galapagos",452,-360},
+	{"Pacific/Gambier",455,-540},
+	{"Pacific/Guadalcanal",481,660},
+	{"Pacific/Guam",458,600},
+	{"Pacific/Honolulu",450,-600},
+	{"Pacific/Johnston",485,-600},
+	{"Pacific/Kiritimati",461,840},
+	{"Pacific/Kosrae",468,660},
+	{"Pacific/Kwajalein",464,720},
+	{"Pacific/Majuro",463,720},
+	{"Pacific/Marquesas",456,-570},
+	{"Pacific/Midway",486,-660},
+	{"Pacific/Nauru",469,720},
+	{"Pacific/Niue",473,-660},
+	{"Pacific/Norfolk",474,660},
+	{"Pacific/Noumea",470,660},
+	{"Pacific/Pago_Pago",478,-660},
+	{"Pacific/Palau",475,540},
+	{"Pacific/Pitcairn",477,-480},
+	{"Pacific/Ponape",467,660},
+	{"Pacific/Port_Moresby",476,600},
+	{"Pacific/Rarotonga",453,-600},
+	{"Pacific/Saipan",462,600},
+	{"Pacific/Samoa",1502,-660},
+	{"Pacific/Tahiti",457,-600},
+	{"Pacific/Tarawa",459,720},
+	{"Pacific/Tongatapu",483,780},
+	{"Pacific/Truk",466,600},
+	{"Pacific/Wake",487,720},
+	{"Pacific/Wallis",489,720},
+	{"Pacific/Yap",978,600},
+	{"Poland",910,60},
+	{"Portugal",911,0},
+	{"PRC",762,480},
+	{"PST",2151,-480},
+	{"PST8PDT",217,-480},
+	{"ROC",767,480},
+	{"ROK",785,540},
+	{"Singapore",804,480},
+	{"Turkey",919,120},
+	{"US/Alaska",618,-540},
+	{"US/Aleutian",1132,-600},
+	{"US/Arizona",621,-420},
+	{"US/Central",613,-360},
+	{"US/East-Indiana",1135,-300},
+	{"US/Eastern",612,-300},
+	{"US/Hawaii",962,-600},
+	{"US/Indiana-Starke",1137,-360},
+	{"US/Michigan",628,-300},
+	{"US/Mountain",1126,-420},
+	{"US/Pacific",615,-480},
+	{"US/Pacific-New",1639,-480},
+	{"US/Samoa",990,-660},
+	{"UTC",5121,0},
+	{"W-SU",914,180},
+	{"WET",365,0},
+};
+
+#define TIMEZONE_REGION_COUNT \
+	(sizeof(timezoneregions)/sizeof(oracletimezoneregion))
+
+// the longest name in timezoneregions, plus room for the terminator
+#define MAX_TIMEZONE_REGION_NAME	33
+
+// the region named by the size bytes at name, ignoring case, or NULL if
+// there's no such region
+static const oracletimezoneregion *findTimeZoneRegion(const char *name,
+							uint64_t size) {
+
+	if (!size || size>=MAX_TIMEZONE_REGION_NAME) {
+		return NULL;
+	}
+	char	buffer[MAX_TIMEZONE_REGION_NAME];
+	bytestring::copy(buffer,name,size);
+	buffer[size]='\0';
+
+	// binary search
+	uint32_t	low=0;
+	uint32_t	high=TIMEZONE_REGION_COUNT;
+	while (low<high) {
+		uint32_t	middle=low+(high-low)/2;
+		int32_t		result=charstring::compareIgnoringCase(buffer,
+						timezoneregions[middle].name);
+		if (!result) {
+			return &(timezoneregions[middle]);
+		}
+		if (result<0) {
+			high=middle;
+		} else {
+			low=middle+1;
+		}
+	}
+	return NULL;
+}
+
 bool sqlrprotocol_oracle::putTimestampField(const char *field,
 						uint64_t fieldsize,
-						bool withtimezone) {
+						bool withtimezone,
+						bool localtimezone) {
 
 	debugStart("timestamp field");
 	debugWrite("input: %.*s",(int)fieldsize,field);
@@ -18193,6 +18815,34 @@ bool sqlrprotocol_oracle::putTimestampField(const char *field,
 	//
 	//	2005-05-05 05:05:05
 	//		-> 07 78 69 05 05 06 06 06
+	//
+	// a timestamp with time zone in a named region goes out with the
+	// region's id in place of the offset - see timezoneregions.  the
+	// backend hands it over as the offset and then the region's name, and
+	// a value with no region may repeat the offset there instead.  the
+	// local form marks the id as local, and as daylight saving time when
+	// the offset is past the region's standard one.  captured from a live
+	// 12.2 server, in the local form and then in the utc form:
+	//
+	//	2024-07-01 12:00:00 -04:00 US/EASTERN
+	//		-> 0d 78 7c 07 01 0d 01 01 00 00 00 00 89 93
+	//	2024-01-15 12:00:00 -05:00 US/EASTERN
+	//		-> 0d 78 7c 01 0f 0d 01 01 00 00 00 00 89 91
+	//	2024-07-01 12:00:00 -04:00 US/EASTERN
+	//		-> 0d 78 7c 07 01 11 01 01 00 00 00 00 89 90
+	//
+	// OCI only reads the daylight saving time flag to tell apart the two
+	// readings of a repeated hour.  a region that isn't in the table goes
+	// out as its offset.
+	//
+	// a timestamp with local time zone goes out as a plain timestamp's
+	// bytes, in utc, with no zone bytes, in either form.  the backend
+	// hands it over with an offset, which is shifted out:
+	//
+	//	2024-07-01 12:00:00.5 -04:00
+	//		-> 0b 78 7c 07 01 11 01 01 1d cd 65 00
+	//	2024-07-01 12:00:00 -04:00
+	//		-> 07 78 7c 07 01 11 01 01
 	const char	*f=field;
 	const char	*end=field+fieldsize;
 
@@ -18303,18 +18953,19 @@ bool sqlrprotocol_oracle::putTimestampField(const char *field,
 
 	int16_t	tzhour=0;
 	int16_t	tzminute=0;
+	const oracletimezoneregion	*region=NULL;
 
-	if (withtimezone) {
+	if (withtimezone || localtimezone) {
 
 		while (f<end && *f==' ') {
 			f++;
 		}
 
 		// oracle prints a fixed offset as a sign and an hours:minutes
-		// pair, but a named region as its name - and a region only
-		// goes on the wire as an id out of oracle's own time zone
-		// table, which the module has no copy of
-		bool	tznegative=false;
+		// pair, but a named region as its name, so a region with no
+		// offset in front of it can't be placed in time
+		const char	*offsetstart=f;
+		bool		tznegative=false;
 		if (f<end && (*f=='+' || *f=='-')) {
 			tznegative=(*f=='-');
 			f++;
@@ -18351,6 +19002,31 @@ bool sqlrprotocol_oracle::putTimestampField(const char *field,
 				-(int32_t)offsethours:(int32_t)offsethours);
 		tzminute=(int16_t)((tznegative)?
 				-(int32_t)offsetminutes:(int32_t)offsetminutes);
+		uint64_t	offsetsize=(uint64_t)(f-offsetstart);
+
+		// the region, or the offset again
+		while (f<end && *f==' ') {
+			f++;
+		}
+		const char	*regionstart=f;
+		while (f<end && *f!=' ') {
+			f++;
+		}
+		uint64_t	regionsize=(uint64_t)(f-regionstart);
+		if (regionsize && (*regionstart=='+' || *regionstart=='-')) {
+			if (regionsize!=offsetsize ||
+				bytestring::compare(regionstart,offsetstart,
+								offsetsize)) {
+				debugWrite("second offset differs");
+				debugEnd();
+				return false;
+			}
+		} else if (regionsize) {
+			region=findTimeZoneRegion(regionstart,regionsize);
+			debugWrite("time zone region: %.*s (%s)",
+					(int)regionsize,regionstart,
+					(region)?"found":"not found");
+		}
 	}
 
 	while (f<end && *f==' ') {
@@ -18372,7 +19048,7 @@ bool sqlrprotocol_oracle::putTimestampField(const char *field,
 	bytestring::zero(out,sizeof(out));
 
 	// shift to utc, unless the session takes local time
-	if (withtimezone && !localdatetimes) {
+	if (localtimezone || (withtimezone && !localdatetimes)) {
 		int32_t	utcminutes=(int32_t)(hours*60+minutes)-
 					((int32_t)tzhour*60+(int32_t)tzminute);
 		if (utcminutes<0) {
@@ -18396,7 +19072,25 @@ bool sqlrprotocol_oracle::putTimestampField(const char *field,
 
 	debugWrite("nanoseconds: %d",nanoseconds);
 
-	if (withtimezone) {
+	if (withtimezone && region) {
+		out[11]=(byte_t)(ORACLE_TZ_REGION|
+				(region->id>>ORACLE_TZ_REGION_ID_SHIFT));
+		out[12]=(byte_t)((region->id&
+				((1<<ORACLE_TZ_REGION_ID_SHIFT)-1))<<
+				(8-ORACLE_TZ_REGION_ID_SHIFT));
+		bool	dst=false;
+		if (localdatetimes) {
+			out[12]|=ORACLE_TZ_REGION_LOCAL;
+			dst=((int32_t)tzhour*60+(int32_t)tzminute>
+						region->standardoffset);
+			if (dst) {
+				out[12]|=ORACLE_TZ_REGION_DST;
+			}
+		}
+		debugWrite("time zone region: %d (%s%s)",region->id,
+				(localdatetimes)?"local":"utc",
+				(dst)?", dst":"");
+	} else if (withtimezone) {
 		out[11]=(byte_t)(tzhour+((localdatetimes)?
 						ORACLE_TZ_LOCAL_HOUR_BIAS:
 						ORACLE_TZ_HOUR_BIAS));

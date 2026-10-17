@@ -2683,6 +2683,138 @@ missing bytes silently.
                                       [0019] re-execute (TTI 0x4e) with
                                       just the new value (#10562)
 
+    10563-dev-oci23-native-tsltz-realserver-oracle102.oraproxy
+                                     an OCI 23.26 OCI8 client (a scratch
+                                      program) against the real 10.2 server,
+                                      through oraproxy with
+                                      ORAPROXY_UNIVERSAL_REPS=1.  One select
+                                      from dual, one row: casts to TIMESTAMP
+                                      WITH LOCAL TIME ZONE (no precision,
+                                      with a .5 fraction, precision 0 and
+                                      precision 3) and two plain TIMESTAMPs,
+                                      from a session at -04:00 (the client
+                                      sends ALTER SESSION SET TIME_ZONE at
+                                      login).  [0018] holds the describe,
+                                      with the local time zone columns as e7
+                                      00 00 01 06 01 0b (size 11, scale 6),
+                                      e7 00 00 00 01 07 (precision 0, size
+                                      7) and e7 00 00 01 03 01 0b, and the
+                                      row.  A local time zone value is
+                                      always UTC with no zone bytes:
+                                      2024-07-01 12:00:00 -04:00 is 7 bytes,
+                                      78 7c 07 01 11 01 01 (16:00), and the
+                                      one with a fraction is 11, the same 7
+                                      and 1d cd 65 00.  The precision 0 and
+                                      3 columns follow the value, not the
+                                      precision: 7 bytes without a fraction
+                                      and 11 with.  2024-01-15 12:00:00
+                                      -05:00 is 78 7c 01 0f 12 01 01
+                                      (17:00).  The plain timestamps next to
+                                      them are wall time, 78 7c 07 01 0d 01
+                                      01 (#10563)
+
+    10563-dev-oci23-native-tsltz-tzv45-realserver-oracle122.oraproxy
+                                     the same program and statements against
+                                      the real 12.2 server, with OCI 23.26's
+                                      own time zone file, version 45.  Both
+                                      sides use the local form for a
+                                      timestamp with time zone (see the
+                                      10562 capture of the same name), but a
+                                      timestamp with local time zone is
+                                      unchanged: the same 7 and 11 byte UTC
+                                      values, with no zone bytes.  The
+                                      describe is in OCI's native form (e7
+                                      00 00 06 0b), not the counted one
+                                      (#10563)
+
+    10563-dev-oci23-native-tstzregions-tzv45-realserver-oracle122.oraproxy
+                                     an OCI 23.26 OCI8 client against the
+                                      real 12.2 server, version 45 time zone
+                                      file, for timestamps with time zone
+                                      that name a region.  One select from
+                                      dual of nine literals: US/Eastern at
+                                      2024-07-01 12:00 and 2024-01-15 12:00,
+                                      2024-11-03 01:30 US/Eastern EDT and
+                                      EST (the hour that happens twice),
+                                      00:30 and 02:30 that day, 2024-03-10
+                                      01:30 and 03:30, and 2024-07-01 12:00
+                                      -04:00.  The describe has every column
+                                      as b5 00 00 09 01 (size 1, like any
+                                      timestamp with time zone).  [0016]
+                                      holds the rows in the local form, 13
+                                      bytes each: the wall time (78 7c 07 01
+                                      0d 01 01 is 12:00:00), 4 zero fraction
+                                      bytes and 2 zone bytes.  US/Eastern is
+                                      89 93 in summer and 89 91 in winter:
+                                      89 is the region and 0x01 in the
+                                      second byte marks local time and 0x02
+                                      daylight saving.  So 01:30 EDT is 89
+                                      93, 01:30 EST is 89 91, 00:30 is 89
+                                      93, 02:30 is 89 91, March 10 01:30 is
+                                      89 91 and 03:30 is 89 93.  The offset
+                                      literal is 50 3c (-04:00, the hour
+                                      biased by 84).  Only the zone bytes
+                                      tell the two 01:30s apart (#10563)
+
+    10563-dev-oci23-native-tstzregions-tzv26-realserver-oracle122.oraproxy
+                                     the same select against the real 12.2
+                                      server with ORA_TZFILE pointing at a
+                                      copy of the server's own
+                                      timezlrg_26.dat, so both sides use the
+                                      UTC form.  The rows are UTC, with 89
+                                      90 for every US/Eastern value (no
+                                      local flag and no daylight saving
+                                      flag): 2024-07-01 12:00 is 78 7c 07 01
+                                      11 01 01 (16:00), 01:30 EDT on
+                                      2024-11-03 is 05:30, 01:30 EST is
+                                      06:30, and the offset literal is 10 3c
+                                      (the hour biased by 20) (#10563)
+
+    10563-dev-oci23-native-tstzdst-tzv45-realserver-oracle122.oraproxy
+                                     the same program with other regions,
+                                      version 45 time zone file:
+                                      Australia/Sydney, Europe/Dublin and
+                                      Europe/London at 2024-01-15 and
+                                      2024-07-15 12:00, and Sydney at
+                                      2024-04-07 02:30 AEDT and AEST (the
+                                      hour that happens twice there).  The
+                                      local form's daylight saving flag
+                                      follows each region's own summer:
+                                      Sydney is 85 83 in January and 85 81
+                                      in July, London 85 c5 and 85 c7,
+                                      Dublin 85 cd and 85 cf (winter is
+                                      standard time there too), and the two
+                                      Sydney 02:30s are 85 83 and 85 81
+                                      (#10563)
+
+    10563-dev-oci23-native-tstzregions-tzv45-dstflipped-realserver-oracle122.oraproxy
+    10563-dev-oci23-native-tstzregions-tzv45-dstflippedoverlap-realserver-oracle122.oraproxy
+    10563-dev-oci23-native-tstzregions-tzv45-gap-realserver-oracle122.oraproxy
+    10563-dev-oci23-native-tstzregions-tzv45-nolocalbit-realserver-oracle122.oraproxy
+                                     the tzv45 regions run again through
+                                      scratch copies of oraproxy that
+                                      rewrote bytes in the row the server
+                                      sent (the captures hold the rewritten
+                                      bytes), to see what OCI does with
+                                      them.  dstflipped swaps the daylight
+                                      saving flag (89 93 and 89 91 trade
+                                      places) in every value except the two
+                                      01:30s: OCI ignores the flag outside
+                                      the repeated hour.  dstflippedoverlap
+                                      sets both 01:30s to 89 91: OCI uses
+                                      the flag in the repeated hour, so the
+                                      EDT one is read as EST.  gap rewrites
+                                      the two 2024-03-10 values to 02:30,
+                                      which does not exist in US/Eastern (03
+                                      0a 03 1f): OCI fails them with
+                                      ORA-01878.  nolocalbit rewrites the
+                                      first value from 89 93 to 89 90,
+                                      clearing the local flag: OCI fails
+                                      with ORA-01891.  So the module has to
+                                      set 0x01 on every local form value,
+                                      and 0x02 right in the repeated hour
+                                      (#10563)
+
     10564-dev-oci23-native-earlydates-realserver-oracle102.oraproxy
                                      an OCI 23.26 OCI8 client (a scratch
                                       program defining TIMESTAMP WITH

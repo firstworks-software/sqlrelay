@@ -219,6 +219,31 @@ static void assertColumn(OCIStmt *stmt, ub4 pos, const char *name,
 	OCIDescriptorFree(param,OCI_DTYPE_PARAM);
 }
 
+// format a datetime descriptor as text, leaving the buffer empty if the
+// conversion fails
+static void dateTimeText(OCIDateTime *dt, const char *format,
+				char *buffer, ub4 buffersize) {
+	bytestring::zero(buffer,buffersize);
+	ub4	size=buffersize-1;
+	if (OCIDateTimeToText(session,err,dt,
+				(const OraText *)format,
+				charstring::getLength(format),6,
+				NULL,0,&size,(OraText *)buffer)!=OCI_SUCCESS) {
+		bytestring::zero(buffer,buffersize);
+	}
+}
+
+// the order of two datetime descriptors, as -1, 0 or 1, or 2 if they
+// can't be compared
+static int compareDateTimes(OCIDateTime *first, OCIDateTime *second) {
+	sword	result=0;
+	if (OCIDateTimeCompare(session,err,first,second,&result)!=
+								OCI_SUCCESS) {
+		return 2;
+	}
+	return (int)result;
+}
+
 int main(int argc, char **argv) {
 
 	// pass "native" to test a real oracle instance instead of
@@ -2404,9 +2429,7 @@ int main(int argc, char **argv) {
 	stdoutput.printf("\n\n");
 
 
-	// a timestamp(0) with local time zone describes 7 bytes wide too.  its
-	// values aren't checked here, since the module still sends those as
-	// text
+	// a timestamp(0) with local time zone describes 7 bytes wide too
 	stdoutput.printf("timestamp(0) with local time zone - describe\n");
 	const char	*ltz0query=
 		"select cast(timestamp '2005-05-05 05:05:05' "
@@ -2425,6 +2448,312 @@ int main(int argc, char **argv) {
 	stdoutput.printf("\n\n");
 
 
+	// a timestamp with local time zone is sent in utc, with no zone of
+	// its own, and OCI converts it to the session's time zone.  the
+	// session's time zone depends on the host, so each value is checked
+	// by comparing it to a converted timestamp with time zone at the same
+	// instant, and by its fraction, which a time zone doesn't change.  a
+	// value with no fraction goes out 7 bytes long, one with a fraction 11
+	stdoutput.printf("timestamp with local time zone - values\n");
+	struct ltzvalue {
+		int		year;
+		int		month;
+		int		day;
+		int		hour;
+		int		minute;
+		int		second;
+		int		fsecond;
+		const char	*tz;
+	};
+	const ltzvalue	ltzvalues[]={
+		{2024,7,1,12,0,0,0,"-04:00"},
+		{2024,1,15,12,0,0,500000000,"-05:00"},
+		{2024,12,31,23,30,0,123456000,"-05:00"},
+		{2024,7,1,12,0,0,0,"+05:30"}
+	};
+	const int	ltzcount=sizeof(ltzvalues)/sizeof(ltzvalue);
+	const char	*ltzquery=
+		"select * from ("
+		"select 1 n,"
+		"cast(timestamp '2024-07-01 12:00:00 -04:00' "
+			"as timestamp with local time zone) ltz,"
+		"cast(timestamp '2024-07-01 12:00:00 -04:00' "
+			"as timestamp(0) with local time zone) ltz0 from dual "
+		"union all "
+		"select 2,"
+		"cast(timestamp '2024-01-15 12:00:00.5 -05:00' "
+			"as timestamp with local time zone),"
+		"cast(timestamp '2024-01-15 12:00:00.5 -05:00' "
+			"as timestamp(3) with local time zone) from dual "
+		"union all "
+		"select 3,"
+		"cast(timestamp '2024-12-31 23:30:00.123456 -05:00' "
+			"as timestamp with local time zone),"
+		"cast(timestamp '2024-12-31 23:30:00.123456 -05:00' "
+			"as timestamp(6) with local time zone) from dual "
+		"union all "
+		"select 4,"
+		"cast(timestamp '2024-07-01 12:00:00 +05:30' "
+			"as timestamp with local time zone),"
+		"cast(timestamp '2024-07-01 12:00:00 +05:30' "
+			"as timestamp(0) with local time zone) from dual "
+		"union all "
+		"select 5,"
+		"cast(null as timestamp with local time zone),"
+		"cast(null as timestamp(0) with local time zone) from dual"
+		") order by n";
+	OCIStmt	*ltzstmt=NULL;
+	assertEquals(
+		OCIHandleAlloc(env,(void **)&ltzstmt,OCI_HTYPE_STMT,0,NULL),
+		OCI_SUCCESS);
+	assertEquals(
+		OCIStmtPrepare(ltzstmt,err,(text *)ltzquery,
+				charstring::getLength(ltzquery),
+				OCI_NTV_SYNTAX,OCI_DEFAULT),
+		OCI_SUCCESS);
+	assertEquals(
+		OCIStmtExecute(svc,ltzstmt,err,0,0,NULL,NULL,OCI_DEFAULT),
+		OCI_SUCCESS);
+	assertColumn(ltzstmt,2,"LTZ",SQLT_TIMESTAMP_LTZ,11,0,6);
+	OCIDefine	*ltzdef[3];
+	sb2		ltzind[3];
+	sb4		ltzn=0;
+	OCIDateTime	*ltz=NULL;
+	OCIDateTime	*ltz0=NULL;
+	OCIDateTime	*ltzexpected=NULL;
+	OCIDateTime	*ltzexpectedltz=NULL;
+	bytestring::zero(ltzdef,sizeof(ltzdef));
+	bytestring::zero(ltzind,sizeof(ltzind));
+	assertEquals(
+		OCIDescriptorAlloc(env,(void **)&ltz,
+					OCI_DTYPE_TIMESTAMP_LTZ,0,NULL),
+		OCI_SUCCESS);
+	assertEquals(
+		OCIDescriptorAlloc(env,(void **)&ltz0,
+					OCI_DTYPE_TIMESTAMP_LTZ,0,NULL),
+		OCI_SUCCESS);
+	assertEquals(
+		OCIDescriptorAlloc(env,(void **)&ltzexpected,
+					OCI_DTYPE_TIMESTAMP_TZ,0,NULL),
+		OCI_SUCCESS);
+	assertEquals(
+		OCIDescriptorAlloc(env,(void **)&ltzexpectedltz,
+					OCI_DTYPE_TIMESTAMP_LTZ,0,NULL),
+		OCI_SUCCESS);
+	assertEquals(
+		OCIDefineByPos(ltzstmt,&ltzdef[0],err,1,
+				&ltzn,sizeof(ltzn),SQLT_INT,
+				&ltzind[0],NULL,NULL,OCI_DEFAULT),
+		OCI_SUCCESS);
+	assertEquals(
+		OCIDefineByPos(ltzstmt,&ltzdef[1],err,2,
+				&ltz,0,SQLT_TIMESTAMP_LTZ,
+				&ltzind[1],NULL,NULL,OCI_DEFAULT),
+		OCI_SUCCESS);
+	assertEquals(
+		OCIDefineByPos(ltzstmt,&ltzdef[2],err,3,
+				&ltz0,0,SQLT_TIMESTAMP_LTZ,
+				&ltzind[2],NULL,NULL,OCI_DEFAULT),
+		OCI_SUCCESS);
+	for (int i=0; i<ltzcount+1; i++) {
+
+		assertEquals(
+			OCIStmtFetch2(ltzstmt,err,1,OCI_FETCH_NEXT,
+							0,OCI_DEFAULT),
+			OCI_SUCCESS);
+		assertEquals((int)ltzn,i+1);
+
+		// the last row is null
+		if (i==ltzcount) {
+			assertEquals((int)ltzind[1],OCI_IND_NULL);
+			assertEquals((int)ltzind[2],OCI_IND_NULL);
+			continue;
+		}
+		assertEquals((int)ltzind[1],OCI_IND_NOTNULL);
+		assertEquals((int)ltzind[2],OCI_IND_NOTNULL);
+
+		const ltzvalue	*v=&ltzvalues[i];
+		assertEquals(
+			OCIDateTimeConstruct(env,err,ltzexpected,
+					v->year,v->month,v->day,
+					v->hour,v->minute,v->second,
+					v->fsecond,(OraText *)v->tz,
+					charstring::getLength(v->tz)),
+			OCI_SUCCESS);
+		assertEquals(
+			OCIDateTimeConvert(session,err,
+					ltzexpected,ltzexpectedltz),
+			OCI_SUCCESS);
+
+		// same instant and same fraction, with and without precision
+		ub1	hour=0;
+		ub1	minute=0;
+		ub1	second=0;
+		ub4	fsecond=1;
+		assertEquals(compareDateTimes(ltz,ltzexpectedltz),0);
+		assertEquals(
+			OCIDateTimeGetTime(env,err,ltz,
+					&hour,&minute,&second,&fsecond),
+			OCI_SUCCESS);
+		assertEquals((int)fsecond,v->fsecond);
+		assertEquals(compareDateTimes(ltz0,ltzexpectedltz),0);
+		fsecond=1;
+		assertEquals(
+			OCIDateTimeGetTime(env,err,ltz0,
+					&hour,&minute,&second,&fsecond),
+			OCI_SUCCESS);
+		assertEquals((int)fsecond,v->fsecond);
+	}
+	assertEquals(
+		OCIStmtFetch2(ltzstmt,err,1,OCI_FETCH_NEXT,0,OCI_DEFAULT),
+		OCI_NO_DATA);
+	assertEquals(
+		OCIDescriptorFree(ltz,OCI_DTYPE_TIMESTAMP_LTZ),OCI_SUCCESS);
+	assertEquals(
+		OCIDescriptorFree(ltz0,OCI_DTYPE_TIMESTAMP_LTZ),OCI_SUCCESS);
+	assertEquals(
+		OCIDescriptorFree(ltzexpected,OCI_DTYPE_TIMESTAMP_TZ),
+		OCI_SUCCESS);
+	assertEquals(
+		OCIDescriptorFree(ltzexpectedltz,OCI_DTYPE_TIMESTAMP_LTZ),
+		OCI_SUCCESS);
+	assertEquals(OCIHandleFree(ltzstmt,OCI_HTYPE_STMT),OCI_SUCCESS);
+	stdoutput.printf("\n\n");
+
+
+	// a timestamp with time zone that names a region rather than an
+	// offset goes out as the region, and OCI works out the offset from
+	// its own time zone file.  the wall time is checked, and the text with
+	// TZR and TZD (the daylight saving abbreviation), which tells the
+	// offset.  the 1:30 am on 2024-11-03 in US/Eastern happens twice, and
+	// only the EDT or EST in the literal says which.  The calls that
+	// give the offset, the zone name or a comparison aren't used, since
+	// OCI gives ORA-01805 for them on a value from a real server
+	stdoutput.printf("timestamp with time zone - regions\n");
+	struct regionvalue {
+		const char	*literal;
+		const char	*text;
+		int		year;
+		int		month;
+		int		day;
+		int		hour;
+		int		minute;
+	};
+	const regionvalue	regionvalues[]={
+		{"2024-07-01 12:00:00 US/Eastern",
+			"2024-07-01 12:00:00 US/EASTERN EDT",
+			2024,7,1,12,0},
+		{"2024-01-15 12:00:00 US/Eastern",
+			"2024-01-15 12:00:00 US/EASTERN EST",
+			2024,1,15,12,0},
+		{"2024-11-03 01:30:00 US/Eastern EDT",
+			"2024-11-03 01:30:00 US/EASTERN EDT",
+			2024,11,3,1,30},
+		{"2024-11-03 01:30:00 US/Eastern EST",
+			"2024-11-03 01:30:00 US/EASTERN EST",
+			2024,11,3,1,30},
+		{"2024-07-01 12:00:00 Asia/Calcutta",
+			"2024-07-01 12:00:00 ASIA/CALCUTTA IST",
+			2024,7,1,12,0},
+		{"2024-07-01 12:00:00 UTC",
+			"2024-07-01 12:00:00 UTC GMT",
+			2024,7,1,12,0},
+		{"2024-07-01 12:00:00 Europe/London",
+			"2024-07-01 12:00:00 EUROPE/LONDON BST",
+			2024,7,1,12,0},
+		{"2024-01-15 12:00:00 Europe/London",
+			"2024-01-15 12:00:00 EUROPE/LONDON GMT",
+			2024,1,15,12,0}
+	};
+	const int	regioncount=sizeof(regionvalues)/sizeof(regionvalue);
+	char		regionquery[2048];
+	charstring::copy(regionquery,"select ");
+	for (int i=0; i<regioncount; i++) {
+		if (i) {
+			charstring::append(regionquery,", ");
+		}
+		charstring::append(regionquery,"timestamp '");
+		charstring::append(regionquery,regionvalues[i].literal);
+		charstring::append(regionquery,"'");
+	}
+	charstring::append(regionquery," from dual");
+	OCIStmt	*regionstmt=NULL;
+	assertEquals(
+		OCIHandleAlloc(env,(void **)&regionstmt,
+					OCI_HTYPE_STMT,0,NULL),
+		OCI_SUCCESS);
+	assertEquals(
+		OCIStmtPrepare(regionstmt,err,(text *)regionquery,
+				charstring::getLength(regionquery),
+				OCI_NTV_SYNTAX,OCI_DEFAULT),
+		OCI_SUCCESS);
+	assertEquals(
+		OCIStmtExecute(svc,regionstmt,err,0,0,NULL,NULL,OCI_DEFAULT),
+		OCI_SUCCESS);
+	OCIDefine	*regiondef[16];
+	sb2		regionind[16];
+	OCIDateTime	*regiondt[16];
+	bytestring::zero(regiondef,sizeof(regiondef));
+	bytestring::zero(regionind,sizeof(regionind));
+	bytestring::zero(regiondt,sizeof(regiondt));
+	for (int i=0; i<regioncount; i++) {
+		assertEquals(
+			OCIDescriptorAlloc(env,(void **)&regiondt[i],
+						OCI_DTYPE_TIMESTAMP_TZ,0,NULL),
+			OCI_SUCCESS);
+		assertEquals(
+			OCIDefineByPos(regionstmt,&regiondef[i],err,i+1,
+					&regiondt[i],0,SQLT_TIMESTAMP_TZ,
+					&regionind[i],NULL,NULL,OCI_DEFAULT),
+			OCI_SUCCESS);
+	}
+	assertEquals(
+		OCIStmtFetch2(regionstmt,err,1,OCI_FETCH_NEXT,0,OCI_DEFAULT),
+		OCI_SUCCESS);
+	char	regiontext[128];
+	for (int i=0; i<regioncount; i++) {
+
+		const regionvalue	*v=&regionvalues[i];
+		assertEquals((int)regionind[i],OCI_IND_NOTNULL);
+
+		// wall time in the value's own zone
+		sb2	year=0;
+		ub1	month=0;
+		ub1	day=0;
+		ub1	hour=0;
+		ub1	minute=0;
+		ub1	second=0;
+		ub4	fsecond=1;
+		assertEquals(
+			OCIDateTimeGetDate(env,err,regiondt[i],
+						&year,&month,&day),
+			OCI_SUCCESS);
+		assertEquals(
+			OCIDateTimeGetTime(env,err,regiondt[i],
+					&hour,&minute,&second,&fsecond),
+			OCI_SUCCESS);
+		assertEquals((int)year,v->year);
+		assertEquals((int)month,v->month);
+		assertEquals((int)day,v->day);
+		assertEquals((int)hour,v->hour);
+		assertEquals((int)minute,v->minute);
+		assertEquals((int)second,0);
+		assertEquals((int)fsecond,0);
+
+		// region and daylight saving abbreviation
+		dateTimeText(regiondt[i],"YYYY-MM-DD HH24:MI:SS TZR TZD",
+					regiontext,sizeof(regiontext));
+		assertEquals((const char *)regiontext,v->text);
+	}
+	for (int i=0; i<regioncount; i++) {
+		assertEquals(
+			OCIDescriptorFree(regiondt[i],OCI_DTYPE_TIMESTAMP_TZ),
+			OCI_SUCCESS);
+	}
+	assertEquals(OCIHandleFree(regionstmt,OCI_HTYPE_STMT),OCI_SUCCESS);
+	stdoutput.printf("\n\n");
+
+
 
 	stdoutput.printf("\n=========== Datetime binds ===========\n\n");
 
@@ -2432,9 +2761,8 @@ int main(int argc, char **argv) {
 	// and ORA-03113, since OCI sends the descriptor's scale in counted form.
 	// past that, the module kept only the 7 date bytes of the value,
 	// dropping the fraction and the time zone.  the stored values are
-	// checked with to_char.  the module still sends a timestamp with local
-	// time zone as text, so that column is only read through to_char, at
-	// +00:00.
+	// checked with to_char.  the timestamp with local time zone column is
+	// read through to_char at +00:00, since its time zone is the session's.
 	struct dtbindvalue {
 		int		year;
 		int		month;

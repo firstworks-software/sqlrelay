@@ -20,17 +20,17 @@ http://www.gnu.org/software/src-highlite -->
 </blockquote>
 <p>DATE columns are then returned in that format.  How dates in queries are parsed is unaffected.  Use a numeric, fixed-width format, with only /, -, . and : as delimiters, like the one above, or the date may not be parsed correctly.</p>
 
-<p>TIMESTAMP columns have the same problem in a different form.  An Oracle back-end's default timestamp formats usually have a 2-digit year, so a year outside of 1950-2049 comes back in the wrong century.  To keep the century, also set the <i>timestamp_to_text_format</i> parameter (for TIMESTAMP and TIMESTAMP WITH LOCAL TIME ZONE columns) and the <i>timestamp_tz_to_text_format</i> parameter (for TIMESTAMP WITH TIME ZONE columns), for example:</p>
+<p>TIMESTAMP columns have the same problem in a different form.  An Oracle back-end's default timestamp formats usually have a 2-digit year, so a year outside of 1950-2049 comes back in the wrong century.  To keep the century, also set the <i>timestamp_to_text_format</i> parameter (for TIMESTAMP and TIMESTAMP WITH LOCAL TIME ZONE columns) and the <i>timestamp_tz_to_text_format</i> parameter (for TIMESTAMP WITH TIME ZONE columns, and TIMESTAMP WITH LOCAL TIME ZONE columns too, which are then printed with their offset from UTC), for example:</p>
 
 <blockquote>
 <!-- Generator: GNU source-highlight 3.1.9
 by Lorenzo Bettini
 http://www.lorenzobettini.it
 http://www.gnu.org/software/src-highlite -->
-<pre><tt><font color="#990000">&lt;</font><font color="#008080">connection</font> string<font color="#990000">=</font><font color="#FF0000">"user=exampleuser;password=examplepassword;oracle_sid=ora1;date_to_text_format=YYYY-MM-DD HH24:MI:SS;timestamp_to_text_format=YYYY-MM-DD HH24:MI:SS.FF;timestamp_tz_to_text_format=YYYY-MM-DD HH24:MI:SS.FF TZH:TZM"</font><font color="#990000">/&gt;</font></tt></pre>
+<pre><tt><font color="#990000">&lt;</font><font color="#008080">connection</font> string<font color="#990000">=</font><font color="#FF0000">"user=exampleuser;password=examplepassword;oracle_sid=ora1;date_to_text_format=YYYY-MM-DD HH24:MI:SS;timestamp_to_text_format=YYYY-MM-DD HH24:MI:SS.FF;timestamp_tz_to_text_format=YYYY-MM-DD HH24:MI:SS.FF TZH:TZM TZR"</font><font color="#990000">/&gt;</font></tt></pre>
 
 </blockquote>
-<p>Use YYYY rather than SYYYY, as years BC are not supported.  TIMESTAMP WITH TIME ZONE values must be printed with TZH:TZM.  A value stored with a named time zone region is then sent to the client as its offset from UTC, as the region itself (TZR) can't be encoded.</p>
+<p>Use YYYY rather than SYYYY, as years BC are not supported.  TIMESTAMP WITH TIME ZONE values should be printed with TZH:TZM TZR.  TZH:TZM gives the offset from UTC, which is what the client is sent, and TZR (upper case) gives the time zone region, if the value has one.  TZR on its own is NULL.  A value with a named region is sent to an OCI8 client as the region, if it is one of the 551 names valid for time zone file version 11, and as its offset from UTC otherwise.  A TIMESTAMP WITH LOCAL TIME ZONE value (and a TIMESTAMP WITH TIME ZONE value) is sent as NULL to an OCI8 client unless timestamp_tz_to_text_format is set and includes TZH:TZM, because without an offset in the text the module cannot place the value.</p>
 
 <p>A column with no fractional seconds, like a TIMESTAMP(0), has no digits for FF to print, but Oracle itself still prints the . before it, so its values end in a . (for example 2005-05-05 05:05:05.).  Clients that fetch the column as a timestamp, like most OCI8 clients, never see the text and are unaffected.  Clients that fetch it as text, like OCI7 clients, see the trailing . just as they would from an Oracle server.</p>
 

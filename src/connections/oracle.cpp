@@ -5259,6 +5259,14 @@ bool oraclecursor::executeQueryOrFetchFromBindCursor(const char *query,
 						OCI_DTYPE_TIMESTAMP_TZ;
 					deftype=SQLT_TIMESTAMP_TZ;
 				} else if (
+					oracleconn->timestamptztotextformat &&
+					desc[i].dbtype==TIMESTAMP_LTZ_TYPE) {
+					// oci converts the value to the session
+					// time zone and gives it an offset
+					desc[i].datetimetype=
+						OCI_DTYPE_TIMESTAMP_TZ;
+					deftype=SQLT_TIMESTAMP_TZ;
+				} else if (
 					oracleconn->timestamptotextformat &&
 					desc[i].dbtype==TIMESTAMP_LTZ_TYPE) {
 					desc[i].datetimetype=
