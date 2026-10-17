@@ -40,3 +40,7 @@
 /*.cap
 cli_*.trc
 sqlnet.log
+
+# time zone files copied from an Oracle server for the v11 oci8 run.  see
+# the README
+/timezlrg_*.dat

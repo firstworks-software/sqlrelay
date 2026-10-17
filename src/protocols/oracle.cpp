@@ -2360,7 +2360,9 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_oracle : public sqlrprotocol {
 		uint32_t	clienttzversion;
 
 		// whether a timestamp with time zone goes out as local time
-		// rather than utc.  decided per session in
+		// rather than utc.  true when both sides set
+		// RCAP_TTC_LOCAL_DATETIMES and the client's time zone file
+		// version differs from the server's.  decided per session in
 		// recvDataTypeRequest() and reset by init()
 		bool		localdatetimes;
 
@@ -5660,7 +5662,8 @@ static const byte_t	ttiservercompilecaps[]={
 
 // server runtime capabilities, from the same server
 // (RCAP_TTC is RCAP_TTC_ZERO_COPY plus RCAP_TTC_LOCAL_DATETIMES - see
-// putTimestampField(); RCAP_TTC_32K and RCAP_TTC_SESSION_STATE_OPS are clear
+// putTimestampField(), which uses local form only when the client's time
+// zone file version differs from the server's too; RCAP_TTC_32K and RCAP_TTC_SESSION_STATE_OPS are clear
 // because the module supports neither 32k varchars nor request boundaries)
 static const byte_t	ttiserverruntimecaps[]={
 	0x02, 0x01, 0x00, 0x01, 0x18, 0x00, 0x03
@@ -6319,6 +6322,8 @@ bool sqlrprotocol_oracle::recvDataTypeRequest() {
 	// module's bit only went out if putTti6Response() sent the full
 	// runtime caps array.  a version 5 response sends none, and the 10.2
 	// array, like a real 10.2 server's, is too short to reach RCAP_TTC.
+	// it is cleared below if the client's time zone file version is the
+	// module's.
 	localdatetimes=(ttiversion>=6 &&
 			serverfieldversion!=CCAP_FIELD_VERSION_10_2 &&
 			(ttiserverruntimecaps[RCAP_TTC]&
@@ -6439,6 +6444,14 @@ bool sqlrprotocol_oracle::recvDataTypeRequest() {
 			}
 			readLE(rp,&clientnationalcharset,&rp);
 		}
+	}
+
+	// a client with the module's time zone file version gets utc rather
+	// than local time
+	if (localdatetimes &&
+		clientwantstzversion &&
+		clienttzversion==DB_TIMEZONE_VERSION) {
+		localdatetimes=false;
 	}
 
 	// the client's data type list.  whether this session ends up in
@@ -8066,8 +8079,9 @@ bool sqlrprotocol_oracle::getOracleTimestampBindValue(const byte_t *value,
 
 	// the zone is a region, or else an offset biased one way for local
 	// date and time and another for utc.  the form goes by these bytes
-	// alone - whether a client sends local date and time depends on its
-	// time zone file version as well as RCAP_TTC_LOCAL_DATETIMES
+	// alone - a client sends local date and time only when both sides set
+	// RCAP_TTC_LOCAL_DATETIMES and the client's time zone file version
+	// differs from the server's
 	byte_t	hourbyte=value[ORACLE_TIMESTAMP_SIZE];
 	byte_t	minutebyte=value[ORACLE_TIMESTAMP_SIZE+1];
 	int32_t	offset=0;
@@ -18791,7 +18805,8 @@ bool sqlrprotocol_oracle::putTimestampField(const char *field,
 	// sign in the text and both of its fields go out negative.
 	//
 	// that is the local form, which a server only sends when both sides
-	// set RCAP_TTC_LOCAL_DATETIMES - see recvDataTypeRequest().
+	// set RCAP_TTC_LOCAL_DATETIMES and the client's time zone file
+	// version differs from the server's - see recvDataTypeRequest().
 	// otherwise the date and the time are shifted to utc, with carries,
 	// and the offset's hours are biased by 20 instead.  captured from a
 	// live 10.2 server, whose runtime caps are too short to set the bit:

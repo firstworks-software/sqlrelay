@@ -2961,6 +2961,64 @@ missing bytes silently.
                                       [0024] carries both rows; the fetch
                                       at [0029] gets ORA-01403 (#10570)
 
+    10690-dev-oci23-portable-tstz-tzv11-sqlrelay121.oraproxy
+                                     an OCI 23.26 OCI8 client (a scratch
+                                      program defining TIMESTAMP WITH TIME
+                                      ZONE columns as OCIDateTime) against
+                                      a -buildtree listener at serverversion
+                                      12.1, backed by oracle122, through
+                                      oraproxy, with ORA_TZFILE pointing at
+                                      a timezlrg_11.dat copied from
+                                      oracle122.  One select from dual of
+                                      four values: 2024-07-01 12:00:00
+                                      -04:00, 2024-01-15 12:00:00 +05:30
+                                      and the US/Eastern and Asia/Calcutta
+                                      regions.  The module answers time zone
+                                      file version 11 and so does the
+                                      client, so the row at [0016] is in
+                                      the UTC form: the offsets go out as
+                                      16 3c and 19 5a (the hours biased by
+                                      20, the minutes by 60) and the
+                                      regions as 89 90 and 84 10, after the
+                                      UTC date and time (78 7c 07 01 11 01
+                                      01 for the first).  The same query
+                                      from a client with OCI's own version
+                                      45 file gets the local form, 50 3c,
+                                      59 5a, 89 93 and 84 11, after the
+                                      wall time (78 7c 07 01 0d 01 01).  A
+                                      module that sent the local form to
+                                      the version 11 client would give it
+                                      +60:00 and +69:30 offsets for the
+                                      first two values (#10690)
+
+The v11 time zone file for the oci8 run
+---------------------------------------
+
+test.sh runs oci8 a second time with ORA_TZFILE pointing at
+test/protocol/oracle/timezlrg_11.dat (#10690). The module announces time
+zone file version 11 (DB_TIMEZONE_VERSION in src/protocols/oracle.cpp). A
+client whose file is also version 11 gets timestamps with time zones in
+the UTC form, and one with any other version gets the local form. OCI
+decodes the rows by the form it expects, so a module that sent the wrong
+form would give oci8 wrong times and offsets, and the existing checks on
+those values catch it. Without the file, oci8 uses its own file (version
+45 for OCI 23.26) and only the local form is tested.
+
+The file is not checked in (.gitignore lists /timezlrg_*.dat). The test
+instance skips the run with a message when it is missing. To get it, copy
+it from the oracle122 server's zoneinfo directory:
+
+    /u01/app/oracle/product/12.2.0/oracore/zoneinfo/timezlrg_11.dat
+
+It is 787272 bytes, md5 352af9ddeb92f35ffab00ff6aef06bd7. For example,
+from a host that can ssh to oracle122:
+
+    ssh 10.0.2.1 "cat /u01/app/oracle/product/12.2.0/oracore/zoneinfo/timezlrg_11.dat" \
+                                > test/protocol/oracle/timezlrg_11.dat
+
+timezlrg_26.dat is in the same directory. Any other version works as a
+client file too: the module only compares the client's version with 11.
+
 The three real Oracle test servers on this network
 --------------------------------------------------
 
