@@ -4009,6 +4009,95 @@ int main(int argc, char **argv) {
 	stdoutput.printf("\n\n");
 
 
+	stdoutput.printf("OCIStmtFetch2, OCIStmtExecute - null lobs\n");
+	// a null lob column is reported null, in the prefetched row and in a
+	// fetched one, rather than as a lob that exists and is empty - a real
+	// server sends a single zero byte for it.  #10695
+	assertEquals(
+		execImmediate("insert into protocoltestlob values "
+				"(null,null,null)"),
+		OCI_SUCCESS);
+	assertEquals(execImmediate("commit"),OCI_SUCCESS);
+	const char	*lobnullquery="select testclob,testblob,testbfile "
+				"from protocoltestlob where testclob is null";
+	for (int iters=0; iters<2; iters++) {
+		OCIStmt		*lobnullstmt=NULL;
+		OCILobLocator	*nullclob=NULL;
+		OCILobLocator	*nullblob=NULL;
+		OCILobLocator	*nullbfile=NULL;
+		OCIDefine	*nulldef[3];
+		sb2		nullind[3];
+		bytestring::zero(nulldef,sizeof(nulldef));
+		nullind[0]=0;
+		nullind[1]=0;
+		nullind[2]=0;
+		assertEquals(
+			OCIHandleAlloc(env,(void **)&lobnullstmt,
+					OCI_HTYPE_STMT,0,NULL),
+			OCI_SUCCESS);
+		assertEquals(
+			OCIDescriptorAlloc(env,(void **)&nullclob,
+					OCI_DTYPE_LOB,0,NULL),
+			OCI_SUCCESS);
+		assertEquals(
+			OCIDescriptorAlloc(env,(void **)&nullblob,
+					OCI_DTYPE_LOB,0,NULL),
+			OCI_SUCCESS);
+		assertEquals(
+			OCIDescriptorAlloc(env,(void **)&nullbfile,
+					OCI_DTYPE_FILE,0,NULL),
+			OCI_SUCCESS);
+		assertEquals(
+			OCIStmtPrepare(lobnullstmt,err,(text *)lobnullquery,
+				charstring::getLength(lobnullquery),
+				OCI_NTV_SYNTAX,OCI_DEFAULT),
+			OCI_SUCCESS);
+		assertEquals(
+			OCIDefineByPos(lobnullstmt,&nulldef[0],err,1,
+				&nullclob,0,SQLT_CLOB,
+				&nullind[0],NULL,NULL,OCI_DEFAULT),
+			OCI_SUCCESS);
+		assertEquals(
+			OCIDefineByPos(lobnullstmt,&nulldef[1],err,2,
+				&nullblob,0,SQLT_BLOB,
+				&nullind[1],NULL,NULL,OCI_DEFAULT),
+			OCI_SUCCESS);
+		assertEquals(
+			OCIDefineByPos(lobnullstmt,&nulldef[2],err,3,
+				&nullbfile,0,SQLT_BFILEE,
+				&nullind[2],NULL,NULL,OCI_DEFAULT),
+			OCI_SUCCESS);
+		assertEquals(
+			OCIStmtExecute(svc,lobnullstmt,err,iters,0,NULL,NULL,
+								OCI_DEFAULT),
+			OCI_SUCCESS);
+		if (!iters) {
+			assertEquals(
+				OCIStmtFetch2(lobnullstmt,err,1,
+						OCI_FETCH_NEXT,0,OCI_DEFAULT),
+				OCI_SUCCESS);
+		}
+		assertEquals((int)nullind[0],OCI_IND_NULL);
+		assertEquals((int)nullind[1],OCI_IND_NULL);
+		assertEquals((int)nullind[2],OCI_IND_NULL);
+		assertEquals(
+			OCIDescriptorFree(nullclob,OCI_DTYPE_LOB),OCI_SUCCESS);
+		assertEquals(
+			OCIDescriptorFree(nullblob,OCI_DTYPE_LOB),OCI_SUCCESS);
+		assertEquals(
+			OCIDescriptorFree(nullbfile,OCI_DTYPE_FILE),
+			OCI_SUCCESS);
+		assertEquals(OCIHandleFree(lobnullstmt,OCI_HTYPE_STMT),
+								OCI_SUCCESS);
+	}
+	assertEquals(
+		execImmediate("delete from protocoltestlob "
+				"where testclob is null"),
+		OCI_SUCCESS);
+	assertEquals(execImmediate("commit"),OCI_SUCCESS);
+	stdoutput.printf("\n\n");
+
+
 	stdoutput.printf("OCIDescriptorFree - lob locators\n");
 	delete[] bigvalue;
 	delete[] bigbuffer;

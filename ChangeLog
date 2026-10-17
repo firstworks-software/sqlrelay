@@ -2975,6 +2975,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - fixed the oracle protocol module answering only one spelling of
   dbms_lob.fileGetName() on a bound bfile locator locally, and not a
   statement run again
+- fixed the oracle connection module reporting NULL clob, blob and bfile
+  columns as empty lobs
 
 ### Security
 - fixed an authentication hole in the des password encryption module

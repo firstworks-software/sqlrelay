@@ -5196,7 +5196,8 @@ bool oraclecursor::executeQueryOrFetchFromBindCursor(const char *query,
 				// return 0 for the size of lobs
 				desc[i].dbsize=0;
 
-				// set the NULL indicators to false
+				// set the NULL indicators to false, the
+				// define fills them in for null lobs
 				bytestring::zero(def_indp[i],
 						sizeof(sb2)*
 						getFetchAtOnce());
@@ -5218,7 +5219,7 @@ bool oraclecursor::executeQueryOrFetchFromBindCursor(const char *query,
 					(dvoid *)def_lob[i],
 					(sb4)-1,
 					desc[i].dbtype,
-					(dvoid *)0,
+					(dvoid *)def_indp[i],
 					0,
 					(ub2 *)0,
 					OCI_DEFAULT)!=OCI_SUCCESS) {

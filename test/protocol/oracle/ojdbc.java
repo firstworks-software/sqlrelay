@@ -140,6 +140,20 @@ class ojdbc {
 		st.execute("create table protocoltestojdbcbf "+
 				"(id number, f bfile)");
 
+		st.execute("begin execute immediate "+
+				"'drop table protocoltestojdbcnull'; "+
+				"exception when others then null; end;");
+		st.execute("create table protocoltestojdbcnull "+
+				"(id number, c clob, b blob, f bfile)");
+		check("null lob row insert",st.executeUpdate(
+				"insert into protocoltestojdbcnull values "+
+				"(1,null,null,null)")==1,"");
+		check("not null lob row insert",st.executeUpdate(
+				"insert into protocoltestojdbcnull values "+
+				"(2,to_clob('x'),to_blob(hextoraw('01')),"+
+				"bfilename('"+expectedalias(1)+"','"+
+				expectedfile(1)+"'))")==1,"");
+
 		check("row 1 insert",insertlobs(con,1,4)==1,"");
 		check("row 2 insert",insertlobs(con,2,20)==1,"");
 		check("row 3 insert",st.executeUpdate(
@@ -169,6 +183,7 @@ class ojdbc {
 		st.execute("drop table protocoltestojdbcdml");
 		st.execute("drop table protocoltestojdbcfail");
 		st.execute("drop table protocoltestojdbcbf");
+		st.execute("drop table protocoltestojdbcnull");
 		st.close();
 		con.close();
 	}
@@ -840,6 +855,45 @@ class ojdbc {
 		con.close();
 	}
 
+	// a null lob column reads as null, not as a lob that is empty
+	static void nulllobs(String port, String prefetch) throws Exception {
+		System.out.println("null lobs, lob prefetch "+
+				((prefetch==null)?"default":prefetch)+":");
+		Connection	con=connect(port,prefetch);
+		Statement	st=con.createStatement();
+		ResultSet	rs=st.executeQuery("select id,c,b,f from "+
+					"protocoltestojdbcnull order by id");
+		int	rows=0;
+		while (rs.next()) {
+			rows++;
+			int	id=rs.getInt(1);
+			String	c=rs.getString(2);
+			boolean	cnull=rs.wasNull();
+			byte[]	b=rs.getBytes(3);
+			boolean	bnull=rs.wasNull();
+			Clob	cl=rs.getClob(2);
+			Blob	bl=rs.getBlob(3);
+			if (id==1) {
+				check("null row clob getString",
+					c==null && cnull,describe(c));
+				check("null row blob getBytes",
+					b==null && bnull,describe(b));
+				check("null row getClob",cl==null,"");
+				check("null row getBlob",bl==null,"");
+			} else {
+				check("not null row clob getString",
+					"x".equals(c) && !cnull,describe(c));
+				check("not null row blob getBytes",
+					b!=null && b.length==1 && b[0]==1,
+					describe(b));
+			}
+		}
+		check("null lob row count",rows==2,"got "+rows);
+		rs.close();
+		st.close();
+		con.close();
+	}
+
 	public static void main(String args[]) throws Exception {
 
 		Class.forName("oracle.jdbc.OracleDriver");
@@ -881,6 +935,11 @@ class ojdbc {
 				lobs(port,prefetches[i]);
 			} catch (Exception e) {
 				check("lobs",false,e.toString());
+			}
+			try {
+				nulllobs(port,prefetches[i]);
+			} catch (Exception e) {
+				check("null lobs",false,e.toString());
 			}
 			try {
 				bfiles(port,prefetches[i]);
