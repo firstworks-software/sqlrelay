@@ -70,7 +70,7 @@
   <li>Distributed and two-phase-commit/XA transactions, database startup and shutdown, and end-to-end tracing attributes (module, action and client identifier) are not supported, and fail with ORA-03001.  Setting a tracing attribute also causes the client's next call to fail.</li>
   <li>A fetch of more than 100,000 rows at once fails with ORA-20004, and a batch larger than 32MB fails with ORA-20005.</li>
   <li>OCI7 clients can only bind NUMBER, VARNUM, CHAR, VARCHAR, LONG and DATE values.</li>
-  <li>A client that keeps many statements open at once (eg. one with a client-side statement cache) needs the instance's <i>maxcursors</i> set higher than that number, or new statements fail with ORA-01000.
+  <li>A client that keeps many statements open at once, failed or not (eg. one with a client-side statement cache), needs the instance's <i>maxcursors</i> (default 5) set higher than that number, or new statements fail with ORA-01000.
 ----</li>
 </ul>
 

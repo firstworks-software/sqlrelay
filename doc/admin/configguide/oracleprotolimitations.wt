@@ -24,7 +24,7 @@ The implementation of the Oracle protocol isn't 100% complete.  Some notable lim
 * Distributed and two-phase-commit/XA transactions, database startup and shutdown, and end-to-end tracing attributes (module, action and client identifier) are not supported, and fail with ORA-03001.  Setting a tracing attribute also causes the client's next call to fail.
 * A fetch of more than 100,000 rows at once fails with ORA-20004, and a batch larger than 32MB fails with ORA-20005.
 * OCI7 clients can only bind NUMBER, VARNUM, CHAR, VARCHAR, LONG and DATE values.
-* A client that keeps many statements open at once (eg. one with a client-side statement cache) needs the instance's //maxcursors// set higher than that number, or new statements fail with ORA-01000.
+* A client that keeps many statements open at once, failed or not (eg. one with a client-side statement cache), needs the instance's //maxcursors// (default 5) set higher than that number, or new statements fail with ORA-01000.
 ----
 
 [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents]&nbsp;&nbsp;&nbsp;[[Image(../../images/navprev.png,link=oracleprotoforeignbackend.html,vertical-align=middle)]] [oracleprotoforeignbackend.html Oracle Foreign Backend] | [[Image(../../images/navtop.png,link=oracleprotocol.html,vertical-align=middle)]] [oracleprotocol.html Oracle Protocol] | [multipleprotocols.html Multiple Protocols] [[Image(../../images/navnext.png,link=multipleprotocols.html,vertical-align=middle)]]

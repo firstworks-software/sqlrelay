@@ -110,7 +110,17 @@ insert and an update, and, with autocommit off, a rollback and a commit
 (a second session sees the row only after the commit). executeBatch()
 expects a count per statement at version 12 and SUCCESS_NO_INFO (-2) per
 statement below that, since ojdbc only asks for the counts from field
-version 12.1 on. Last it reads the lob rows back with getString/getBytes
+version 12.1 on. Then it checks failed statements on one connection: 8
+of each kind, more than the instance's maxcursors (default 5) - a new
+Statement per failure, closed (ORA-00942), one reused Statement
+(ORA-00942), PreparedStatements that fail to parse (ORA-00942 and
+ORA-00900), a duplicate insert (ORA-00001), a fetch error (select 1/0,
+ORA-01476) and a failed executeBatch() (ORA-00001) - each followed by a
+good query on the same connection. A real server also keeps a failed
+statement's cursor until the client closes it, so it checks that 4 failed
+Statements left open still leave room for a query, that a sixth left open
+gets ORA-01000, and that closing them recovers. Last it reads the lob rows
+back with getString/getBytes
 and getClob/getBlob at the default prefetch size and with
 oracle.jdbc.defaultLobPrefetchSize set to 0 and -1. test.sh runs it
 against the 12.1, 10.2 and 11.2 listeners. To run it by hand:
@@ -3719,6 +3729,125 @@ that statement, except where noted.
                                       OCI_RETURN_ROW_COUNT_ARRAY only, as
                                       the module's debug log showed (not
                                       captured) (#10701)
+
+    10700-dev-ojdbc-failedstmt-realserver-oracle122.oraproxy
+                                     ojdbc 23.26 (a scratch program: each
+                                      failure shape seven times on one
+                                      connection, then a good select, with
+                                      the session's opened cursors current
+                                      read from v$sesstat between shapes
+                                      over a separate sysdba session)
+                                      against the real 12.2 server, through
+                                      oraproxy without
+                                      ORAPROXY_UNIVERSAL_REPS.  [0015] reads
+                                      the session's sid.  [0017] executes
+                                      "select * from t10700_nonexistent"
+                                      with cursor id 0.  The server answers
+                                      with a break and a reset marker
+                                      ([0018] and [0019]), takes the
+                                      client's reset ([0020]), and sends the
+                                      error summary at [0021]: 04 01 01 01
+                                      06 00 02 03 ae 00 00 01 01 01 0e 03,
+                                      which names cursor 1 (01 01) and error
+                                      position 14 (01 0e).  The server keeps
+                                      the failed statement's cursor open.
+                                      ojdbc closes it only when the
+                                      Statement is closed, with a
+                                      close-cursors piggyback in front of
+                                      its next call (69 06 01 01 01 01 01 at
+                                      [0022]).  Statements left open ([0054]
+                                      to [0088]) get cursors 1 and 3 to 8,
+                                      no close follows, and opened cursors
+                                      current goes from 2 to 9.  Closing
+                                      them at the end sends one piggyback
+                                      naming all of them ([0493]), and the
+                                      count drops from 12 to 4.  A reused
+                                      Statement ([0091] on) sends its failed
+                                      cursor 9 back in each re-execute, and
+                                      the answers name 9 again.  ojdbc
+                                      closes the prepared, ORA-00900, dml,
+                                      batch and fetch error shapes the same
+                                      way after each failure.  A dml error
+                                      ([0215]) is return parameters and then
+                                      the summary.  A fetch that fails
+                                      partway ([0336]) is followed by a
+                                      cancel-cursors and a close-cursors
+                                      piggyback for the same cursor
+                                      ([0337]).  The count's rise from 10 to
+                                      12 during the dml shapes is recursive
+                                      cursors (#10700)
+
+    10700-dev-ojdbc-failedstmt-open302-realserver-oracle122.oraproxy
+                                     the same program, with 302 failures on
+                                      Statements left open, against the same
+                                      server, whose open_cursors is 300.
+                                      The answers name cursors 1 and 3 to
+                                      300 ([0019] to [1509]).  The 300th
+                                      failure gets ORA-01000 at [1514],
+                                      after the same break and reset
+                                      markers, with cursor 0 in the summary,
+                                      and so does the good select ([1529]).
+                                      Closing the Statements sends one
+                                      close-cursors piggyback naming all 299
+                                      cursors ([1530]), and the select
+                                      behind it works.  So a real server
+                                      holds a failed statement's cursor
+                                      until the client closes it, and runs
+                                      out of cursors the same way the module
+                                      does, at its own limit (#10700)
+
+    10700-dev-ojdbc-failedstmt-sqlrelay121.oraproxy
+                                     the same shapes as the first 10700
+                                      capture, against a -buildtree listener
+                                      at serverversion 12.1 (maxcursors left
+                                      at its default of 5), backed by
+                                      oracle122, with the left-open shape
+                                      last.  The module sends no markers and
+                                      an error position of 0, but handles
+                                      the cursors the way the real server
+                                      does.  [0016] names cursor 1 (04 01 01
+                                      01 04 00 02 03 ae 00 00 01 01 00 03),
+                                      ojdbc closes it in front of its next
+                                      call ([0017]), and a reused Statement
+                                      sends cursor 1 back ([0033] on).  The
+                                      left-open shape ([0241] to [0256])
+                                      gets cursors 2 to 5, since the reused
+                                      Statement still holds 1.  Then it gets
+                                      ORA-01000 with cursor 0 from the fifth
+                                      failure on, and so does the good
+                                      select.  Closing the Statements
+                                      ([0257], a piggyback naming 1 to 5)
+                                      frees them, and the select behind it
+                                      works.  Every other shape runs more
+                                      than five failures with no ORA-01000
+                                      (#10700)
+
+    10700-dev-ojdbc-failedstmt-sqlrelay102.oraproxy
+                                     the same against a -buildtree listener
+                                      at serverversion 10.2.  The cursor
+                                      ids, the piggybacks and the ORA-01000
+                                      at [0250] match the 12.1 capture
+                                      packet for packet.  The only
+                                      difference is the plain insert's
+                                      ORA-00001 answers ([0086] to [0098]),
+                                      which are the summary alone here,
+                                      since ojdbc asks for no row counts
+                                      below field version 12.1 (#10701,
+                                      #10700)
+
+    10700-dev-pythonoracledb-thin-failedstmt-realserver-oracle122.oraproxy
+                                     python-oracledb 4.0.2 thin, seven
+                                      failed executes on cursors that stay
+                                      open, then a good select, against the
+                                      real 12.2 server.  Unlike ojdbc,
+                                      python-oracledb closes a failed
+                                      statement's cursor itself.  Every call
+                                      after a failure carries a
+                                      close-cursors piggyback for cursor 1
+                                      ([0018] to [0048]), though the Python
+                                      cursors are never closed, so it never
+                                      holds more than one cursor (module
+                                      not captured) (#10700)
 
 The v11 time zone file for the oci8 run
 ---------------------------------------

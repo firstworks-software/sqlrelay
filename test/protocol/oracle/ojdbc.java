@@ -6,9 +6,10 @@ import java.util.Arrays;
 import java.util.Properties;
 
 // ojdbc (thin driver) checks against an oracle protocol listener: the version
-// call, plain dml update counts, batches and transactions, and CLOB/BLOB
-// selects at the driver's default lob prefetch size and with prefetch set to
-// 0 (length only) and -1 (locator only)
+// call, plain dml update counts, batches and transactions, failed statements
+// past the instance's maxcursors, and CLOB/BLOB selects at the driver's
+// default lob prefetch size and with prefetch set to 0 (length only) and -1
+// (locator only)
 //
 // usage: java -cp ojdbc8.jar:. ojdbc port majorversion
 class ojdbc {
@@ -102,6 +103,12 @@ class ojdbc {
 				"exception when others then null; end;");
 		st.execute("create table protocoltestojdbcdml "+
 				"(id number, v varchar2(20))");
+		st.execute("begin execute immediate "+
+				"'drop table protocoltestojdbcfail'; "+
+				"exception when others then null; end;");
+		st.execute("create table protocoltestojdbcfail "+
+				"(id number primary key)");
+		st.executeUpdate("insert into protocoltestojdbcfail values (1)");
 
 		check("row 1 insert",insertlobs(con,1,4)==1,"");
 		check("row 2 insert",insertlobs(con,2,20)==1,"");
@@ -121,6 +128,7 @@ class ojdbc {
 		Statement	st=con.createStatement();
 		st.execute("drop table protocoltestojdbc");
 		st.execute("drop table protocoltestojdbcdml");
+		st.execute("drop table protocoltestojdbcfail");
 		st.close();
 		con.close();
 	}
@@ -294,6 +302,232 @@ class ojdbc {
 		con.close();
 	}
 
+	// the suite's instances leave maxcursors at its default
+	static final int	MAXCURSORS=5;
+	static final int	FAILURES=MAXCURSORS+3;
+
+	static final String	BADTABLE="select * from protocoltestojdbcnone";
+
+	// the error codes of a run of failures, against the one expected
+	static class errors {
+		String	label;
+		int	expected;
+		int	right=0;
+		String	wrong=null;
+
+		errors(String label, int expected) {
+			this.label=label;
+			this.expected=expected;
+		}
+
+		void got(SQLException e) {
+			if (e.getErrorCode()==expected) {
+				right++;
+			} else if (wrong==null) {
+				wrong=e.toString();
+			}
+		}
+
+		void none() {
+			if (wrong==null) {
+				wrong="no error";
+			}
+		}
+
+		void check(int count) {
+			ojdbc.check(label+" ORA-"+String.format("%05d",expected),
+				right==count,
+				right+" of "+count+((wrong!=null)?
+					", first other: "+wrong:""));
+		}
+	}
+
+	static void goodquery(Connection con, String label) {
+		try {
+			Statement	st=con.createStatement();
+			ResultSet	rs=st.executeQuery("select 1 from dual");
+			check(label,rs.next() && rs.getInt(1)==1,"no row");
+			rs.close();
+			st.close();
+		} catch (SQLException e) {
+			check(label,false,e.toString());
+		}
+	}
+
+	// runs badtable on a new Statement that is left open, and returns it
+	static Statement leaveopen(Connection con, errors e) {
+		Statement	st=null;
+		try {
+			st=con.createStatement();
+			st.executeQuery(BADTABLE);
+			e.none();
+		} catch (SQLException ex) {
+			e.got(ex);
+		}
+		return st;
+	}
+
+	static void close(Statement[] sts) {
+		for (int i=0; i<sts.length; i++) {
+			try {
+				if (sts[i]!=null) {
+					sts[i].close();
+				}
+			} catch (SQLException e) {
+				check("close",false,e.toString());
+			}
+		}
+	}
+
+	// more failures of each kind than maxcursors, with a query on the
+	// same connection after each kind.  only a statement left open holds
+	// a cursor, as on a real server.
+	static void failed(String port) throws Exception {
+		System.out.println("failed statements:");
+		Connection	con=connect(port,null);
+
+		// a new Statement per failure, closed
+		errors	e=new errors("closed statements",942);
+		for (int i=0; i<FAILURES; i++) {
+			Statement	st=con.createStatement();
+			try {
+				st.executeQuery(BADTABLE);
+				e.none();
+			} catch (SQLException ex) {
+				e.got(ex);
+			}
+			st.close();
+		}
+		e.check(FAILURES);
+		goodquery(con,"query after closed statements");
+
+		// one Statement, reused
+		e=new errors("reused statement",942);
+		Statement	st=con.createStatement();
+		for (int i=0; i<FAILURES; i++) {
+			try {
+				st.executeQuery(BADTABLE);
+				e.none();
+			} catch (SQLException ex) {
+				e.got(ex);
+			}
+		}
+		e.check(FAILURES);
+		goodquery(con,"query after reused statement");
+		st.close();
+
+		// PreparedStatements that fail to parse
+		e=new errors("prepared bad table",942);
+		for (int i=0; i<FAILURES; i++) {
+			PreparedStatement	ps=con.prepareStatement(
+						BADTABLE+" where id=?");
+			try {
+				ps.setInt(1,i);
+				ps.executeQuery();
+				e.none();
+			} catch (SQLException ex) {
+				e.got(ex);
+			}
+			ps.close();
+		}
+		e.check(FAILURES);
+		goodquery(con,"query after prepared bad table");
+		e=new errors("prepared bad statement",900);
+		for (int i=0; i<FAILURES; i++) {
+			PreparedStatement	ps=con.prepareStatement(
+						"bogus statement");
+			try {
+				ps.execute();
+				e.none();
+			} catch (SQLException ex) {
+				e.got(ex);
+			}
+			ps.close();
+		}
+		e.check(FAILURES);
+		goodquery(con,"query after prepared bad statement");
+
+		// dml that fails on execute
+		e=new errors("duplicate insert",1);
+		for (int i=0; i<FAILURES; i++) {
+			st=con.createStatement();
+			try {
+				st.executeUpdate("insert into "+
+					"protocoltestojdbcfail values (1)");
+				e.none();
+			} catch (SQLException ex) {
+				e.got(ex);
+			}
+			st.close();
+		}
+		e.check(FAILURES);
+		goodquery(con,"query after duplicate insert");
+
+		// selects that fail on fetch
+		e=new errors("fetch error",1476);
+		for (int i=0; i<FAILURES; i++) {
+			st=con.createStatement();
+			try {
+				ResultSet	rs=st.executeQuery(
+						"select 1/0 from dual");
+				while (rs.next()) {
+				}
+				e.none();
+			} catch (SQLException ex) {
+				e.got(ex);
+			}
+			st.close();
+		}
+		e.check(FAILURES);
+		goodquery(con,"query after fetch error");
+
+		// batches whose second statement fails
+		e=new errors("failed batch",1);
+		for (int i=0; i<FAILURES; i++) {
+			PreparedStatement	ps=con.prepareStatement(
+				"insert into protocoltestojdbcfail values (?)");
+			try {
+				ps.setInt(1,100+i);
+				ps.addBatch();
+				ps.setInt(1,1);
+				ps.addBatch();
+				ps.executeBatch();
+				e.none();
+			} catch (SQLException ex) {
+				e.got(ex);
+			}
+			ps.close();
+		}
+		e.check(FAILURES);
+		goodquery(con,"query after failed batch");
+
+		// failed statements left open, within maxcursors, then closed
+		e=new errors("open statements",942);
+		Statement[]	open=new Statement[MAXCURSORS-1];
+		for (int i=0; i<open.length; i++) {
+			open[i]=leaveopen(con,e);
+		}
+		e.check(open.length);
+		goodquery(con,"query with open statements");
+		close(open);
+		goodquery(con,"query after closing open statements");
+
+		// failed statements left open, past maxcursors, then closed
+		e=new errors("open statements within maxcursors",942);
+		errors	past=new errors("open statement past maxcursors",1000);
+		open=new Statement[MAXCURSORS+1];
+		for (int i=0; i<open.length; i++) {
+			open[i]=leaveopen(con,(i<MAXCURSORS)?e:past);
+		}
+		e.check(MAXCURSORS);
+		past.check(1);
+		close(open);
+		goodquery(con,"query after closing open statements "+
+							"past maxcursors");
+
+		con.close();
+	}
+
 	static void lobs(String port, String prefetch) throws Exception {
 		System.out.println("lob prefetch "+
 				((prefetch==null)?"default":prefetch)+":");
@@ -395,6 +629,11 @@ class ojdbc {
 			dml(port,major);
 		} catch (Exception e) {
 			check("dml",false,e.toString());
+		}
+		try {
+			failed(port);
+		} catch (Exception e) {
+			check("failed statements",false,e.toString());
 		}
 		String[]	prefetches={null,"0","-1"};
 		for (int i=0; i<prefetches.length; i++) {
