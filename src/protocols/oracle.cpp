@@ -828,13 +828,12 @@
 #define ORACLE_BFILE_SIZE		530
 
 // a lob column's value is a locator rather than the lob's bytes.  the
-// client never looks inside one beyond the type byte - it echoes the whole
-// thing back in every lob operation request it makes - so the layout below
-// is a real 12.2 server's skeleton with the module's own bookkeeping in the
-// fields a real server fills with a per-lob id.
+// client never looks inside a clob's or a blob's beyond the type byte - it
+// echoes the whole thing back in every lob operation request it makes - so
+// the layout below is a real 12.2 server's skeleton with the module's own
+// bookkeeping in the fields a real server fills with a per-lob id.
 // see "Oracle Wire Protocol - Lob Locator"
 #define LOB_LOCATOR_SIZE		114
-#define BFILE_LOCATOR_SIZE		43
 #define LOB_LOCATOR_CLOB		0x02
 #define LOB_LOCATOR_BLOB		0x01
 #define LOB_LOCATOR_BFILE		0x08
@@ -853,13 +852,19 @@
 #define LOB_LOCATOR_GENERATION_OFFSET	0x26
 #define LOB_LOCATOR_TRAILER_OFFSET	0x46
 
-// a bfile locator carries a directory alias and a file name where a clob
-// or a blob carries a charset, so its bookkeeping sits elsewhere
-#define BFILE_LOCATOR_DIRECTORY_OFFSET	0x10
-#define BFILE_LOCATOR_FILENAME_OFFSET	0x19
-#define BFILE_LOCATOR_ID_OFFSET		0x1c
-#define BFILE_LOCATOR_MAGIC_OFFSET	0x20
-#define BFILE_LOCATOR_GENERATION_OFFSET	0x24
+// a bfile locator is the header, then the directory alias and the file name,
+// each a ub2 length and its bytes, which OCILobFileGetName() and
+// python-oracledb's getfilename() read on the client side - [0020] and
+// [0044] of test/protocol/oracle/samples/10696-dev-ojdbc-bfile-realserver-
+// oracle122.oraproxy.  the module's bookkeeping follows the file name, and
+// is left off a locator it would push past ORACLE_BFILE_SIZE, which two 255
+// byte names fill
+#define BFILE_LOCATOR_NAMES_OFFSET	0x10
+#define BFILE_LOCATOR_MAX_NAME_SIZE	255
+#define BFILE_LOCATOR_BOOKKEEPING_SIZE	10
+#define BFILE_BOOKKEEPING_ID_OFFSET	0x00
+#define BFILE_BOOKKEEPING_MAGIC_OFFSET	0x04
+#define BFILE_BOOKKEEPING_GENERATION_OFFSET	0x08
 
 // what marks a locator as this module's own, so one left over from a
 // cursor that has since been closed and reused can be told apart
@@ -2095,6 +2100,34 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_oracle : public sqlrprotocol {
 							sqlrservercursor **cursor,
 							uint32_t *column,
 							uint16_t *wiretype);
+		// finds the names in a bfile locator, and the module's
+		// bookkeeping behind them, or NULL if the locator has none.
+		// returns false for anything that isn't a well formed bfile
+		// locator
+		bool	parseBfileLocator(const byte_t *locator,
+							uint32_t locatorsize,
+							const byte_t **diralias,
+							uint16_t *diraliassize,
+							const byte_t **filename,
+							uint16_t *filenamesize,
+							const byte_t **bookkeeping);
+		// returns true if the query3 request being handled runs
+		// dbms_lob.fileGetName() on a bound bfile locator, and finds
+		// the names in it
+		bool	isFileGetNameCall(sqlrservercursor *cursor,
+							uint32_t options,
+							const byte_t **diralias,
+							uint16_t *diraliassize,
+							const byte_t **filename,
+							uint16_t *filenamesize);
+		bool	sendFileGetNameResponse(sqlrservercursor *cursor,
+							uint32_t options,
+							uint32_t cursorid,
+							bool rowcounts,
+							const byte_t *diralias,
+							uint16_t diraliassize,
+							const byte_t *filename,
+							uint16_t filenamesize);
 		uint32_t	putUtf16Chars(const char *in,
 							uint64_t insize,
 							uint64_t chars,
@@ -14233,6 +14266,22 @@ bool sqlrprotocol_oracle::query3(const byte_t *rp) {
 			query3rowcountavail=rowcountsneeded;
 		}
 
+		// a real server answers dbms_lob.fileGetName() from the names
+		// in the bound locator, even after the statement that handed
+		// it out has closed, so it's answered here rather than run
+		const byte_t	*diralias;
+		uint16_t	diraliassize;
+		const byte_t	*filename;
+		uint16_t	filenamesize;
+		if (executing && isFileGetNameCall(cursor,options,
+						&diralias,&diraliassize,
+						&filename,&filenamesize)) {
+			return sendFileGetNameResponse(cursor,options,
+						cursorid,rowcounts,
+						diralias,diraliassize,
+						filename,filenamesize);
+		}
+
 		// execute the query, once per row data block - the wire's
 		// array bind is many complete bind rows rather than one bind
 		// with many elements, so each block is its own execution
@@ -14838,6 +14887,29 @@ bool sqlrprotocol_oracle::getQuery3BindValues(const byte_t *rp,
 		for (uint32_t i=0; i<bindcount; i++) {
 			oraclequery3bindvalue	*v=&(query3bindvalues[
 						query3blocks*bindcount+i]);
+
+			// a lob's value is the locator's length and then the
+			// locator, or a zero length alone for a null - [0021]
+			// of test/protocol/oracle/samples/10696-dev-ojdbc-
+			// bfile-realserver-oracle122.oraproxy and [0015] of
+			// 10696-dev-ojdbc-bfile-nullbind-realserver-oracle122
+			byte_t	type=query3binds[i].type;
+			if (type==ORACLE_TYPE_CLOB ||
+					type==ORACLE_TYPE_BLOB ||
+					type==ORACLE_TYPE_BFILE) {
+				uint32_t	locatorsize=0;
+				if (!getLenPreInt(rp,&end,&locatorsize,&rp)) {
+					debugWrite("truncated bind value");
+					return false;
+				}
+				if (!locatorsize) {
+					v->value=NULL;
+					v->size=0;
+					v->isnull=true;
+					continue;
+				}
+			}
+
 			if (!getLenBytes(rp,end,&(v->value),&(v->size),
 							&(v->isnull),&rp)) {
 				debugWrite("truncated bind value");
@@ -15973,6 +16045,150 @@ bool sqlrprotocol_oracle::putOutBindValues(sqlrservercursor *cursor) {
 	return nullwithoutindicator;
 }
 
+bool sqlrprotocol_oracle::isFileGetNameCall(sqlrservercursor *cursor,
+						uint32_t options,
+						const byte_t **diralias,
+						uint16_t *diraliassize,
+						const byte_t **filename,
+						uint16_t *filenamesize) {
+
+	// ojdbc's BFILE.getDirAlias() and getName() run this text, with the
+	// locator on :1 and varchar out binds on :2 and :3 - [0021] of
+	// test/protocol/oracle/samples/10696-dev-ojdbc-bfile-realserver-
+	// oracle122.oraproxy.  anything else, a null locator included, runs
+	// as usual
+	static const char	filegetname[]=
+			"begin sys.dbms_lob.fileGetName(:1, :2, :3); end;";
+
+	*diralias=NULL;
+	*diraliassize=0;
+	*filename=NULL;
+	*filenamesize=0;
+
+	if (!(options&OPTION_SNDIOV) ||
+			query3binddescs!=3 || query3blocks!=1) {
+		return false;
+	}
+
+	// the text, then nothing but whitespace
+	const char	*query=cont->getQueryBuffer(cursor);
+	uint32_t	querysize=cont->getQuerySize(cursor);
+	uint32_t	textsize=sizeof(filegetname)-1;
+	if (querysize<textsize ||
+		charstring::compare(query,filegetname,textsize)) {
+		return false;
+	}
+	for (uint32_t i=textsize; i<querysize; i++) {
+		if (!character::isWhitespace(query[i])) {
+			return false;
+		}
+	}
+
+	if (query3binds[0].type!=ORACLE_TYPE_BFILE) {
+		return false;
+	}
+
+	const oraclequery3bindvalue	*v=&(query3bindvalues[0]);
+	const byte_t			*bookkeeping;
+	if (v->isnull || !parseBfileLocator(v->value,v->size,
+						diralias,diraliassize,
+						filename,filenamesize,
+						&bookkeeping)) {
+		return false;
+	}
+
+	// each name has to fit the out bind it goes back in
+	uint16_t	sizes[2]={*diraliassize,*filenamesize};
+	for (uint16_t i=0; i<2; i++) {
+		const oraclequery3bind	*bd=&(query3binds[i+1]);
+		if ((bd->type!=ORACLE_TYPE_VARCHAR &&
+				bd->type!=ORACLE_TYPE_CHAR) ||
+				(bd->buffersize &&
+				(uint32_t)sizes[i]>bd->buffersize)) {
+			return false;
+		}
+	}
+
+	debugWrite("dbms_lob.fileGetName() on a bfile locator");
+	return true;
+}
+
+bool sqlrprotocol_oracle::sendFileGetNameResponse(sqlrservercursor *cursor,
+						uint32_t options,
+						uint32_t cursorid,
+						bool rowcounts,
+						const byte_t *diralias,
+						uint16_t diraliassize,
+						const byte_t *filename,
+						uint16_t filenamesize) {
+
+	// stand in for the execute, and the commit it may ask for
+	updateQuery3CallStatus(cursor,true,true);
+	if (rowcounts) {
+		query3rowcounts[query3rowcountcount++]=1;
+	}
+	if (options&OPTION_COMMIT) {
+		if (!cont->commit()) {
+			return sendTransactionError(cursorid);
+		}
+		callstatus=5;
+	}
+
+	// the io vector, the names, the return parameters and a summary of
+	// one row - [0022] of test/protocol/oracle/samples/10696-dev-ojdbc-
+	// bfile-realserver-oracle122.oraproxy
+	resetSendPacketBuffer(PACKET_DATA);
+	uint16_t	dataflags=0;
+	writeBE(&reqpacket,dataflags);
+
+	query3binds[0].direction=BIND_DIRECTION_IN;
+	query3binds[1].direction=BIND_DIRECTION_OUT;
+	query3binds[2].direction=BIND_DIRECTION_OUT;
+	putIoVector();
+
+	// an empty name goes back as a null, the way putOutBindValues()
+	// sends one
+	const byte_t	*names[2]={diralias,filename};
+	uint16_t	sizes[2]={diraliassize,filenamesize};
+	bool		nullwithoutindicator=false;
+	debugStart("file names");
+	write(&reqpacket,(byte_t)TTC_ROW_DATA);
+	for (uint16_t i=0; i<2; i++) {
+		debugWrite("bind %d: \"%.*s\"",i+2,(int)sizes[i],
+						(const char *)names[i]);
+		putLenBytes((const char *)names[i],sizes[i]);
+		bool	indicator=((query3binds[i+1].flags&
+					BIND_FLAG_USE_INDICATORS)!=0);
+		if (!indicator) {
+			if (!sizes[i]) {
+				nullwithoutindicator=true;
+			}
+			continue;
+		}
+		if (!sizes[i]) {
+			write(&reqpacket,(byte_t)OUT_BIND_NULL_INDICATOR_COUNT);
+			write(&reqpacket,(byte_t)OUT_BIND_NULL_INDICATOR_VALUE);
+		} else {
+			write(&reqpacket,(byte_t)0);
+		}
+	}
+	debugEnd();
+
+	putReturnParameters(cursorid);
+
+	if (nullwithoutindicator) {
+		putSummary(cursorid,ORA_FETCHED_COLUMN_NULL,0,
+				ORA_FETCHED_COLUMN_NULL_MESSAGE,
+				charstring::getLength(
+					ORA_FETCHED_COLUMN_NULL_MESSAGE),
+				ORA_FETCHED_COLUMN_NULL);
+	} else {
+		putSummary(cursorid,0,1,NULL);
+	}
+
+	return sendPacket(true);
+}
+
 void sqlrprotocol_oracle::putRefCursorBindValue(sqlrservercursor *child) {
 
 	// what a ref cursor's out bind slot carries: a constant, the describe
@@ -16800,45 +17016,75 @@ uint32_t sqlrprotocol_oracle::buildLobLocator(sqlrservercursor *cursor,
 						uint16_t wiretype,
 						byte_t *locator) {
 
-	// builds the locator a lob column's value is made of, and returns how
-	// many bytes of "locator" it filled in.  what identifies the lob is the
-	// cursor and the column it came from, in the four bytes a real server
-	// fills with a per-lob id - two locators in the same row have to differ
-	// there - and the cursor's pin generation, so a locator echoed back
-	// after its row has gone can be told from one that's still good.  which
-	// row is never encoded: only one row per cursor is ever pinned, so the
-	// row is whichever one the pin is on
+	// builds the locator a lob column's value is made of in "locator",
+	// which has room for ORACLE_BFILE_SIZE bytes, and returns how many of
+	// them it filled in.  what identifies the lob is the cursor and the
+	// column it came from, in the four bytes a real server fills with a
+	// per-lob id - two locators in the same row have to differ there - and
+	// the cursor's pin generation, so a locator echoed back after its row
+	// has gone can be told from one that's still good.  which row is never
+	// encoded: only one row per cursor is ever pinned, so the row is
+	// whichever one the pin is on
 	uint16_t	curid=cont->getId(cursor);
 
 	if (wiretype==ORACLE_TYPE_BFILE) {
 
-		bytestring::zero(locator,BFILE_LOCATOR_SIZE);
+		// the names, or none if the backend can't say
+		char		diralias[BFILE_LOCATOR_MAX_NAME_SIZE];
+		char		filename[BFILE_LOCATOR_MAX_NAME_SIZE];
+		uint16_t	diraliassize=0;
+		uint16_t	filenamesize=0;
+		if (!cont->getLobFieldFileName(cursor,column,
+					diralias,sizeof(diralias),
+					&diraliassize,
+					filename,sizeof(filename),
+					&filenamesize) ||
+				diraliassize>sizeof(diralias) ||
+				filenamesize>sizeof(filename)) {
+			diraliassize=0;
+			filenamesize=0;
+		}
+		debugWrite("bfile names: \"%.*s\" \"%.*s\"",
+					(int)diraliassize,diralias,
+					(int)filenamesize,filename);
 
-		// the byte count of everything after the count itself
-		putLocatorUB2(locator+LOB_LOCATOR_LENGTH_OFFSET,
-				(uint16_t)(BFILE_LOCATOR_SIZE-2));
-
+		bytestring::zero(locator,BFILE_LOCATOR_NAMES_OFFSET);
 		putLocatorUB2(locator+LOB_LOCATOR_VERSION_OFFSET,
 						BFILE_LOCATOR_VERSION);
 		locator[LOB_LOCATOR_TYPE_OFFSET]=LOB_LOCATOR_BFILE;
 		locator[LOB_LOCATOR_KIND_OFFSET]=BFILE_LOCATOR_KIND;
 		locator[LOB_LOCATOR_TYPE2_OFFSET]=BFILE_LOCATOR_TYPE2;
 
-		// the directory alias and the file name, both empty - no
-		// server side call hands either of them over
-		putLocatorUB2(locator+BFILE_LOCATOR_DIRECTORY_OFFSET,0);
-		putLocatorUB2(locator+BFILE_LOCATOR_FILENAME_OFFSET,0);
+		uint32_t	size=BFILE_LOCATOR_NAMES_OFFSET;
+		putLocatorUB2(locator+size,diraliassize);
+		size+=2;
+		bytestring::copy(locator+size,diralias,diraliassize);
+		size+=diraliassize;
+		putLocatorUB2(locator+size,filenamesize);
+		size+=2;
+		bytestring::copy(locator+size,filename,filenamesize);
+		size+=filenamesize;
 
-		putLocatorUB2(locator+BFILE_LOCATOR_ID_OFFSET,curid);
-		putLocatorUB2(locator+BFILE_LOCATOR_ID_OFFSET+2,
-						(uint16_t)column);
-		bytestring::copy(locator+BFILE_LOCATOR_MAGIC_OFFSET,
-					LOB_LOCATOR_MAGIC,
-					LOB_LOCATOR_MAGIC_SIZE);
-		putLocatorUB2(locator+BFILE_LOCATOR_GENERATION_OFFSET,
+		if (size+BFILE_LOCATOR_BOOKKEEPING_SIZE<=ORACLE_BFILE_SIZE) {
+			byte_t	*bk=locator+size;
+			putLocatorUB2(bk+BFILE_BOOKKEEPING_ID_OFFSET,curid);
+			putLocatorUB2(bk+BFILE_BOOKKEEPING_ID_OFFSET+2,
+							(uint16_t)column);
+			bytestring::copy(bk+BFILE_BOOKKEEPING_MAGIC_OFFSET,
+						LOB_LOCATOR_MAGIC,
+						LOB_LOCATOR_MAGIC_SIZE);
+			putLocatorUB2(bk+BFILE_BOOKKEEPING_GENERATION_OFFSET,
 						lobpingeneration[curid]);
+			size+=BFILE_LOCATOR_BOOKKEEPING_SIZE;
+		} else {
+			debugWrite("bfile names leave no room for bookkeeping");
+		}
 
-		return BFILE_LOCATOR_SIZE;
+		// the byte count of everything after the count itself
+		putLocatorUB2(locator+LOB_LOCATOR_LENGTH_OFFSET,
+						(uint16_t)(size-2));
+
+		return size;
 	}
 
 	bytestring::zero(locator,LOB_LOCATOR_SIZE);
@@ -16887,15 +17133,16 @@ bool sqlrprotocol_oracle::putLobLocator(sqlrservercursor *cursor,
 
 	// writes what a lob column carries in a row: the locator's length, the
 	// lob's length and the chunk size and then the start of its data if
-	// its define asks for them, the length again as a raw byte, and the
-	// locator itself.  a null lob is the length alone, as zero
+	// its define asks for them, and the locator itself, as a clr.  a null
+	// lob is the length alone, as zero
 	if (null) {
 		debugWrite("null lob");
 		writeLenPreInt(&reqpacket,(uint32_t)0);
 		return true;
 	}
 
-	byte_t		locator[LOB_LOCATOR_SIZE];
+	// a bfile's locator is the bigger one
+	byte_t		locator[ORACLE_BFILE_SIZE];
 	uint32_t	locatorsize=
 			buildLobLocator(cursor,column,wiretype,locator);
 
@@ -16960,8 +17207,11 @@ bool sqlrprotocol_oracle::putLobLocator(sqlrservercursor *cursor,
 			}
 		}
 	}
-	write(&reqpacket,(byte_t)locatorsize);
-	write(&reqpacket,(const byte_t *)locator,(size_t)locatorsize);
+
+	// a bfile locator with long names takes the long form - [0044] of
+	// test/protocol/oracle/samples/10696-dev-ojdbc-bfile-realserver-
+	// oracle122.oraproxy
+	putLenBytes((const char *)locator,locatorsize);
 
 	debugWrite("locator size: %d",locatorsize);
 
@@ -17130,39 +17380,60 @@ bool sqlrprotocol_oracle::decodeLobLocator(const byte_t *locator,
 	*column=0;
 	*wiretype=0;
 
-	if (!locator) {
+	if (!locator || locatorsize<=LOB_LOCATOR_TYPE_OFFSET) {
 		debugWrite("no locator");
 		return false;
 	}
 
-	uint16_t	idoffset;
-	uint16_t	magicoffset;
-	uint16_t	generationoffset;
-	if (locatorsize==LOB_LOCATOR_SIZE) {
-		idoffset=LOB_LOCATOR_ID_OFFSET;
-		magicoffset=LOB_LOCATOR_MAGIC_OFFSET;
-		generationoffset=LOB_LOCATOR_GENERATION_OFFSET;
-	} else if (locatorsize==BFILE_LOCATOR_SIZE) {
-		idoffset=BFILE_LOCATOR_ID_OFFSET;
-		magicoffset=BFILE_LOCATOR_MAGIC_OFFSET;
-		generationoffset=BFILE_LOCATOR_GENERATION_OFFSET;
+	// the bookkeeping sits at fixed offsets in a clob's or a blob's
+	// locator, and behind the names in a bfile's
+	const byte_t	*id;
+	const byte_t	*magic;
+	const byte_t	*gen;
+	byte_t		loctype=locator[LOB_LOCATOR_TYPE_OFFSET];
+	if (loctype==LOB_LOCATOR_CLOB || loctype==LOB_LOCATOR_BLOB) {
+		if (locatorsize!=LOB_LOCATOR_SIZE) {
+			debugWrite("lob locator size %d isn't %d",
+					locatorsize,LOB_LOCATOR_SIZE);
+			return false;
+		}
+		id=locator+LOB_LOCATOR_ID_OFFSET;
+		magic=locator+LOB_LOCATOR_MAGIC_OFFSET;
+		gen=locator+LOB_LOCATOR_GENERATION_OFFSET;
+	} else if (loctype==LOB_LOCATOR_BFILE) {
+		const byte_t	*diralias;
+		uint16_t	diraliassize;
+		const byte_t	*filename;
+		uint16_t	filenamesize;
+		const byte_t	*bk;
+		if (!parseBfileLocator(locator,locatorsize,
+					&diralias,&diraliassize,
+					&filename,&filenamesize,&bk)) {
+			return false;
+		}
+		if (!bk) {
+			debugWrite("bfile locator has no bookkeeping");
+			return false;
+		}
+		id=bk+BFILE_BOOKKEEPING_ID_OFFSET;
+		magic=bk+BFILE_BOOKKEEPING_MAGIC_OFFSET;
+		gen=bk+BFILE_BOOKKEEPING_GENERATION_OFFSET;
 	} else {
-		debugWrite("locator size %d isn't one this module mints",
-								locatorsize);
+		debugWrite("locator type 0x%02x isn't one this module mints",
+								loctype);
 		return false;
 	}
 
 	// a locator without the magic is one this module never handed out
-	if (bytestring::compare(locator+magicoffset,
-					LOB_LOCATOR_MAGIC,
+	if (bytestring::compare(magic,LOB_LOCATOR_MAGIC,
 					LOB_LOCATOR_MAGIC_SIZE)) {
 		debugWrite("locator isn't this module's");
 		return false;
 	}
 
-	uint16_t	curid=getLocatorUB2(locator+idoffset);
-	uint32_t	col=getLocatorUB2(locator+idoffset+2);
-	uint16_t	generation=getLocatorUB2(locator+generationoffset);
+	uint16_t	curid=getLocatorUB2(id);
+	uint32_t	col=getLocatorUB2(id+2);
+	uint16_t	generation=getLocatorUB2(gen);
 
 	debugWrite("locator cursor: %d",curid);
 	debugWrite("locator column: %d",col);
@@ -17201,6 +17472,67 @@ bool sqlrprotocol_oracle::decodeLobLocator(const byte_t *locator,
 	*cursor=c;
 	*column=col;
 	*wiretype=getWireColumnType(ct[col]);
+	return true;
+}
+
+bool sqlrprotocol_oracle::parseBfileLocator(const byte_t *locator,
+						uint32_t locatorsize,
+						const byte_t **diralias,
+						uint16_t *diraliassize,
+						const byte_t **filename,
+						uint16_t *filenamesize,
+						const byte_t **bookkeeping) {
+
+	*diralias=NULL;
+	*diraliassize=0;
+	*filename=NULL;
+	*filenamesize=0;
+	*bookkeeping=NULL;
+
+	// the header.  its count isn't checked - python-oracledb's
+	// setfilename() rewrites the names without updating it
+	if (!locator ||
+		locatorsize<BFILE_LOCATOR_NAMES_OFFSET+4 ||
+		locatorsize>ORACLE_BFILE_SIZE ||
+		locator[LOB_LOCATOR_TYPE_OFFSET]!=LOB_LOCATOR_BFILE) {
+		debugWrite("malformed bfile locator header");
+		return false;
+	}
+
+	// each name inside the locator
+	const byte_t	*end=locator+locatorsize;
+	const byte_t	*ptr=locator+BFILE_LOCATOR_NAMES_OFFSET;
+	uint16_t	dsize=getLocatorUB2(ptr);
+	ptr+=2;
+	if (dsize>end-ptr-2) {
+		debugWrite("bfile directory alias runs past the locator");
+		return false;
+	}
+	*diralias=ptr;
+	*diraliassize=dsize;
+	ptr+=dsize;
+	uint16_t	fsize=getLocatorUB2(ptr);
+	ptr+=2;
+	if (fsize>end-ptr) {
+		debugWrite("bfile file name runs past the locator");
+		return false;
+	}
+	*filename=ptr;
+	*filenamesize=fsize;
+	ptr+=fsize;
+
+	// nothing after the names, or exactly the module's bookkeeping
+	if (ptr==end) {
+		return true;
+	}
+	if (end-ptr!=BFILE_LOCATOR_BOOKKEEPING_SIZE ||
+		bytestring::compare(ptr+BFILE_BOOKKEEPING_MAGIC_OFFSET,
+					LOB_LOCATOR_MAGIC,
+					LOB_LOCATOR_MAGIC_SIZE)) {
+		debugWrite("malformed bfile locator bookkeeping");
+		return false;
+	}
+	*bookkeeping=ptr;
 	return true;
 }
 
@@ -17939,8 +18271,9 @@ bool sqlrprotocol_oracle::lobOperations(const byte_t *rp) {
 
 	// only the read side is implemented.  a write, a temporary lob, a
 	// trim or an erase gets a real oracle error rather than a wrong
-	// answer, and so does a file's name, which no server side call hands
-	// over
+	// answer, and so does a file's name, which no client asks for this
+	// way - OCI and python-oracledb read it out of the locator, and ojdbc
+	// runs dbms_lob.fileGetName() (see isFileGetNameCall())
 	if (operation!=LOB_OP_GET_LENGTH &&
 		operation!=LOB_OP_READ &&
 		operation!=LOB_OP_GET_CHUNK_SIZE &&

@@ -1247,6 +1247,16 @@ bool sqlrservercursor::getLobFieldSegment(uint32_t col,
 	return false;
 }
 
+bool sqlrservercursor::getLobFieldFileName(uint32_t col,
+					char *diralias, uint16_t diraliassize,
+					uint16_t *diraliaslength,
+					char *filename, uint16_t filenamesize,
+					uint16_t *filenamelength) {
+	*diraliaslength=0;
+	*filenamelength=0;
+	return false;
+}
+
 void sqlrservercursor::closeLobField(uint32_t col) {
 	// by default, do nothing
 }

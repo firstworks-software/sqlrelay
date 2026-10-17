@@ -122,7 +122,10 @@ Statements left open still leave room for a query, that a sixth left open
 gets ORA-01000, and that closing them recovers. Last it reads the lob rows
 back with getString/getBytes
 and getClob/getBlob at the default prefetch size and with
-oracle.jdbc.defaultLobPrefetchSize set to 0 and -1. test.sh runs it
+oracle.jdbc.defaultLobPrefetchSize set to 0 and -1. It also selects
+BFILE columns and reads each one's directory alias and file name with
+getDirAlias() and getName(), which run sys.dbms_lob.fileGetName with the
+locator bound. test.sh runs it
 against the 12.1, 10.2 and 11.2 listeners. To run it by hand:
 
     java -cp ojdbc8.jar:. ojdbc PORT MAJORVERSION
@@ -3848,6 +3851,168 @@ that statement, except where noted.
                                       cursors are never closed, so it never
                                       holds more than one cursor (module
                                       not captured) (#10700)
+
+    10696-dev-ojdbc-bfile-realserver-oracle122.oraproxy
+                                     ojdbc 23.26 (a scratch program: bfilename()
+                                      selects, then getDirAlias() and
+                                      getName() on each BFILE) against the
+                                      real 12.2 server, through oraproxy.
+                                      The row at [0020] carries the
+                                      locator's length (01 2b), a zero lob
+                                      length and a pad byte (00 00), and
+                                      the locator as a clr: 2b, then 00 29
+                                      00 01 08 08 00 00 00 01 00 00 00 00
+                                      00 00, then 00 07 DMP_DIR and 00 10
+                                      protocoltest.txt.  That is 43 bytes:
+                                      a 16 byte header that starts with a
+                                      size field (0x29) of the total less
+                                      2, then each name behind a 2 byte
+                                      length.  The names are in the
+                                      locator itself.  [0021] runs "begin
+                                      sys.dbms_lob.fileGetName(:1, :2, :3);
+                                      end;" with that locator bound, and
+                                      [0022] answers with the io vector
+                                      20 10 10, then each name as a clr
+                                      followed by a 00 indicator (07
+                                      DMP_DIR 00 10 protocoltest.txt 00),
+                                      the return parameters and the
+                                      summary.  ojdbc sends the second call
+                                      piggybacked on the next function code
+                                      ([0023], answered at [0024]).  The
+                                      server answers after the statement
+                                      is closed, so it works from the
+                                      locator alone.  A locator over 252
+                                      bytes ([0044], a 30 byte alias and a
+                                      255 byte name, 305 bytes) goes out as
+                                      fe, its length (02 01 31) and the
+                                      bytes, and a name over 252 bytes in
+                                      the answer at [0046] uses the same
+                                      long form (fe 01 ff, then the
+                                      bytes).  A 1000 byte file name
+                                      ([0057], behind a 128 byte alias)
+                                      gets ORA-22298 at [0063].
+                                      [0064] has UTF-8 names (a 45 byte
+                                      locator at [0067]), [0072] several
+                                      rows of short names (35 byte
+                                      locators, [0075]), [0096] a block
+                                      with plain string outs, answered at
+                                      [0097] with 07 03 abc 00 05 defgh 00
+                                      and no lob locator, [0113] a
+                                      bfilename() of a directory that
+                                      doesn't exist (a 34 byte locator at
+                                      [0116], no error) and [0127] a null
+                                      bfile (#10696)
+
+    10696-dev-ojdbc-bfile-realserver-oracle102.oraproxy
+                                     the same program against the real
+                                      10.2 server.  The answers to the
+                                      fileGetName calls (for example
+                                      [0022]) have the same io vector 20
+                                      10 10, names and indicators as the
+                                      12.2 server's, so the layout is the
+                                      same at every field version (#10696)
+
+    10696-dev-ojdbc-bfile-nullbind-realserver-oracle122.oraproxy
+                                     ojdbc 23.26 calling sys.dbms_lob.
+                                      fileGetName with a null bound as the
+                                      locator ([0015]) against the real
+                                      12.2 server.  The server answers with
+                                      break markers ([0016] to [0018]) and
+                                      then ORA-06502 with ORA-22275 behind
+                                      it ([0019]).  The module's answer to
+                                      a null locator is not captured
+                                      (#10696)
+
+    10696-dev-oci23-native-bfile-realserver-oracle122.oraproxy
+                                     an OCI 23.26 OCI8 client (a scratch
+                                      program) against the real 12.2
+                                      server, through oraproxy.  [0015]
+                                      selects a bfile, [0017] runs
+                                      sys.dbms_lob.fileGetName with its
+                                      locator bound and [0018] answers with
+                                      the io vector 20 10 10, DMP_DIR and
+                                      protocoltest.txt, in the native
+                                      encoding.  [0019] to [0022] are a 30
+                                      byte alias and a 255 byte name, and
+                                      [0023] to [0026] a 255 byte alias and
+                                      a 255 byte name, the largest locator
+                                      (530 bytes), whose answer at [0026]
+                                      sends each name in the long form
+                                      (fe, its length, the bytes).
+                                      OCILobFileGetName itself sends
+                                      nothing: the OCI client reads the
+                                      names out of the locator, so the calls
+                                      here are the explicit PL/SQL ones
+                                      (#10696)
+
+    10696-dev-pythonoracledb-thin-bfile-realserver-oracle122.oraproxy
+                                     python-oracledb 4.0.2 thin against the
+                                      real 12.2 server: a bfile select
+                                      ([0015], row at [0018] with the same
+                                      43 byte locator), the lob operations
+                                      python-oracledb sends for it
+                                      ([0019] to [0023]), a select of
+                                      '.bash_profile' ([0028]), the
+                                      sys.dbms_lob.fileGetName block with
+                                      the locator bound ([0050]), a long
+                                      locator ([0054]), UTF-8 names
+                                      ([0058]) and several rows ([0062]).
+                                      python-oracledb's getfilename()
+                                      reads the names from the locator and
+                                      sends no call (#10696)
+
+    10696-dev-pythonoracledb-thin-loblocatorbind-realserver-oracle122.oraproxy
+                                     python-oracledb 4.0.2 thin binding the
+                                      CLOB and BLOB locators it fetched
+                                      ([0013]) into a block that calls
+                                      dbms_lob.getlength on each ([0017]),
+                                      against the real 12.2 server.  The
+                                      answer at [0018] returns the two
+                                      lengths, 3 and 2.  It shows how a lob
+                                      locator bind goes out on the wire
+                                      (#10696)
+
+    10696-dev-ojdbc-bfile-sqlrelay121.oraproxy
+                                     the ojdbc program against a -buildtree
+                                      listener at serverversion 12.1, before
+                                      the fix.  The row at [0020] carries a
+                                      43 byte locator with empty names (zero
+                                      lengths, then the module's own
+                                      bookkeeping bytes), and each
+                                      fileGetName call ([0021], [0023]) gets
+                                      ORA-06550 with PLS-00306 ([0022],
+                                      [0024]), since the module read the
+                                      locator bind as a bare clr, where the
+                                      wire sends a length byte first, and
+                                      bound it as a BLOB (#10696)
+
+    10696-dev-ojdbc-bfile-sqlrelay112.oraproxy
+    10696-dev-ojdbc-bfile-sqlrelay102.oraproxy
+                                     the same against listeners at
+                                      serverversion 11.2 and 10.2, before
+                                      the fix.  The fileGetName calls get
+                                      PLS-00306 at both (#10696)
+
+    10696-dev-pythonoracledb-thin-bfile-sqlrelay121.oraproxy
+    10696-dev-pythonoracledb-thin-bfile-names-sqlrelay121.oraproxy
+                                     python-oracledb 4.0.2 thin against a
+                                      -buildtree listener at serverversion
+                                      12.1, before the fix.  The first is
+                                      the plain bfile select and the
+                                      fileGetName block, which gets
+                                      PLS-00306.  The second adds the long
+                                      and UTF-8 names and several rows.  In
+                                      it a lob operation on a locator
+                                      ([0023]) gets ORA-22275 at [0024]
+                                      (#10696)
+
+    10696-dev-oci23-portable-bfile-sqlrelay121.oraproxy
+                                     the OCI 23.26 program against a
+                                      -buildtree listener at serverversion
+                                      12.1, before the fix, in the portable
+                                      encoding.  Its sys.dbms_lob.
+                                      fileGetName block ([0017]) gets
+                                      PLS-00306 at [0018] (#10696)
 
 The v11 time zone file for the oci8 run
 ---------------------------------------

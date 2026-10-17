@@ -3702,10 +3702,8 @@ int main(int argc, char **argv) {
 
 	stdoutput.printf("OCILobFileGetName - bfile\n");
 	// this one never reaches the server - the client reads the directory
-	// alias and the file name straight out of the locator it was handed.
-	// no server side call hands either of them over, so the locator
-	// carries neither and the client reads back two empty names rather
-	// than a made up pair.  the call itself still succeeds
+	// alias and the file name straight out of the locator it was handed,
+	// so the locator has to carry the names the row was inserted with
 	char	bfiledir[64];
 	char	bfilename[256];
 	ub2	bfiledirlen=sizeof(bfiledir);
@@ -3717,10 +3715,10 @@ int main(int argc, char **argv) {
 					(text *)bfiledir,&bfiledirlen,
 					(text *)bfilename,&bfilenamelen),
 		OCI_SUCCESS);
-	assertEquals((const char *)bfiledir,"");
-	assertEquals((int)bfiledirlen,0);
-	assertEquals((const char *)bfilename,"");
-	assertEquals((int)bfilenamelen,0);
+	assertEquals((const char *)bfiledir,"DMP_DIR");
+	assertEquals((int)bfiledirlen,7);
+	assertEquals((const char *)bfilename,"protocoltest.txt");
+	assertEquals((int)bfilenamelen,16);
 	stdoutput.printf("\n\n");
 
 
@@ -3836,6 +3834,23 @@ int main(int argc, char **argv) {
 	assertEquals((int)blobamount,512);
 	assertTrue(!bytestring::compare(blobbuffer,blobvalue,
 						sizeof(blobvalue)));
+	stdoutput.printf("\n\n");
+
+
+	stdoutput.printf("OCILobFileGetName - prefetched bfile\n");
+	bfiledirlen=sizeof(bfiledir);
+	bfilenamelen=sizeof(bfilename);
+	bytestring::zero(bfiledir,sizeof(bfiledir));
+	bytestring::zero(bfilename,sizeof(bfilename));
+	assertEquals(
+		OCILobFileGetName(env,err,prebfile,
+					(text *)bfiledir,&bfiledirlen,
+					(text *)bfilename,&bfilenamelen),
+		OCI_SUCCESS);
+	assertEquals((const char *)bfiledir,"DMP_DIR");
+	assertEquals((int)bfiledirlen,7);
+	assertEquals((const char *)bfilename,"protocoltest.txt");
+	assertEquals((int)bfilenamelen,16);
 	stdoutput.printf("\n\n");
 
 

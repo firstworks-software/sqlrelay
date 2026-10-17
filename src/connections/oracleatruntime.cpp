@@ -254,6 +254,13 @@ sword (*OCILobIsTemporary)(OCIEnv *,
 				OCIError *,
 				OCILobLocator *locp,
 				boolean *);
+sword (*OCILobFileGetName)(OCIEnv *,
+				OCIError *,
+				const OCILobLocator *,
+				OraText *,
+				ub2 *,
+				OraText *,
+				ub2 *);
 sword (*OCIDescriptorFree)(void *descp,
 				const ub4);
 sword (*OCIHandleFree)(void *,
@@ -814,6 +821,18 @@ static bool loadLibraries(stringbuffer *errormessage) {
 					boolean *))
 				lib.getSymbol("OCILobIsTemporary");
 	if (!OCILobIsTemporary) {
+		goto error;
+	}
+
+	OCILobFileGetName=(sword (*)(OCIEnv *,
+					OCIError *,
+					const OCILobLocator *,
+					OraText *,
+					ub2 *,
+					OraText *,
+					ub2 *))
+				lib.getSymbol("OCILobFileGetName");
+	if (!OCILobFileGetName) {
 		goto error;
 	}
 

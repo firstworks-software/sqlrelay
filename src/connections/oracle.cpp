@@ -408,6 +408,11 @@ class SQLRSERVER_DLLSPEC oraclecursor : public sqlrservercursor {
 					char *buffer, uint64_t buffersize,
 					uint64_t offset, uint64_t charstoread,
 					uint64_t *charsread);
+		bool		getLobFieldFileName(uint32_t col,
+					char *diralias, uint16_t diraliassize,
+					uint16_t *diraliaslength,
+					char *filename, uint16_t filenamesize,
+					uint16_t *filenamelength);
 		void		closeLobField(uint32_t col);
 		void		closeResultSet();
 
@@ -5772,6 +5777,37 @@ bool oraclecursor::getLobFieldSegment(uint32_t col,
 
 	// return sucess or failure
 	return (result!=OCI_INVALID_HANDLE);
+}
+
+bool oraclecursor::getLobFieldFileName(uint32_t col,
+					char *diralias, uint16_t diraliassize,
+					uint16_t *diraliaslength,
+					char *filename, uint16_t filenamesize,
+					uint16_t *filenamelength) {
+
+	*diraliaslength=0;
+	*filenamelength=0;
+
+	// only a bfile has names
+	if (desc[col].dbtype!=BFILE_TYPE) {
+		return false;
+	}
+
+	// the lengths go in as the buffer sizes and come back as the name
+	// sizes, and the names come back without a terminating null
+	ub2	dlength=diraliassize;
+	ub2	flength=filenamesize;
+	if (OCILobFileGetName(oracleconn->env,
+				oracleconn->err,
+				def_lob[col][row],
+				(text *)diralias,&dlength,
+				(text *)filename,&flength)!=OCI_SUCCESS) {
+		return false;
+	}
+
+	*diraliaslength=dlength;
+	*filenamelength=flength;
+	return true;
 }
 
 void oraclecursor::closeLobField(uint32_t col) {

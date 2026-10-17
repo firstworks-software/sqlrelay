@@ -4,12 +4,15 @@
 import java.sql.*;
 import java.util.Arrays;
 import java.util.Properties;
+import oracle.jdbc.OracleCallableStatement;
+import oracle.jdbc.OracleResultSet;
+import oracle.sql.BFILE;
 
 // ojdbc (thin driver) checks against an oracle protocol listener: the version
 // call, plain dml update counts, batches and transactions, failed statements
-// past the instance's maxcursors, and CLOB/BLOB selects at the driver's
-// default lob prefetch size and with prefetch set to 0 (length only) and -1
-// (locator only)
+// past the instance's maxcursors, and CLOB/BLOB selects and BFILE directory
+// alias and file name lookups at the driver's default lob prefetch size and
+// with prefetch set to 0 (length only) and -1 (locator only)
 //
 // usage: java -cp ojdbc8.jar:. ojdbc port majorversion
 class ojdbc {
@@ -89,6 +92,28 @@ class ojdbc {
 		return result;
 	}
 
+	// a name of the given length, the prefix followed by the alphabet
+	static String longname(String prefix, int length) {
+		StringBuilder	sb=new StringBuilder(prefix);
+		while (sb.length()<length) {
+			sb.append((char)('a'+(sb.length()%26)));
+		}
+		return sb.toString();
+	}
+
+	// a long directory alias and the longest file name a BFILE takes,
+	// which push the locator past 252 bytes
+	static final String	longalias=longname("ALIAS",30).toUpperCase();
+	static final String	longfile=longname("file",255);
+
+	static String expectedalias(int id) {
+		return (id==1)?"DMP_DIR":longalias;
+	}
+
+	static String expectedfile(int id) {
+		return (id==1)?"protocoltest.txt":longfile;
+	}
+
 	static void setup(String port) throws Exception {
 		System.out.println("setup:");
 		Connection	con=connect(port,null);
@@ -109,6 +134,11 @@ class ojdbc {
 		st.execute("create table protocoltestojdbcfail "+
 				"(id number primary key)");
 		st.executeUpdate("insert into protocoltestojdbcfail values (1)");
+		st.execute("begin execute immediate "+
+				"'drop table protocoltestojdbcbf'; "+
+				"exception when others then null; end;");
+		st.execute("create table protocoltestojdbcbf "+
+				"(id number, f bfile)");
 
 		check("row 1 insert",insertlobs(con,1,4)==1,"");
 		check("row 2 insert",insertlobs(con,2,20)==1,"");
@@ -119,6 +149,15 @@ class ojdbc {
 				"insert into protocoltestojdbc values "+
 				"(4,to_clob('hello'),"+
 				"to_blob(hextoraw('0102030405')))")==1,"");
+
+		// bfilename() checks neither name, so the directory and
+		// the file need not exist
+		for (int id=1; id<=2; id++) {
+			check("bfile row "+id+" insert",st.executeUpdate(
+				"insert into protocoltestojdbcbf values "+
+				"("+id+",bfilename('"+expectedalias(id)+"','"+
+				expectedfile(id)+"'))")==1,"");
+		}
 		st.close();
 		con.close();
 	}
@@ -129,6 +168,7 @@ class ojdbc {
 		st.execute("drop table protocoltestojdbc");
 		st.execute("drop table protocoltestojdbcdml");
 		st.execute("drop table protocoltestojdbcfail");
+		st.execute("drop table protocoltestojdbcbf");
 		st.close();
 		con.close();
 	}
@@ -605,6 +645,79 @@ class ojdbc {
 		con.close();
 	}
 
+	static void checknames(String label, BFILE f, int id) throws Exception {
+		String	alias=f.getDirAlias();
+		String	name=f.getName();
+		check(label+" getDirAlias",expectedalias(id).equals(alias),
+							"got \""+alias+"\"");
+		check(label+" getName",expectedfile(id).equals(name),
+							"got \""+name+"\"");
+	}
+
+	static void bfiles(String port, String prefetch) throws Exception {
+		System.out.println("bfile lob prefetch "+
+				((prefetch==null)?"default":prefetch)+":");
+		Connection	con=connect(port,prefetch);
+		Statement	st=con.createStatement();
+
+		// the names of each row while it is the current one
+		ResultSet	rs=st.executeQuery("select id,f from "+
+					"protocoltestojdbcbf order by id");
+		BFILE	first=null;
+		int	rows=0;
+		while (rs.next()) {
+			rows++;
+			int	id=rs.getInt(1);
+			BFILE	f=((OracleResultSet)rs).getBFILE(2);
+			if (id==1) {
+				first=f;
+			}
+			checknames("row "+id,f,id);
+		}
+		check("row count",rows==2,"got "+rows);
+
+		// row 1's names, read after fetching past it
+		if (first!=null) {
+			checknames("row 1 after the fetch",first,1);
+		}
+		rs.close();
+
+		// fileGetName, called directly with each row's locator, in the
+		// same text that getDirAlias() and getName() send
+		rs=st.executeQuery("select id,f from "+
+					"protocoltestojdbcbf order by id");
+		while (rs.next()) {
+			int	id=rs.getInt(1);
+			BFILE	f=((OracleResultSet)rs).getBFILE(2);
+			OracleCallableStatement	cs=
+				(OracleCallableStatement)con.prepareCall(
+					"begin sys.dbms_lob.fileGetName"+
+					"(:1, :2, :3); end;");
+			cs.setBFILE(1,f);
+			cs.registerOutParameter(2,Types.VARCHAR);
+			cs.registerOutParameter(3,Types.VARCHAR);
+			cs.execute();
+			String	alias=cs.getString(2);
+			String	name=cs.getString(3);
+			check("row "+id+" fileGetName directory alias",
+					expectedalias(id).equals(alias),
+					"got \""+alias+"\"");
+			check("row "+id+" fileGetName file name",
+					expectedfile(id).equals(name),
+					"got \""+name+"\"");
+			cs.close();
+		}
+		rs.close();
+
+		// a query that still works after the bfiles
+		rs=st.executeQuery("select 1 from dual");
+		check("query after bfiles",rs.next() && rs.getInt(1)==1,"");
+		rs.close();
+
+		st.close();
+		con.close();
+	}
+
 	public static void main(String args[]) throws Exception {
 
 		Class.forName("oracle.jdbc.OracleDriver");
@@ -641,6 +754,11 @@ class ojdbc {
 				lobs(port,prefetches[i]);
 			} catch (Exception e) {
 				check("lobs",false,e.toString());
+			}
+			try {
+				bfiles(port,prefetches[i]);
+			} catch (Exception e) {
+				check("bfiles",false,e.toString());
 			}
 		}
 		try {

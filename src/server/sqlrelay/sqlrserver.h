@@ -2892,6 +2892,30 @@ class SQLRSERVER_DLLSPEC sqlrservercontroller : public sqlrserverbase {
 						uint64_t *charsread);
 
 		/** If the field in column "col" of the current row, of the
+		 *  current result set of "cursor" is a LOB that refers to a
+		 *  file outside of the database, such as an Oracle BFILE, then
+		 *  this method copies the name of the directory alias that the
+		 *  file is in into "diralias" of size "diraliassize" and the
+		 *  name of the file into "filename" of size "filenamesize",
+		 *  and sets "diraliaslength" and "filenamelength" to the
+		 *  number of bytes in each.
+		 *
+		 *  Note that neither name is null-terminated.
+		 *
+		 *  Returns true on success and false if an error occurred, if
+		 *  the field isn't that kind of LOB, or if the database
+		 *  doesn't support this operation, in which case both lengths
+		 *  are set to 0. */
+		bool	getLobFieldFileName(sqlrservercursor *cursor,
+						uint32_t col,
+						char *diralias,
+						uint16_t diraliassize,
+						uint16_t *diraliaslength,
+						char *filename,
+						uint16_t filenamesize,
+						uint16_t *filenamelength);
+
+		/** If the field in column "col" of the current row, of the
 		 *  current result set of "cursor" is a LOB then this method
 		 *  closes the LOB. */
 		void	closeLobField(sqlrservercursor *cursor,
@@ -5671,6 +5695,30 @@ class SQLRSERVER_DLLSPEC sqlrservercursor : public sqlrserverbase {
 						uint64_t offset,
 						uint64_t charstoread,
 						uint64_t *charsread);
+
+		/** If the field in column "col" of the current row, of the
+		 *  current result set is a LOB that refers to a file outside
+		 *  of the database, such as an Oracle BFILE, then this method
+		 *  copies the name of the directory alias that the file is in
+		 *  into "diralias" of size "diraliassize" and the name of the
+		 *  file into "filename" of size "filenamesize", and sets
+		 *  "diraliaslength" and "filenamelength" to the number of
+		 *  bytes in each.
+		 *
+		 *  Note that neither name is null-terminated.
+		 *
+		 *  Returns true on success and false if an error occurred, if
+		 *  the field isn't that kind of LOB, or if the database
+		 *  doesn't support this operation, in which case both lengths
+		 *  are set to 0.  The default implementation sets both
+		 *  lengths to 0 and returns false. */
+		virtual bool	getLobFieldFileName(uint32_t col,
+						char *diralias,
+						uint16_t diraliassize,
+						uint16_t *diraliaslength,
+						char *filename,
+						uint16_t filenamesize,
+						uint16_t *filenamelength);
 
 		/** If the field in column "col" of the current row, of the
 		 *  current result is a LOB then this method closes the LOB. */

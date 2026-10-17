@@ -311,6 +311,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   images
 - added serverversion and allowedlogonversion attributes to the oracle
   protocol module
+- added sqlrservercursor::getLobFieldFileName() and
+  sqlrservercontroller::getLobFieldFileName()
 
 ### Changed
 - requires rudiments 2.3.0 or newer
@@ -660,11 +662,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   refused with ORA-03001; before this every lob operation, read
   or write, fell into the generic unimplemented path, which
   doesn't read the request body at all and so desynced the
-  session.  a bfile's directory alias and file name are the one
-  gap: no server side call hands either of them over, and the
-  client reads them out of the locator without asking, so
-  OCILobFileGetName answers with two empty names rather than a
-  made up pair
+  session.  a bfile's locator carries its directory alias and file
+  name, and dbms_lob.fileGetName (ojdbc getDirAlias() and
+  getName()) and OCILobFileGetName return them
 - oracle protocol module: output and in-out bind variables work on the
   modern (10g and later) path now - a placeholder in a pl/sql
   block is answered with the value the block left in it, so an

@@ -12751,6 +12751,21 @@ bool sqlrservercontroller::getLobFieldSegment(sqlrservercursor *cursor,
 						offset,charstoread,charsread);
 }
 
+bool sqlrservercontroller::getLobFieldFileName(sqlrservercursor *cursor,
+						uint32_t col,
+						char *diralias,
+						uint16_t diraliassize,
+						uint16_t *diraliaslength,
+						char *filename,
+						uint16_t filenamesize,
+						uint16_t *filenamelength) {
+	return cursor->getLobFieldFileName(mapColumn(col),
+						diralias,diraliassize,
+						diraliaslength,
+						filename,filenamesize,
+						filenamelength);
+}
+
 void sqlrservercontroller::closeLobField(sqlrservercursor *cursor,
 							uint32_t col) {
 	cursor->closeLobField(mapColumn(col));
