@@ -406,6 +406,8 @@ class SQLRSERVER_DLLSPEC oraclecursor : public sqlrservercursor {
 					bool *lob,
 					bool *null);
 		void		nextRow();
+		bool		openBfile(uint32_t col, bool *opened);
+		void		closeBfile(uint32_t col, bool opened);
 		bool		getLobFieldLength(uint32_t col,
 							uint64_t *length);
 		bool		getLobFieldSegment(uint32_t col,
@@ -5740,12 +5742,49 @@ void oraclecursor::nextRow() {
 	row++;
 }
 
+bool oraclecursor::openBfile(uint32_t col, bool *opened) {
+
+	// a bfile has to be open to be measured or read.  open it for the
+	// call, unless something already has, and close it again afterward
+	// with closeBfile() so it doesn't count against the session's open
+	// file limit.  false if the file can't be opened, eg. it isn't there
+	*opened=false;
+	if (desc[col].dbtype!=BFILE_TYPE) {
+		return true;
+	}
+	boolean	isopen=FALSE;
+	if (OCILobFileIsOpen(oracleconn->svc,oracleconn->err,
+				def_lob[col][row],&isopen)!=OCI_SUCCESS) {
+		return false;
+	}
+	if (isopen) {
+		return true;
+	}
+	if (OCILobFileOpen(oracleconn->svc,oracleconn->err,
+				def_lob[col][row],
+				OCI_FILE_READONLY)!=OCI_SUCCESS) {
+		return false;
+	}
+	*opened=true;
+	return true;
+}
+
+void oraclecursor::closeBfile(uint32_t col, bool opened) {
+	if (opened) {
+		OCILobFileClose(oracleconn->svc,oracleconn->err,
+						def_lob[col][row]);
+	}
+}
+
 bool oraclecursor::getLobFieldLength(uint32_t col, uint64_t *length) {
 	ub4	loblength=0;
-	bool	retval=(OCILobGetLength(oracleconn->svc,
+	bool	opened=false;
+	bool	retval=(openBfile(col,&opened) &&
+			OCILobGetLength(oracleconn->svc,
 					oracleconn->err,
 					def_lob[col][row],
 					&loblength)==OCI_SUCCESS);
+	closeBfile(col,opened);
 	*length=loblength;
 	return retval;
 }
@@ -5757,6 +5796,12 @@ bool oraclecursor::getLobFieldSegment(uint32_t col,
 
 	// initialize the read length to the number of characters to read
 	ub4	readlength=charstoread;
+
+	// a bfile has to be open to be read
+	bool	opened=false;
+	if (!openBfile(col,&opened)) {
+		return false;
+	}
 
 	// read from the lob
 	// (offset+1 is very important,
@@ -5772,6 +5817,7 @@ bool oraclecursor::getLobFieldSegment(uint32_t col,
 				(sb4(*)(dvoid *,CONST dvoid *,ub4,ub1))NULL,
 				0,
 				(desc[col].nclob)?SQLCS_NCHAR:SQLCS_IMPLICIT);
+	closeBfile(col,opened);
 
 	// A read past the end of a table-column lob (including a genuinely
 	// empty one) leaves result at OCI_SUCCESS with readlength already

@@ -313,6 +313,12 @@
 #define ORA_UNIMPLEMENTED_FEATURE		3001
 #define ORA_UNIMPLEMENTED_FEATURE_MESSAGE	"ORA-03001: unimplemented feature\n"
 
+// what opening a bfile whose file can't be opened gets back
+#define ORA_FILE_OPEN_FAILED			22288
+#define ORA_FILE_OPEN_FAILED_MESSAGE \
+	"ORA-22288: file or LOB operation FILEOPEN failed\n" \
+	"No such file or directory\n"
+
 // what a lob operation gets back when the locator it quotes doesn't decode
 // to a row the module is still holding - a locator from a cursor that has
 // since been closed, re-executed or fetched past, or one this module never
@@ -906,10 +912,10 @@
 #define LOB_OP_WRITE			0x00040
 #define LOB_OP_TRIM			0x00080
 #define LOB_OP_FILE_OPEN		0x00100
-#define LOB_OP_FILE_IS_OPEN		0x00200
-#define LOB_OP_FILE_CLOSE		0x00400
+#define LOB_OP_FILE_CLOSE		0x00200
+#define LOB_OP_FILE_IS_OPEN		0x00400
 #define LOB_OP_FILE_EXISTS		0x00800
-#define LOB_OP_FILE_GET_NAME		0x01000
+#define LOB_OP_FILE_CLOSE_ALL		0x01000
 #define LOB_OP_GET_CHUNK_SIZE		0x04000
 #define LOB_OP_CREATE_TEMPORARY		0x00110
 #define LOB_OP_FREE_TEMPORARY		0x00111
@@ -919,11 +925,15 @@
 
 // what a lob operation's answer carries between the locator and the
 // summary object: a count prefixed 8 byte value, or nothing at all for a
-// close.  a file exists answers with the same count prefixed value as the
-// rest, carrying 1 or 0 - measured, a bare boolean byte instead gets
-// ORA-03108 from OCI 23.26 and kills the call
+// close.  a file exists and a file is open answer 1 or 0 the count prefixed
+// way to an OCI client ([0018] and [0020] of test/protocol/oracle/samples/
+// 10699-dev-oci23-portable-bfile-open-realserver-oracle122.oraproxy) and as
+// a single byte to a thin driver ([0018] and [0022] of 10699-dev-
+// pythonoracledb-thin-bfile-read-realserver-oracle122.oraproxy), and a
+// client given the other form loses the stream
 #define LOB_RESULT_NONE			0
 #define LOB_RESULT_UB8			1
+#define LOB_RESULT_BOOL			2
 
 // a lob data packet's fixed parts: the 64 byte descriptor block in front of
 // the data, and the more-data flag that says whether another chunk follows.
@@ -2097,6 +2107,11 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_oracle : public sqlrprotocol {
 							uint32_t colcount);
 		void	releaseLobPin(sqlrservercursor *cursor);
 		void	clearLobPin(uint16_t curid);
+		void	setLobOpen(sqlrservercursor *cursor,
+						uint32_t column,
+						bool open);
+		bool	isLobOpen(sqlrservercursor *cursor,
+						uint32_t column);
 
 		// lob operations...
 		bool	lobOperations(const byte_t *rp);
@@ -2779,6 +2794,10 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_oracle : public sqlrprotocol {
 		// told from one that's still good
 		uint16_t	*lobpingeneration;
 
+		// the columns of a pinned row whose file the client has
+		// opened, one bit each, for the first 64 columns
+		uint64_t	*lobopenmask;
+
 		// whether the row putRowData() just wrote handed out a locator
 		bool		rowhaslob;
 
@@ -3165,6 +3184,7 @@ sqlrprotocol_oracle::sqlrprotocol_oracle(sqlrservercontroller *cont,
 	lobpinned=new bool[maxcursorcount];
 	lobpincolcount=new uint32_t[maxcursorcount];
 	lobpingeneration=new uint16_t[maxcursorcount];
+	lobopenmask=new uint64_t[maxcursorcount];
 	cursorbinds=new oraclequery3bind *[maxcursorcount];
 	cursorbindcounts=new uint32_t[maxcursorcount];
 	cursordefines=new oraclequery3define *[maxcursorcount];
@@ -3182,6 +3202,7 @@ sqlrprotocol_oracle::sqlrprotocol_oracle(sqlrservercontroller *cont,
 		lobpinned[i]=false;
 		lobpincolcount[i]=0;
 		lobpingeneration[i]=0;
+		lobopenmask[i]=0;
 		cursorbinds[i]=new oraclequery3bind[maxbindcount];
 		cursorbindcounts[i]=0;
 		cursordefines[i]=NULL;
@@ -3263,6 +3284,7 @@ sqlrprotocol_oracle::~sqlrprotocol_oracle() {
 	delete[] lobpinned;
 	delete[] lobpincolcount;
 	delete[] lobpingeneration;
+	delete[] lobopenmask;
 
 	delete[] query3binds;
 	delete[] query3bindvalues;
@@ -17565,6 +17587,31 @@ void sqlrprotocol_oracle::clearLobPin(uint16_t curid) {
 	lobpinned[curid]=false;
 	lobpincolcount[curid]=0;
 	lobpingeneration[curid]++;
+	lobopenmask[curid]=0;
+}
+
+void sqlrprotocol_oracle::setLobOpen(sqlrservercursor *cursor,
+						uint32_t column,
+						bool open) {
+
+	// remembers whether a file's been opened, for the is open call
+	uint16_t	curid=cont->getId(cursor);
+	if (column>=64) {
+		return;
+	}
+	uint64_t	bit=((uint64_t)1)<<column;
+	if (open) {
+		lobopenmask[curid]|=bit;
+	} else {
+		lobopenmask[curid]&=~bit;
+	}
+}
+
+bool sqlrprotocol_oracle::isLobOpen(sqlrservercursor *cursor,
+						uint32_t column) {
+	return (column<64 &&
+		(lobopenmask[cont->getId(cursor)]&
+				(((uint64_t)1)<<column)));
 }
 
 static uint16_t getLocatorUB2(const byte_t *bytes) {
@@ -18006,7 +18053,12 @@ bool sqlrprotocol_oracle::sendLobReadResponse(sqlrservercursor *cursor,
 	// clientstring, populated from the client's self-reported driver name
 	// during protocol negotiation, is the only signal on hand that tells
 	// it apart.
+	// a bfile's data goes inline whatever was agreed, for every client - a
+	// real 12.2 server answers an OCI client that did agree to zero copy
+	// that way: [0028] of test/protocol/oracle/samples/10699-dev-oci23-
+	// portable-bfile-open-realserver-oracle122.oraproxy
 	bool		singlepacket=(!lobzerocopy ||
+				wiretype==ORACLE_TYPE_BFILE ||
 				(clientstring!=NULL &&
 				charstring::contains(clientstring,
 							"python-oracledb")));
@@ -18207,6 +18259,8 @@ bool sqlrprotocol_oracle::sendLobOperationResponse(const byte_t *locator,
 
 	if (resulttype==LOB_RESULT_UB8) {
 		putLenPreUB8(result);
+	} else if (resulttype==LOB_RESULT_BOOL) {
+		write(&reqpacket,(byte_t)((result)?1:0));
 	}
 
 	debugStart("lob operation response");
@@ -18522,11 +18576,31 @@ bool sqlrprotocol_oracle::lobOperations(const byte_t *rp) {
 		operation!=LOB_OP_FILE_EXISTS &&
 		operation!=LOB_OP_OPEN &&
 		operation!=LOB_OP_FILE_OPEN &&
+		operation!=LOB_OP_FILE_IS_OPEN &&
+		operation!=LOB_OP_FILE_CLOSE_ALL &&
 		operation!=LOB_OP_CLOSE &&
 		operation!=LOB_OP_FILE_CLOSE) {
 		debugWrite("lob operation 0x%05x not implemented",operation);
 		return sendLobOperationError(ORA_UNIMPLEMENTED_FEATURE,
 					ORA_UNIMPLEMENTED_FEATURE_MESSAGE);
+	}
+
+	// OCILobFileCloseAll() quotes no locator.  every file the session has
+	// open is closed, and the answer is the summary object alone - [0033]
+	// and [0034] of test/protocol/oracle/samples/10699-dev-oci23-portable-
+	// bfile-open-realserver-oracle122.oraproxy
+	if (operation==LOB_OP_FILE_CLOSE_ALL) {
+		for (uint16_t i=0; i<maxcursorcount; i++) {
+			lobopenmask[i]=0;
+		}
+		resetSendPacketBuffer(PACKET_DATA);
+		writeBE(&reqpacket,(uint16_t)0);
+		if (query3session) {
+			putSummary(0,0,0,NULL);
+		} else {
+			putOci7Error(0,0,0,0,0,NULL,0);
+		}
+		return sendPacket(true);
 	}
 
 	// the locator says which cursor and column to work on, and whether
@@ -18565,20 +18639,42 @@ bool sqlrprotocol_oracle::lobOperations(const byte_t *rp) {
 						LOB_RESULT_UB8,LOB_CHUNK_SIZE);
 	}
 
-	// no server side call opens a bfile and asks whether the file is
-	// there, so the length stands in for it: a bfile whose file isn't
-	// there has none.  getLobFieldLength() itself answers a bfile
-	// column either way, so its success alone says nothing
+	// no server side call asks whether a bfile's file is there, so
+	// measuring it stands in for it: the oracle connection module opens
+	// the file to do that, and fails if it can't
 	if (operation==LOB_OP_FILE_EXISTS) {
 		uint64_t	loblength=0;
 		uint64_t	exists=(cont->getLobFieldLength(cursor,column,
-						&loblength) && loblength)?1:0;
+						&loblength))?1:0;
 		return sendLobOperationResponse(sourcelocator,sourcesize,
-						LOB_RESULT_UB8,exists);
+						(ociclient)?LOB_RESULT_UB8:
+							LOB_RESULT_BOOL,
+						exists);
 	}
 
-	// opening a lob is a client side state change - there's nothing to
-	// do here but agree to it, and hand back the mode it asked for
+	// opening a file is a client side state change - there's nothing to
+	// do here but agree to it, remember it for the is open call that
+	// python-oracledb and OCI make before and after, and hand back the
+	// mode it asked for.  the answer to is open takes the same form as
+	// the one to exists
+	if (operation==LOB_OP_FILE_OPEN) {
+
+		// a file that can't be opened is the error a real server
+		// gives - [0027] of test/protocol/oracle/samples/10696-dev-
+		// pythonoracledb-thin-bfile-realserver-oracle122.oraproxy
+		uint64_t	loblength=0;
+		if (!cont->getLobFieldLength(cursor,column,&loblength)) {
+			return sendLobOperationError(ORA_FILE_OPEN_FAILED,
+					ORA_FILE_OPEN_FAILED_MESSAGE);
+		}
+		setLobOpen(cursor,column,true);
+	}
+	if (operation==LOB_OP_FILE_IS_OPEN) {
+		return sendLobOperationResponse(sourcelocator,sourcesize,
+					(ociclient)?LOB_RESULT_UB8:
+							LOB_RESULT_BOOL,
+					(isLobOpen(cursor,column))?1:0);
+	}
 	if (operation==LOB_OP_OPEN || operation==LOB_OP_FILE_OPEN) {
 		return sendLobOperationResponse(sourcelocator,sourcesize,
 					LOB_RESULT_UB8,
@@ -18589,6 +18685,7 @@ bool sqlrprotocol_oracle::lobOperations(const byte_t *rp) {
 	// have handed out more than one locator, and the others are still
 	// good - and comes off at the cursor's next fetch, the way it would
 	// have without this call.  see releaseLobPin()
+	setLobOpen(cursor,column,false);
 	cont->closeLobField(cursor,column);
 	return sendLobOperationResponse(sourcelocator,sourcesize,
 						LOB_RESULT_NONE,0);

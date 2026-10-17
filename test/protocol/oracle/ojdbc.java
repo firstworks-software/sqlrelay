@@ -799,6 +799,24 @@ class ojdbc {
 				first=f;
 			}
 			checknames("row "+id,f,id);
+
+			// the file isn't there, and the lob operations on it
+			// say so - exists and is open are answered, and an
+			// open is refused the way a real server refuses it
+			// (#10699)
+			check("row "+id+" fileExists",!f.fileExists(),"");
+			check("row "+id+" isFileOpen",!f.isFileOpen(),"");
+			try {
+				f.openFile();
+				check("row "+id+" openFile",false,
+							"no exception");
+			} catch (SQLException e) {
+				check("row "+id+" openFile error",
+					e.getMessage().contains("ORA-22288"),
+					e.getMessage());
+			}
+			check("row "+id+" isFileOpen after open",
+							!f.isFileOpen(),"");
 		}
 		check("row count",rows==2,"got "+rows);
 

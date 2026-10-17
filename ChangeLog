@@ -2979,6 +2979,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   columns as empty lobs
 - fixed nclob columns reading as empty through the oracle protocol module,
   and describing as clobs
+- fixed bfile reads through the oracle protocol module and the oracle
+  connection module (file is open and file close operations were swapped)
 
 ### Security
 - fixed an authentication hole in the des password encryption module

@@ -3915,6 +3915,68 @@ that statement, except where noted.
                                       only the exact text did, and the
                                       others got PLS-00306 (#10709)
 
+    10699-dev-pythonoracledb-thin-bfile-read-realserver-oracle122.oraproxy
+                                     python-oracledb thin (a scratch
+                                      program: a bfile of an existing
+                                      file, DMP_DIR/.bash_logout, read
+                                      with fileexists(), size() and
+                                      read()) against the real 12.2
+                                      server, through oraproxy.  The
+                                      operations are exists (0x800,
+                                      [0017]), get length ([0019]), is open
+                                      (0x400, [0021]), open (0x100,
+                                      [0023]), read ([0025], the data
+                                      inline at [0026]) and close (0x200,
+                                      [0027]).  Exists at [0018] and is
+                                      open at [0022] are answered with a
+                                      single byte after the locator, 1 or
+                                      0, and the locator comes back with
+                                      its open flag set after the open
+                                      and clear after the close (#10699)
+
+    10699-dev-pythonoracledb-thin-bfile-read-sqlrelay121.oraproxy
+                                     the same program against a -buildtree
+                                      listener at serverversion 12.1,
+                                      after the fix, with a backend that
+                                      can read the directory: the same
+                                      calls, answered the same way.  Before
+                                      it the is open call (0x400) was
+                                      taken for a close and python-oracledb
+                                      failed with DPY-5000 (#10699)
+
+    10699-dev-oci23-portable-bfile-open-realserver-oracle122.oraproxy
+                                     an OCI 23.26 OCI8 client (a scratch
+                                      program: exists, is open, open, is
+                                      open, length, read, close, is open
+                                      and close all on the same bfile)
+                                      against the real 12.2 server through
+                                      oraproxy with ORAPROXY_UNIVERSAL_REPS=1
+                                      and the banner rewritten, so it is
+                                      answered in the representation the
+                                      module uses.  Exists at [0018] and
+                                      is open at [0020] and [0024] are
+                                      count prefixed values (01 01 and
+                                      00), unlike python-oracledb's single
+                                      byte; the read at [0028] comes back
+                                      inline though the client offers zero
+                                      copy; close all at [0033] (0x1000,
+                                      no locator) is answered by the
+                                      summary object alone (#10699)
+
+    10699-dev-oci23-portable-bfile-open-sqlrelay121.oraproxy
+                                     the same program against a -buildtree
+                                      listener at serverversion 12.1,
+                                      after the fix (#10699)
+
+    10699-dev-oci23-native-bfile-open-realserver-oracle122.oraproxy
+                                     the same program against the real
+                                      12.2 server in the native
+                                      representation, for reference.  The
+                                      operation codes are the same; the
+                                      fields are fixed width, and exists
+                                      and is open are a single byte
+                                      (#10699)
+
     10698-dev-ojdbc-nclob-prefetch0-realserver-oracle122.oraproxy
                                      ojdbc 23.26 (a scratch program: a
                                       table with an nclob and a clob

@@ -3994,6 +3994,25 @@ int main(int argc, char **argv) {
 	stdoutput.printf("\n\n");
 
 
+	stdoutput.printf("OCILobFileIsOpen, OCILobFileOpen, OCILobFileClose - "
+								"bfile\n");
+	// the file isn't there, so it isn't open, opening it fails the way a
+	// real server fails it, and closing everything still works.  #10699
+	boolean	bfileopen=1;
+	assertEquals(
+		OCILobFileIsOpen(svc,err,prebfile,&bfileopen),OCI_SUCCESS);
+	assertEquals((int)bfileopen,0);
+	assertEquals(
+		OCILobFileOpen(svc,err,prebfile,OCI_FILE_READONLY),OCI_ERROR);
+	assertEquals((int)errorCode(),22288);
+	bfileopen=1;
+	assertEquals(
+		OCILobFileIsOpen(svc,err,prebfile,&bfileopen),OCI_SUCCESS);
+	assertEquals((int)bfileopen,0);
+	assertEquals(OCILobFileCloseAll(svc,err),OCI_SUCCESS);
+	stdoutput.printf("\n\n");
+
+
 	stdoutput.printf("OCIStmtFetch2 - past the prefetched lob row\n");
 	// the table holds one row, and the execute already returned it
 	assertEquals(
