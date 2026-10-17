@@ -3915,6 +3915,26 @@ that statement, except where noted.
                                       only the exact text did, and the
                                       others got PLS-00306 (#10709)
 
+    10706-dev-pythonoracledb-thin-loblocatorbind-realserver-oracle122.oraproxy
+                                     python-oracledb thin (a scratch
+                                      program: fetch a clob, a blob and
+                                      a 40000 character clob, then bind
+                                      all three to a pl/sql block that
+                                      returns dbms_lob.getlength() of
+                                      each, and a clob to a select of
+                                      dbms_lob.substr()) against the real
+                                      12.2 server, through oraproxy.  The
+                                      lengths come back as 3, 2 and 40000:
+                                      the bind carries the locator and the
+                                      server works on the lob (#10706)
+
+    10706-dev-pythonoracledb-thin-loblocatorbind-sqlrelay121.oraproxy
+                                     the same program against a -buildtree
+                                      listener at serverversion 12.1,
+                                      after the fix: the same results.
+                                      Before it the lengths were the
+                                      locators' (114) (#10706)
+
     10699-dev-pythonoracledb-thin-bfile-read-realserver-oracle122.oraproxy
                                      python-oracledb thin (a scratch
                                       program: a bfile of an existing

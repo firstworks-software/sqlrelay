@@ -726,6 +726,28 @@ class ojdbc {
 			int	id=rs.getInt(1);
 			Clob	c=rs.getClob(2);
 			Blob	b=rs.getBlob(3);
+
+			// the lobs bound to a statement stand for their data
+			// (#10706)
+			CallableStatement	cs=con.prepareCall(
+					"begin ? := dbms_lob.getlength(?); "+
+					"end;");
+			cs.registerOutParameter(1,Types.INTEGER);
+			cs.setClob(2,c);
+			cs.execute();
+			check("row "+id+" bound clob length",
+				cs.getInt(1)==expectedclob(id).length(),
+				"got "+cs.getInt(1));
+			cs.close();
+			cs=con.prepareCall("begin ? := dbms_lob.getlength(?); "+
+					"end;");
+			cs.registerOutParameter(1,Types.INTEGER);
+			cs.setBlob(2,b);
+			cs.execute();
+			check("row "+id+" bound blob length",
+				cs.getInt(1)==expectedblob(id).length,
+				"got "+cs.getInt(1));
+			cs.close();
 			String	ec=expectedclob(id);
 			byte[]	eb=expectedblob(id);
 			long	cl=c.length();

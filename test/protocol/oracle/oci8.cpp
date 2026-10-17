@@ -3729,6 +3729,51 @@ int main(int argc, char **argv) {
 	stdoutput.printf("\n\n");
 
 
+	stdoutput.printf("OCIBindByPos - clob and blob locators\n");
+	// a locator bound to a statement stands for the lob's data, and the
+	// statement runs on that.  #10706
+	for (int blob=0; blob<2; blob++) {
+		OCIStmt		*bindlobstmt=NULL;
+		OCIBind		*bindlobout=NULL;
+		OCIBind		*bindlobin=NULL;
+		sb4		bindlobresult=-1;
+		OCILobLocator	*bindlobloc=(blob)?bloblocator:cloblocator;
+		const char	*bindlobquery=
+			"begin :1 := dbms_lob.getlength(:2); end;";
+		assertEquals(
+			OCIHandleAlloc(env,(void **)&bindlobstmt,
+					OCI_HTYPE_STMT,0,NULL),
+			OCI_SUCCESS);
+		assertEquals(
+			OCIStmtPrepare(bindlobstmt,err,
+				(text *)bindlobquery,
+				charstring::getLength(bindlobquery),
+				OCI_NTV_SYNTAX,OCI_DEFAULT),
+			OCI_SUCCESS);
+		assertEquals(
+			OCIBindByPos(bindlobstmt,&bindlobout,err,1,
+				&bindlobresult,sizeof(bindlobresult),
+				SQLT_INT,NULL,NULL,NULL,0,NULL,
+				OCI_DEFAULT),
+			OCI_SUCCESS);
+		assertEquals(
+			OCIBindByPos(bindlobstmt,&bindlobin,err,2,
+				&bindlobloc,0,
+				(blob)?SQLT_BLOB:SQLT_CLOB,
+				NULL,NULL,NULL,0,NULL,OCI_DEFAULT),
+			OCI_SUCCESS);
+		assertEquals(
+			OCIStmtExecute(svc,bindlobstmt,err,1,0,NULL,NULL,
+								OCI_DEFAULT),
+			OCI_SUCCESS);
+		assertEquals((int)bindlobresult,
+				(blob)?(int)sizeof(blobvalue):(int)biglength);
+		assertEquals(OCIHandleFree(bindlobstmt,OCI_HTYPE_STMT),
+								OCI_SUCCESS);
+	}
+	stdoutput.printf("\n\n");
+
+
 	stdoutput.printf("OCILobRead - clob, one round trip\n");
 	// one alphabet off the front, small enough to come back in a single
 	// chunk

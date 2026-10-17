@@ -2981,6 +2981,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   and describing as clobs
 - fixed bfile reads through the oracle protocol module and the oracle
   connection module (file is open and file close operations were swapped)
+- fixed binding a fetched clob or blob to a statement through the oracle
+  protocol module binding the locator's bytes instead of the lob
 
 ### Security
 - fixed an authentication hole in the des password encryption module

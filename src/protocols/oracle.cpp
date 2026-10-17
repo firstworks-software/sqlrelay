@@ -955,6 +955,9 @@
 // character read with 800 bytes
 #define LOB_CLOB_BYTES_PER_CHAR		2
 
+// the most data of a lob that a bound locator is read into memory for
+#define LOB_LOCATOR_BIND_MAX_SIZE	(64*1024*1024)
+
 // what a number with no declared scale is described as, which tells the
 // client not to rescale the value.  the controller hands oracle's scale back
 // through an unsigned byte, so -127 arrives from it as 129.
@@ -2037,6 +2040,15 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_oracle : public sqlrprotocol {
 							uint16_t *namesize);
 		bool	sendNotAllVariablesBoundError(uint32_t cursorid);
 		bool	sendLocalRegionBindError(uint32_t cursorid);
+		bool	sendBadLocatorBindError(uint32_t cursorid);
+		bool	sendBindFailureError(uint32_t cursorid);
+		bool	isLobLocatorBind(const byte_t *value,
+							uint32_t size);
+		bool	installLobLocatorBind(const byte_t *value,
+						uint32_t size,
+						uint16_t bindtype,
+						memorypool *bindpool,
+						sqlrserverbindvar *bv);
 		bool	sendMaxBindCountExceededError(uint32_t cursorid);
 		bool	sendMaxResponseError(uint32_t cursorid,
 							uint32_t oranum,
@@ -2899,6 +2911,11 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_oracle : public sqlrprotocol {
 		// rather than an execute - see installQuery3Binds()
 		bool		query3localregion;
 
+		// whether a bind value was a lob locator that didn't resolve
+		// to a lob this module is holding, which is an ORA-22275 -
+		// see installQuery3Binds()
+		bool		query3badlocator;
+
 		// whether the request's bind section named more binds than
 		// maxbindcount allows, which ends the call in an error
 		// instead of a statement - see query3() and getQuery3Binds()
@@ -3119,6 +3136,7 @@ sqlrprotocol_oracle::sqlrprotocol_oracle(sqlrservercontroller *cont,
 	lobprefetcherror=0;
 	lobprefetcherrormessage=NULL;
 	query3unbound=false;
+	query3badlocator=false;
 	query3localregion=false;
 	query3toomanybinds=false;
 	query3affectedrows=0;
@@ -14368,9 +14386,7 @@ bool sqlrprotocol_oracle::query3(const byte_t *rp) {
 					updateQuery3CallStatus(cursor,
 								true,false);
 				}
-				return (query3localregion)?
-					sendLocalRegionBindError(cursorid):
-					sendNotAllVariablesBoundError(cursorid);
+				return sendBindFailureError(cursorid);
 			}
 
 			if (!cont->executeQuery(cursor,true,true,true,true)) {
@@ -15393,6 +15409,7 @@ bool sqlrprotocol_oracle::installQuery3Binds(sqlrservercursor *cursor,
 	uint16_t	outcount=0;
 
 	query3localregion=false;
+	query3badlocator=false;
 
 	// query3() refuses a request with more descriptors than maxbindcount
 	// before this runs, so the count checks here and below are just bounds
@@ -15555,6 +15572,23 @@ bool sqlrprotocol_oracle::installQuery3Binds(sqlrservercursor *cursor,
 				case ORACLE_TYPE_BLOB:
 				case ORACLE_TYPE_BFILE:
 				case ORACLE_TYPE_CLOB:
+
+					// a clob or blob bound from a lob the
+					// client holds is the lob's locator,
+					// not its data
+					if ((bd->type==ORACLE_TYPE_CLOB ||
+						bd->type==ORACLE_TYPE_BLOB) &&
+						isLobLocatorBind(v->value,
+								v->size)) {
+						if (!installLobLocatorBind(
+							v->value,v->size,
+							bd->type,bindpool,bv)) {
+							query3badlocator=true;
+							debugEnd();
+							return false;
+						}
+						break;
+					}
 					bv->type=(bd->type==ORACLE_TYPE_CLOB)?
 						SQLRSERVERBINDVARTYPE_CLOB:
 						SQLRSERVERBINDVARTYPE_BLOB;
@@ -17648,6 +17682,100 @@ bool sqlrprotocol_oracle::readLenPreUB8(const byte_t *rp,
 		*value=((*value)<<8)|b;
 	}
 	*rpout=rp;
+	return true;
+}
+
+bool sqlrprotocol_oracle::isLobLocatorBind(const byte_t *value,
+							uint32_t size) {
+
+	// whether a clob or blob bind value is a lob locator rather than
+	// the lob's data: a locator starts with its own size less the size
+	// field, a version of 1 or 2 and a lob type, which is nothing a
+	// client would pick to start a value with
+	if (!value || size<=LOB_LOCATOR_TYPE_OFFSET) {
+		return false;
+	}
+	byte_t	loctype=value[LOB_LOCATOR_TYPE_OFFSET];
+	uint16_t	version=getLocatorUB2(value+LOB_LOCATOR_VERSION_OFFSET);
+	return ((uint32_t)getLocatorUB2(value+LOB_LOCATOR_LENGTH_OFFSET)+2==
+									size &&
+		(version==LOB_LOCATOR_VERSION ||
+			version==BFILE_LOCATOR_VERSION) &&
+		(loctype==LOB_LOCATOR_CLOB ||
+			loctype==LOB_LOCATOR_BLOB ||
+			loctype==LOB_LOCATOR_NCLOB ||
+			loctype==LOB_LOCATOR_BFILE));
+}
+
+bool sqlrprotocol_oracle::installLobLocatorBind(const byte_t *value,
+						uint32_t size,
+						uint16_t bindtype,
+						memorypool *bindpool,
+						sqlrserverbindvar *bv) {
+
+	// binds the data of the lob a bound locator names, which is what the
+	// backend's own lob bind takes: python-oracledb binding a lob it
+	// fetched, for example, sends the locator it was given.  the lob is
+	// read out of the row the locator came from, so the row has to still
+	// be pinned
+	sqlrservercursor	*cursor=NULL;
+	uint32_t		column=0;
+	uint16_t		wiretype=0;
+	if (!decodeLobLocator(value,size,&cursor,&column,&wiretype)) {
+		return false;
+	}
+
+	// characters for a clob and bytes for a blob, read a buffer at a
+	// time, a clob's at the most four bytes a character
+	bool		clob=(bindtype==ORACLE_TYPE_CLOB);
+	bool		utf8=(clob && clientCharsetIsUtf8());
+	uint64_t	loblength=0;
+	if (!cont->getLobFieldLength(cursor,column,&loblength)) {
+		loblength=0;
+	}
+	uint64_t	charsperread=(clob)?sizeof(lobbuffer)/4:
+						sizeof(lobbuffer);
+	bytebuffer	data;
+	uint64_t	position=0;
+	while (position<loblength) {
+		if (data.getSize()>LOB_LOCATOR_BIND_MAX_SIZE) {
+			debugWrite("lob locator bind past %d bytes",
+						LOB_LOCATOR_BIND_MAX_SIZE);
+			return false;
+		}
+		uint64_t	toread=loblength-position;
+		if (toread>charsperread) {
+			toread=charsperread;
+		}
+		uint64_t	got=0;
+		if (!cont->getLobFieldSegment(cursor,column,
+					lobbuffer,sizeof(lobbuffer),
+					position,toread,&got) || !got) {
+			break;
+		}
+		data.append(lobbuffer,(size_t)got);
+
+		// under a utf-8 client character set, the amount a clob
+		// read reports is bytes, but positions count characters
+		uint64_t	units=got;
+		if (clob && utf8) {
+			units=countUtf8Chars(lobbuffer,got);
+			if (units>toread) {
+				units=toread;
+			}
+		}
+		position+=units;
+	}
+
+	bv->type=(clob)?SQLRSERVERBINDVARTYPE_CLOB:
+				SQLRSERVERBINDVARTYPE_BLOB;
+	bv->valuesize=(uint32_t)data.getSize();
+	bv->value.stringval=(char *)bindpool->allocate(bv->valuesize+1);
+	bytestring::copy(bv->value.stringval,data.getBuffer(),
+						(size_t)bv->valuesize);
+	bv->value.stringval[bv->valuesize]='\0';
+
+	debugWrite("lob locator bind: %lld bytes",(long long)bv->valuesize);
 	return true;
 }
 
@@ -20941,9 +21069,7 @@ bool sqlrprotocol_oracle::reexecute(const byte_t *rp) {
 		if (block<query3blocks &&
 			!installQuery3Binds(cursor,block)) {
 			updateQuery3CallStatus(cursor,true,false);
-			return (query3localregion)?
-				sendLocalRegionBindError(cursorid):
-				sendNotAllVariablesBoundError(cursorid);
+			return sendBindFailureError(cursorid);
 		}
 
 		if (!cont->executeQuery(cursor,true,true,true,true)) {
@@ -21166,9 +21292,7 @@ bool sqlrprotocol_oracle::reexecuteAndFetch(const byte_t *rp) {
 		if (block<query3blocks &&
 			!installQuery3Binds(cursor,block)) {
 			updateQuery3CallStatus(cursor,true,false);
-			return (query3localregion)?
-				sendLocalRegionBindError(cursorid):
-				sendNotAllVariablesBoundError(cursorid);
+			return sendBindFailureError(cursorid);
 		}
 
 		if (!cont->executeQuery(cursor,true,true,true,true)) {
@@ -24553,6 +24677,39 @@ bool sqlrprotocol_oracle::sendQueryError(sqlrservercursor *cursor,
 	}
 
 	return sendPacket(true);
+}
+
+bool sqlrprotocol_oracle::sendBadLocatorBindError(uint32_t cursorid) {
+
+	// answers an execute with a lob bind whose locator isn't one of the
+	// lobs this module is holding
+
+	resetSendPacketBuffer(PACKET_DATA);
+
+	uint16_t	dataflags=0;
+	writeBE(&reqpacket,dataflags);
+
+	debugStart("bad locator bind error");
+	debugWrite("data flags: 0x%04x",dataflags);
+	debugWrite("cursor id: %d",cursorid);
+	debugEnd();
+
+	putSummary(cursorid,ORA_INVALID_LOB_LOCATOR,0,
+				ORA_INVALID_LOB_LOCATOR_MESSAGE);
+
+	return sendPacket(true);
+}
+
+bool sqlrprotocol_oracle::sendBindFailureError(uint32_t cursorid) {
+
+	// the answer to an execute whose binds couldn't be installed
+	if (query3localregion) {
+		return sendLocalRegionBindError(cursorid);
+	}
+	if (query3badlocator) {
+		return sendBadLocatorBindError(cursorid);
+	}
+	return sendNotAllVariablesBoundError(cursorid);
 }
 
 bool sqlrprotocol_oracle::sendNotAllVariablesBoundError(uint32_t cursorid) {
