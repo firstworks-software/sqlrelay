@@ -3072,6 +3072,56 @@ int main(int argc, char **argv) {
 	stdoutput.printf("\n\n");
 
 
+	// #10694 - a named region.  OCI sends the wall time in the region
+	// (the local form) when its time zone file isn't the server's, and
+	// the module binds it with the region's name, so the region is kept.
+	// at 10.2, and with a v11 time zone file (ORA_TZFILE), the client
+	// sends the UTC form instead, which binds as the same instant at
+	// +00:00.  the oracle back-end here stores the local one as the
+	// region's offset on that day, -04:00.  a region id the module's table lacks is refused with
+	// ORA-20007, which no OCI client here can send
+	stdoutput.printf("OCIBindByName - timestamp with time zone, "
+				"named region\n");
+	assertEquals(
+		OCIStmtPrepare(dtbindstmt,err,(text *)dtnoindinsert,
+				charstring::getLength(dtnoindinsert),
+				OCI_NTV_SYNTAX,OCI_DEFAULT),
+		OCI_SUCCESS);
+	dtbindid=dtbindcount+3;
+	assertEquals(
+		OCIDateTimeConstruct(env,err,dtbindtstz,
+				2012,7,4,12,30,15,123456000,
+				(OraText *)"US/Eastern",10),
+		OCI_SUCCESS);
+	assertEquals(
+		OCIBindByName(dtbindstmt,&dtbnd[0],err,(text *)":id",3,
+				&dtbindid,sizeof(dtbindid),SQLT_INT,
+				NULL,NULL,NULL,0,NULL,OCI_DEFAULT),
+		OCI_SUCCESS);
+	assertEquals(
+		OCIBindByName(dtbindstmt,&dtbnd[1],err,(text *)":tstz",5,
+				&dtbindtstz,sizeof(dtbindtstz),
+				SQLT_TIMESTAMP_TZ,
+				NULL,NULL,NULL,0,NULL,OCI_DEFAULT),
+		OCI_SUCCESS);
+	assertEquals(
+		OCIStmtExecute(svc,dtbindstmt,err,1,0,NULL,NULL,OCI_DEFAULT),
+		OCI_SUCCESS);
+	charstring::printf(dtquery,sizeof(dtquery),
+			"select to_char(testtstz,"
+				"'YYYY-MM-DD HH24:MI:SS.FF6 TZR') "
+			"from protocoltestdtbind where id=%d",dtbindcount+3);
+	fetchText(dtquery,dttext,sizeof(dttext));
+	assertEquals((const char *)dttext,
+		(!charstring::compare(sid,"sqlrelay10g") ||
+			!charstring::isNullOrEmpty(
+				environment::getValue("ORA_TZFILE")))?
+			"2012-07-04 16:30:15.123456 +00:00":
+			"2012-07-04 12:30:15.123456 -04:00");
+	assertEquals(execImmediate("commit"),OCI_SUCCESS);
+	stdoutput.printf("\n\n");
+
+
 	// the values come back through OCIDateTime defines, so this covers
 	// the define descriptor's counted scale too
 	stdoutput.printf("OCIStmtExecute - timestamp and timestamp with time "

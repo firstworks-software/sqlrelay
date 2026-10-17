@@ -1803,6 +1803,7 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_oracle : public sqlrprotocol {
 						memorypool *bindpool,
 						sqlrserverbindvar *bv,
 						bool *localregion);
+		const char	*findTimeZoneRegionName(uint16_t id);
 		void	putAuthField(const char *fieldname,
 						const char *field,
 						uint32_t flags);
@@ -8279,8 +8280,8 @@ bool sqlrprotocol_oracle::getOracleTimestampBindValue(const byte_t *value,
 	// the fraction is zero, 4 bytes of nanoseconds, then, for a timestamp
 	// with time zone, 2 bytes of zone.  the bind takes microseconds, so
 	// the last 3 digits of the fraction are lost.  false on a value of
-	// any other size, or on one in a region and in local time, which
-	// also sets localregion
+	// any other size, or on one in a region the table can't name and in
+	// local time, which also sets localregion
 	*localregion=false;
 
 	if (valuesize!=ORACLE_TIMESTAMP_NOFRACTION_SIZE &&
@@ -8334,12 +8335,26 @@ bool sqlrprotocol_oracle::getOracleTimestampBindValue(const byte_t *value,
 				(local)?"local":"utc",
 				(minutebyte&ORACLE_TZ_REGION_DST)?", dst":"");
 
-		// a region in utc binds as the same instant at +00:00, but
-		// a region in local time can't be converted without the
-		// region's rules
+		// a region in utc binds as the same instant at +00:00, which
+		// loses the region.  a region in local time keeps its wall
+		// time and binds with the region's name, which the back-end
+		// resolves with the region's own rules.  which reading of an
+		// hour that repeats when the clocks go back (the dst flag) is
+		// not passed on.  an id the table doesn't have, a name newer
+		// than the time zone file version the module announces, can't
+		// be named, and is refused
 		if (local) {
-			*localregion=true;
-			return false;
+			const char	*regionname=
+					findTimeZoneRegionName(regionid);
+			if (!regionname) {
+				*localregion=true;
+				return false;
+			}
+			bv->value.dateval.tz=(char *)bindpool->allocate(
+				charstring::getLength(regionname)+1);
+			charstring::copy(bv->value.dateval.tz,regionname);
+			debugWrite("time zone: %s (local)",regionname);
+			return true;
 		}
 
 	} else {
@@ -19945,6 +19960,15 @@ static const oracletimezoneregion *findTimeZoneRegion(const char *name,
 			high=middle;
 		} else {
 			low=middle+1;
+		}
+	}
+	return NULL;
+}
+
+const char *sqlrprotocol_oracle::findTimeZoneRegionName(uint16_t id) {
+	for (uint32_t i=0; i<TIMEZONE_REGION_COUNT; i++) {
+		if (timezoneregions[i].id==id) {
+			return timezoneregions[i].name;
 		}
 	}
 	return NULL;
