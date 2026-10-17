@@ -471,6 +471,45 @@ class ojdbc {
 	// more failures of each kind than maxcursors, with a query on the
 	// same connection after each kind.  only a statement left open holds
 	// a cursor, as on a real server.
+	// ojdbc writes the query text with no length byte in front of it, so a
+	// statement whose first character is the same as its length once had
+	// that character eaten: a 98 character block (begin, 'b' is 98), a 100
+	// character declare, a 115 character select, and so on (#10708)
+	static void lengths(String port) throws Exception {
+		System.out.println("statement lengths:");
+		Connection	con=connect(port,null);
+		Statement	st=con.createStatement();
+		String[]	starts={"begin null;","declare x number; begin "+
+					"x:=1;","select 1 from dual","  select "+
+					"1 from dual","commit","update "+
+					"protocoltestojdbcdml set v=v where 1=0"};
+		String[]	ends={" end;"," end;",""," ","",""};
+		int		bad=0;
+		for (int i=0; i<starts.length; i++) {
+			for (int n=60; n<=130; n++) {
+				StringBuilder	sb=new StringBuilder(starts[i]);
+				while (sb.length()<n-ends[i].length()) {
+					sb.append(' ');
+				}
+				sb.append(ends[i]);
+				String	sql=sb.toString();
+				if (sql.length()!=n) {
+					continue;
+				}
+				try {
+					st.execute(sql);
+				} catch (Exception e) {
+					System.out.println("  "+n+" characters, "+
+							starts[i]+": "+
+							e.getMessage().trim());
+					bad++;
+				}
+			}
+		}
+		check("statement lengths 60 to 130",bad==0,bad+" failed");
+		con.close();
+	}
+
 	static void failed(String port) throws Exception {
 		System.out.println("failed statements:");
 		Connection	con=connect(port,null);
@@ -791,6 +830,11 @@ class ojdbc {
 			dml(port,major);
 		} catch (Exception e) {
 			check("dml",false,e.toString());
+		}
+		try {
+			lengths(port);
+		} catch (Exception e) {
+			check("statement lengths",false,e.toString());
 		}
 		try {
 			failed(port);

@@ -2969,6 +2969,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   with no indicator that went in NULL and is only read
 - fixed the oracle protocol module refusing OCI8 binds of named-region
   TIMESTAMP WITH TIME ZONE values in local time with ORA-20007
+- fixed the oracle protocol module losing the first character of an ojdbc
+  statement that is as long as that character's code (eg. a 98 character
+  begin block, ORA-00900)
 
 ### Security
 - fixed an authentication hole in the des password encryption module

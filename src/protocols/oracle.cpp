@@ -2485,6 +2485,11 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_oracle : public sqlrprotocol {
 		byte_t		encodingflags;
 		bool		ociclient;
 
+		// whether the client says it is ojdbc, in its login's
+		// SESSION_CLIENT_DRIVER_NAME.  ojdbc writes the query text
+		// with no length byte in front of it - see getQuery3Request()
+		bool		jdbcclient;
+
 		// whether a 9i client sends and expects its oci7 call text -
 		// login strings, sql text, the challenge key, describe's
 		// column names - as raw bytes with exact sizes, rather than as
@@ -3285,6 +3290,7 @@ void sqlrprotocol_oracle::init() {
 	clientnationalcharset=0;
 	encodingflags=0;
 	ociclient=false;
+	jdbcclient=false;
 	rawtextargs=false;
 	clientfieldversion=0;
 
@@ -9306,6 +9312,13 @@ bool sqlrprotocol_oracle::recvAuthenticationRequest(bool secondphase) {
 		debugWrite("%s: %s (flags 0x%04x)",
 				fieldname,(field)?field:"",flags);
 
+		// ojdbc names itself "jdbcthin : version"
+		if (!charstring::compare(fieldname,
+					"SESSION_CLIENT_DRIVER_NAME")) {
+			jdbcclient=(field && !charstring::compare(field,
+							"jdbcthin",8));
+		}
+
 		if (!secondphase) {
 			continue;
 		}
@@ -14609,8 +14622,15 @@ bool sqlrprotocol_oracle::getQuery3Request(const byte_t *rp,
 			if (*rp && (uint32_t)(*rp)<*querysize && ociclient) {
 				*querysize=*rp;
 				rp++;
-			} else if (*querysize<=CLR_MAX_SHORT_LENGTH &&
-						(uint32_t)(*rp)==*querysize) {
+			} else if (!jdbcclient &&
+					*querysize<=CLR_MAX_SHORT_LENGTH &&
+					(uint32_t)(*rp)==*querysize) {
+
+				// not for ojdbc, whose first character is
+				// the same as the size for a statement that
+				// starts with "b" and is 98 characters long
+				// ('b' is 98), or "d" and 100, "s" and 115
+				// and so on, and would be eaten (ORA-00900)
 				rp++;
 			}
 
