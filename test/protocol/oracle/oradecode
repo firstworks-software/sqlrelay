@@ -16,6 +16,13 @@
 # TNS_PACKET_TYPE/TTC_*/TTI_* defines and putTtiResponse() there.  See
 # #9098 and #8978.
 #
+# A pre-10g client's session (field version below 4: 9i sqlplus, an oci7
+# program, 9i oci8) gets more: its legacy calls - TTI_OPEN, TTI_QUERY,
+# TTI_QUERY2 with its define and bind descriptors, TTI_FETCH, TTI_CLOSE - and
+# the answers to them and to its 10g style calls are walked field by field,
+# in the native or portable encoding the session runs, with every byte of a
+# message accounted for - see Walker below.
+#
 # Usage:
 #   ./oradecode CAPTUREFILE
 
@@ -85,7 +92,7 @@ TTI_CODES = {
 	0x60: "TTI_LOB_OPERATIONS",
 	0x62: "TTI_ODNY",
 	0x67: "TTI_TRANSACTION_END",
-	0x68: "TTI_TRANSACTION_BEGIN",
+	0x68: "TTI_TRANSACTION_CHANGE_STATE",
 	0x69: "TTI_OCCA",
 	0x6B: "TTI_SWITCH_SESSION",
 	0x6D: "TTI_STARTUP2",
@@ -553,6 +560,610 @@ def decode_o3logon_challenge(body):
 ANO_MARKER = b"\xde\xad\xbe\xef"
 
 
+# the calls a pre-10g client (9i sqlplus, an oci7 program, 9i oci8) makes and
+# the answers a 10.2 server gives them.  the walker below reads each one field
+# by field and accounts for every byte: a walk that runs off the end of a
+# message, or stops short of it, says so instead of passing a misread off as a
+# decode.  the field layouts are the ones src/protocols/oracle.cpp writes and
+# reads - see the function named beside each decoder - checked against real
+# 10.2 server captures: samples/10538-*-realserver-* for sqlplus and the
+# define flags, oracle102-oci7-*.cap for an oci7 program.
+#
+# the encoding is the session's.  against a 10.2 server or this module it is
+# native when the two platform banners in the protocol negotiation match and
+# portable when they don't, but a 12.2 server runs native with a 9i x86 client
+# whose banner differs from its own - samples/10325-redhat9x86-oci7-native-*.
+# so the first TTI_OPEN decides it where there is one: its open size is a
+# count, and the zero every capture carries there is four bytes native and one
+# portable.  a count is then a fixed width little endian integer (only x86
+# native sessions are on file); in the portable encoding it is a length byte
+# and that many big endian bytes, as read_ub4() reads it.  a pointer is the
+# client's own, four raw bytes, in both.
+#
+# the shapes of the 10g style call (TTI_QUERY3) answers decoded here - the
+# describe, the return parameters - are the ones a real 10.2 server sends a
+# client below field version 4 (9i): see FIELD_VERSION_10_2
+
+FIELD_VERSION_10_2 = 4
+
+QUERY2_OPTIONS = (
+	(0x01, "PARSE"),
+	(0x08, "BIND"),
+	(0x10, "DEFINE"),
+	(0x20, "EXECUTE"),
+	(0x40, "FETCH"),
+	(0x8000, "NOPLSQL"),
+)
+
+# a define descriptor's flag byte: which of the indicator, return length and
+# return code pointers the client's odefin() passed, and the placeholder bit.
+# a real server sends a column's indicator after its value when the first bit
+# is set, and its return code when the third is - see
+# samples/10538-redhat9x86-oci7-defineflags-*-realserver-oracle102.oraproxy
+DEFINE_INDICATOR = 0x01
+DEFINE_RETURN_LENGTH = 0x02
+DEFINE_RETURN_CODE = 0x04
+DEFINE_SKIPPED = 0x80
+
+
+class WalkError(Exception):
+	pass
+
+
+class Walker:
+	# reads fields off one message, one at a time, logging each with the
+	# bytes it came from, and complains about any byte it didn't read
+
+	def __init__(self, data, native, indent="      "):
+		self.data = data
+		self.pos = 0
+		self.native = native
+		self.indent = indent
+		self.lines = []
+
+	def remaining(self):
+		return len(self.data) - self.pos
+
+	def take(self, n):
+		if n < 0 or self.pos + n > len(self.data):
+			raise WalkError("needed %d bytes at offset %d, only %d "
+					"left" % (n, self.pos, self.remaining()))
+		chunk = self.data[self.pos:self.pos + n]
+		self.pos += n
+		return chunk
+
+	def log(self, label, value, raw):
+		hexpart = " ".join("%02x" % b for b in raw)
+		if len(hexpart) > 36:
+			hexpart = hexpart[:33] + "..."
+		self.lines.append("%s%-36s %-14s [%s]" %
+				(self.indent, label + ":", value, hexpart))
+
+	def note(self, text):
+		self.lines.append(self.indent + text)
+
+	def byte(self, label):
+		raw = self.take(1)
+		self.log(label, str(raw[0]), raw)
+		return raw[0]
+
+	def count(self, label, width=4):
+		start = self.pos
+		if self.native:
+			raw = self.take(width)
+			value = int.from_bytes(raw, "little")
+		else:
+			size = self.take(1)[0]
+			# a set top bit in the length byte means a negative
+			# count - 81 01 is a null's indicator, -1
+			negative = (size & 0x80) != 0
+			size &= 0x7f
+			if size > 8:
+				raise WalkError("length byte 0x%02x at offset %d "
+						"is no count" % (size, start))
+			value = int.from_bytes(self.take(size), "big")
+			if negative:
+				value = -value
+		self.log(label, str(value), self.data[start:self.pos])
+		return value
+
+	def pointer(self, label):
+		raw = self.take(4)
+		self.log(label, "0x" + raw.hex(), raw)
+		return raw
+
+	def raw(self, label, n):
+		raw = self.take(n)
+		self.log(label, "%d bytes" % n, raw)
+		return raw
+
+	def clr(self, label):
+		# a length byte and that many bytes, or 0xfe and length-prefixed
+		# chunks up to a zero length
+		start = self.pos
+		size = self.take(1)[0]
+		if size == 0xfe:
+			value = b""
+			while True:
+				chunk = self.take(1)[0]
+				if not chunk:
+					break
+				value += self.take(chunk)
+		else:
+			value = self.take(size)
+		shown = value.decode("latin-1")
+		if len(shown) > 40:
+			shown = shown[:37] + "..."
+		self.log(label, repr(shown), self.data[start:self.pos])
+		return value
+
+	def finish(self):
+		left = self.remaining()
+		if left:
+			self.lines.append("%s** WARNING: walk stopped %d bytes "
+					"short of the end **" %
+					(self.indent, left))
+			self.lines.append(hexdump(self.data[self.pos:],
+							self.indent + "  "))
+		self.lines.append("%s-- accounted for %d of %d bytes --" %
+					(self.indent, self.pos, len(self.data)))
+		return self.lines
+
+
+def legacy_summary(w):
+	# putOci7Summary() / putOci7SummaryNative(), after the 0x04 ttc code:
+	# what a real 10.2 server answers every legacy call with, and the
+	# summary that ends a 10g style call's answer at field version 1 and 2
+	# too.  an error number brings a message behind it
+	if w.native:
+		w.count("end of call status")
+		w.byte("unexplained, 1 in every capture")
+		w.count("rows processed")
+		# the module writes the error number four bytes wide and two
+		# zero bytes behind it, but a real ORA-01405 on a null fetched
+		# with no indicator reads 7d 05 01 00 7d 05 here - the same
+		# three fields the portable summary has at this point, two
+		# bytes each
+		oranum = w.count("error number", 2)
+		w.count("reserved", 2)
+		w.count("array error number", 2)
+		w.count("cursor id", 2)
+		w.count("parse error offset", 2)
+		w.byte("command type")
+		w.raw("reserved", 26)
+		w.byte("sequence number")
+		w.raw("reserved", 2)
+		w.count("success iterations")
+		w.raw("marker 36 01, reserved", 8)
+		w.raw("server address", 4)
+		w.raw("reserved", 28)
+	else:
+		w.count("end of call status")
+		w.count("rows processed")
+		oranum = w.count("error number")
+		w.count("reserved")
+		w.count("array error number")
+		w.count("cursor id")
+		w.count("parse error offset")
+		w.byte("command type")
+		w.raw("reserved", 5)
+		w.count("rowid ub4")
+		w.count("rowid ub2")
+		w.byte("rowid byte")
+		w.count("rowid ub4")
+		w.count("rowid ub2")
+		w.count("reserved")
+		w.byte("reserved")
+		w.byte("sequence number")
+		w.count("reserved")
+		w.count("success iterations")
+		for i in range(4):
+			w.count("reserved")
+	if oranum:
+		w.clr("error message")
+
+
+def options_names(options):
+	names = [name for bit, name in QUERY2_OPTIONS if options & bit]
+	return "|".join(names) if names else "none"
+
+
+def legacy_descriptor(w, i, kind):
+	# getQuery2Descriptor(): the wire datatype, the flag byte, precision and
+	# scale, then eight counts - the buffer size first and the character
+	# set sixth.  the native one leads with a byte the portable one doesn't
+	# have, and its last two counts take six bytes between them, split
+	# where no capture says
+	w.note("%s %d:" % (kind, i + 1))
+	if w.native:
+		w.byte("  leading byte")
+	dty = w.byte("  datatype")
+	flag = w.byte("  flag")
+	w.byte("  precision")
+	w.byte("  scale")
+	bufsize = w.count("  buffer size")
+	if w.native:
+		for j in range(4):
+			w.count("  reserved")
+		w.count("  character set", 2)
+		w.raw("  reserved, split unconfirmed", 6)
+	else:
+		for j in range(4):
+			w.count("  reserved")
+		w.count("  character set")
+		w.count("  reserved")
+		w.count("  reserved")
+	if kind == "define":
+		parts = []
+		if flag & DEFINE_INDICATOR:
+			parts.append("indicator")
+		if flag & DEFINE_RETURN_LENGTH:
+			parts.append("return length")
+		if flag & DEFINE_RETURN_CODE:
+			parts.append("return code")
+		if flag & DEFINE_SKIPPED:
+			parts.append("skipped")
+		w.note("  -> flag 0x%02x: %s" %
+			(flag, ", ".join(parts) if parts else "no pointers"))
+	return (dty, flag, bufsize)
+
+
+def legacy_request(w, tti, session):
+	# the requests open(), query(), query2(), fetch() and close() in
+	# src/protocols/oracle.cpp read, after the ttc and tti codes
+	w.byte("sequence number")
+	if tti == 0x02:
+		w.pointer("cursor id pointer")
+		w.count("open size")
+		session["pending"] = (0x02, None)
+	elif tti == 0x03:
+		cursor = w.count("cursor id")
+		w.pointer("unexplained pointer")
+		w.count("declared text size")
+		w.clr("statement text")
+		session["pending"] = (0x03, cursor)
+	elif tti == 0x05:
+		cursor = w.count("cursor id")
+		w.count("rows to fetch")
+		session["pending"] = (0x05, cursor)
+	elif tti == 0x08:
+		cursor = w.count("cursor id")
+		session["pending"] = (0x08, cursor)
+	elif tti == 0x47:
+		options = w.count("options")
+		w.note("-> " + options_names(options))
+		cursor = w.count("cursor id")
+		session["pending"] = (0x47, cursor, options)
+		if not options & 0x18 or not w.remaining():
+			return
+		# getQuery2Descriptors()
+		w.pointer("pointer")
+		w.pointer("pointer")
+		w.count("reserved")
+		w.count("reserved")
+		w.pointer("pointer")
+		w.count("reserved")
+		w.pointer("pointer")
+		w.count("reserved")
+		w.pointer("pointer")
+		w.pointer("define array pointer")
+		defines = w.count("define count")
+		w.pointer("bind array pointer")
+		binds = w.count("bind count")
+		for i in range(7):
+			w.count("row count" if i == 1 else "reserved")
+		deflist = []
+		for i in range(defines):
+			deflist.append(legacy_descriptor(w, i, "define"))
+		for i in range(binds):
+			legacy_descriptor(w, i, "bind")
+		if binds and w.remaining():
+			w.byte("row data (0x07)")
+			for i in range(binds):
+				w.clr("bind %d value" % (i + 1))
+		if options & 0x10:
+			session["defines"][cursor] = deflist
+
+
+def piggyback_request(w, session):
+	# a ttc 0x11 message: a call that rides ahead of another, then the
+	# other one, which is what the answer is for
+	tti = w.byte("piggybacked tti code")
+	w.byte("sequence number")
+	if tti == 0x69:
+		# close cursors: a pointer, a count and that many cursor ids
+		w.pointer("cursor array pointer")
+		n = w.count("cursor count")
+		for i in range(n):
+			w.count("cursor id")
+	elif tti == 0x6b:
+		w.count("session id")
+		w.count("serial number")
+		w.count("mode")
+	else:
+		raise WalkError("piggybacked tti 0x%02x not decoded" % tti)
+	ttc = w.byte("embedded ttc code")
+	inner = w.byte("embedded tti code")
+	w.note("-> embedded %s" % TTI_CODES.get(inner, "unknown"))
+	if ttc == 0x03 and inner in (0x02, 0x03, 0x05, 0x08, 0x47):
+		legacy_request(w, inner, session)
+		return
+	session["pending"] = (inner, None)
+	if w.remaining():
+		w.raw("embedded request, not decoded", w.remaining())
+
+
+def describe_info(w, session):
+	# putDescribeInfo()/putDescribeInfoBody()/putColumnMetadata(), in the
+	# shape a real 10.2 server sends a client below field version 4: no
+	# column position behind each column's name, and nothing behind the
+	# describe's date.  the precision and scale are raw bytes there
+	fv = session.get("fieldversion")
+	w.clr("query hash and date")
+	w.count("max row size")
+	columns = w.count("column count")
+	if columns:
+		w.byte("unexplained (0x39 from 10.2, 0x51 from 12.2)")
+	sizes = []
+	for i in range(columns):
+		w.note("column %d:" % (i + 1))
+		w.byte("  datatype")
+		w.byte("  flags")
+		w.byte("  precision")
+		w.byte("  scale")
+		sizes.append(w.count("  buffer size"))
+		w.count("  max array elements")
+		w.count("  continuation flags")
+		w.count("  oid length")
+		w.count("  version")
+		w.count("  character set")
+		w.byte("  character set form")
+		w.count("  max size")
+		w.byte("  nulls allowed")
+		w.byte("  v7 name length")
+		w.count("  name length")
+		w.clr("  name")
+		w.count("  schema length")
+		w.count("  type name length")
+		if fv is not None and fv >= FIELD_VERSION_10_2:
+			w.count("  column position")
+	w.count("date length")
+	w.clr("date")
+	if fv is not None and fv >= FIELD_VERSION_10_2:
+		w.count("dcbflag")
+		w.count("max data block size")
+		w.count("min prefetch")
+		w.count("max prefetch")
+	session["describecolumns"] = columns
+	session["describesizes"] = sizes
+
+
+def return_parameters(w, session):
+	# putReturnParameters(): the al8o4 vector, al8txl, the session state
+	# key/value pairs.  a 10.2 server sends a client below field version 4
+	# no registration id behind them
+	fv = session.get("fieldversion")
+	n = w.count("al8o4 count", 2)
+	for i in range(n):
+		w.count("al8o4[%d]" % i)
+	txl = w.count("al8txl", 2)
+	if txl:
+		w.raw("al8txl", txl)
+	pairs = w.count("key/value pair count", 2)
+	for i in range(pairs):
+		if w.count("key %d length" % (i + 1), 2):
+			w.clr("key %d" % (i + 1))
+		if w.count("value %d length" % (i + 1), 2):
+			w.clr("value %d" % (i + 1))
+		w.count("flags %d" % (i + 1), 2)
+	if fv is not None and fv >= FIELD_VERSION_10_2:
+		w.count("registration id")
+
+
+def legacy_rows(w, session, cursor):
+	# putRowHeader() or the native literal in sendFetchResponse(), then
+	# the rows putRow() writes: per column the client defined, its value,
+	# then its indicator and its return code where its define asked for
+	# them
+	if w.native:
+		block = w.raw("native row header, field split unconfirmed", 29)
+		w.note("-> column count %d, row count %d" %
+			(block[3], int.from_bytes(block[4:8], "big")))
+		columns = block[3]
+	else:
+		w.byte("flags")
+		columns = w.count("column count", 2)
+		w.count("iteration number")
+		w.count("row count")
+		w.count("buffer length", 2)
+		if w.count("bit vector length"):
+			raise WalkError("bit vector not decoded")
+		if w.count("rxhrid length"):
+			raise WalkError("rxhrid not decoded")
+	deflist = session["defines"].get(cursor)
+	if deflist:
+		wanted = [d for d in deflist
+				if not (d[1] & DEFINE_SKIPPED and not d[2])]
+	else:
+		w.note("no define list on file for cursor %s - assuming "
+			"%d columns with an indicator and a return code each" %
+			(cursor, columns))
+		wanted = [(0, DEFINE_INDICATOR | DEFINE_RETURN_CODE, 0)] * \
+								columns
+	row = 0
+	while w.remaining() and w.data[w.pos] == 0x07:
+		row += 1
+		w.byte("row %d marker" % row)
+		for i, (dty, flag, bufsize) in enumerate(wanted):
+			w.clr("  column %d value" % (i + 1))
+			if flag & DEFINE_INDICATOR:
+				w.count("  column %d indicator" % (i + 1), 2)
+			if flag & DEFINE_RETURN_CODE:
+				w.count("  column %d return code" % (i + 1), 2)
+
+
+def oall8_rows(w, session):
+	# a 10g style call's row header and rows: the row header's fields, then
+	# per row its marker and one value per described column
+	w.byte("flags")
+	w.count("column count", 2)
+	w.count("iteration number")
+	w.count("row count")
+	w.count("buffer length", 2)
+	if w.count("bit vector length"):
+		raise WalkError("bit vector not decoded")
+	if w.count("rxhrid length"):
+		raise WalkError("rxhrid not decoded")
+
+
+def decode_legacy_answer(body, ttccode, session):
+	# the answer to the call session["pending"] names, from its first ttc
+	# code on.  one answer can carry several messages back to back, each
+	# behind its own ttc code
+	native = session.get("native")
+	w = Walker(body, native)
+	pending = session.get("pending") or (None, None)
+	tti, cursor = pending[0], pending[1]
+	code = ttccode
+	first = True
+	while True:
+		if not first:
+			if not w.remaining():
+				break
+			code = w.byte("ttc code")
+		w.note("-> %s" % TTC_CODES.get(code, "0x%02x" % code))
+		first = False
+		if code == 0x04:
+			legacy_summary(w)
+			break
+		elif code == 0x09:
+			w.count("end of call status")
+			break
+		elif code == 0x08 and tti == 0x02:
+			w.count("cursor id")
+		elif code == 0x08 and tti == 0x68:
+			w.count("transaction state")
+		elif code == 0x08 and tti == 0x47:
+			# sendQuery2Response()
+			w.count("lead-in, 2 whatever the cursor", 2)
+			if native:
+				w.raw("server address", 4)
+			else:
+				size = w.byte("server address length")
+				w.raw("server address", size)
+			w.count("reserved")
+		elif code == 0x08:
+			return_parameters(w, session)
+		elif code == 0x06 and tti in (0x05, 0x47):
+			legacy_rows(w, session, cursor)
+		elif code == 0x06:
+			oall8_rows(w, session)
+		elif code == 0x07 and session.get("describecolumns"):
+			# a real 10.2 server follows each value with an
+			# indicator and a return code for a client whose
+			# CCAP_TTC1 lacks 0x08 (python-oracledb's
+			# TNS_CCAP_IND_RCD) - 9.0.1, which sends 0x07 - and
+			# with nothing for one that sets it - 9.2.0.4, which
+			# sends 0x7f.  a column described 0 bytes wide, null
+			# by describe, has no value at all, only those two
+			ttc1 = session.get("clientttc1")
+			indicators = ttc1 is not None and not (ttc1 & 0x08)
+			sizes = session.get("describesizes") or []
+			for i in range(session["describecolumns"]):
+				if i >= len(sizes) or sizes[i]:
+					w.clr("column %d value" % (i + 1))
+				if indicators:
+					w.count("column %d indicator" % (i + 1),
+									2)
+					w.count("column %d return code" %
+								(i + 1), 2)
+		elif code == 0x10 and native:
+			raise WalkError("a native describe isn't decoded - "
+					"no capture pins its field widths")
+		elif code == 0x10:
+			describe_info(w, session)
+		else:
+			raise WalkError("no message this walker reads starts "
+					"with ttc code 0x%02x (offset %d)" %
+					(code, w.pos - 1))
+	return w.finish()
+
+
+def note_negotiation(body, is_server_to_client, session):
+	# what the encoding and field version decisions need: both platform
+	# banners and both field versions
+	try:
+		if body[2] == 0x01 and not is_server_to_client:
+			start = body.index(b"\x00", 3) + 1
+			banner, pos = read_cstring(body, start)
+			session["clientbanner"] = banner
+		elif body[2] == 0x01:
+			banner, pos = read_cstring(body, 5)
+			session["serverbanner"] = banner
+		elif body[2] == 0x02 and not is_server_to_client:
+			capsize = body[8]
+			caps = body[9:9 + capsize]
+			if len(caps) > 7:
+				session["clientfieldversion"] = caps[7]
+			if len(caps) > 15:
+				session["clientttc1"] = caps[15]
+	except (ValueError, IndexError):
+		return
+	if ("clientbanner" in session and "serverbanner" in session and
+						"openencoding" not in session):
+		session["native"] = (session["clientbanner"] ==
+						session["serverbanner"])
+	if "clientfieldversion" in session:
+		session["fieldversion"] = session["clientfieldversion"]
+
+
+def old_client(session):
+	# a client whose field version says it is older than 10g.  a newer
+	# client making the same legacy calls - instant client's oci7 support
+	# - gets answers shaped for its own field version, which this doesn't
+	# read
+	fv = session.get("fieldversion")
+	return fv is not None and fv < FIELD_VERSION_10_2
+
+
+def decode_legacy(body, is_server_to_client, session):
+	# returns decoded lines, or None when this isn't a message the walker
+	# reads
+	ttccode = body[2]
+	rest = body[3:]
+	if (not is_server_to_client and ttccode == 0x03 and rest and
+				rest[0] == 0x02 and "openencoding" not in session and
+				len(rest) in (7, 10)):
+		session["openencoding"] = True
+		session["native"] = (len(rest) == 10)
+	native = session.get("native")
+	if native is None:
+		return None
+	if not old_client(session):
+		return None
+	if not is_server_to_client:
+		if ttccode == 0x03 and rest and rest[0] in (0x02, 0x03, 0x05,
+								0x08, 0x47):
+			w = Walker(rest[1:], native)
+			legacy_request(w, rest[0], session)
+			return w.finish()
+		if ttccode == 0x03 and rest:
+			session["pending"] = (rest[0], None)
+		if ttccode == 0x11 and rest:
+			w = Walker(rest, native)
+			piggyback_request(w, session)
+			return w.finish()
+		return None
+	if ttccode not in (0x04, 0x06, 0x08, 0x09, 0x10):
+		return None
+	# a summary reads the same whatever it answers.  the rest depend on
+	# the call
+	if ttccode != 0x04 and session.get("pending", (None,))[0] not in (
+				0x02, 0x03, 0x05, 0x08, 0x47, 0x5e, 0x68):
+		return None
+	return decode_legacy_answer(rest, ttccode, session)
+
+
 def decode_data_payload(body, is_server_to_client, authstate):
 	if len(body) < 3:
 		return ["    (data payload too short to have data flags "
@@ -571,6 +1182,8 @@ def decode_data_payload(body, is_server_to_client, authstate):
 			"    payload (%d bytes):" % len(body),
 			hexdump(body)]
 		return lines
+
+	note_negotiation(body, is_server_to_client, authstate)
 
 	dataflags, = struct.unpack_from(">H", body, 0)
 	ttccode = body[2]
@@ -662,6 +1275,21 @@ def decode_data_payload(body, is_server_to_client, authstate):
 					(total - consumed))
 			return lines
 
+	# a pre-10g client's calls and their answers - see Walker
+	try:
+		decoded = decode_legacy(body, is_server_to_client, authstate)
+	except WalkError as e:
+		lines.append("    ** legacy call decode failed (%s); falling "
+				"back to hex dump **" % e)
+		decoded = None
+	if decoded is not None:
+		lines.append("    %s (%s encoding):" %
+				("answer" if is_server_to_client else "request",
+				"native" if authstate.get("native") else
+								"portable"))
+		lines.extend(decoded)
+		return lines
+
 	if rest:
 		lines.append("    payload (%d bytes):" % len(rest))
 		lines.append(hexdump(rest))
@@ -679,7 +1307,7 @@ def main():
 	}
 
 	seqno = 0
-	authstate = {"awaiting_challenge": False}
+	authstate = {"awaiting_challenge": False, "defines": {}}
 	for direction, payload in read_chunks(sys.argv[1]):
 		stream = streams.get(direction)
 		if stream is None:

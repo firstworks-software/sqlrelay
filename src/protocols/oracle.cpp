@@ -441,7 +441,7 @@
 #define TTI_LOB_OPERATIONS	0x60
 #define TTI_ODNY		0x62
 #define TTI_TRANSACTION_END	0x67
-#define TTI_TRANSACTION_BEGIN	0x68
+#define TTI_TRANSACTION_CHANGE_STATE	0x68
 #define TTI_OCCA		0x69
 #define TTI_STARTUP2		0x6D
 #define TTI_LOGON_PRESENT_PWD	0x51
@@ -501,6 +501,10 @@
 // the wire settles which is right
 #define CCAP_END_OF_CALL_STATUS		0x01
 #define CCAP_FAST_SESSION_PROPAGATE	0x10
+// CCAP_TTC1 bit 0x08, python-oracledb's TNS_CCAP_IND_RCD, which it sets.
+// a client without it gets an indicator and a return code behind each value
+// of a row - see rowindicators
+#define CCAP_IND_RCD			0x08
 #define CCAP_END_OF_RESPONSE		0x20
 #define CCAP_EXPLICIT_BOUNDARY		0x40
 #define CCAP_TTC3_TZ_VERSION		0x02
@@ -665,6 +669,15 @@
 #define OUT_BIND_NULL_INDICATOR_COUNT	0x81
 #define OUT_BIND_NULL_INDICATOR_VALUE	0x01
 
+// a TTI_TRANSACTION_CHANGE_STATE call's commit and abort operations, and
+// the states a real server answers them with - python-oracledb's
+// TNS_TPC_TXN_COMMIT, TNS_TPC_TXN_ABORT, TNS_TPC_TXN_STATE_COMMITTED and
+// TNS_TPC_TXN_STATE_ABORTED
+#define TPC_TXN_COMMIT			1
+#define TPC_TXN_ABORT			2
+#define TPC_TXN_STATE_COMMITTED		2
+#define TPC_TXN_STATE_ABORTED		3
+
 // how big an out bind's buffer is, when the descriptor doesn't ask for more
 #define MIN_OUT_BIND_SIZE		128
 
@@ -697,8 +710,11 @@
 #define DCB_MIN_PREFETCH		2
 #define DCB_MAX_PREFETCH		2
 
-// describe info carries the byte 0x51.  its meaning isn't sourced.
+// describe info carries the byte 0x51.  its meaning isn't sourced.  a real
+// 10.2 server sends 0x39 there instead, to every client, and the module sends
+// that below field version 4 - see putDescribeInfoBody()
 #define DESCRIBE_INFO_CONSTANT		0x51
+#define DESCRIBE_INFO_CONSTANT_10_2	0x39
 
 // what a ref cursor's out bind slot leads with.  it isn't a length - it's
 // 0x4c whatever the cursor describes - and no source explains it.  thin
@@ -961,11 +977,22 @@
 // all.  a client that odefin's position 3 and nothing else still sends three
 // descriptors - placeholders for 1 and 2, then the real one - so the count
 // alone doesn't say which columns it wants.  the flag's other bits carry
-// something else: a real define's flag reads 0x07 in most captures and 0x00
-// in 9806-solaris8sparc-9i-o3logon-success, from the same host, whatever the
-// column type.  so this is read as a bit rather than compared whole, and
-// corroborated against the buffer size - see getQuery2Descriptors()
+// something else - see below.  so this is read as a bit rather than compared
+// whole, and corroborated against the buffer size - see
+// getQuery2Descriptors()
 #define OCI7_DEFINE_SKIPPED	0x80
+
+// and these say which of the indicator, return length and return code
+// pointers the client's odefin() passed.  a real server sends a column's
+// indicator only when the first is set, and its return code only when the
+// third is - the return length gets nothing of its own.  0x07 is an odefin()
+// that passed all three, and 0x00 is what 9i sqlplus sends for its own
+// bootstrap queries, so a fetch answering it carries neither.  pinned by
+// test/protocol/oracle/samples/10538-redhat9x86-oci7-defineflags-*-
+// realserver-oracle102.oraproxy, one odefin() per pointer combination
+#define OCI7_DEFINE_INDICATOR	0x01
+#define OCI7_DEFINE_RETURN_LENGTH	0x02
+#define OCI7_DEFINE_RETURN_CODE	0x04
 
 // where a length byte would go, this marks a bind the client passed a null
 // indicator for, and one more byte follows it.  in the nullbind capture -
@@ -1785,12 +1812,16 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_oracle : public sqlrprotocol {
 						byte_t commandtype,
 						uint32_t rowsprocessed,
 						uint32_t successiterations,
-						uint32_t oranum=0);
+						uint32_t oranum=0,
+						uint32_t arrayelement=0,
+						uint32_t arrayerror=0);
 		void	putOci7SummaryNative(uint32_t cursorid,
 						byte_t commandtype,
 						uint32_t rowsprocessed,
 						uint32_t successiterations,
-						uint32_t oranum=0);
+						uint32_t oranum=0,
+						uint32_t arrayelement=0,
+						uint32_t arrayerror=0);
 		void	putAuthExtra(stringbuffer *extra, bool secondphase);
 		bool	peekPrintableString(const byte_t *rp,
 							const byte_t *end,
@@ -1924,6 +1955,8 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_oracle : public sqlrprotocol {
 		uint32_t	definedColumnBufferSize(
 							sqlrservercursor *cursor,
 							uint32_t column);
+		byte_t		definedColumnFlags(sqlrservercursor *cursor,
+							uint32_t column);
 		uint32_t	definedColumnCount(sqlrservercursor *cursor,
 							uint32_t colcount);
 		bool	sendQuery2Response(sqlrservercursor *cursor);
@@ -2007,6 +2040,12 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_oracle : public sqlrprotocol {
 							const char *columntypestring,
 							uint16_t columntype,
 							uint16_t wiretype);
+
+		// true if a 10g style describe sends "column" as null by
+		// describe - 0 bytes wide - and its rows carry no value for it
+		bool		isNullByDescribe(sqlrservercursor *cursor,
+							uint32_t column);
+
 		void	putRowHeader(byte_t flags,
 							uint32_t colcount,
 							uint32_t prefetchrows);
@@ -2036,6 +2075,17 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_oracle : public sqlrprotocol {
 
 		// lob operations...
 		bool	lobOperations(const byte_t *rp);
+		// reads a pre-10g client's lob operation request
+		bool	getLegacyLobOperationRequest(const byte_t *rp,
+							byte_t *sequence,
+							const byte_t **sourcelocator,
+							uint32_t *sourcesize,
+							byte_t *destpresent,
+							uint32_t *destsize,
+							uint32_t *operation,
+							uint64_t *sourceoffset,
+							byte_t *amountpresent,
+							uint64_t *amount);
 		bool	readLenPreUB8(const byte_t *rp,
 							const byte_t *end,
 							uint64_t *value,
@@ -2085,7 +2135,7 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_oracle : public sqlrprotocol {
 								false);
 		bool	sendLobOperationError(uint32_t oranum,
 							const char *message);
-		void	putReturnParameters();
+		void	putReturnParameters(uint32_t cursorid);
 		void	putSummary(uint32_t cursorid,
 							uint32_t oranum,
 							uint32_t rowcount,
@@ -2200,7 +2250,8 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_oracle : public sqlrprotocol {
 						bool isbinary,
 						bool isautoincrement);
 		bool	putRow(sqlrservercursor *cursor,
-						uint32_t colcount);
+						uint32_t colcount,
+						bool *nullwithoutindicator);
 		bool	putField(const char *field,
 						uint64_t fieldsize,
 						uint16_t columntype,
@@ -2215,7 +2266,9 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_oracle : public sqlrprotocol {
 					uint32_t successiterations,
 					uint32_t oranum,
 					const char *message,
-					uint32_t messagesize);
+					uint32_t messagesize,
+					uint32_t arrayelement=0,
+					uint32_t arrayerror=0);
 
 		// close...
 		bool	close(const byte_t *rp);
@@ -2229,6 +2282,8 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_oracle : public sqlrprotocol {
 		// commit, rollback, autocommit...
 		bool	commit(const byte_t *rp);
 		bool	rollback(const byte_t *rp);
+		bool	transactionChangeState(const byte_t *rp);
+		bool	sendTransactionChangeStateResponse(uint32_t state);
 		bool	autoCommitOn(const byte_t *rp);
 		bool	autoCommitOff(const byte_t *rp);
 		bool	sendTransactionResponse();
@@ -2252,6 +2307,10 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_oracle : public sqlrprotocol {
 		void	updateQuery3CallStatus(sqlrservercursor *cursor,
 							bool executed,
 							bool succeeded);
+
+		// tells the controller that a statement opened a transaction,
+		// so that ending the session commits or rolls it back
+		void	pendingTransaction();
 
 		// true if "query" starts with a ddl verb that
 		// determineQueryType() calls "etc"
@@ -2415,6 +2474,12 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_oracle : public sqlrprotocol {
 		// init()
 		bool		lobprefetchlength;
 		bool		lobzerocopy;
+
+		// whether each value in a row data message carries an
+		// indicator and a return code behind it, which a client whose
+		// CCAP_TTC1 lacks CCAP_IND_RCD expects.  decided per session in
+		// recvDataTypeRequest() and reset by init()
+		bool		rowindicators;
 
 		// whether the clr long form frames each chunk's length as a
 		// count prefixed ub4 rather than as a raw byte.  decided per
@@ -2633,6 +2698,11 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_oracle : public sqlrprotocol {
 		// indexed the same way.  a char column defined SQLT_AFC is
 		// blank padded out to it - see putField()
 		uint32_t	**definebuffersizes;
+
+		// and each one's flag byte, indexed the same way, which says
+		// whether a fetch sends the column's indicator and return code
+		// - see OCI7_DEFINE_INDICATOR
+		byte_t		**defineflags;
 
 		// the row a lob locator was sent for.  the controller's lob
 		// calls only ever address a cursor's current row, so the row a
@@ -3016,6 +3086,7 @@ sqlrprotocol_oracle::sqlrprotocol_oracle(sqlrservercontroller *cont,
 	columndefined=new bool *[maxcursorcount];
 	definetypes=new uint16_t *[maxcursorcount];
 	definebuffersizes=new uint32_t *[maxcursorcount];
+	defineflags=new byte_t *[maxcursorcount];
 	lobpinned=new bool[maxcursorcount];
 	lobpincolcount=new uint32_t[maxcursorcount];
 	lobpingeneration=new uint16_t[maxcursorcount];
@@ -3050,16 +3121,19 @@ sqlrprotocol_oracle::sqlrprotocol_oracle(sqlrservercontroller *cont,
 			definetypes[i]=new uint16_t[cont->getMaxColumnCount()];
 			definebuffersizes[i]=
 				new uint32_t[cont->getMaxColumnCount()];
+			defineflags[i]=new byte_t[cont->getMaxColumnCount()];
 			for (uint32_t j=0; j<cont->getMaxColumnCount(); j++) {
 				columndefined[i][j]=false;
 				definetypes[i][j]=0;
 				definebuffersizes[i][j]=0;
+				defineflags[i][j]=0;
 			}
 		} else {
 			columntypes[i]=NULL;
 			columndefined[i]=NULL;
 			definetypes[i]=NULL;
 			definebuffersizes[i]=NULL;
+			defineflags[i]=NULL;
 		}
 	}
 
@@ -3087,6 +3161,7 @@ sqlrprotocol_oracle::~sqlrprotocol_oracle() {
 		delete[] columndefined[i];
 		delete[] definetypes[i];
 		delete[] definebuffersizes[i];
+		delete[] defineflags[i];
 		delete[] cursorbinds[i];
 		delete[] cursordefines[i];
 		delete[] refcursorids[i];
@@ -3107,6 +3182,7 @@ sqlrprotocol_oracle::~sqlrprotocol_oracle() {
 	delete[] columndefined;
 	delete[] definetypes;
 	delete[] definebuffersizes;
+	delete[] defineflags;
 	delete[] rowssent;
 	delete[] definecounts;
 	delete[] lobpinned;
@@ -3168,6 +3244,7 @@ void sqlrprotocol_oracle::init() {
 	localdatetimes=false;
 	lobprefetchlength=false;
 	lobzerocopy=false;
+	rowindicators=false;
 	bigchunks=false;
 	ub2datatypes=false;
 	verifiertype=(serverfieldversion==CCAP_FIELD_VERSION_10_2)?
@@ -3401,8 +3478,11 @@ clientsessionexitstatus_t sqlrprotocol_oracle::clientSession(
 				case TTI_OKOD:
 				case TTI_ODNY:
 				case TTI_TRANSACTION_END:
-				case TTI_TRANSACTION_BEGIN:
 					loop=sendUnimplementedFunctionError();
+					rp=NULL;
+					break;
+				case TTI_TRANSACTION_CHANGE_STATE:
+					loop=transactionChangeState(rp);
 					rp=NULL;
 					break;
 				case TTI_OCCA:
@@ -6446,6 +6526,21 @@ bool sqlrprotocol_oracle::recvDataTypeRequest() {
 			(runtimecaps[RCAP_TTC]&
 				RCAP_TTC_ZERO_COPY)!=0);
 
+	// whether a row's values carry an indicator and a return code.  9.0.1
+	// sqlplus sends CCAP_TTC1 0x07, without CCAP_IND_RCD, and a real 10.2
+	// server puts two zero counts behind each value of every row it sends
+	// it - [0050] and [0060] of test/protocol/oracle/samples/
+	// 10538-solaris8sparc-sqlplus-select-realserver-oracle102.oraproxy.
+	// 9.2.0.4 sqlplus sends 0x7f, and its rows from the same server carry
+	// nothing behind their values - [0054] of the redhat9x86 capture beside
+	// it.  every modern client measured sets the bit, and none at field
+	// version 4 or later has been measured without it - the raw socket
+	// test client leaves CCAP_TTC1 0 and reads bare values - so this is
+	// kept below field version 4
+	rowindicators=(fieldversion<CCAP_FIELD_VERSION_10_2 &&
+			compilecapssize>CCAP_TTC1 &&
+			!(compilecaps[CCAP_TTC1]&CCAP_IND_RCD));
+
 	// the clr long form's chunk framing.  left at auto, three things have
 	// to line up: the module has to advertise the bit, the client has to
 	// answer with it, and the version has to be 6.  the version matters
@@ -6586,6 +6681,8 @@ bool sqlrprotocol_oracle::recvDataTypeRequest() {
 					(lobprefetchlength)?"true":"false");
 		debugWrite("lob zero copy: %s",
 					(lobzerocopy)?"true":"false");
+		debugWrite("row indicators: %s",
+					(rowindicators)?"true":"false");
 		debugWrite("ub2 data types: %s",
 					(ub2datatypes)?"true":"false");
 		if (clientwantsdbtimezone) {
@@ -9648,7 +9745,9 @@ void sqlrprotocol_oracle::putOci7Summary(uint32_t cursorid,
 						byte_t commandtype,
 						uint32_t rowsprocessed,
 						uint32_t successiterations,
-						uint32_t oranum) {
+						uint32_t oranum,
+						uint32_t arrayelement,
+						uint32_t arrayerror) {
 
 	// the summary object a real 10.2 server answers an oci7 client with.
 	// the same object serves the whole session: the o3logon challenge's
@@ -9713,8 +9812,12 @@ void sqlrprotocol_oracle::putOci7Summary(uint32_t cursorid,
 	// value at 0 or 1, its own login-failure capture's evidence for the
 	// same slot
 	writeLenPreInt(&reqpacket,oranum);
-	writeLenPreInt(&reqpacket,0);
-	writeLenPreInt(&reqpacket,0);
+
+	// the array element in error and its error number, which a real 10.2
+	// server sets to 1 and 1405 when a fetch hits a null its define has no
+	// indicator for - see sendFetchResponse() - and leaves 0 otherwise
+	writeLenPreInt(&reqpacket,arrayelement);
+	writeLenPreInt(&reqpacket,arrayerror);
 	writeLenPreInt(&reqpacket,cursorid);
 
 	// the parse error offset, which an oci7 client keeps in cda->peo and
@@ -9810,7 +9913,9 @@ void sqlrprotocol_oracle::putOci7SummaryNative(uint32_t cursorid,
 						byte_t commandtype,
 						uint32_t rowsprocessed,
 						uint32_t successiterations,
-						uint32_t oranum) {
+						uint32_t oranum,
+						uint32_t arrayelement,
+						uint32_t arrayerror) {
 
 	// the native encoding of the same object, shared by every
 	// summary-writing caller in this module (sendOsql7Response() and the
@@ -9862,16 +9967,18 @@ void sqlrprotocol_oracle::putOci7SummaryNative(uint32_t cursorid,
 
 	writeLE(&reqpacket,rowsprocessed);
 
-	// the error number, the same field putOci7Summary() carries in the
-	// same place in its own field order: this 4 byte field and the 2
-	// zero bytes (pad2) behind it.  an ORA-01007 answering a describe
-	// puts 1007 in exactly these four bytes - packet [0028] of
-	// test/protocol/oracle/samples/
-	// 9808-redhat9x86-native-realtable-outofrange.oraproxy
-	writeLE(&reqpacket,oranum);
-
-	static const byte_t	pad2[2]={0};
-	reqpacket.append(pad2,sizeof(pad2));
+	// the error number, the array element in error and its error number,
+	// 2 bytes each - putOci7Summary() carries the same three fields in the
+	// same place in its own field order.  an ORA-01007 answering a
+	// describe puts 1007 in the first two and leaves the rest 0 - packet
+	// [0028] of test/protocol/oracle/samples/
+	// 9808-redhat9x86-native-realtable-outofrange.oraproxy - and a fetch
+	// of a null its define has no indicator for sends 7d 05 01 00 7d 05 -
+	// packet [0030] of 10538-redhat9x86-oci7-defineflags-null-mask0-
+	// realserver-oracle102.oraproxy
+	writeLE(&reqpacket,(uint16_t)oranum);
+	writeLE(&reqpacket,(uint16_t)arrayelement);
+	writeLE(&reqpacket,(uint16_t)arrayerror);
 
 	// the cursor id and the parse error offset, 2 bytes each.  packet
 	// [0028] of test/protocol/oracle/samples/
@@ -11447,8 +11554,8 @@ void sqlrprotocol_oracle::debugTtiFunction(byte_t ttifunction) {
 		case TTI_TRANSACTION_END:
 			func="TTI_TRANSACTION_END";
 			break;
-		case TTI_TRANSACTION_BEGIN:
-			func="TTI_TRANSACTION_BEGIN";
+		case TTI_TRANSACTION_CHANGE_STATE:
+			func="TTI_TRANSACTION_CHANGE_STATE";
 			break;
 		case TTI_OCCA:
 			func="TTI_OCCA";
@@ -11864,8 +11971,8 @@ bool sqlrprotocol_oracle::query(const byte_t *rp) {
 	// back, the same way osql7()'s and query2()'s do
 	callnumber=seqnumber;
 
-	// the query size is a count, and the text behind it includes its own
-	// trailing nul.  that capture's "01 16 16" ahead of the 21-byte
+	// the query size is a count, and the text behind it usually includes
+	// its own trailing nul.  that capture's "01 16 16" ahead of the 21-byte
 	// "select user from dual" is the count 0x16 and then the text's clr
 	// length byte, which agree there.  but the count is a buffer size for
 	// a converting client, the same as osql7()'s: 9i sqlplus declares
@@ -11900,9 +12007,8 @@ bool sqlrprotocol_oracle::query(const byte_t *rp) {
 	}
 	const char	*query=(const char *)querytext;
 
-	// a zero size, one that doesn't fit the text behind it, or text that
-	// doesn't end on the nul it's supposed to include, is one this parse
-	// landed on the wrong offsets in, the same as osql7()'s own
+	// a zero size, or one that doesn't fit the text behind it, is one this
+	// parse landed on the wrong offsets in, the same as osql7()'s own
 	// length-agreement check - not a statement worth running
 	if (!querytextsize) {
 		debugWrite("query size is 0");
@@ -11913,10 +12019,14 @@ bool sqlrprotocol_oracle::query(const byte_t *rp) {
 				"query text behind it",querysize,querytextsize);
 		return false;
 	}
-	uint32_t	querybytes=querytextsize-1;
-	if (query[querybytes]!='\0') {
-		debugWrite("query text doesn't end on its own nul");
-		return false;
+
+	// the text doesn't always include its own trailing nul.  9i sqlplus
+	// sends its 183 byte PRODUCT_PRIVS query without one, and a real 10.2
+	// server runs it - [0039] of test/protocol/oracle/samples/
+	// 10538-solaris8sparc-sqlplus-select-realserver-oracle102.oraproxy
+	uint32_t	querybytes=querytextsize;
+	if (query[querybytes-1]=='\0') {
+		querybytes--;
 	}
 
 	debugStart("query request");
@@ -12660,11 +12770,11 @@ bool sqlrprotocol_oracle::getQuery2Descriptors(const byte_t *rp,
 		discard=true;
 	}
 
-	// columndefined[], definetypes[] and definebuffersizes[] are sized by
-	// maxcolumncount where the config gives one.  where it doesn't -
-	// maxcolumncount="-1", and the sqlite and router backends, which set
-	// 0 - there's no array to write into, so size them to the count
-	// instead.  this is the same
+	// columndefined[], definetypes[], definebuffersizes[] and defineflags[]
+	// are sized by maxcolumncount where the config gives one.  where it
+	// doesn't - maxcolumncount="-1", and the sqlite and router backends,
+	// which set 0 - there's no array to write into, so size them to the
+	// count instead.  this is the same
 	// lazy sizing cacheColumnDefinitions() does for columntypes[], and
 	// without it the whole of this call would quietly do nothing on those
 	// backends.
@@ -12705,12 +12815,15 @@ bool sqlrprotocol_oracle::getQuery2Descriptors(const byte_t *rp,
 			definetypes[curid]=new uint16_t[definitions];
 			delete[] definebuffersizes[curid];
 			definebuffersizes[curid]=new uint32_t[definitions];
+			delete[] defineflags[curid];
+			defineflags[curid]=new byte_t[definitions];
 		}
 	}
 
 	bool		*cd=columndefined[curid];
 	uint16_t	*dt=definetypes[curid];
 	uint32_t	*bs=definebuffersizes[curid];
+	byte_t		*df=defineflags[curid];
 
 	for (uint32_t i=0; i<definitions; i++) {
 
@@ -12762,10 +12875,12 @@ bool sqlrprotocol_oracle::getQuery2Descriptors(const byte_t *rp,
 		dt[i]=(uint16_t)datatype;
 		bs[i]=(buffersize>OCI7_MAX_DEFINE_BUFFER_SIZE)?
 				OCI7_MAX_DEFINE_BUFFER_SIZE:buffersize;
+		df[i]=flag;
 
-		debugWrite("column %d: %s (type %d, buffer size %d)",
+		debugWrite("column %d: %s (type %d, flag 0x%02x, "
+				"buffer size %d)",
 				i,(cd[i])?"defined":"skipped",
-				datatype,buffersize);
+				datatype,flag,buffersize);
 	}
 
 	// a count the walk only steps over is kept no more than a refused one
@@ -13716,6 +13831,18 @@ uint32_t sqlrprotocol_oracle::definedColumnBufferSize(
 	}
 	return (column<definecounts[curid])?
 			definebuffersizes[curid][column]:0;
+}
+
+byte_t sqlrprotocol_oracle::definedColumnFlags(sqlrservercursor *cursor,
+							uint32_t column) {
+
+	// and which of the indicator and return code its define asked for.  a
+	// cursor whose define list wasn't decoded gets both
+	uint16_t	curid=cont->getId(cursor);
+	if (!definecounts[curid] || column>=definecounts[curid]) {
+		return OCI7_DEFINE_INDICATOR|OCI7_DEFINE_RETURN_CODE;
+	}
+	return defineflags[curid][column];
 }
 
 uint32_t sqlrprotocol_oracle::definedColumnCount(sqlrservercursor *cursor,
@@ -14725,8 +14852,11 @@ bool sqlrprotocol_oracle::getQuery3BindDescriptor(const byte_t *rp,
 	// the scale takes the same form here that putColumnPrecisionScale()
 	// sends it in.  OCI 23.26 sends a timestamp's scale as 01 09 though
 	// it sets ENCODING_CONV_LENGTH, ojdbc sends 01 09 without the flag,
-	// and python-oracledb sends a raw 00 with it
-	if ((encodingflags&ENCODING_CONV_LENGTH) && !ociclient) {
+	// and python-oracledb sends a raw 00 with it.  9.2.0.4 OCI sets the
+	// flag and sends a timestamp's scale as a raw 09, the same as it reads
+	// a describe's
+	if ((encodingflags&ENCODING_CONV_LENGTH) &&
+			(!ociclient || fieldversion<CCAP_FIELD_VERSION_10_2)) {
 		if (!have(rp,1,&end)) {
 			debugWrite("truncated bind descriptor");
 			return false;
@@ -15506,6 +15636,29 @@ bool sqlrprotocol_oracle::sendQuery3Response(sqlrservercursor *cursor,
 			rowstofetch=0;
 		}
 
+		// a real 10.2 server answers a pre-10g client's execute of a
+		// select whose every column is null by describe with no rows,
+		// and no ORA-01403, though the request asks for a fetch, and
+		// sends the rows when the client fetches them - [0060] to
+		// [0070] of test/protocol/oracle/samples/10538-solaris8sparc-
+		// sqlplus-nullonly-realserver-oracle102.oraproxy.  9i sqlplus
+		// runs "SELECT NULL FROM DUAL FOR UPDATE NOWAIT" at login and
+		// never fetches its row.  that's only for a request with no
+		// defines.  a 9i OCI8 execute with a define gets the row -
+		// [0016] of test/protocol/oracle/samples/10538-redhat9x86-
+		// oci8-ociselect-null-realserver-oracle102.oraproxy - and
+		// fetches it again as a second row when it doesn't
+		if (rowstofetch && (options&OPTION_EXECUTE) && !query3defines) {
+			bool	allnull=true;
+			for (uint32_t i=0; i<colcount && allnull; i++) {
+				allnull=isNullByDescribe(cursor,i);
+			}
+			if (allnull) {
+				debugWrite("null by describe, no rows");
+				rowstofetch=0;
+			}
+		}
+
 		// a lob's contents are read out of the connection's current
 		// row - there's no way to address a row it has moved on from -
 		// so a result set with a lob column in it sends one row per
@@ -15540,7 +15693,18 @@ bool sqlrprotocol_oracle::sendQuery3Response(sqlrservercursor *cursor,
 
 		if (rowstofetch) {
 
-			putRowHeader(0x22,colcount,rowstofetch);
+			// below field version 4, a real 10.2 server's flags are
+			// 0x02 here too, the same as a fetch's - [0050] and
+			// [0060] of test/protocol/oracle/samples/10538-
+			// solaris8sparc-sqlplus-select-realserver-oracle102.
+			// oraproxy - and it sends no row header at all once the
+			// rows have run out, just the return parameters and the
+			// summary - [0062] of the same capture.  so the row
+			// header waits for the first row there
+			bool	pre10g=(fieldversion<CCAP_FIELD_VERSION_10_2);
+			if (!pre10g) {
+				putRowHeader(0x22,colcount,rowstofetch);
+			}
 
 			// a batch the client put a count on runs to that
 			// count however many packets it takes - sendPacket()
@@ -15567,6 +15731,10 @@ bool sqlrprotocol_oracle::sendQuery3Response(sqlrservercursor *cursor,
 					}
 					endofrows=true;
 					break;
+				}
+
+				if (pre10g && !rowsfetched) {
+					putRowHeader(0x02,colcount,rowstofetch);
 				}
 
 				rowhaslob=false;
@@ -15599,7 +15767,7 @@ bool sqlrprotocol_oracle::sendQuery3Response(sqlrservercursor *cursor,
 		}
 	}
 
-	putReturnParameters();
+	putReturnParameters(cursorid);
 
 	rowssent[cont->getId(cursor)]+=rowsfetched;
 
@@ -15830,17 +15998,30 @@ void sqlrprotocol_oracle::putDescribeInfoBody(sqlrservercursor *cursor,
 	bool		haslob=hasLobColumn(cursor,colcount);
 	uint32_t	maxrowsize=0;
 	for (uint32_t i=0; i<colcount && !haslob; i++) {
+		if (isNullByDescribe(cursor,i)) {
+			continue;
+		}
 		maxrowsize+=getWireColumnSize(cursor,i,
 				cont->getColumnTypeName(cursor,i),
 				columntypes[curid][i],
 				getWireColumnType(columntypes[curid][i]));
 	}
 
+	// below field version 4, a real 10.2 server sends a pre-10g client
+	// none of the fields after the date that a 10.2 client gets, and
+	// none of putColumnMetadata()'s after the type name length either -
+	// [0032] and [0036] of test/protocol/oracle/samples/
+	// 10538-solaris8sparc-sqlplus-select-realserver-oracle102.oraproxy.
+	// 9.2.0.4 sqlplus reads on into the next message for them, and breaks
+	// the call
+	bool	pre10g=(fieldversion<CCAP_FIELD_VERSION_10_2);
+
 	writeLenPreInt(&reqpacket,maxrowsize);
 	writeLenPreInt(&reqpacket,colcount);
 	if (colcount) {
 		// unexplained.  see "Oracle Wire Protocol - Describe Info"
-		write(&reqpacket,(byte_t)DESCRIBE_INFO_CONSTANT);
+		write(&reqpacket,(byte_t)((pre10g)?DESCRIBE_INFO_CONSTANT_10_2:
+						DESCRIBE_INFO_CONSTANT));
 	}
 
 	debugStart("describe info");
@@ -15856,6 +16037,10 @@ void sqlrprotocol_oracle::putDescribeInfoBody(sqlrservercursor *cursor,
 	byte_t	date[ORACLE_DATE_SIZE];
 	putOracleDate(date);
 	putDalc((const char *)date,sizeof(date));
+
+	if (pre10g) {
+		return;
+	}
 
 	writeLenPreInt(&reqpacket,0);
 	writeLenPreInt(&reqpacket,DCB_MAX_DATA_BLOCK_SIZE);
@@ -15881,6 +16066,13 @@ void sqlrprotocol_oracle::putColumnMetadata(sqlrservercursor *cursor,
 	uint32_t	size=getWireColumnSize(cursor,column,
 						columntypestring,
 						columntype,wiretype);
+
+	// a column that's null by describe - see isNullByDescribe()
+	uint32_t	columncharset=charset;
+	if (isNullByDescribe(cursor,column)) {
+		size=0;
+		columncharset=CHARSET_US7ASCII;
+	}
 
 	// the wire protocol's "0x80" flag and several fields below it are
 	// gated on the type rather than on being a character type.  a live
@@ -15937,7 +16129,7 @@ void sqlrprotocol_oracle::putColumnMetadata(sqlrservercursor *cursor,
 	writeLenPreInt(&reqpacket,0);
 	writeLenPreInt(&reqpacket,0);
 	writeLenPreInt(&reqpacket,0);
-	writeLenPreInt(&reqpacket,(fullencoding)?charset:0);
+	writeLenPreInt(&reqpacket,(fullencoding)?columncharset:0);
 	write(&reqpacket,(byte_t)((fullencoding)?1:0));
 	writeLenPreInt(&reqpacket,(fullencoding)?size:0);
 	write(&reqpacket,(byte_t)1);
@@ -15945,7 +16137,12 @@ void sqlrprotocol_oracle::putColumnMetadata(sqlrservercursor *cursor,
 	putDalc(name,namesize);
 	writeLenPreInt(&reqpacket,0);
 	writeLenPreInt(&reqpacket,0);
-	writeLenPreInt(&reqpacket,column);
+
+	// the column position, which a real 10.2 server doesn't send below
+	// field version 4 - see putDescribeInfoBody()
+	if (fieldversion>=CCAP_FIELD_VERSION_10_2) {
+		writeLenPreInt(&reqpacket,column);
+	}
 
 	// the uds flags, which a real 10.2 server doesn't send - the column
 	// position is the last field there, and OCI 23.26 reads the next
@@ -15991,7 +16188,14 @@ void sqlrprotocol_oracle::putColumnPrecisionScale(int8_t precision,
 	// with 81 7f to OCI and to ojdbc, and node-oracledb reads it as a raw
 	// signed byte (readInt8() in processColumnInfo()), so no one form
 	// serves all three
-	if ((encodingflags&ENCODING_CONV_LENGTH) && !ociclient) {
+	//
+	// a pre-10g OCI client reads the raw byte, as long as it set the flag.
+	// a real 10.2 server answers 9.0.1 sqlplus's describe of a
+	// number(15,2) with 0f 02 - [0036] of test/protocol/oracle/samples/
+	// 10538-solaris8sparc-sqlplus-select-realserver-oracle102.oraproxy -
+	// and 9.2.0.4 sqlplus reads it the same way
+	if ((encodingflags&ENCODING_CONV_LENGTH) &&
+			(!ociclient || fieldversion<CCAP_FIELD_VERSION_10_2)) {
 		write(&reqpacket,(byte_t)scale);
 	} else {
 		writeLenPreInt(&reqpacket,scale);
@@ -16252,6 +16456,29 @@ uint32_t sqlrprotocol_oracle::getWireColumnSize(sqlrservercursor *cursor,
 	return size;
 }
 
+bool sqlrprotocol_oracle::isNullByDescribe(sqlrservercursor *cursor,
+							uint32_t column) {
+
+	// a real 10.2 server describes "select null" as a varchar2 0 bytes
+	// wide, in character set 1, to a pre-10g client, and sends its rows
+	// nothing for it but the indicator and return code that client may
+	// want - [0060] of test/protocol/oracle/samples/10538-solaris8sparc-
+	// sqlplus-more-realserver-oracle102.oraproxy at field version 1, and
+	// [0054] of the redhat9x86 capture beside it at field version 2.  an
+	// oracle backend reports the same 0, which no real character column
+	// has.  the size another backend reports isn't dependable enough to
+	// go by, and a client at field version 4 or later gets the column 4000
+	// bytes wide
+	if (fieldversion>=CCAP_FIELD_VERSION_10_2 ||
+		charstring::compare(cont->getNativeDbType(),"oracle")) {
+		return false;
+	}
+	uint16_t	curid=cont->getId(cursor);
+	return (isCharacterColumn(cont->getColumnTypeName(cursor,column),
+						columntypes[curid][column]) &&
+		!cont->getColumnSize(cursor,column));
+}
+
 void sqlrprotocol_oracle::putRowHeader(byte_t flags,
 						uint32_t colcount,
 						uint32_t prefetchrows) {
@@ -16305,6 +16532,45 @@ bool sqlrprotocol_oracle::putRowData(sqlrservercursor *cursor,
 		debugStart("col %d",i);
 
 		uint16_t	wiretype=getWireColumnType(ct[i]);
+
+		// a column that's null by describe gets no value at all, just
+		// the indicator and return code, if those go out - a real 10.2
+		// server answers "select null, 1 from dual" with 81 01 00 02 c1
+		// 02 00 00 at field version 1 and 02 c1 02 at field version 2
+		// - see isNullByDescribe()
+		if (isNullByDescribe(cursor,i)) {
+			debugWrite("null by describe");
+			if (rowindicators) {
+				write(&reqpacket,
+					(byte_t)OUT_BIND_NULL_INDICATOR_COUNT);
+				write(&reqpacket,
+					(byte_t)OUT_BIND_NULL_INDICATOR_VALUE);
+				writeLenPreInt(&reqpacket,0);
+				debugWrite("indicator and return code");
+			}
+			debugEnd();
+			continue;
+		}
+
+		// with row indicators, a null is an empty value, an indicator
+		// of -1 and a return code of 0, and any other value is followed
+		// by two zero counts.  a real 10.2 server answers 9.0.1
+		// sqlplus's fetch of "select level, decode(mod(level,2),0,
+		// null,'odd') from dual connect by level<=5" with 02 c1 03 00
+		// 00 00 81 01 00 for its second row - [0070] of test/protocol/
+		// oracle/samples/10538-solaris8sparc-sqlplus-more-realserver-
+		// oracle102.oraproxy.  a column that's null by describe is
+		// handled above
+		if (rowindicators && null) {
+			debugWrite("null");
+			write(&reqpacket,(byte_t)0);
+			write(&reqpacket,(byte_t)OUT_BIND_NULL_INDICATOR_COUNT);
+			write(&reqpacket,(byte_t)OUT_BIND_NULL_INDICATOR_VALUE);
+			writeLenPreInt(&reqpacket,0);
+			debugWrite("indicator and return code");
+			debugEnd();
+			continue;
+		}
 
 		// a lob column's value is a locator rather than the lob's
 		// bytes - the client reads the bytes themselves back with lob
@@ -16445,6 +16711,12 @@ bool sqlrprotocol_oracle::putRowData(sqlrservercursor *cursor,
 		} else {
 			debugWrite("\"%.*s\"",(int)fieldsize,field);
 			putLenBytes(field,(uint32_t)fieldsize);
+		}
+
+		if (rowindicators) {
+			writeLenPreInt(&reqpacket,0);
+			writeLenPreInt(&reqpacket,0);
+			debugWrite("indicator and return code");
 		}
 
 		debugEnd();
@@ -17368,6 +17640,104 @@ bool sqlrprotocol_oracle::sendLobOperationError(uint32_t oranum,
 	return sendPacket(true);
 }
 
+bool sqlrprotocol_oracle::getLegacyLobOperationRequest(const byte_t *rp,
+						byte_t *sequence,
+						const byte_t **sourcelocator,
+						uint32_t *sourcesize,
+						byte_t *destpresent,
+						uint32_t *destsize,
+						uint32_t *operation,
+						uint64_t *sourceoffset,
+						byte_t *amountpresent,
+						uint64_t *amount) {
+
+	// a pre-10g client's lob operation has no scn array, no ub8 offsets
+	// and no array lob fields, its pointers are the client's own, and its
+	// offsets and amount are ub4s.  9.0.1 OCI's read of a clob, against a
+	// real 10.2 server, is "60 | 09 | 00 0d 76 84 | 01 56 | 00 00 00 00 |
+	// 00 | 01 01 | 00 | 00 00 00 00 | ff be e8 ac | 00 00 00 00 | 01 02 |
+	// 00 00 00 00 | 00 | <locator> | 02 01 90" - [0023] of
+	// test/protocol/oracle/samples/10538-solaris8sparc-oci8-ociselect-
+	// lob-realserver-oracle102.oraproxy
+	const byte_t	*end=resppacket+resppacketsize;
+
+	uint32_t	sourceptr=0;
+	uint32_t	destptr=0;
+	uint32_t	shortsourceoffset=0;
+	uint32_t	shortdestoffset=0;
+	uint32_t	charsetptr=0;
+	uint32_t	amountptr=0;
+	uint32_t	nulllobptr=0;
+	uint32_t	scnptr=0;
+	uint32_t	scnlength=0;
+	uint32_t	shortamount=0;
+
+	if (!have(rp,1,&end)) {
+		debugWrite("truncated lob operation request");
+		return false;
+	}
+	read(rp,sequence,&rp);
+
+	if (!getPointer(rp,end,&sourceptr,&rp) ||
+		!getLenPreInt(rp,&end,sourcesize,&rp) ||
+		!getPointer(rp,end,&destptr,&rp) ||
+		!getLenPreInt(rp,&end,destsize,&rp) ||
+		!getLenPreInt(rp,&end,&shortsourceoffset,&rp) ||
+		!getLenPreInt(rp,&end,&shortdestoffset,&rp) ||
+		!getPointer(rp,end,&charsetptr,&rp) ||
+		!getPointer(rp,end,&amountptr,&rp) ||
+		!getPointer(rp,end,&nulllobptr,&rp) ||
+		!getLenPreInt(rp,&end,operation,&rp) ||
+		!getPointer(rp,end,&scnptr,&rp) ||
+		!getLenPreInt(rp,&end,&scnlength,&rp)) {
+		debugWrite("truncated lob operation request");
+		return false;
+	}
+
+	// the locators, then the amount if the client handed over somewhere
+	// to put one
+	*sourcelocator=NULL;
+	if (sourceptr && *sourcesize) {
+		if (!have(rp,(size_t)*sourcesize,&end)) {
+			debugWrite("truncated source locator");
+			return false;
+		}
+		*sourcelocator=rp;
+		rp=rp+*sourcesize;
+	}
+	*destpresent=(destptr)?1:0;
+	if (destptr && *destsize) {
+		if (!have(rp,(size_t)*destsize,&end)) {
+			debugWrite("truncated destination locator");
+			return false;
+		}
+		rp=rp+*destsize;
+	}
+	*amountpresent=(amountptr)?1:0;
+	if (amountptr && !getLenPreInt(rp,&end,&shortamount,&rp)) {
+		debugWrite("truncated lob operation amount");
+		return false;
+	}
+	*sourceoffset=shortsourceoffset;
+	*amount=shortamount;
+
+	if (getDebug()) {
+		debugStart("legacy lob operation request");
+		debugWrite("short source offset: %d",shortsourceoffset);
+		debugWrite("short destination offset: %d",shortdestoffset);
+		debugWrite("charset pointer: 0x%08x",charsetptr);
+		debugWrite("amount pointer: 0x%08x",amountptr);
+		debugWrite("null lob pointer: 0x%08x",nulllobptr);
+		debugWrite("scn pointer: 0x%08x",scnptr);
+		debugWrite("scn length: %d",scnlength);
+		debugWrite("bytes left: %d",
+				(int32_t)(resppacket+resppacketsize-rp));
+		debugEnd();
+	}
+
+	return true;
+}
+
 bool sqlrprotocol_oracle::lobOperations(const byte_t *rp) {
 
 	// the call a client makes to work with a lob it was handed a locator
@@ -17397,94 +17767,108 @@ bool sqlrprotocol_oracle::lobOperations(const byte_t *rp) {
 	byte_t		amountpresent=0;
 	uint64_t	amount=0;
 
-	// the request's fixed part: the sequence number, a length for each
-	// locator that follows, four flag bytes - the last of which is set
-	// for a file exists - and then the operation itself
-	if (!have(rp,1,&end)) {
-		debugWrite("truncated lob operation request");
-		return false;
-	}
-	read(rp,&sequence,&rp);
-	if (!have(rp,1,&end)) {
-		debugWrite("truncated lob operation request");
-		return false;
-	}
-	read(rp,&sourcepresent,&rp);
-	if (!getLenPreInt(rp,&end,&sourcesize,&rp)) {
-		debugWrite("truncated source locator size");
-		return false;
-	}
-	if (!have(rp,1,&end)) {
-		debugWrite("truncated lob operation request");
-		return false;
-	}
-	read(rp,&destpresent,&rp);
-	if (!getLenPreInt(rp,&end,&destsize,&rp) ||
-		!getLenPreInt(rp,&end,&shortamount,&rp)) {
-		debugWrite("truncated destination locator size");
-		return false;
-	}
-	if (!have(rp,sizeof(opflags),&end)) {
-		debugWrite("truncated lob operation flags");
-		return false;
-	}
-	for (uint16_t i=0; i<sizeof(opflags); i++) {
-		read(rp,&(opflags[i]),&rp);
-	}
-	if (!getLenPreInt(rp,&end,&operation,&rp)) {
-		debugWrite("truncated lob operation code");
-		return false;
-	}
-
-	// the scn, the offset to work from, what the amount counts, and
-	// whether an amount follows the locators at all
-	if (!have(rp,1,&end)) {
-		debugWrite("truncated lob operation request");
-		return false;
-	}
-	read(rp,&scnpresent,&rp);
-	if (!getLenPreInt(rp,&end,&scn,&rp) ||
-		!readLenPreUB8(rp,end,&sourceoffset,&rp) ||
-		!getLenPreInt(rp,&end,&amountkind,&rp)) {
-		debugWrite("truncated lob operation offset");
-		return false;
-	}
-	if (!have(rp,1,&end)) {
-		debugWrite("truncated lob operation request");
-		return false;
-	}
-	read(rp,&amountpresent,&rp);
-
-	// three zero ub2s that a real client always sends and a real server
-	// appears to ignore
-	if (!have(rp,6,&end)) {
-		debugWrite("truncated lob operation request");
-		return false;
-	}
-	rp=rp+6;
-
-	// the locators themselves, echoed back exactly as this module minted
-	// them
+	// a pre-10g client's request has its own layout
 	const byte_t	*sourcelocator=NULL;
-	if (sourcepresent && sourcesize) {
-		if (!have(rp,(size_t)sourcesize,&end)) {
-			debugWrite("truncated source locator");
+	if (fieldversion<CCAP_FIELD_VERSION_10_2) {
+		bytestring::zero(opflags,sizeof(opflags));
+		if (!getLegacyLobOperationRequest(rp,&sequence,&sourcelocator,
+						&sourcesize,&destpresent,
+						&destsize,&operation,
+						&sourceoffset,&amountpresent,
+						&amount)) {
 			return false;
 		}
-		sourcelocator=rp;
-		rp=rp+sourcesize;
-	}
-	if (destpresent && destsize) {
-		if (!have(rp,(size_t)destsize,&end)) {
-			debugWrite("truncated destination locator");
-			return false;
-		}
-		rp=rp+destsize;
-	}
+	} else {
 
-	if (amountpresent && !readLenPreUB8(rp,end,&amount,&rp)) {
-		debugWrite("truncated lob operation amount");
-		return false;
+		// the request's fixed part: the sequence number, a length for
+		// each locator that follows, four flag bytes - the last of
+		// which is set for a file exists - and then the operation
+		// itself
+		if (!have(rp,1,&end)) {
+			debugWrite("truncated lob operation request");
+			return false;
+		}
+		read(rp,&sequence,&rp);
+		if (!have(rp,1,&end)) {
+			debugWrite("truncated lob operation request");
+			return false;
+		}
+		read(rp,&sourcepresent,&rp);
+		if (!getLenPreInt(rp,&end,&sourcesize,&rp)) {
+			debugWrite("truncated source locator size");
+			return false;
+		}
+		if (!have(rp,1,&end)) {
+			debugWrite("truncated lob operation request");
+			return false;
+		}
+		read(rp,&destpresent,&rp);
+		if (!getLenPreInt(rp,&end,&destsize,&rp) ||
+			!getLenPreInt(rp,&end,&shortamount,&rp)) {
+			debugWrite("truncated destination locator size");
+			return false;
+		}
+		if (!have(rp,sizeof(opflags),&end)) {
+			debugWrite("truncated lob operation flags");
+			return false;
+		}
+		for (uint16_t i=0; i<sizeof(opflags); i++) {
+			read(rp,&(opflags[i]),&rp);
+		}
+		if (!getLenPreInt(rp,&end,&operation,&rp)) {
+			debugWrite("truncated lob operation code");
+			return false;
+		}
+
+		// the scn, the offset to work from, what the amount counts, and
+		// whether an amount follows the locators at all
+		if (!have(rp,1,&end)) {
+			debugWrite("truncated lob operation request");
+			return false;
+		}
+		read(rp,&scnpresent,&rp);
+		if (!getLenPreInt(rp,&end,&scn,&rp) ||
+			!readLenPreUB8(rp,end,&sourceoffset,&rp) ||
+			!getLenPreInt(rp,&end,&amountkind,&rp)) {
+			debugWrite("truncated lob operation offset");
+			return false;
+		}
+		if (!have(rp,1,&end)) {
+			debugWrite("truncated lob operation request");
+			return false;
+		}
+		read(rp,&amountpresent,&rp);
+
+		// three zero ub2s that a real client always sends and a real
+		// server appears to ignore
+		if (!have(rp,6,&end)) {
+			debugWrite("truncated lob operation request");
+			return false;
+		}
+		rp=rp+6;
+
+		// the locators themselves, echoed back exactly as this module
+		// minted them
+		if (sourcepresent && sourcesize) {
+			if (!have(rp,(size_t)sourcesize,&end)) {
+				debugWrite("truncated source locator");
+				return false;
+			}
+			sourcelocator=rp;
+			rp=rp+sourcesize;
+		}
+		if (destpresent && destsize) {
+			if (!have(rp,(size_t)destsize,&end)) {
+				debugWrite("truncated destination locator");
+				return false;
+			}
+			rp=rp+destsize;
+		}
+
+		if (amountpresent && !readLenPreUB8(rp,end,&amount,&rp)) {
+			debugWrite("truncated lob operation amount");
+			return false;
+		}
 	}
 
 	// the summary object has to echo this back
@@ -17593,26 +17977,44 @@ bool sqlrprotocol_oracle::lobOperations(const byte_t *rp) {
 						LOB_RESULT_NONE,0);
 }
 
-void sqlrprotocol_oracle::putReturnParameters() {
+void sqlrprotocol_oracle::putReturnParameters(uint32_t cursorid) {
 
-	// nothing in this block is load bearing - a live 11.2 server puts 19
-	// session state key/value pairs here and a live 12.2 server puts none
+	// nothing in this block is load bearing for a 10g or later client - a
+	// live 11.2 server puts 19 session state key/value pairs here and a
+	// live 12.2 server puts none
 	write(&reqpacket,(byte_t)TTC_OK);
+
+	// the third of the al8o4 values is the cursor id in every answer a
+	// real 10.2 server sends 9.0.1 sqlplus - [0032] through [0062] of
+	// test/protocol/oracle/samples/10538-solaris8sparc-sqlplus-select-
+	// realserver-oracle102.oraproxy.  that client takes a new cursor's id
+	// from there, and given 0 it never closes the cursor, so its session
+	// runs out of them and fails ORA-01000
+	uint32_t	al8o4[AL8O4_COUNT];
+	bytestring::zero(al8o4,sizeof(al8o4));
+	if (fieldversion<CCAP_FIELD_VERSION_10_2) {
+		al8o4[2]=cursorid;
+	}
 
 	writeLenPreInt(&reqpacket,AL8O4_COUNT);
 	for (uint16_t i=0; i<AL8O4_COUNT; i++) {
-		writeLenPreInt(&reqpacket,0);
+		writeLenPreInt(&reqpacket,al8o4[i]);
 	}
 
-	// al8txl size, session-state key/value pair count, registration id
+	// al8txl size, session-state key/value pair count, registration id.
+	// a real 10.2 server leaves the registration id out below field
+	// version 4 - [0032] and [0034] of test/protocol/oracle/samples/
+	// 10538-solaris8sparc-sqlplus-select-realserver-oracle102.oraproxy
 	writeLenPreInt(&reqpacket,0);
 	writeLenPreInt(&reqpacket,0);
-	writeLenPreInt(&reqpacket,0);
+	if (fieldversion>=CCAP_FIELD_VERSION_10_2) {
+		writeLenPreInt(&reqpacket,0);
+	}
 
 	debugStart("return parameters");
 	debugWrite("count: %d",(uint32_t)AL8O4_COUNT);
 	for (uint16_t i=0; i<AL8O4_COUNT; i++) {
-		debugWrite("param %d: 0",i);
+		debugWrite("param %d: %d",i,al8o4[i]);
 	}
 	debugEnd();
 }
@@ -17685,9 +18087,15 @@ void sqlrprotocol_oracle::putSummary(uint32_t cursorid,
 	// bare status message does - the call being answered's own seq byte
 	// plus 1.  packet [0039] of samples/10314-dev-pythonoracledb-thin-
 	// main-realserver.out answers an embedded TTI_QUERY3 whose own seq
-	// byte is 0x11 (17) with a summary whose second field is 0x12 (18)
+	// byte is 0x11 (17) with a summary whose second field is 0x12 (18).
+	// a real 10.2 server leaves it out below field version 4, as it does
+	// from every status message it sends a pre-10g client - [0032] of
+	// samples/10538-solaris8sparc-sqlplus-select-realserver-oracle102.
+	// oraproxy
 	uint32_t	endtoendseqnumber=(byte_t)(callnumber+1);
-	writeLenPreInt(&reqpacket,endtoendseqnumber);
+	if (fieldversion>=CCAP_FIELD_VERSION_10_2) {
+		writeLenPreInt(&reqpacket,endtoendseqnumber);
+	}
 
 	writeLenPreInt(&reqpacket,rowcount);
 	writeLenPreInt(&reqpacket,oranum);
@@ -17699,7 +18107,15 @@ void sqlrprotocol_oracle::putSummary(uint32_t cursorid,
 
 	writeLenPreInt(&reqpacket,cursorid);
 	writeLenPreInt(&reqpacket,0);
-	write(&reqpacket,(byte_t)3);
+
+	// the command type.  a real 10.2 server sends a pre-10g client the
+	// statement's own, the same as an oci7 summary's - 47 for the pl/sql
+	// blocks 9i sqlplus runs at [0034] and [0048] of test/protocol/oracle/
+	// samples/10538-solaris8sparc-sqlplus-select-realserver-oracle102.
+	// oraproxy
+	byte_t	commandtype=(fieldversion<CCAP_FIELD_VERSION_10_2)?
+				oci7CommandType(wireIdToCursor(cursorid)):3;
+	write(&reqpacket,commandtype);
 	write(&reqpacket,(byte_t)0);
 	write(&reqpacket,(byte_t)0);
 	write(&reqpacket,(byte_t)0);
@@ -17741,6 +18157,7 @@ void sqlrprotocol_oracle::putSummary(uint32_t cursorid,
 	debugWrite("call status: %d",callstatus);
 	debugWrite("end to end seq number: %d",endtoendseqnumber);
 	debugWrite("cursor id: %d",cursorid);
+	debugWrite("command type: %d",commandtype);
 	debugWrite("call number: %d",callnumber);
 	debugWrite("row count: %d",rowcount);
 	debugWrite("error: %d",oranum);
@@ -19463,8 +19880,14 @@ bool sqlrprotocol_oracle::execute(const byte_t *rp) {
 	// executes a statement query2() or query3() already parsed.  the two
 	// paths share the function code and nothing else: a query3 session's
 	// is the modern re-execute, in the lpi-encoded layout, and carries
-	// the statement's bind values again
-	if (query3session) {
+	// the statement's bind values again.
+	//
+	// a pre-10g client's is always the legacy one, even in a query3
+	// session.  9.0.1 sqlplus parses "commit" with TTI_QUERY and runs it
+	// with this layout, after its 10g style calls - [0055] of test/
+	// protocol/oracle/samples/10538-solaris8sparc-sqlplus-select-
+	// realserver-oracle102.oraproxy
+	if (query3session && fieldversion>=CCAP_FIELD_VERSION_10_2) {
 		return reexecute(rp);
 	}
 
@@ -19567,12 +19990,26 @@ bool sqlrprotocol_oracle::execute(const byte_t *rp) {
 	// both halves of the guard below, so a request that does not take the
 	// branch says which half turned it away rather than going silent
 	debugWrite("re-execute: %d bytes behind the header, "
-			"%d binds remembered on cursor %d",
+			"%d binds remembered on cursor %d, %d by query3",
 			(int32_t)(end-rp),
 			(int32_t)query2cursorbindcounts[curid],
-			(int32_t)curid);
+			(int32_t)curid,
+			(int32_t)cursorbindcounts[curid]);
 
-	if (rp<end && query2cursorbindcounts[curid]) {
+	// a pre-10g OCI8 client binds with query3 and then re-executes with
+	// this layout, sending only the values, in the same row data block a
+	// query3 carries behind its descriptors.  9.2.0.4 OCI's second insert
+	// of a bound row is "04 | 90 | 01 03 | 01 01 | 00 | 07 | 02 c1 03 |
+	// 0b 78 6a ..."
+	bool	query3bound=(query3session && rp<end &&
+					!query2cursorbindcounts[curid] &&
+					cursorbindcounts[curid]);
+	if (query3bound) {
+		restoreQuery3Binds(cursor);
+		if (!getQuery3BindValues(rp,end,query3binddescs,iterations)) {
+			return false;
+		}
+	} else if (rp<end && query2cursorbindcounts[curid]) {
 
 		query2bindcount=query2cursorbindcounts[curid];
 		for (uint16_t i=0; i<query2bindcount; i++) {
@@ -19623,12 +20060,31 @@ bool sqlrprotocol_oracle::execute(const byte_t *rp) {
 	// already does
 	rowssent[cont->getId(cursor)]=0;
 
-	// execute the query
-	bool	executed=cont->executeQuery(cursor,true,true,true,true);
-	updateOci7CallStatus(cursor,executed);
-	if (!executed) {
-		debugWrite("execute query failed");
-		return sendQueryError(cursor);
+	// execute the query, once per row data block for query3 binds, as in
+	// reexecute()
+	if (query3bound) {
+		for (uint32_t block=0; block<query3blocks || !block; block++) {
+			if (block<query3blocks &&
+				!installQuery3Binds(cursor,block)) {
+				updateOci7CallStatus(cursor,false);
+				return sendOci7StatementError(cursorid,
+					ORA_NOT_ALL_VARIABLES_BOUND,
+					ORA_NOT_ALL_VARIABLES_BOUND_MESSAGE);
+			}
+			if (!cont->executeQuery(cursor,true,true,true,true)) {
+				debugWrite("execute query failed");
+				updateOci7CallStatus(cursor,false);
+				return sendQueryError(cursor);
+			}
+		}
+		updateOci7CallStatus(cursor,true);
+	} else {
+		bool	executed=cont->executeQuery(cursor,true,true,true,true);
+		updateOci7CallStatus(cursor,executed);
+		if (!executed) {
+			debugWrite("execute query failed");
+			return sendQueryError(cursor);
+		}
 	}
 
 	// keep describe()'s guard current - without this, a describe landing
@@ -19870,10 +20326,14 @@ bool sqlrprotocol_oracle::reexecuteAndFetch(const byte_t *rp) {
 	}
 	read(rp,&sequence,&rp);
 
+	// a pre-10g client sends no more options, as with its TTI_EXECUTE.
+	// 9.2.0.4 OCI's re-execute of a bound select is "4e | b9 | 01 03 |
+	// 01 01 | 01 60 | 07 | 0b 78 6a ..."
 	if (!getLenPreInt(rp,&end,&cursorid,&rp) ||
 		!getLenPreInt(rp,&end,&prefetchrows,&rp) ||
 		!getLenPreInt(rp,&end,&options,&rp) ||
-		!getLenPreInt(rp,&end,&moreoptions,&rp)) {
+		(fieldversion>=CCAP_FIELD_VERSION_10_2 &&
+			!getLenPreInt(rp,&end,&moreoptions,&rp))) {
 		debugWrite("truncated re-execute-and-fetch request");
 		return false;
 	}
@@ -20395,6 +20855,17 @@ bool sqlrprotocol_oracle::sendFetchResponse(sqlrservercursor *cursor,
 	// for each row...
 	uint32_t rowsfetched=0;
 	bool	 endofrows=false;
+
+	// whether the batch ended on a row with a null in a column whose
+	// define has no indicator.  a real 10.2 server answers that fetch with
+	// the rows up to and including that one and ORA-01405, its rows
+	// processed counting that row, 1 for the array element in error and
+	// 1405 again as that element's error number, and sends the next row
+	// to the fetch after it - the 10538-solaris8sparc-oci7-defineflags-
+	// null-* and -multirow-* captures in test/protocol/oracle/samples/,
+	// and the redhat9x86 ones in the native encoding.  only pre-10g
+	// clients have been measured, so only they get it - see putRow()
+	bool	fetchednull=false;
 	do {
 
 		// stop at the number of rows the client asked for
@@ -20471,7 +20942,8 @@ bool sqlrprotocol_oracle::sendFetchResponse(sqlrservercursor *cursor,
 		debugStart("fetch response row");
 		debugWrite("row marker: 0x07");
 
-		if (!putRow(cursor,colcount)) {
+		bool	nullwithoutindicator=false;
+		if (!putRow(cursor,colcount,&nullwithoutindicator)) {
 			debugEnd();
 			return sendQueryError(cursor);
 		}
@@ -20482,6 +20954,14 @@ bool sqlrprotocol_oracle::sendFetchResponse(sqlrservercursor *cursor,
 		cont->nextRow(cursor);
 
 		rowsfetched++;
+
+		// a null with no indicator to say so ends the batch at its row,
+		// in ORA-01405, and the next fetch picks up behind it - see
+		// fetchednull
+		if (nullwithoutindicator) {
+			fetchednull=true;
+			break;
+		}
 
 	} while (true);
 
@@ -20649,7 +21129,15 @@ bool sqlrprotocol_oracle::sendFetchResponse(sqlrservercursor *cursor,
 		// result set with three rows and ORA-01403 in one reply -
 		// packet [0066] of test/protocol/oracle/samples/
 		// 10030-redhat9x86-native-multirowfetch-realserver.oraproxy
-		if (endofrows) {
+		if (fetchednull) {
+			putOci7Error(wireCursorId(cursor),commandtype,
+				rowcount,1,
+				ORA_FETCHED_COLUMN_NULL,
+				ORA_FETCHED_COLUMN_NULL_MESSAGE,
+				charstring::getLength(
+					ORA_FETCHED_COLUMN_NULL_MESSAGE),
+				1,ORA_FETCHED_COLUMN_NULL);
+		} else if (endofrows) {
 			putOci7Error(wireCursorId(cursor),commandtype,
 				rowcount,1,
 				ORA_NO_DATA_FOUND,
@@ -20698,9 +21186,6 @@ bool sqlrprotocol_oracle::sendFetchResponse(sqlrservercursor *cursor,
 		// commit-select-realserver.oraproxy sends "04 05 00 00 00 01"
 		// after a commit.  the 1 behind it is the same unexplained
 		// constant byte putOci7SummaryNative() sends
-		const byte_t	trailer1b[]={
-			0x00, 0x00
-		};
 		const byte_t	trailer2[]={
 			0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
 			0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
@@ -20736,15 +21221,29 @@ bool sqlrprotocol_oracle::sendFetchResponse(sqlrservercursor *cursor,
 		}
 
 		// a batch shorter than the one asked for ends in ORA-01403,
+		// and one that ended on a null with no indicator in ORA-01405,
 		// the same way the portable trailer above does
-		uint32_t	oranum=(endofrows)?ORA_NO_DATA_FOUND:0;
+		uint32_t	oranum=0;
+		uint32_t	arrayelement=0;
+		uint32_t	arrayerror=0;
+		const char	*message=NULL;
+		if (fetchednull) {
+			oranum=ORA_FETCHED_COLUMN_NULL;
+			arrayelement=1;
+			arrayerror=ORA_FETCHED_COLUMN_NULL;
+			message=ORA_FETCHED_COLUMN_NULL_MESSAGE;
+		} else if (endofrows) {
+			oranum=ORA_NO_DATA_FOUND;
+			message=ORA_NO_DATA_FOUND_MESSAGE;
+		}
 
 		write(&reqpacket,(byte_t)TTC_ERROR);
 		writeLE(&reqpacket,callstatus);
 		write(&reqpacket,(byte_t)1);
 		writeLE(&reqpacket,rowcount);
-		writeLE(&reqpacket,oranum);
-		reqpacket.append(trailer1b,sizeof(trailer1b));
+		writeLE(&reqpacket,(uint16_t)oranum);
+		writeLE(&reqpacket,(uint16_t)arrayelement);
+		writeLE(&reqpacket,(uint16_t)arrayerror);
 		writeLE(&reqpacket,(uint16_t)wireCursorId(cursor));
 		writeLE(&reqpacket,(uint16_t)0);
 		write(&reqpacket,commandtype);
@@ -20763,7 +21262,8 @@ bool sqlrprotocol_oracle::sendFetchResponse(sqlrservercursor *cursor,
 			debugWrite("call status: %d",callstatus);
 			debugWrite("rows processed: %d",rowcount);
 			debugWrite("error: %u",oranum);
-			debugHexDump(trailer1b,sizeof(trailer1b));
+			debugWrite("array element: %u",arrayelement);
+			debugWrite("array error: %u",arrayerror);
 			debugWrite("cursor id: %d",wireCursorId(cursor));
 			debugWrite("parse error offset: %d",0);
 			debugWrite("command type: %d",commandtype);
@@ -20779,15 +21279,15 @@ bool sqlrprotocol_oracle::sendFetchResponse(sqlrservercursor *cursor,
 		// message behind the trailer above, the same as the rowsfetched==0
 		// case below sends via putOci7Error() - confirmed against [0066] of
 		// samples/10030-redhat9x86-native-multirowfetch-realserver.oraproxy:
-		// a length byte of 0x19 (25) then "ORA-01403: no data found\n"
-		if (endofrows) {
-			putLenString(ORA_NO_DATA_FOUND_MESSAGE,
-					charstring::getLength(
-						ORA_NO_DATA_FOUND_MESSAGE));
+		// a length byte of 0x19 (25) then "ORA-01403: no data found\n".
+		// an ORA-01405 carries its own the same way - [0030] of
+		// samples/10538-redhat9x86-oci7-defineflags-null-mask0-
+		// realserver-oracle102.oraproxy
+		if (message) {
+			putLenString(message,charstring::getLength(message));
 			if (getDebug()) {
 				debugStart("fetch response footer");
-				debugWrite("message: %s",
-						ORA_NO_DATA_FOUND_MESSAGE);
+				debugWrite("message: %s",message);
 				debugEnd();
 			}
 		}
@@ -21207,7 +21707,10 @@ uint16_t sqlrprotocol_oracle::getColumnFlags(sqlrservercursor *cursor,
 }
 
 bool sqlrprotocol_oracle::putRow(sqlrservercursor *cursor,
-						uint32_t colcount) {
+						uint32_t colcount,
+						bool *nullwithoutindicator) {
+
+	*nullwithoutindicator=false;
 
 	// get the column types
 	uint16_t	*ct=columntypes[cont->getId(cursor)];
@@ -21294,9 +21797,17 @@ bool sqlrprotocol_oracle::putRow(sqlrservercursor *cursor,
 			wrotenullmarker=true;
 		}
 
-		// two fields after every column, including the last:
-		// the indicator and the return code odefin() gave the client
-		// a pointer for.  confirmed against real OCI7 legacy-fetch
+		// up to two fields after every column, including the last:
+		// the indicator and the return code, each only if the
+		// client's odefin() passed a pointer for it - see
+		// OCI7_DEFINE_INDICATOR.  9i sqlplus passes neither for its
+		// bootstrap queries, and a pair it didn't ask for desyncs its
+		// parse of the fetch answer, so it breaks the call.  a define
+		// list that wasn't decoded gets both.  below field version
+		// 4, a null with no indicator ends the fetch in ORA-01405 -
+		// see sendFetchResponse().
+		//
+		// both fields are confirmed against real OCI7 legacy-fetch
 		// captures for 1 through 5 columns, both with and
 		// without the exact-fetch flag set - four bytes there, never
 		// varying with column position, column count, or exact-fetch,
@@ -21330,14 +21841,19 @@ bool sqlrprotocol_oracle::putRow(sqlrservercursor *cursor,
 		// the byte for a genuine null under native encoding now,
 		// still writing it under portable, matching every other
 		// type there (see its own comments).
-		if (wrotenullmarker) {
-			putAuthCount(0xffff,2);
-			putAuthCount(1405,2);
-		} else {
-			putAuthCount(0,2);
-			putAuthCount(0,2);
+		byte_t	defineflag=definedColumnFlags(cursor,i);
+		if (defineflag&OCI7_DEFINE_INDICATOR) {
+			putAuthCount((wrotenullmarker)?0xffff:0,2);
+			debugWrite("indicator");
+		} else if (wrotenullmarker &&
+				fieldversion<CCAP_FIELD_VERSION_10_2) {
+			*nullwithoutindicator=true;
+			debugWrite("null without indicator");
 		}
-		debugWrite("indicator and return code");
+		if (defineflag&OCI7_DEFINE_RETURN_CODE) {
+			putAuthCount((wrotenullmarker)?1405:0,2);
+			debugWrite("return code");
+		}
 
 		debugEnd();
 	}
@@ -21887,7 +22403,9 @@ void sqlrprotocol_oracle::putOci7Error(uint32_t cursorid,
 						uint32_t successiterations,
 						uint32_t oranum,
 						const char *message,
-						uint32_t messagesize) {
+						uint32_t messagesize,
+						uint32_t arrayelement,
+						uint32_t arrayerror) {
 
 	// what a legacy (non-query3) call's answer carries: the same oci7
 	// summary object every other call answers this client with, with the
@@ -21938,10 +22456,12 @@ void sqlrprotocol_oracle::putOci7Error(uint32_t cursorid,
 	// to the caller to have already written it
 	if (nativeencoding) {
 		putOci7SummaryNative(cursorid,commandtype,
-					rowsprocessed,successiterations,oranum);
+					rowsprocessed,successiterations,oranum,
+					arrayelement,arrayerror);
 	} else {
 		putOci7Summary(cursorid,commandtype,
-					rowsprocessed,successiterations,oranum);
+					rowsprocessed,successiterations,oranum,
+					arrayelement,arrayerror);
 	}
 
 	// the message size on the wire is a single byte (ub1); truncate
@@ -22242,6 +22762,118 @@ bool sqlrprotocol_oracle::rollback(const byte_t *rp) {
 	}
 	callstatus=5;
 	return sendTransactionResponse();
+}
+
+bool sqlrprotocol_oracle::transactionChangeState(const byte_t *rp) {
+
+	// a two phase commit state change, python-oracledb's
+	// TNS_FUNC_TPC_TXN_CHANGE_STATE.  9.2.0.4 sqlplus commits with one,
+	// naming no transaction, behind a close-cursors piggyback - [0051] of
+	// test/protocol/oracle/samples/10538-redhat9x86-sqlplus-select-
+	// realserver-oracle102.oraproxy.  only that commit and the matching
+	// rollback are answered.  any other operation, one naming a
+	// transaction, and any call from a client at field version 4 or
+	// later, gets ORA-03001
+	const byte_t	*end=resppacket+resppacketsize;
+
+	byte_t		seqnumber=0;
+	uint32_t	operation=0;
+	uint32_t	contextpointer=0;
+	uint32_t	contextsize=0;
+	uint32_t	formatid=0;
+	uint32_t	gtridsize=0;
+	uint32_t	bqualsize=0;
+	uint32_t	xidpointer=0;
+	uint32_t	xidsize=0;
+	uint32_t	flags=0;
+	uint32_t	timeout=0;
+	uint32_t	statepointer=0;
+
+	if (fieldversion>=CCAP_FIELD_VERSION_10_2 || end-rp<1) {
+		return sendUnimplementedFunctionError();
+	}
+	read(rp,&seqnumber,&rp);
+
+	callnumber=seqnumber;
+
+	// the field order is python-oracledb's TpcChangeStateMessage's, with
+	// raw pointers.  the native capture above and its portable
+	// counterpart, [0047] of samples/10538-redhat9x86-sqlplus-select-
+	// sqlrelay121-experiment.oraproxy, are 44 bytes against 22 - three
+	// pointers and eight counts - with the operation 1, the timeout 4 and
+	// every other field 0
+	if (!getAuthCount(rp,end,&operation,4,&rp) ||
+		!getPointer(rp,end,&contextpointer,&rp) ||
+		!getAuthCount(rp,end,&contextsize,4,&rp) ||
+		!getAuthCount(rp,end,&formatid,4,&rp) ||
+		!getAuthCount(rp,end,&gtridsize,4,&rp) ||
+		!getAuthCount(rp,end,&bqualsize,4,&rp) ||
+		!getPointer(rp,end,&xidpointer,&rp) ||
+		!getAuthCount(rp,end,&xidsize,4,&rp) ||
+		!getAuthCount(rp,end,&flags,4,&rp) ||
+		!getAuthCount(rp,end,&timeout,4,&rp) ||
+		!getPointer(rp,end,&statepointer,&rp)) {
+		return sendUnimplementedFunctionError();
+	}
+
+	debugStart("transaction change state request");
+	debugWrite("seq number: %d",seqnumber);
+	debugWrite("operation: %d",operation);
+	debugWrite("context size: %d",contextsize);
+	debugWrite("xid size: %d",xidsize);
+	debugWrite("flags: 0x%08x",flags);
+	debugWrite("timeout: %d",timeout);
+	debugEnd();
+
+	if ((operation!=TPC_TXN_COMMIT && operation!=TPC_TXN_ABORT) ||
+				contextpointer || contextsize ||
+				formatid || gtridsize || bqualsize ||
+				xidpointer || xidsize) {
+		return sendUnimplementedFunctionError();
+	}
+
+	// 9.2.0.4 OCI's OCITransRollback is an abort, which a real 10.2
+	// server answers with state 3 - [0020] of test/protocol/oracle/
+	// samples/10538-redhat9x86-oci8-txn-realserver-oracle102.oraproxy
+	if (operation==TPC_TXN_ABORT) {
+		if (!cont->rollback()) {
+			return sendTransactionError();
+		}
+		callstatus=5;
+		return sendTransactionChangeStateResponse(
+						TPC_TXN_STATE_ABORTED);
+	}
+
+	if (!cont->commit()) {
+		return sendTransactionError();
+	}
+	callstatus=5;
+	return sendTransactionChangeStateResponse(TPC_TXN_STATE_COMMITTED);
+}
+
+bool sqlrprotocol_oracle::sendTransactionChangeStateResponse(
+							uint32_t state) {
+
+	// the state the transaction is now in, then a bare status message -
+	// "08 02 00 00 00 09 05 00 00 00" in [0052] of test/protocol/oracle/
+	// samples/10538-redhat9x86-sqlplus-select-realserver-oracle102.oraproxy
+	resetSendPacketBuffer(PACKET_DATA);
+
+	uint16_t	dataflags=0;
+	writeBE(&reqpacket,dataflags);
+
+	write(&reqpacket,(byte_t)TTC_OK);
+	putAuthCount(state,4);
+	write(&reqpacket,(byte_t)TTC_STATUS);
+	putAuthCount(callstatus,4);
+
+	debugStart("transaction change state response");
+	debugWrite("data flags: 0x%04x",dataflags);
+	debugWrite("state: %d",state);
+	debugWrite("call status: %d",callstatus);
+	debugEnd();
+
+	return sendPacket(true);
 }
 
 bool sqlrprotocol_oracle::autoCommitOn(const byte_t *rp) {
@@ -22558,6 +23190,7 @@ void sqlrprotocol_oracle::updateOci7CallStatus(sqlrservercursor *cursor,
 			callstatus=5;
 		} else {
 			callstatus=(callstatus&4)|2;
+			pendingTransaction();
 		}
 	} else if (kind==ORACLESTATEMENTKIND_TRANSACTION) {
 		// a commit or rollback run as a statement ends the
@@ -22614,6 +23247,7 @@ void sqlrprotocol_oracle::updateQuery3CallStatus(sqlrservercursor *cursor,
 				callstatus=5;
 			} else {
 				callstatus=(callstatus&4)|2;
+				pendingTransaction();
 			}
 			break;
 		case ORACLESTATEMENTKIND_DDL:
@@ -22627,6 +23261,16 @@ void sqlrprotocol_oracle::updateQuery3CallStatus(sqlrservercursor *cursor,
 		default:
 			break;
 	}
+}
+
+void sqlrprotocol_oracle::pendingTransaction() {
+
+	// the controller only counts a statement that isn't a select as
+	// opening a transaction.  a select for update's row locks would
+	// otherwise outlive the client, held by the pooled backend session,
+	// and any other session's select for update nowait of those rows
+	// would fail with ORA-00054
+	cont->setNeedsCommitOrRollback(true);
 }
 
 bool sqlrprotocol_oracle::isOtherDdl(const char *query) {

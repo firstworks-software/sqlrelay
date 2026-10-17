@@ -15,6 +15,7 @@
 /oci7inlinelob
 /oracletransaction
 /oracleverifiernegotiation
+/oracle9ibootstrap
 *.o
 *.obj
 *.lo

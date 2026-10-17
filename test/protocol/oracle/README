@@ -49,6 +49,21 @@ chars for 11g, 64 for 12c) explicitly. It reports how many of a packet's
 bytes it accounted for, so a short or wrong decode shows up instead of
 being silently swallowed.
 
+A session whose client negotiates a field version below 4 - 9i sqlplus,
+an OCI7 program, a 9i OCI8 client - also gets its calls walked field by
+field: the legacy TTI_OPEN, TTI_QUERY, TTI_QUERY2 (with each define and
+bind descriptor, and what its flag byte asks for), TTI_FETCH and
+TTI_CLOSE requests, the summary object, row header and rows that answer
+them, and the describe, return parameters and summary that answer a 10g
+style call at that field version. The walk names every field with the
+bytes it came from, and ends with a count of the bytes it accounted for:
+a walk that stops short says how many bytes it left and dumps them, and
+one that runs off the end falls back to a hex dump with the reason. The
+layouts are a 10.2 server's (the 10538-* real-server samples below). A
+12.2 server answers some calls differently, and a dml answer's rowid
+block isn't read, so those walks stop short, which is the walk saying
+what it doesn't know, not the server being wrong.
+
     ./oradecode CAPTUREFILE
 
 The packet type, TTC code and TTI code tables, the TTIPRO body layout,
@@ -2400,6 +2415,337 @@ missing bytes silently.
                                       hangs waiting after the answer at
                                       11.2 and 12.1, though not at 10.2
                                       (#10515)
+
+The 10538-* captures below are 9i sqlplus's login bootstrap and "select
+1, 'two', sysdate from dual", run by the genuine 9.2.0.4 client on
+redhat9x86 (field version 2) and 9.0.1 client on solaris8sparc (field
+version 1), NLS_LANG=AMERICAN_AMERICA.WE8ISO8859P1, through oraproxy on
+dev.firstworks.com, against real oracle102 and against -buildtree
+listeners at serverversion 12.1 and 10.2 with charset="31" and an
+oracle102 backend. redhat9x86 runs native with oracle102 and portable
+with the module; solaris8sparc runs portable with both, so its
+real-server capture is the one to diff the module's bytes against. When
+these were captured, a module listener whose backend session ran "SELECT
+NULL FROM DUAL FOR UPDATE NOWAIT" kept that row lock after the client
+went, so the listener was restarted ahead of every capture that reaches
+that statement, except where noted.
+
+    10538-solaris8sparc-sqlplus-select-realserver-oracle102.oraproxy
+                                     the reference.  [0025] is the
+                                      TTI_QUERY2 for "SELECT USER FROM
+                                      DUAL", one define with flag byte
+                                      0x00 - no indicator, return length
+                                      or return code pointer - and the
+                                      fetch answer at [0028] sends
+                                      "TESTUSER" with nothing behind it
+                                      before the summary; the client
+                                      closes the cursor at [0029].  [0032]
+                                      answers the 10g style call "SELECT
+                                      NULL FROM DUAL FOR UPDATE NOWAIT"
+                                      with the field version 1 shapes: no
+                                      column position behind a column's
+                                      name and nothing behind the
+                                      describe's date, 0x39 where the
+                                      module sends 0x51, return parameters
+                                      with 19 session key/value pairs and
+                                      no registration id, a summary with
+                                      no end to end sequence number, and
+                                      no row.  [0036] describes a
+                                      NUMBER(15,2) with its scale as the
+                                      raw byte 02, and the rows at [0060]
+                                      carry two zero counts behind each
+                                      value.  oradecode walks every
+                                      message to its last byte (#10538)
+
+    10538-solaris8sparc-sqlplus-select-realserver-oracle102-dualrowlocked.oraproxy
+                                     the same run while a module
+                                      listener's backend session still held
+                                      the DUAL row lock from an earlier
+                                      client's FOR UPDATE NOWAIT: [0032]
+                                      to [0035] are a marker exchange and
+                                      ORA-00054 (#10538)
+
+    10538-redhat9x86-sqlplus-select-realserver-oracle102.oraproxy
+                                     the 9.2.0.4 client against the real
+                                      server, native.  The same calls as
+                                      the solaris8sparc reference, with the
+                                      same field values in the native
+                                      widths: the fetch answer at [0028]
+                                      has no indicator or return code
+                                      behind "TESTUSER", and the rows at
+                                      [0054] have no counts behind their
+                                      values (#10538)
+
+    10538-redhat9x86-sqlplus-select-sqlrelay121-before.oraproxy
+    10538-redhat9x86-sqlplus-select-sqlrelay102-before.oraproxy
+                                     the 9.2.0.4 client against the module
+                                      at 12.1 and 10.2 as of d6bb90016.
+                                      The fetch answer at [0024] puts 00 00
+                                      - an indicator and a return code the
+                                      define didn't ask for - behind "DEV",
+                                      and the client answers with a break
+                                      at [0025]; ORA-01013 at [0027], and
+                                      every call after that gets
+                                      ORA-03114.  The 10.2 capture's
+                                      [0029] is ORA-00054: the 12.1 run's
+                                      backend session still held the DUAL
+                                      row lock (#10538)
+
+    10538-redhat9x86-sqlplus-select-sqlrelay121-fetchfix.oraproxy
+    10538-solaris8sparc-sqlplus-select-sqlrelay121-fetchfix.oraproxy
+                                     both clients against the module with
+                                      the indicator and return code sent
+                                      only where the define's flag byte
+                                      asks for them.  The fetch answer at
+                                      [0024] matches the reference's but
+                                      for the cursor id and sequence
+                                      number, and the client closes the
+                                      cursor at [0025].  The answer to the
+                                      FOR UPDATE NOWAIT at [0028] still has
+                                      the column position and the four
+                                      fields behind the date that field
+                                      version 4 brings, a row, a
+                                      registration id and an end to end
+                                      sequence number; 9.2.0.4 breaks at
+                                      [0029], and 9.0.1 waits for more
+                                      until its alarm ends it (#10538)
+
+    10538-redhat9x86-sqlplus-select-sqlrelay121-experiment.oraproxy
+                                     the 9.2.0.4 client against a
+                                      throwaway build on top of the
+                                      fetchfix one: below field version 4
+                                      it leaves out the column position,
+                                      the four fields behind the date, the
+                                      registration id and the end to end
+                                      sequence number, sends a number's
+                                      scale as a raw byte, and takes a
+                                      TTI_QUERY text with no nul at its
+                                      end (the real server takes the 183
+                                      byte one at [0039] of the redhat9x86
+                                      reference).  The whole session runs
+                                      and the select prints its row, with
+                                      one SP2-0642 left: [0048] answers the
+                                      TTI 0x68 call riding in [0047] with
+                                      ORA-03001, where the real server
+                                      answers it with TTC_OK and a status
+                                      at [0052] of the redhat9x86 reference.
+                                      The row sent for the FOR UPDATE
+                                      NOWAIT doesn't bother the client
+                                      (#10538)
+
+    10538-redhat9x86-oci8-ociselect-realserver-oracle102.oraproxy
+    10538-redhat9x86-oci8-ociselect-sqlrelay121-fetchfix.oraproxy
+    10538-redhat9x86-oci8-ociselect-sqlrelay121-experiment.oraproxy
+                                     ociselect built against the 9.2.0.4
+                                      client on redhat9x86, "select 1,
+                                      'two', sysdate from dual".  The real
+                                      server answers the 10g style call at
+                                      [0016]; the fetchfix module's
+                                      describe at [0016] has the field
+                                      version 4 fields, the client breaks
+                                      at [0017] and reports ORA-03120.  A
+                                      throwaway build leaving out the
+                                      column position, the fields behind
+                                      the date, the registration id and
+                                      the end to end sequence number below
+                                      field version 4 (and sending no row
+                                      for a FOR UPDATE) runs it (#10538)
+
+    10538-redhat9x86-oci7-defineflags-VARIANT-realserver-oracle102.oraproxy
+                                     a scratch OCI7 program on redhat9x86
+                                      against the real server, native:
+                                      olog, oopen, oparse, odefin of column
+                                      1 as dty 1 into a 64 byte buffer,
+                                      oexec, ofen of one row.  VARIANT
+                                      maskN passes odefin() an indicator
+                                      pointer if N has bit 1, a return
+                                      length pointer if bit 2 and a return
+                                      code pointer if bit 4, for "select
+                                      'abc' from dual"; null-maskN is the
+                                      same for "select null from dual".
+                                      The define descriptor's flag byte at
+                                      [0027] carries the three as 0x01,
+                                      0x02 and 0x04, plus 0x20 whenever the
+                                      return length pointer is missing:
+                                      0x20, 0x21, 0x02, 0x03, 0x24, 0x25,
+                                      0x06 and 0x07 for mask0 to mask7.
+                                      The fetch answer at [0030] sends the
+                                      indicator behind the value only with
+                                      0x01 and the return code only with
+                                      0x04; the return length gets nothing
+                                      of its own.  A null with an indicator
+                                      asked for gets ff ff; one with none
+                                      gets ORA-01405 in the summary, and
+                                      ofen() fails with it (#10538)
+
+    10538-solaris8sparc-oci7-defineflags-VARIANT-realserver-oracle102.oraproxy
+                                     the same scratch program built against
+                                      the 9.0.1 client on solaris8sparc,
+                                      portable, so these are the portable
+                                      forms of the null-maskN redhat9x86
+                                      captures above.  VARIANT null-maskN
+                                      fetches "select null from dual" with
+                                      N 0, 1, 4 and 5.  The fetch answer at
+                                      [0030] carries an indicator of 81 01
+                                      (-1) and a return code of 02 05 7d
+                                      (1405) where the define asks for
+                                      them, and with no indicator asked
+                                      for, a summary of rows processed 1,
+                                      error 1405, array element 1, array
+                                      error 1405 and the ORA-01405 message.
+                                      multirow-maskN odefin()s an array and
+                                      fetches 3 rows of "select
+                                      decode(level,2,null,'a') from dual
+                                      connect by level<=3": with no
+                                      indicator, [0030] sends two rows and
+                                      ORA-01405 with rows processed 2 and
+                                      array element 1, and [0032] answers
+                                      the next ofen() with the third row
+                                      and ORA-01403; with an indicator,
+                                      [0030] sends all three (#10538)
+
+    10538-solaris8sparc-sqlplus-more-realserver-oracle102.oraproxy
+    10538-redhat9x86-sqlplus-more-realserver-oracle102.oraproxy
+                                     both 9i sqlplus clients against the
+                                      real server running "select null, 1
+                                      from dual", "select 12.34, cast(1.5
+                                      as number(5,2)) n52, 'x' from dual",
+                                      a five row connect by level select
+                                      with a null in every other row, and
+                                      "select count(*) from dual where
+                                      1=0".  The describe of "select null,
+                                      1" - [0060] solaris8sparc, [0054]
+                                      redhat9x86 - makes the NULL column a
+                                      varchar2 0 bytes wide in character
+                                      set 1, and its row has no value for
+                                      that column: 81 01 00 (indicator and
+                                      return code only) from 9.0.1, nothing
+                                      at all from 9.2.0.4.  9.0.1's rows
+                                      carry an indicator and a return code
+                                      behind every value, and the fetch at
+                                      [0070] sends a null in an ordinary
+                                      column as 00 81 01 00.  oradecode
+                                      doesn't read its bit vectors (#10538)
+
+    10538-solaris8sparc-sqlplus-nullonly-realserver-oracle102.oraproxy
+                                     9.0.1 sqlplus against the real server
+                                      running "select null from dual",
+                                      "select null from dual for update
+                                      nowait" and "select null, null from
+                                      dual connect by level<=3".  A select
+                                      whose every column is null by
+                                      describe gets no rows with its
+                                      execute - [0060], [0064] and [0068]
+                                      carry the describe, the return
+                                      parameters and a summary with no
+                                      error - and its rows come back to the
+                                      fetch that follows - [0062], [0066]
+                                      and [0070].  This, not the for
+                                      update, is why the reference capture
+                                      answers sqlplus's own "SELECT NULL
+                                      FROM DUAL FOR UPDATE NOWAIT" with no
+                                      row (#10538)
+
+    10538-solaris8sparc-sqlplus-forupdate-realserver-oracle102.oraproxy
+                                     9.0.1 sqlplus against the real server
+                                      running "select dummy from dual for
+                                      update nowait": [0060] answers the
+                                      execute with the row, in a row header
+                                      that carries its rowid (#10538)
+
+    10538-redhat9x86-sqlplus-select-sqlrelay121-after.oraproxy
+    10538-redhat9x86-sqlplus-select-sqlrelay102-after.oraproxy
+    10538-solaris8sparc-sqlplus-select-sqlrelay121-after.oraproxy
+    10538-solaris8sparc-sqlplus-select-sqlrelay102-after.oraproxy
+                                     both 9i sqlplus clients against the
+                                      fixed module at 12.1 and 10.2: the
+                                      whole bootstrap and "select 1, 'two',
+                                      sysdate from dual" run clean, with
+                                      the same calls in the same order as
+                                      the real server's sessions.  What
+                                      still differs from them: no session
+                                      key/value pairs in the first return
+                                      parameters, 0 for the al8o4 values
+                                      other than the cursor id, a date
+                                      column described 7 bytes wide in
+                                      character set 31 where the real
+                                      server sends 1 byte and no character
+                                      set, a number expression described 22
+                                      bytes wide where the real server
+                                      sends its own width, the pl/sql block
+                                      bind sent back in-out, and command
+                                      type 3 where the real server sends 44
+                                      for 9.0.1's commit (#10538)
+
+    10538-redhat9x86-oci8-ociselect-null-realserver-oracle102.oraproxy
+                                     the 9.2.0.4 ociselect against the
+                                      real server, native, "select null
+                                      from dual".  Unlike sqlplus, it sends
+                                      a define with the execute, and the
+                                      answer at [0016] carries the
+                                      describe, a row header and the row,
+                                      so the fetch at [0017] gets ORA-01403
+                                      with rows processed 1 at [0018].  A
+                                      client sent no row there fetches the
+                                      row as a second one (#10538)
+
+    10538-redhat9x86-oci8-ociselect-clobasstring-realserver-oracle102.oraproxy
+    10538-redhat9x86-oci8-ociselect-clobasstring-sqlrelay121.oraproxy
+                                     the 9.2.0.4 ociselect running "select
+                                      to_clob('clobvalue') from dual" with
+                                      its one column defined SQLT_STR.  The
+                                      real server, native, converts the
+                                      clob for the define and sends its
+                                      value in the row at [0016], in long
+                                      form: fe 09 "clobvalue" 00.  The
+                                      module at 12.1 sends a 114 byte
+                                      locator in the row at [0016]; the
+                                      client breaks at [0017], gets
+                                      ORA-01013 at [0019] and reports
+                                      ORA-03120.  OCI 23.26 reports
+                                      ORA-03120 for the same select at 12.1
+                                      and 10.2 too (#10538)
+
+    10538-solaris8sparc-oci8-ociselect-lob-realserver-oracle102.oraproxy
+    10538-solaris8sparc-oci8-ociselect-lob-realserver-oracle122.oraproxy
+    10538-redhat9x86-oci8-ociselect-lob-sqlrelay121.oraproxy
+                                     ociselect with OCISELECT_LOB=1.  The
+                                      9.0.1 client against real 10.2,
+                                      portable: the lob calls have the
+                                      pre-10g layout, with the client's own
+                                      4 byte pointers and ub4 offsets and
+                                      amount - [0019] gets the clob's
+                                      length, and [0020] answers it with
+                                      08, the locator, 02 01 90 and the
+                                      summary.  [0023] reads the clob from
+                                      offset 1 for 400 characters, and
+                                      [0024] sends 0e, the 400 single byte
+                                      characters in long form, then 08,
+                                      the locator, the amount and the
+                                      summary.  Against real 12.2 (AL32UTF8)
+                                      the same client sends the read at
+                                      [0023] with one byte pointers, and
+                                      [0024] sends each character as 02 01
+                                      43.  The 9.2.0.4 client against the
+                                      module at 12.1, with the pre-10g lob
+                                      call read: the lengths at [0022] and
+                                      [0024] work, but the clob read at
+                                      [0026] gets 0e fe ff and the clob as
+                                      800 bytes of UTF-16, and the client
+                                      breaks at [0027] and reports
+                                      ORA-03120 (#10538)
+
+    10538-redhat9x86-oci8-txn-realserver-oracle102.oraproxy
+                                     a scratch 9.2.0.4 OCI program against
+                                      the real server, native: an insert,
+                                      OCITransRollback, an insert,
+                                      OCITransCommit.  The rollback at
+                                      [0019] is a TTI 0x68 with operation 2
+                                      behind a close cursors piggyback, and
+                                      [0020] answers it with state 3 and
+                                      status 5; the commit at [0023] has
+                                      operation 1 and [0024] answers it
+                                      with state 2 (#10538)
 
     10541-solaris8sparc-oci7describe-parse-sqlrelay121.oraproxy
                                      the genuine Oracle 9.0.1 OCI7 client

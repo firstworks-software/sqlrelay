@@ -73,7 +73,7 @@ Which clients work at which ceiling:
 * OCI 23.26 works at any ceiling, including LOB fetch and read.  Creating temporary LOBs doesn't work yet.
 * ojdbc can select CLOB and BLOB columns and call getDatabaseProductVersion() at any ceiling.  At 12.1, though, plain INSERT, UPDATE and DELETE statements get no answer.  They work inside a PL/SQL block, and they work at 10.2 and 11.2.  At any ceiling, each failed statement leaks a cursor, and after five failed statements every statement fails with ORA-01000 until the session ends.  Other gaps: NULL LOB columns come back as empty LOBs, BFILE getDirAlias() and getName() don't work, and NCLOB data reads as empty.
 * Modern clients that use the OCI7 call interface work at any ceiling.
-* Genuine Oracle 9i OCI7 clients, 9.0.1 and 9.2, work at any ceiling.  The Oracle 9i sqlplus logs in at any ceiling too, but currently fails after its first query.
+* Genuine Oracle 9i OCI7 clients, 9.0.1 and 9.2, work at any ceiling.  The Oracle 9i sqlplus (9.0.1 and 9.2) works at any ceiling too, from login through queries to exit.  Oracle 9i OCI8 clients can run selects at any ceiling.  Two things don't work yet from a 9i client: reading a CLOB fails with ORA-03120, and so does a CLOB column defined as a string.
 
 To serve clients that need different ceilings, add a listener for each one.  They can share an instance and its back-end database.  Just give each its own port, as shown below for a 10.2 listener beside a default one.
 

@@ -2958,6 +2958,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   binds without an indicator, and define-only queries at 12.1
 - fixed OCI8 timestamp with local time zone fetches and named-region
   timestamp with time zone values in the oracle protocol module
+- fixed 9i sqlplus and 9i OCI8 selects through the oracle protocol module,
+  and select for update row locks it left held after the session ended
 
 ### Security
 - fixed an authentication hole in the des password encryption module

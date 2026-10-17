@@ -44,11 +44,11 @@ ORACLEPROTOCOLPORT12 ?= 1532
 # oraclelegacyfetch, oracleclrchunks, oracleiterations0,
 # oraclebigchunksoff, oraclerefcursorreuse, oraclesplitrequest,
 # oraclesplitquery3, oraclesplitresponse, oraclemaxdescriptors,
-# oraclemaxfetchrowcount, oracletransaction, oraclereexecuteandfetch and
-# oracleverifiernegotiation only need rudiments (raw sockets), so they
-# build whether or not OCI is configured - they speak the oracle wire
-# protocol themselves rather than going through a client library
-all: oci8 ociselect ociloginretry oracledescribeonly oracledescribe oraclemidfetchdescribe oraclelegacyfetch oracleclrchunks oracleiterations0 oraclebigchunksoff oraclerefcursorreuse oraclesplitrequest oraclesplitquery3 oraclesplitresponse oraclemaxdescriptors oraclemaxfetchrowcount oracletransaction oraclereexecuteandfetch oracleverifiernegotiation oracleutf8clob oracleinlinelob $(ORACLEPROTOCOLTESTTARGETS) tnsnames.ora
+# oraclemaxfetchrowcount, oracletransaction, oraclereexecuteandfetch,
+# oracleverifiernegotiation and oracle9ibootstrap only need rudiments (raw
+# sockets), so they build whether or not OCI is configured - they speak the
+# oracle wire protocol themselves rather than going through a client library
+all: oci8 ociselect ociloginretry oracledescribeonly oracledescribe oraclemidfetchdescribe oraclelegacyfetch oracleclrchunks oracleiterations0 oraclebigchunksoff oraclerefcursorreuse oraclesplitrequest oraclesplitquery3 oraclesplitresponse oraclemaxdescriptors oraclemaxfetchrowcount oracletransaction oraclereexecuteandfetch oracleverifiernegotiation oracle9ibootstrap oracleutf8clob oracleinlinelob $(ORACLEPROTOCOLTESTTARGETS) tnsnames.ora
 
 tnsnames.ora: tnsnames.ora.in
 	$(REPLACE) @DONOTEDIT@ "$(DONOTEDIT)" $@.in > $@.out1
@@ -297,6 +297,17 @@ oracleverifiernegotiation.$(OBJ): oracleprotocolclient.cpp
 oracleverifiernegotiation: oracleverifiernegotiation.cpp oracleprotocolclient.cpp oracleverifiernegotiation.$(OBJ)
 	$(LTLINK) $(LINK) $(LDFLAGS) $(OUT)$@$(EXE) oracleverifiernegotiation.$(OBJ) $(RUDIMENTSLIBS)
 
+# oracleprotocolclient.cpp isn't compiled on its own - it's #include'd by
+# the test's main, the same way asserts.cpp is.  the explicit dependency
+# below is needed because the .cpp.$(OBJ) suffix rule only depends on
+# oracle9ibootstrap.cpp - without it, editing oracleprotocolclient.cpp
+# alone would relink but not recompile, leaving a stale object (see
+# AGENTS.md's note on this build tracking no header dependencies)
+oracle9ibootstrap.$(OBJ): oracleprotocolclient.cpp
+
+oracle9ibootstrap: oracle9ibootstrap.cpp oracleprotocolclient.cpp oracle9ibootstrap.$(OBJ)
+	$(LTLINK) $(LINK) $(LDFLAGS) $(OUT)$@$(EXE) oracle9ibootstrap.$(OBJ) $(RUDIMENTSLIBS)
+
 clean:
-	$(RM) *.lo *.o *.obj *.class *.out1 *.out2 oci8$(EXE) oci7$(EXE) oci7describe$(EXE) oci7bind$(EXE) oci7transaction$(EXE) ociselect$(EXE) ociloginretry$(EXE) oracledescribeonly$(EXE) oracledescribe$(EXE) oraclemidfetchdescribe$(EXE) oraclelegacyfetch$(EXE) oracleclrchunks$(EXE) oracleiterations0$(EXE) oraclebigchunksoff$(EXE) oraclerefcursorreuse$(EXE) oraclesplitrequest$(EXE) oraclesplitquery3$(EXE) oraclesplitresponse$(EXE) oraclemaxdescriptors$(EXE) oraclemaxfetchrowcount$(EXE) oracletransaction$(EXE) oraclereexecuteandfetch$(EXE) oracleverifiernegotiation$(EXE) tnsnames.ora
+	$(RM) *.lo *.o *.obj *.class *.out1 *.out2 oci8$(EXE) oci7$(EXE) oci7describe$(EXE) oci7bind$(EXE) oci7transaction$(EXE) ociselect$(EXE) ociloginretry$(EXE) oracledescribeonly$(EXE) oracledescribe$(EXE) oraclemidfetchdescribe$(EXE) oraclelegacyfetch$(EXE) oracleclrchunks$(EXE) oracleiterations0$(EXE) oraclebigchunksoff$(EXE) oraclerefcursorreuse$(EXE) oraclesplitrequest$(EXE) oraclesplitquery3$(EXE) oraclesplitresponse$(EXE) oraclemaxdescriptors$(EXE) oraclemaxfetchrowcount$(EXE) oracletransaction$(EXE) oraclereexecuteandfetch$(EXE) oracleverifiernegotiation$(EXE) oracle9ibootstrap$(EXE) tnsnames.ora
 	$(RMTREE) .libs

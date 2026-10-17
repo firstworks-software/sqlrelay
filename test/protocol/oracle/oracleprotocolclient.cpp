@@ -31,6 +31,10 @@
 // O7LOGON, which gets it the 11g verifier at serverversion 11.2 and 12.1 -
 // see sendDataTypeNegotiation().  setLogonTypes() advertises something else,
 // for a test that only asks for a challenge - see requestChallenge().
+//
+// The 9i verifier's o3logon answer is implemented too, as the client side of
+// o3logonChallenge() and o3logonVerify() there - see
+// answerO3LogonChallenge().
 
 #include <rudiments/inetsocketclient.h>
 #include <rudiments/bytebuffer.h>
@@ -39,6 +43,8 @@
 #include <rudiments/sha1.h>
 #include <rudiments/md5.h>
 #include <rudiments/aes192.h>
+#include <rudiments/singledes.h>
+#include <rudiments/tripledes.h>
 #include <rudiments/csprng.h>
 #include <rudiments/stdio.h>
 
@@ -198,6 +204,34 @@ static const size_t	ORA_SESSION_KEY_SIZE_11G=48;
 static const size_t	ORA_SESSION_KEY_PAD_SIZE_11G=8;
 static const size_t	ORA_PASSWORD_HASH_SIZE_11G=24;
 static const size_t	ORA_COMBO_KEY_SIZE_11G=24;
+
+// o3logon sizes and constants - the 9i half of src/auths/oracle_userlist.cpp,
+// where each one is explained
+static const size_t	ORA_O3LOGON_BLOCK_SIZE=8;
+static const size_t	ORA_O3LOGON_HASH_SIZE=8;
+static const size_t	ORA_O3LOGON_KEY_SIZE=24;
+static const size_t	ORA_O3LOGON_SESSION_KEY_SIZE=16;
+static const size_t	ORA_O3LOGON_PASSWORD_OVERHEAD=4;
+static const unsigned char	ORA_O3LOGON_IV[]={
+	0x80, 0x20, 0x40, 0x04, 0x08, 0x02, 0x10, 0x01
+};
+static const unsigned char	ORA_O3LOGON_SESSKEY_ENTROPY[]={
+	0xa2, 0xfb, 0xe6, 0xad, 0x4c, 0x7d, 0x1e, 0x3d,
+	0x6e, 0xb0, 0xb7, 0x6c, 0x97, 0xef, 0xff, 0x84,
+	0x44, 0x71, 0x02, 0x84, 0xac, 0xf1, 0x3b, 0x29,
+	0x5c, 0x0f, 0x0c, 0xb1, 0x87, 0x75, 0xef
+};
+static const unsigned char	ORA_O3LOGON_PASSWORD_ENTROPY[]={
+	0xf2, 0xff, 0x97, 0x87, 0x15, 0x37, 0x07, 0x76,
+	0x07, 0x27, 0xe2, 0x7f, 0xa3, 0xb1, 0xd6, 0x73,
+	0x3f, 0x2f, 0xd1, 0x52, 0xab, 0xac, 0xc0
+};
+static const unsigned char	ORA_O3LOGON_HASH_KEY[]={
+	0x01, 0x23, 0x45, 0x67, 0x89, 0xab, 0xcd, 0xef
+};
+static const unsigned char	ORA_O3LOGON_HASH_IV[]={
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
+};
 
 // a response is expected within this long; used on every read, so a
 // listener that hangs instead of answering fails the test rather than
@@ -375,6 +409,19 @@ class oracleprotocolclient {
 		// the byte goes out in the data type negotiation
 		void	setLogonTypes(unsigned char logontypes);
 
+		// the data type negotiation's body - everything behind its
+		// ttc code - sent as is in place of the one
+		// sendDataTypeNegotiation() builds.  for a test that imitates
+		// a client whose negotiation this class doesn't build, a
+		// pre-10g one, say.  the capabilities in it, not
+		// setLogonTypes() or setBigChunkClr(), are what the listener
+		// sees then, and query3() and its kin still build their
+		// descriptors for field version 11.2, so a test that sets
+		// this builds its own calls.  the bytes aren't copied, so they
+		// have to outlive connect()
+		void	setDataTypeRequest(const unsigned char *request,
+							size_t size);
+
 		// the sequence numbers phase one and phase two of a login
 		// carry, 2 for both by default.  the module echoes each one
 		// as the call number in the trailer of its answer - see
@@ -418,6 +465,14 @@ class oracleprotocolclient {
 		bool	requestChallenge(const char *user);
 		bool	answerChallenge(const char *user, const char *password);
 		bool	gotBreak();
+
+		// answerChallenge()'s counterpart for the 9i verifier's
+		// o3logon challenge, which a client whose CCAP_LOGON_TYPES
+		// lacks O5LOGON gets.  its answer is an oci7 summary object,
+		// with no AUTH_ pairs, and this fails unless that summary
+		// carries no error
+		bool	answerO3LogonChallenge(const char *user,
+						const char *password);
 
 		// the AUTH_ pairs in the answer to either phase, and the
 		// trailer behind them.  "flags" may be NULL
@@ -692,6 +747,8 @@ class oracleprotocolclient {
 		bool			bigchunkclr;
 		bool			nativeencoding;
 		unsigned char		logontypes;
+		const unsigned char	*datatyperequest;
+		size_t			datatyperequestsize;
 		unsigned char		authseqphaseone;
 		unsigned char		authseqphasetwo;
 		bool			gotbreak;
@@ -772,12 +829,137 @@ static char *oracleHexEncodeUpper(const unsigned char *in, size_t insize) {
 	return hex;
 }
 
+// single des cbc for an 8 byte key and triple des cbc for a 24 byte one, with
+// no padding, exactly as src/auths/oracle_userlist.cpp's desCbc() does it
+static bool oracleDesCbc(bool encrypt,
+				const unsigned char *key, size_t keysize,
+				const unsigned char *iv,
+				const unsigned char *in, size_t insize,
+				unsigned char *out) {
+
+	if (!insize || insize%ORA_O3LOGON_BLOCK_SIZE ||
+		(keysize!=ORA_O3LOGON_HASH_SIZE &&
+			keysize!=ORA_O3LOGON_KEY_SIZE)) {
+		return false;
+	}
+
+	encryption	*enc=(keysize==ORA_O3LOGON_HASH_SIZE)?
+				(encryption *)new singledes():
+				(encryption *)new tripledes();
+	enc->setUsePadding(false);
+
+	bool	ok=false;
+	if (enc->setKey(key,keysize) &&
+		enc->setIv(iv,ORA_O3LOGON_BLOCK_SIZE) &&
+		enc->append(in,(uint32_t)insize)) {
+
+		// each size getter re-runs the cipher in its own direction, so
+		// it has to be paired with the matching data getter
+		const unsigned char	*result=(encrypt)?
+						enc->getEncryptedData():
+						enc->getDecryptedData();
+		uint64_t		resultsize=(encrypt)?
+						enc->getEncryptedDataSize():
+						enc->getDecryptedDataSize();
+		if (result && resultsize==insize) {
+			bytestring::copy(out,result,insize);
+			ok=true;
+		}
+	}
+
+	delete enc;
+	return ok;
+}
+
+// the oracle des password hash: uppercase(user||password) as utf-16be, zero
+// padded to a block multiple, des-cbc encrypted under a fixed key, then again
+// under the last block of that, whose own last block is the hash.  see
+// o3logonPasswordHash() in src/auths/oracle_userlist.cpp
+static bool oracleO3LogonPasswordHash(const char *user, const char *password,
+							unsigned char *hash) {
+
+	char	*upper=NULL;
+	charstring::printf(&upper,"%s%s",user,password);
+	charstring::upper(upper);
+
+	size_t	upperlen=charstring::getLength(upper);
+	size_t	insize=((upperlen*2)+ORA_O3LOGON_BLOCK_SIZE-1)/
+				ORA_O3LOGON_BLOCK_SIZE*ORA_O3LOGON_BLOCK_SIZE;
+	if (!insize) {
+		insize=ORA_O3LOGON_BLOCK_SIZE;
+	}
+
+	unsigned char	*in=new unsigned char[insize];
+	unsigned char	*out=new unsigned char[insize];
+	bytestring::zero(in,insize);
+	for (size_t i=0; i<upperlen; i++) {
+		in[i*2+1]=(unsigned char)upper[i];
+	}
+
+	unsigned char	key[ORA_O3LOGON_HASH_SIZE];
+	bool	ok=oracleDesCbc(true,ORA_O3LOGON_HASH_KEY,
+					sizeof(ORA_O3LOGON_HASH_KEY),
+					ORA_O3LOGON_HASH_IV,in,insize,out);
+	if (ok) {
+		bytestring::copy(key,out+insize-ORA_O3LOGON_HASH_SIZE,
+							sizeof(key));
+		ok=oracleDesCbc(true,key,sizeof(key),
+					ORA_O3LOGON_HASH_IV,in,insize,out);
+	}
+	if (ok) {
+		bytestring::copy(hash,out+insize-ORA_O3LOGON_HASH_SIZE,
+							ORA_O3LOGON_HASH_SIZE);
+	}
+
+	delete[] in;
+	delete[] out;
+	delete[] upper;
+	return ok;
+}
+
+// the o3logon key derivation: sha1(in||entropy), then the front of
+// sha1(in||0x02||all but the first byte of that||entropy), 24 bytes in all.
+// see o3logonCreateKey() in src/auths/oracle_userlist.cpp
+static bool oracleO3LogonCreateKey(const unsigned char *in, size_t insize,
+					const unsigned char *entropy,
+					size_t entropysize,
+					unsigned char *key) {
+
+	sha1	first;
+	if (!first.append(in,(uint32_t)insize) ||
+		!first.append(entropy,(uint32_t)entropysize)) {
+		return false;
+	}
+	const unsigned char	*digest=first.getHash();
+	if (!digest) {
+		return false;
+	}
+	bytestring::copy(key,digest,20);
+
+	sha1		second;
+	unsigned char	two=0x02;
+	if (!second.append(in,(uint32_t)insize) ||
+		!second.append(&two,1) ||
+		!second.append(key+1,19) ||
+		!second.append(entropy,(uint32_t)entropysize)) {
+		return false;
+	}
+	digest=second.getHash();
+	if (!digest) {
+		return false;
+	}
+	bytestring::copy(key+20,digest,4);
+	return true;
+}
+
 oracleprotocolclient::oracleprotocolclient() {
 	connected=false;
 	largeheader=false;
 	bigchunkclr=false;
 	nativeencoding=false;
 	logontypes=ORA_CCAP_O5LOGON;
+	datatyperequest=NULL;
+	datatyperequestsize=0;
 	authseqphaseone=2;
 	authseqphasetwo=2;
 	gotbreak=false;
@@ -841,6 +1023,12 @@ bool oracleprotocolclient::getNativeEncoding() {
 
 void oracleprotocolclient::setLogonTypes(unsigned char logontypes) {
 	this->logontypes=logontypes;
+}
+
+void oracleprotocolclient::setDataTypeRequest(const unsigned char *request,
+								size_t size) {
+	datatyperequest=request;
+	datatyperequestsize=size;
 }
 
 void oracleprotocolclient::setAuthSequenceNumbers(unsigned char phaseone,
@@ -1603,6 +1791,12 @@ bool oracleprotocolclient::sendDataTypeNegotiation() {
 	appendBE16(0);
 	appendByte(ORA_TTC_DATATYPE_NEGOTIATION);
 
+	// a test's own negotiation, if it gave one
+	if (datatyperequest) {
+		appendBytes(datatyperequest,datatyperequestsize);
+		return sendPacket();
+	}
+
 	// the client's remote-in and remote-out character sets, little
 	// endian.  the listener uses its own whatever these say
 	appendByte((unsigned char)(ORA_CHARSET_AL32UTF8&0xff));
@@ -2099,6 +2293,122 @@ bool oracleprotocolclient::answerChallenge(const char *user,
 		return false;
 	}
 	if (getResponseTtcCode()!=ORA_TTC_OK) {
+		setError("the listener refused the login");
+		return false;
+	}
+
+	return true;
+}
+
+// the o3logon exchange, client side.  the math mirrors o3logonChallenge() and
+// o3logonVerify() in src/auths/oracle_userlist.cpp:
+//
+//	hash		= the des password hash of user and password
+//	session key	= 3des-cbc-decrypt(createkey(hash, sesskey entropy),
+//					the listener's AUTH_SESSKEY)
+//	AUTH_PASSWORD	= 3des-cbc-encrypt(createkey(session key,
+//					password entropy),
+//				4 salt bytes || the password from its fifth
+//				byte on || zero filler || its first 4 bytes)
+//
+// the last field is the password rotated left by 4 into a buffer with room
+// for 4 more bytes, which is what o3logonVerify() undoes
+bool oracleprotocolclient::answerO3LogonChallenge(const char *user,
+							const char *password) {
+
+	char	*sesskeyhex=NULL;
+	if (!getAuthField("AUTH_SESSKEY",&sesskeyhex,NULL)) {
+		setError("no challenge in the phase one response");
+		return false;
+	}
+	unsigned char	*encsesskey=NULL;
+	uint64_t	encsesskeysize=0;
+	charstring::hexDecode(sesskeyhex,charstring::getLength(sesskeyhex),
+						&encsesskey,&encsesskeysize);
+	delete[] sesskeyhex;
+	if (encsesskeysize!=ORA_O3LOGON_SESSION_KEY_SIZE) {
+		delete[] encsesskey;
+		setError("the challenge isn't a 9i session key");
+		return false;
+	}
+
+	// the session key, and the key the password travels under
+	unsigned char	hash[ORA_O3LOGON_HASH_SIZE];
+	unsigned char	key[ORA_O3LOGON_KEY_SIZE];
+	unsigned char	sesskey[ORA_O3LOGON_SESSION_KEY_SIZE];
+	bool	ok=(oracleO3LogonPasswordHash(user,password,hash) &&
+			oracleO3LogonCreateKey(hash,sizeof(hash),
+				ORA_O3LOGON_SESSKEY_ENTROPY,
+				sizeof(ORA_O3LOGON_SESSKEY_ENTROPY),key) &&
+			oracleDesCbc(false,key,sizeof(key),ORA_O3LOGON_IV,
+				encsesskey,ORA_O3LOGON_SESSION_KEY_SIZE,
+				sesskey) &&
+			oracleO3LogonCreateKey(sesskey,sizeof(sesskey),
+				ORA_O3LOGON_PASSWORD_ENTROPY,
+				sizeof(ORA_O3LOGON_PASSWORD_ENTROPY),key));
+	delete[] encsesskey;
+	if (!ok) {
+		setError("failed to build an o3logon key");
+		return false;
+	}
+
+	// AUTH_PASSWORD
+	size_t	passwordsize=charstring::getLength(password);
+	if (passwordsize<ORA_O3LOGON_PASSWORD_OVERHEAD) {
+		setError("the password is too short for o3logon");
+		return false;
+	}
+	size_t		plainsize=(passwordsize+ORA_O3LOGON_PASSWORD_OVERHEAD+
+					ORA_O3LOGON_BLOCK_SIZE-1)/
+					ORA_O3LOGON_BLOCK_SIZE*
+					ORA_O3LOGON_BLOCK_SIZE;
+	unsigned char	*plainpassword=new unsigned char[plainsize];
+	unsigned char	*encpassword=new unsigned char[plainsize];
+	bytestring::zero(plainpassword,plainsize);
+	bytestring::copy(plainpassword+ORA_O3LOGON_PASSWORD_OVERHEAD,
+				password+ORA_O3LOGON_PASSWORD_OVERHEAD,
+				passwordsize-ORA_O3LOGON_PASSWORD_OVERHEAD);
+	bytestring::copy(plainpassword+plainsize-
+				ORA_O3LOGON_PASSWORD_OVERHEAD,
+				password,ORA_O3LOGON_PASSWORD_OVERHEAD);
+	csprng	csr;
+	ok=(csr.generateBytes(plainpassword,plainsize,
+				ORA_O3LOGON_PASSWORD_OVERHEAD) &&
+		oracleDesCbc(true,key,sizeof(key),ORA_O3LOGON_IV,
+				plainpassword,plainsize,encpassword));
+	delete[] plainpassword;
+	if (!ok) {
+		delete[] encpassword;
+		setError("failed to encrypt the password");
+		return false;
+	}
+	char	*authpassword=oracleHexEncodeUpper(encpassword,plainsize);
+	delete[] encpassword;
+
+	// phase two.  the listener finds the user name and AUTH_PASSWORD at
+	// the end of the request, and nothing else in it matters
+	sendAuthRequest(ORA_TTI_LOGON_PRESENT_PWD_SEND_AUTH_PASSWORD,
+					authseqphasetwo,user,0x0101,1);
+	appendAuthField("AUTH_PASSWORD",authpassword,0);
+	delete[] authpassword;
+
+	if (!sendPacket() || !recvPacket()) {
+		return false;
+	}
+
+	// the oci7 summary: the ttc code, the end of call status, the rows
+	// processed and then the error number
+	uint32_t	eocstatus=0;
+	uint32_t	rowsprocessed=0;
+	uint32_t	oranum=0;
+	unsigned char	skip[3];
+	rewindResponse();
+	if (resppackettype!=ORA_PACKET_DATA ||
+			getResponseTtcCode()!=ORA_TTC_ERROR ||
+			!readBytes(skip,sizeof(skip)) ||
+			!readLenPreInt(&eocstatus) ||
+			!readLenPreInt(&rowsprocessed) ||
+			!readLenPreInt(&oranum) || oranum) {
 		setError("the listener refused the login");
 		return false;
 	}
