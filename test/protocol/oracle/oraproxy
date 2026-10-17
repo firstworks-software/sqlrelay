@@ -37,6 +37,11 @@
 # datatype negotiation, and it drops the connection (ORA-28547).
 # Rewriting both directions puts both ends in the portable encoding.
 #
+# With ORAPROXY_UNIVERSAL_REPS=1 in the environment, it also rewrites the
+# client's data type negotiation so the server has only the universal
+# representation to pick for the types the client offers two for - see
+# universalreps() below and the README.
+#
 # The capture records what actually went out on each wire - i.e. the
 # rewritten bytes, not the originals.
 #
@@ -49,8 +54,12 @@
 # Capture file format: a sequence of chunks, each
 #   1 byte   direction: 'C' (client->server) or 'S' (server->client)
 #   4 bytes  payload length, big-endian
-#   N bytes  payload, exactly as read off the socket
+#   N bytes  payload, exactly as forwarded to the far end
 # with chunks in the order they occurred, interleaved across directions.
+# A chunk is usually one read off the socket, but while
+# ORAPROXY_UNIVERSAL_REPS holds back the client's data type negotiation
+# message, it is whatever that read let through: the message's packets
+# that are now whole, and any bytes ahead of them.
 
 import os
 import re
@@ -68,37 +77,280 @@ DIR_SERVER_TO_CLIENT = b"S"
 # terminator, all little endian ub2s.  ORAPROXY_UNIVERSAL_REPS=1 rewrites
 # the first representation to 1 as well, so the server has nothing left
 # to pick but the universal one.  see the README.
+#
+# only inside the client's data type negotiation message, though - from
+# the client DATA packet whose ttc code is TTC_DATATYPE_NEGOTIATION to the
+# server's answer, which can be more than one packet (OCI 23.26 against a
+# 10.2 server sends 1967 and 1299 bytes, with type 0xb5's entry in the
+# second).
+# anywhere else the pattern matches runs of zeros: X and Y both 0 in an
+# ojdbc TTI_QUERY3 or a piggybacked TTI_OCCA or TTI_SWITCH_SESSION, where
+# flipping a byte to 1 sets a pointer the client never sent and a real
+# 12.2 server rejects OCI's request with ORA-03137 (#10697).  no entry
+# has a type of 0, and one whose first representation is already 1 needs
+# nothing
 UNIVERSAL_REPS = os.environ.get("ORAPROXY_UNIVERSAL_REPS") == "1"
 MULTIREP_ENTRY = re.compile(
 	rb"(.)\x00\1\x00(.)\x00\1\x00\x01\x00\x00\x00", re.DOTALL)
+MULTIREP_ENTRY_SIZE = 12
+
+TNS_HEADER_SIZE = 8
+PACKET_ACCEPT = 2
+PACKET_DATA = 6
+PACKET_DATA_DESCRIPTOR = 15
+PACKET_TYPES = (1, 2, 3, 4, 5, 6, 7, 9, 11, 12, 13, 14, 15)
+PROTOCOL_VERSION_12 = 0x013B
+TTC_DATATYPE_NEGOTIATION = 0x02
+
+# a data packet's header, then its two data flag bytes, then its ttc code
+TTC_CODE_OFFSET = TNS_HEADER_SIZE + 2
+
+# a type 15 packet's raw byte count, a ub4 at body offset 4, counts bytes
+# that ride after the packet's declared end
+DATA_DESCRIPTOR_COUNT_OFFSET = TNS_HEADER_SIZE + 4
+
+# the largest length a large header can carry - oracle's 2mb sdu maximum
+MAX_LARGE_PACKET = 2 * 1024 * 1024
 
 
-def universalreps(chunk):
-	# rewrite the first representation of every two-representation entry
+def isentry(match):
+	return match.group(1) != b"\x00" and match.group(2) != b"\x01"
+
+
+def universalreps(data):
+	# rewrite the first representation of every two-representation entry,
+	# returning the result and the types rewritten
+	types = []
+
 	def rewrite(match):
+		if not isentry(match):
+			return match.group(0)
+		types.append(match.group(1)[0])
 		return (match.group(1) + b"\x00" + match.group(1) + b"\x00" +
 			b"\x01\x00" + match.group(1) + b"\x00" +
 			b"\x01\x00\x00\x00")
-	out, count = MULTIREP_ENTRY.subn(rewrite, chunk)
-	if count:
-		sys.stderr.write("oraproxy: rewrote %d data type "
-					"representations to universal\n" % count)
-		sys.stderr.flush()
-	return out
+	return MULTIREP_ENTRY.sub(rewrite, data), types
+
+
+def log(message):
+	sys.stderr.write("oraproxy: %s\n" % message)
+	sys.stderr.flush()
+
+
+class Negotiation:
+	# what one connection's two relay threads share: the server side
+	# records the header size the accept packet settles and when the data
+	# type negotiation is answered, before forwarding either to the
+	# client, so the client side always sees them in time
+	def __init__(self):
+		self.lock = threading.Lock()
+		self.accepted = False
+		self.largeheader = False
+		self.answered = False
+		self.rewritten = 0
+
+
+class Framer:
+	# walks one direction's TNS packets from the start of the connection,
+	# a header at a time
+	def __init__(self, negotiation, name):
+		self.negotiation = negotiation
+		self.name = name
+		self.buf = b""
+		self.skip = 0
+
+	def header(self):
+		# returns (type, length counting a type 15 packet's raw run) once
+		# the header and the ttc code are in, None until then, or False
+		# for a header that doesn't parse
+		if len(self.buf) < TNS_HEADER_SIZE:
+			return None
+		pkttype = self.buf[4]
+		with self.negotiation.lock:
+			largeheader = self.negotiation.largeheader
+		if largeheader:
+			(length,) = struct.unpack(">I", self.buf[0:4])
+		else:
+			(length,) = struct.unpack(">H", self.buf[0:2])
+		if (pkttype not in PACKET_TYPES or length < TNS_HEADER_SIZE or
+				(largeheader and length > MAX_LARGE_PACKET)):
+			log("lost track of the %s packets, leaving the rest of "
+				"the connection as is" % self.name)
+			return False
+		if pkttype == PACKET_DATA_DESCRIPTOR:
+			if len(self.buf) < DATA_DESCRIPTOR_COUNT_OFFSET + 4:
+				return None
+			(raw,) = struct.unpack_from(">I", self.buf,
+						DATA_DESCRIPTOR_COUNT_OFFSET)
+			length += raw
+		needed = min(length, TTC_CODE_OFFSET + 1)
+		if len(self.buf) < needed:
+			return None
+		return pkttype, length
+
+
+class ServerWatch(Framer):
+	# reads the server's packets, without changing or holding any, up to
+	# its answer to the data type negotiation
+	def __init__(self, negotiation):
+		Framer.__init__(self, negotiation, "server")
+		self.done = False
+
+	def feed(self, chunk):
+		if self.done:
+			return
+		self.buf += chunk
+		while True:
+			if self.skip:
+				n = min(self.skip, len(self.buf))
+				self.buf = self.buf[n:]
+				self.skip -= n
+				if self.skip:
+					return
+			found = self.header()
+			if found is None:
+				return
+			if found is False:
+				self.finish(False)
+				return
+			pkttype, length = found
+			with self.negotiation.lock:
+				accepted = self.negotiation.accepted
+			if pkttype == PACKET_ACCEPT and not accepted:
+				# the accept packet itself has a small header
+				(version,) = struct.unpack_from(">H", self.buf,
+							TNS_HEADER_SIZE)
+				with self.negotiation.lock:
+					self.negotiation.accepted = True
+					self.negotiation.largeheader = (
+						version >= PROTOCOL_VERSION_12)
+			elif (pkttype == PACKET_DATA and accepted and
+					length > TTC_CODE_OFFSET and
+					self.buf[TTC_CODE_OFFSET] ==
+						TTC_DATATYPE_NEGOTIATION):
+				self.finish(True)
+				return
+			self.skip = length
+
+	def finish(self, answered):
+		# either way, the client side stops looking
+		with self.negotiation.lock:
+			self.negotiation.answered = True
+			rewritten = self.negotiation.rewritten
+		if answered and not rewritten:
+			log("the data type negotiation had no representation "
+				"to rewrite")
+		self.done = True
+		self.buf = b""
+
+
+class ClientRewrite(Framer):
+	# passes the client's packets through as soon as their ttc code shows
+	# they aren't the data type negotiation message, holds that message's
+	# data packets until each is whole and rewrites them, and stops
+	# looking once the server has answered it
+	def __init__(self, negotiation):
+		Framer.__init__(self, negotiation, "client")
+		self.inmessage = False
+		self.done = False
+		self.tail = b""
+
+	def feed(self, chunk):
+		# returns the bytes to forward now
+		self.buf += chunk
+		out = []
+		while True:
+			if self.done:
+				out.append(self.buf)
+				self.buf = b""
+				break
+			if self.skip:
+				n = min(self.skip, len(self.buf))
+				out.append(self.buf[:n])
+				self.buf = self.buf[n:]
+				self.skip -= n
+				if self.skip:
+					break
+			with self.negotiation.lock:
+				accepted = self.negotiation.accepted
+				answered = self.negotiation.answered
+			if answered:
+				self.done = True
+				continue
+			found = self.header()
+			if found is None:
+				break
+			if found is False:
+				self.done = True
+				continue
+			pkttype, length = found
+			if (not self.inmessage and accepted and
+					pkttype == PACKET_DATA and
+					length > TTC_CODE_OFFSET and
+					self.buf[TTC_CODE_OFFSET] ==
+						TTC_DATATYPE_NEGOTIATION):
+				self.inmessage = True
+			if not self.inmessage or pkttype != PACKET_DATA:
+				self.skip = length
+				continue
+			if len(self.buf) < length:
+				break
+			out.append(self.rewrite(self.buf[:length]))
+			self.buf = self.buf[length:]
+		return b"".join(out)
+
+	def flush(self):
+		out = self.buf
+		self.buf = b""
+		return out
+
+	def rewrite(self, packet):
+		header = packet[:TTC_CODE_OFFSET]
+		body = packet[TTC_CODE_OFFSET:]
+
+		# an entry split across two packets can't be rewritten - the
+		# first packet is already gone
+		joined = self.tail + body[:MULTIREP_ENTRY_SIZE - 1]
+		for match in MULTIREP_ENTRY.finditer(joined):
+			if (match.start() < len(self.tail) < match.end() and
+							isentry(match)):
+				log("WARNING: data type 0x%02x's entry is split "
+					"across two packets, left as is" %
+					match.group(1)[0])
+		self.tail = body[-(MULTIREP_ENTRY_SIZE - 1):]
+
+		body, types = universalreps(body)
+		if types:
+			with self.negotiation.lock:
+				self.negotiation.rewritten += len(types)
+			log("rewrote %d data type representations to "
+				"universal: %s" % (len(types),
+				" ".join("0x%02x" % t for t in types)))
+		return header + body
 
 
 def relay(src, dst, direction, capturefile, capturelock,
-					oldbanner=None, newbanner=None):
+					oldbanner=None, newbanner=None,
+					rewriter=None, watcher=None):
 	# read from src, forward to dst, tee into the capture file
 	while True:
 		try:
 			chunk = src.recv(65536)
 		except OSError:
-			break
+			chunk = b""
 		if not chunk:
-			break
-		if UNIVERSAL_REPS and direction == DIR_CLIENT_TO_SERVER:
-			chunk = universalreps(chunk)
+			# forward whatever the rewriter still holds
+			if rewriter is not None:
+				chunk = rewriter.flush()
+				rewriter = None
+			if not chunk:
+				break
+		elif rewriter is not None:
+			chunk = rewriter.feed(chunk)
+			if not chunk:
+				continue
+		if watcher is not None:
+			watcher.feed(chunk)
 		if oldbanner and oldbanner in chunk:
 			chunk = chunk.replace(oldbanner, newbanner)
 			sys.stderr.write(
@@ -130,17 +382,25 @@ def handle_connection(clientsock, desthost, destport, capturefile, capturelock,
 					clientoldbanner=None,
 					clientnewbanner=None):
 	serversock = socket.create_connection((desthost, destport))
+	rewriter = None
+	watcher = None
+	if UNIVERSAL_REPS:
+		negotiation = Negotiation()
+		rewriter = ClientRewrite(negotiation)
+		watcher = ServerWatch(negotiation)
 	try:
 		t1 = threading.Thread(target=relay, args=(
 				clientsock, serversock,
 				DIR_CLIENT_TO_SERVER,
 				capturefile, capturelock,
-				clientoldbanner, clientnewbanner))
+				clientoldbanner, clientnewbanner,
+				rewriter, None))
 		t2 = threading.Thread(target=relay, args=(
 				serversock, clientsock,
 				DIR_SERVER_TO_CLIENT,
 				capturefile, capturelock,
-				oldbanner, newbanner))
+				oldbanner, newbanner,
+				None, watcher))
 		t1.start()
 		t2.start()
 		t1.join()

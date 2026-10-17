@@ -49,6 +49,17 @@ chars for 11g, 64 for 12c) explicitly. It reports how many of a packet's
 bytes it accounted for, so a short or wrong decode shows up instead of
 being silently swallowed.
 
+A DATA_DESCRIPTOR packet (type 15) - a lob read's answer chunk or a lob
+write's data - is walked in either direction. Its body is 64 bytes: a
+more/last flag (2 or 3), a byte count, a segment count followed by one
+ub2 size per segment (the count is not always 1), and zero padding. The
+bytes the count names ride after the packet's declared end, so the decode
+dumps that raw run with the packet, and the next packet is framed where it
+really starts. A raw run that is cut off at the end of the capture is
+reported with how many of its bytes arrived. Before this, the decode lost
+the stream after the first such packet and ended with undecoded trailing
+bytes. TTC code 0x0e is named TTC_LOB_AND_BFILE_DATA.
+
 A session whose client negotiates a field version below 4 - 9i sqlplus,
 an OCI7 program, a 9i OCI8 client - also gets its calls walked field by
 field: the legacy TTI_OPEN, TTI_QUERY, TTI_QUERY2 (with each define and
@@ -70,6 +81,41 @@ The packet type, TTC code and TTI code tables, the TTIPRO body layout,
 and the auth key/value pair layout are all taken directly from
 src/protocols/oracle.cpp in this repository (see the PACKET_*, TTC_* and
 TTI_* defines, putTtiResponse(), and putAuthField()/getAuthField()).
+
+oratoolstest.py
+---------------
+
+A hand-run offline check of the two tools against samples/ (run it from
+this directory; it needs no database and is not part of test.sh or the
+Makefile):
+
+    ./oratoolstest.py [PORT]
+
+First it runs oradecode over every .oraproxy and .cap file in samples/,
+and fails on a nonzero exit, a traceback or "undecoded trailing bytes".
+It also checks that the six samples that used to stall at their first
+data descriptor packet decode to the capture's last packet:
+10005-dev-oci23-native-piecewiselobread-smallsdu-realserver-oracle122,
+10314-dev-pythonoracledb-thin-main-sqlrelay-before and -after, and
+10569-dev-ojdbc-lobs-{noprefetch,prefetch0,prefetch4000}-realserver-
+oracle122.
+
+Then it replays captures through a live oraproxy with
+ORAPROXY_UNIVERSAL_REPS=1 (default listen port 15231), playing both ends
+from one thread, with the chunks in capture order. Four captures must
+arrive with no changes: the ojdbc captures
+10569-dev-ojdbc-lobs-realserver-oracle122 and
+10701-dev-ojdbc-dml-realserver-oracle122, and the OCI native captures
+10562-dev-oci23-native-dtbinds-tzv26-realserver-oracle122 and
+oracle122-oci-native-login-select.cap.
+oracle122-oci-portable-login-select.cap must arrive with exactly 9
+entries rewritten (types 0x19 through 0x21), the ones the data type
+message in oracle122-oci-portable-universalreps-login-select.cap has.
+10048-dev-oci23api7-universalreps-realserver holds the rewritten bytes,
+so the script puts its entries back to the two-representation form first
+and checks that the proxy rewrites them again - all but 0xb5, which was
+universal to begin with. It prints passed and exits 0 on success. Against
+the oraproxy and oradecode from before #10697 it fails 17 checks.
 
 Running a capture
 ------------------
@@ -477,6 +523,25 @@ nothing else to pick and answers OCI in exactly the representation the
 module uses. The rewrite is same-length and the session runs to
 completion (ociselect prints "row 1: 1"). This is what produced the
 reference the #9174 fix was written against.
+
+The rewrite is limited to the client's data type negotiation message:
+the client DATA packets from the one with TTC code 0x02 until the
+server's 0x02 answer, which can be more than one packet. oraproxy holds
+that message's packets only until each is whole, rewrites the entries in
+it, and logs the types it rewrote. It leaves an entry alone when its type
+is 0, and when its second field is already 1, as with the type 0xb5 entry
+OCI 23.26 sends a 10.2 server in the second packet of the message. So a
+10.2 run logs 9 rewrites (types 0x19 through 0x21), not 10. Anywhere
+else the same byte pattern is a run of zeros: ojdbc's TTI_QUERY3
+requests, piggybacked calls and lob operations are full of them, and
+before #10697 the rewrite flipped one to 1 there, which silently changed
+what an ojdbc request meant and made a real 12.2 server answer one OCI
+native run with ORA-03137. With the rewrite limited to the message, it is
+safe to use with ojdbc and OCI native (both pass through unchanged), and
+a capture taken with ORAPROXY_UNIVERSAL_REPS=1 differs from one without
+only in those entries. Captures below noted as "taken without
+ORAPROXY_UNIVERSAL_REPS" were taken before the fix, and that note is
+true history.
 
 Sample captures, already known-good, are checked in under samples/ so
 the decoder can be exercised without live server access:
@@ -3444,9 +3509,15 @@ that statement, except where noted.
                                       getSubString(7990,11) reads again
                                       (offset 7990, amount 11), and the
                                       rest of the blob is read from
-                                      offset 4001.  oradecode loses the
-                                      server side after the first data
-                                      descriptor packet (#10569)
+                                      offset 4001.  The decode shows the
+                                      answer: [0021] is the 3 byte
+                                      TTC_LOB_AND_BFILE_DATA packet
+                                      (0e), then two data descriptor
+                                      packets, [0022] (more, 60 bytes: 30
+                                      utf-16 characters of the clob) and
+                                      [0023] (last, 7940 bytes), each with
+                                      one segment and its raw run after
+                                      the 64 byte body (#10569)
 
     10569-dev-ojdbc-lobs-prefetch0-realserver-oracle122.oraproxy
                                      the same with

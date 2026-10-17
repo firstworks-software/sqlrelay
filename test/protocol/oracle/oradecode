@@ -16,6 +16,13 @@
 # TNS_PACKET_TYPE/TTC_*/TTI_* defines and putTtiResponse() there.  See
 # #9098 and #8978.
 #
+# A DATA_DESCRIPTOR (type 15) packet - a lob read's answer chunk, or a lob
+# write's data - declares a 64 byte body, and the bytes its body counts
+# ride after that, outside the packet's declared length.  Each one is
+# decoded field by field and its raw run is dumped with it, so the packet
+# after it is framed where it really starts - see
+# decode_data_descriptor() below.
+#
 # A pre-10g client's session (field version below 4: 9i sqlplus, an oci7
 # program, 9i oci8) gets more: its legacy calls - TTI_OPEN, TTI_QUERY,
 # TTI_QUERY2 with its define and bind descriptors, TTI_FETCH, TTI_CLOSE - and
@@ -47,7 +54,10 @@ PACKET_TYPES = {
 	12: "MARKER",
 	13: "ATTENTION",
 	14: "CONTROL_INFO",
+	15: "DATA_DESCRIPTOR",
 }
+
+PACKET_DATA_DESCRIPTOR = 15
 
 TTC_CODES = {
 	0x01: "TTC_PROTOCOL_NEGOTIATION",
@@ -58,6 +68,7 @@ TTC_CODES = {
 	0x07: "TTC_ROW_DATA",
 	0x08: "TTC_OK",
 	0x09: "TTC_STATUS",
+	0x0e: "TTC_LOB_AND_BFILE_DATA",
 	0x10: "TTC_DESCRIBE_INFO",
 	0x11: "TTC_EXTENDED_TTI_FUNCTION",
 	0x15: "TTC_BIT_VECTOR",
@@ -120,6 +131,10 @@ TNS_BREAK = 0x21
 # field self-bounds at 65535 and needs no cap.
 MAX_LARGE_PACKET = 2 * 1024 * 1024
 
+# where a data descriptor packet's byte count sits in its body - the bytes
+# it counts ride after the packet's declared end
+DESCRIPTOR_COUNT_OFFSET = 4
+
 
 def read_chunks(path):
 	# yields (direction, payload) for each chunk oraproxy wrote
@@ -156,10 +171,23 @@ class Stream:
 	def feed(self, data):
 		self.buf += data
 
+	def rawsize(self, pkttype, length):
+		# the size of the raw run behind a data descriptor packet, 0
+		# for any other packet, or None until the count is in
+		if (pkttype != PACKET_DATA_DESCRIPTOR or
+				length < 8 + DESCRIPTOR_COUNT_OFFSET + 4):
+			return 0
+		if len(self.buf) < 8 + DESCRIPTOR_COUNT_OFFSET + 4:
+			return None
+		(raw,) = struct.unpack_from(">I", self.buf,
+						8 + DESCRIPTOR_COUNT_OFFSET)
+		return raw
+
 	def take_packets(self):
-		# yields complete TNS packets as they become available;
-		# leaves a trailing partial packet in self.buf for the next
-		# feed()
+		# yields complete TNS packets, each with the raw run a data
+		# descriptor carries past its declared end, as they become
+		# available; leaves a trailing partial packet in self.buf for
+		# the next feed()
 		while True:
 			if len(self.buf) < 8:
 				return
@@ -171,10 +199,14 @@ class Stream:
 				(length,) = struct.unpack(">I", self.buf[0:4])
 			else:
 				(length,) = struct.unpack(">H", self.buf[0:2])
+			raw = self.rawsize(pkttype, length)
+			if raw is None:
+				return
 
 			# sanity-check it
 			valid = (pkttype in PACKET_TYPES and
 					length >= 8 and
+					raw <= MAX_LARGE_PACKET and
 					(not self.largeheader or
 						length <= MAX_LARGE_PACKET))
 
@@ -194,13 +226,38 @@ class Stream:
 					continue
 				return
 
-			# wait for the rest of the packet
-			if len(self.buf) < length:
+			# wait for the rest of the packet and its raw run
+			if len(self.buf) < length + raw:
 				return
 
 			packet = self.buf[0:length]
-			self.buf = self.buf[length:]
-			yield pkttype, flags, packet[8:]
+			rawrun = self.buf[length:length + raw]
+			self.buf = self.buf[length + raw:]
+			yield pkttype, flags, packet[8:], rawrun
+
+	def take_truncated(self):
+		# at the end of the capture: a data descriptor packet that
+		# arrived whole but whose raw run was cut short, as
+		# (type, flags, body, the raw bytes there are, the raw run's
+		# declared size), or None
+		if len(self.buf) < 8:
+			return None
+		pkttype = self.buf[4]
+		flags = self.buf[5]
+		if self.largeheader:
+			(length,) = struct.unpack(">I", self.buf[0:4])
+		else:
+			(length,) = struct.unpack(">H", self.buf[0:2])
+		raw = self.rawsize(pkttype, length)
+		if (pkttype != PACKET_DATA_DESCRIPTOR or not raw or
+				raw > MAX_LARGE_PACKET or
+				len(self.buf) < length or
+				(self.largeheader and length > MAX_LARGE_PACKET)):
+			return None
+		packet = self.buf[0:length]
+		rawrun = self.buf[length:length + raw]
+		self.buf = self.buf[length + len(rawrun):]
+		return pkttype, flags, packet[8:], rawrun, raw
 
 
 def hexdump(data, indent="    "):
@@ -1164,6 +1221,62 @@ def decode_legacy(body, is_server_to_client, session):
 	return decode_legacy_answer(rest, ttccode, session)
 
 
+LOB_DATA_FLAGS = {
+	2: "more follow",
+	3: "last",
+}
+
+
+def decode_data_descriptor(body, rawrun, declared=None):
+	# a lob read's answer chunk (sendLobDataChunk() in
+	# src/protocols/oracle.cpp) or a lob write's data (discardLobDataPacket()
+	# there): whether more follow, the byte count, the segment count and
+	# each segment's size as a big endian ub2, zero padding out to 64
+	# bytes, and then the bytes themselves, after the packet's declared
+	# end.  the module always writes one segment, but a real 12.2 server
+	# answering a 10000 byte read at sdu 512 sends three, of 60, 8060 and
+	# 1880 bytes - samples/10005-dev-oci23-native-piecewiselobread-
+	# smallsdu-realserver-oracle122.oraproxy
+	w = Walker(body, False, "    ")
+	count = None
+	sizes = []
+	try:
+		raw = w.take(4)
+		value = int.from_bytes(raw, "big")
+		w.log("more/last", "%d (%s)" % (value,
+				LOB_DATA_FLAGS.get(value, "unknown")), raw)
+		raw = w.take(4)
+		count = int.from_bytes(raw, "big")
+		w.log("byte count", str(count), raw)
+		raw = w.take(4)
+		segments = int.from_bytes(raw, "big")
+		w.log("segment count", str(segments), raw)
+		for i in range(segments):
+			raw = w.take(2)
+			sizes.append(int.from_bytes(raw, "big"))
+			w.log("segment %d size" % (i + 1), str(sizes[-1]), raw)
+		raw = w.take(w.remaining())
+		w.log("padding", "%d bytes, %s" % (len(raw),
+				"not all zero" if any(raw) else "all zero"), raw)
+	except WalkError as e:
+		w.note("** data descriptor decode failed (%s) **" % e)
+	if sizes and sum(sizes) != count:
+		w.note("** WARNING: the segment sizes add up to %d, not the "
+			"byte count **" % sum(sizes))
+	lines = w.finish()
+	lines.append("    raw run, past the packet's declared end "
+			"(%d bytes):" % len(rawrun))
+	if rawrun:
+		lines.append(hexdump(rawrun))
+	if declared is not None:
+		lines.append("    ** WARNING: the capture ends %d bytes into "
+				"a %d byte raw run **" % (len(rawrun), declared))
+	lines.append("    -- raw run: %d of %d bytes --" %
+			(len(rawrun), len(rawrun) if declared is None else
+								declared))
+	return lines
+
+
 def decode_data_payload(body, is_server_to_client, authstate):
 	if len(body) < 3:
 		return ["    (data payload too short to have data flags "
@@ -1296,6 +1409,13 @@ def decode_data_payload(body, is_server_to_client, authstate):
 	return lines
 
 
+def packet_line(seqno, stream, pkttype, flags, body):
+	typename = PACKET_TYPES.get(pkttype, "unknown")
+	return ("[%04d] %-18s PACKET_%s (type=%d, flags=0x%02x, "
+		"%d body bytes)" %
+		(seqno, stream.name, typename, pkttype, flags, len(body)))
+
+
 def main():
 	if len(sys.argv) != 2:
 		sys.stderr.write("usage: %s CAPTUREFILE\n" % sys.argv[0])
@@ -1316,13 +1436,9 @@ def main():
 				"skipping chunk\n" % direction)
 			continue
 		stream.feed(payload)
-		for pkttype, flags, body in stream.take_packets():
+		for pkttype, flags, body, rawrun in stream.take_packets():
 			seqno += 1
-			typename = PACKET_TYPES.get(pkttype, "unknown")
-			print("[%04d] %-18s PACKET_%s (type=%d, flags=0x%02x, "
-				"%d body bytes)" %
-				(seqno, stream.name, typename, pkttype,
-					flags, len(body)))
+			print(packet_line(seqno, stream, pkttype, flags, body))
 
 			if pkttype == 1:  # CONNECT: read the negotiated
 						# version to know when to
@@ -1355,11 +1471,29 @@ def main():
 						authstate):
 					print(line)
 
+			if pkttype == PACKET_DATA_DESCRIPTOR:
+				for line in decode_data_descriptor(body,
+								rawrun):
+					print(line)
+
 	# a non-empty buffer here is a trailing partial TNS packet that
 	# never completed - report it instead of silently dropping it, the
 	# same way a short TTC/TTIPRO decode is reported above rather than
-	# swallowed
+	# swallowed.  a data descriptor that arrived whole but whose raw run
+	# was cut short is decoded as far as it goes
 	for stream in streams.values():
+		truncated = stream.take_truncated()
+		if truncated:
+			pkttype, flags, body, rawrun, declared = truncated
+			seqno += 1
+			print(packet_line(seqno, stream, pkttype, flags, body))
+			for line in decode_data_descriptor(body, rawrun,
+								declared):
+				print(line)
+			sys.stderr.write(
+				"oradecode: data descriptor raw run on %s cut "
+				"short at %d of %d bytes\n" %
+				(stream.name, len(rawrun), declared))
 		if stream.buf:
 			sys.stderr.write(
 				"oradecode: %d undecoded trailing bytes on "
