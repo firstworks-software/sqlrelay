@@ -2977,6 +2977,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   statement run again
 - fixed the oracle connection module reporting NULL clob, blob and bfile
   columns as empty lobs
+- fixed nclob columns reading as empty through the oracle protocol module,
+  and describing as clobs
 
 ### Security
 - fixed an authentication hole in the des password encryption module

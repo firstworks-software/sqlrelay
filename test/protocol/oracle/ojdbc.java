@@ -154,6 +154,28 @@ class ojdbc {
 				"bfilename('"+expectedalias(1)+"','"+
 				expectedfile(1)+"'))")==1,"");
 
+		st.execute("begin execute immediate "+
+				"'drop table protocoltestojdbcnclob'; "+
+				"exception when others then null; end;");
+		st.execute("create table protocoltestojdbcnclob "+
+				"(id number, n nclob)");
+		int[]	nclobpieces={2,10};
+		for (int i=0; i<nclobpieces.length; i++) {
+			check("nclob row "+(i+1)+" insert",st.executeUpdate(
+				"insert into protocoltestojdbcnclob values ("+
+				(i+1)+","+clobsql(nclobpieces[i]).
+				replace("to_clob","to_nclob")+")")==1,"");
+		}
+		check("nclob row 3 insert",st.executeUpdate(
+				"insert into protocoltestojdbcnclob values "+
+				"(3,empty_clob())")==1,"");
+		check("nclob row 4 insert",st.executeUpdate(
+				"insert into protocoltestojdbcnclob values "+
+				"(4,to_nclob('hello'))")==1,"");
+		check("nclob row 5 insert",st.executeUpdate(
+				"insert into protocoltestojdbcnclob values "+
+				"(5,null)")==1,"");
+
 		check("row 1 insert",insertlobs(con,1,4)==1,"");
 		check("row 2 insert",insertlobs(con,2,20)==1,"");
 		check("row 3 insert",st.executeUpdate(
@@ -184,6 +206,7 @@ class ojdbc {
 		st.execute("drop table protocoltestojdbcfail");
 		st.execute("drop table protocoltestojdbcbf");
 		st.execute("drop table protocoltestojdbcnull");
+		st.execute("drop table protocoltestojdbcnclob");
 		st.close();
 		con.close();
 	}
@@ -855,6 +878,51 @@ class ojdbc {
 		con.close();
 	}
 
+	// an nclob describes as one and its data reads back whole
+	static void nclobs(String port, String prefetch) throws Exception {
+		System.out.println("nclobs, lob prefetch "+
+				((prefetch==null)?"default":prefetch)+":");
+		Connection	con=connect(port,prefetch);
+		Statement	st=con.createStatement();
+		ResultSet	rs=st.executeQuery("select id,n from "+
+					"protocoltestojdbcnclob order by id");
+		String	type=rs.getMetaData().getColumnTypeName(2);
+		check("nclob column type","NCLOB".equals(type),"got "+type);
+		int	rows=0;
+		while (rs.next()) {
+			rows++;
+			int	id=rs.getInt(1);
+			String	ec=(id==5)?null:expectedclob(id);
+			String	s=rs.getString(2);
+			check("nclob row "+id+" getString",
+				(ec==null)?(s==null):ec.equals(s),
+				describe(s));
+			Clob	c=rs.getClob(2);
+			if (ec==null) {
+				check("nclob row "+id+" getClob",c==null,"");
+				continue;
+			}
+			long	cl=c.length();
+			check("nclob row "+id+" length",cl==ec.length(),
+							"got "+cl);
+			if (cl==ec.length() && cl>0) {
+				String	sub=c.getSubString(1,(int)cl);
+				check("nclob row "+id+" getSubString",
+					ec.equals(sub),describe(sub));
+			}
+			if (ec.length()>32768) {
+				String	sub=c.getSubString(32760,20);
+				check("nclob row "+id+" getSubString at 32760",
+					ec.substring(32759,32779).equals(sub),
+					"got \""+sub+"\"");
+			}
+		}
+		check("nclob row count",rows==5,"got "+rows);
+		rs.close();
+		st.close();
+		con.close();
+	}
+
 	// a null lob column reads as null, not as a lob that is empty
 	static void nulllobs(String port, String prefetch) throws Exception {
 		System.out.println("null lobs, lob prefetch "+
@@ -935,6 +1003,11 @@ class ojdbc {
 				lobs(port,prefetches[i]);
 			} catch (Exception e) {
 				check("lobs",false,e.toString());
+			}
+			try {
+				nclobs(port,prefetches[i]);
+			} catch (Exception e) {
+				check("nclobs",false,e.toString());
 			}
 			try {
 				nulllobs(port,prefetches[i]);

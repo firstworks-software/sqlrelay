@@ -87,6 +87,9 @@ struct describe {
 	ub1		nullok;
 	// descriptor type of a column defined as an OCIDateTime, or 0
 	ub4		datetimetype;
+	// whether a clob column is an nclob, which oracle describes as a
+	// clob with the national character set form
+	bool		nclob;
 };
 
 struct datebind {
@@ -388,6 +391,7 @@ class SQLRSERVER_DLLSPEC oraclecursor : public sqlrservercursor {
 		const char	*getColumnName(uint32_t col);
 		uint16_t	getColumnNameSize(uint32_t col);
 		uint16_t	getColumnType(uint32_t col);
+		const char	*getColumnTypeName(uint32_t col);
 		uint32_t	getColumnSize(uint32_t col);
 		uint32_t	getColumnPrecision(uint32_t col);
 		uint32_t	getColumnScale(uint32_t col);
@@ -5179,6 +5183,21 @@ bool oraclecursor::executeQueryOrFetchFromBindCursor(const char *query,
 			desc[i].scale=(ub1)scale;
 			desc[i].datetimetype=0;
 
+			// oracle describes an nclob as a clob, the national
+			// character set form being what tells them apart
+			desc[i].nclob=false;
+			if (desc[i].dbtype==CLOB_TYPE) {
+				ub1	csfrm=SQLCS_IMPLICIT;
+				if (OCIAttrGet((dvoid *)desc[i].paramd,
+					OCI_DTYPE_PARAM,
+					(dvoid *)&csfrm,(ub4 *)NULL,
+					(ub4)OCI_ATTR_CHARSET_FORM,
+					oracleconn->err)!=OCI_SUCCESS) {
+					return false;
+				}
+				desc[i].nclob=(csfrm==SQLCS_NCHAR);
+			}
+
 			// get whether the column is nullable
 			if (OCIAttrGet((dvoid *)desc[i].paramd,
 				OCI_DTYPE_PARAM,
@@ -5546,6 +5565,19 @@ uint16_t oraclecursor::getColumnType(uint32_t col) {
 	}
 }
 
+const char *oraclecursor::getColumnTypeName(uint32_t col) {
+
+	// an nclob is a clob as far as the datatype ids go, but its name is
+	// the one thing that tells the protocol modules it is a national
+	// character set lob.  it is spelled with a parenthesized qualifier,
+	// like CHAR(40), so a protocol module that sets the qualifier aside
+	// still sees a clob
+	if (desc[col].nclob) {
+		return "CLOB(NCHAR)";
+	}
+	return sqlrservercursor::getColumnTypeName(col);
+}
+
 uint32_t oraclecursor::getColumnSize(uint32_t col) {
 	return (uint32_t)desc[col].dbsize;
 }
@@ -5739,7 +5771,7 @@ bool oraclecursor::getLobFieldSegment(uint32_t col,
 				NULL,
 				(sb4(*)(dvoid *,CONST dvoid *,ub4,ub1))NULL,
 				0,
-				SQLCS_IMPLICIT);
+				(desc[col].nclob)?SQLCS_NCHAR:SQLCS_IMPLICIT);
 
 	// A read past the end of a table-column lob (including a genuinely
 	// empty one) leaves result at OCI_SUCCESS with readlength already

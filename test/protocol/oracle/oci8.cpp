@@ -4098,6 +4098,109 @@ int main(int argc, char **argv) {
 	stdoutput.printf("\n\n");
 
 
+	stdoutput.printf("OCILobRead - nclob\n");
+	// an nclob describes with the national character set form, and its
+	// data reads back as text, not empty.  #10698
+	execImmediate("drop table protocoltestnclob");
+	assertEquals(
+		execImmediate("create table protocoltestnclob ("
+				"testnclob nclob,"
+				"testclob clob)"),
+		OCI_SUCCESS);
+	assertEquals(
+		execImmediate("insert into protocoltestnclob values "
+				"(to_nclob('hello nclob'),to_clob('hello clob'))"),
+		OCI_SUCCESS);
+	assertEquals(execImmediate("commit"),OCI_SUCCESS);
+	for (int iters=0; iters<2; iters++) {
+		OCIStmt		*nclobstmt=NULL;
+		OCILobLocator	*nclob=NULL;
+		OCILobLocator	*nclobclob=NULL;
+		OCIDefine	*nclobdef[2];
+		sb2		nclobind[2];
+		bytestring::zero(nclobdef,sizeof(nclobdef));
+		nclobind[0]=-1;
+		nclobind[1]=-1;
+		const char	*nclobquery="select testnclob,testclob "
+						"from protocoltestnclob";
+		assertEquals(
+			OCIHandleAlloc(env,(void **)&nclobstmt,
+					OCI_HTYPE_STMT,0,NULL),
+			OCI_SUCCESS);
+		assertEquals(
+			OCIDescriptorAlloc(env,(void **)&nclob,
+					OCI_DTYPE_LOB,0,NULL),
+			OCI_SUCCESS);
+		assertEquals(
+			OCIDescriptorAlloc(env,(void **)&nclobclob,
+					OCI_DTYPE_LOB,0,NULL),
+			OCI_SUCCESS);
+		assertEquals(
+			OCIStmtPrepare(nclobstmt,err,(text *)nclobquery,
+				charstring::getLength(nclobquery),
+				OCI_NTV_SYNTAX,OCI_DEFAULT),
+			OCI_SUCCESS);
+		assertEquals(
+			OCIDefineByPos(nclobstmt,&nclobdef[0],err,1,
+				&nclob,0,SQLT_CLOB,
+				&nclobind[0],NULL,NULL,OCI_DEFAULT),
+			OCI_SUCCESS);
+		assertEquals(
+			OCIDefineByPos(nclobstmt,&nclobdef[1],err,2,
+				&nclobclob,0,SQLT_CLOB,
+				&nclobind[1],NULL,NULL,OCI_DEFAULT),
+			OCI_SUCCESS);
+		assertEquals(
+			OCIStmtExecute(svc,nclobstmt,err,iters,0,NULL,NULL,
+								OCI_DEFAULT),
+			OCI_SUCCESS);
+		if (!iters) {
+			assertEquals(
+				OCIStmtFetch2(nclobstmt,err,1,
+						OCI_FETCH_NEXT,0,OCI_DEFAULT),
+				OCI_SUCCESS);
+		}
+		assertEquals((int)nclobind[0],OCI_IND_NOTNULL);
+		assertEquals((int)nclobind[1],OCI_IND_NOTNULL);
+
+		ub1	form=0;
+		assertEquals(
+			OCILobCharSetForm(env,err,nclob,&form),OCI_SUCCESS);
+		assertEquals((int)form,(int)SQLCS_NCHAR);
+		form=0;
+		assertEquals(
+			OCILobCharSetForm(env,err,nclobclob,&form),
+			OCI_SUCCESS);
+		assertEquals((int)form,(int)SQLCS_IMPLICIT);
+
+		ub4	nclobchars=0;
+		assertEquals(
+			OCILobGetLength(svc,err,nclob,&nclobchars),
+			OCI_SUCCESS);
+		assertEquals((int)nclobchars,11);
+
+		char	nclobbuffer[256];
+		bytestring::zero(nclobbuffer,sizeof(nclobbuffer));
+		ub4	nclobamount=11;
+		assertEquals(
+			OCILobRead(svc,err,nclob,&nclobamount,1,
+					nclobbuffer,sizeof(nclobbuffer)-1,
+					NULL,NULL,0,SQLCS_NCHAR),
+			OCI_SUCCESS);
+		assertEquals((int)nclobamount,11);
+		assertEquals((const char *)nclobbuffer,"hello nclob");
+		assertEquals(
+			OCIDescriptorFree(nclob,OCI_DTYPE_LOB),OCI_SUCCESS);
+		assertEquals(
+			OCIDescriptorFree(nclobclob,OCI_DTYPE_LOB),
+			OCI_SUCCESS);
+		assertEquals(OCIHandleFree(nclobstmt,OCI_HTYPE_STMT),
+								OCI_SUCCESS);
+	}
+	execImmediate("drop table protocoltestnclob");
+	stdoutput.printf("\n\n");
+
+
 	stdoutput.printf("OCIDescriptorFree - lob locators\n");
 	delete[] bigvalue;
 	delete[] bigbuffer;

@@ -3915,6 +3915,39 @@ that statement, except where noted.
                                       only the exact text did, and the
                                       others got PLS-00306 (#10709)
 
+    10698-dev-ojdbc-nclob-prefetch0-realserver-oracle122.oraproxy
+                                     ojdbc 23.26 (a scratch program: a
+                                      table with an nclob and a clob
+                                      column, one row of text and one of
+                                      nulls, read with getString, getClob
+                                      and getNCharacterStream, lob
+                                      prefetch 0) against the real 12.2
+                                      server, through oraproxy.  The
+                                      describe at [0027] gives the nclob
+                                      character set 2000 and form 2 where
+                                      the clob has 873 and form 1, and the
+                                      row at [0029] has an nclob locator
+                                      that differs from the clob's in its
+                                      type (04), kind (4c) and flags (00)
+                                      bytes and carries 07 d0 as its
+                                      character set.  Its data reads
+                                      back in utf-16 like the clob's
+                                      (#10698)
+
+    10698-dev-ojdbc-nclob-realserver-oracle122.oraproxy
+                                     the same program at the default lob
+                                      prefetch size (#10698)
+
+    10698-dev-ojdbc-nclob-prefetch0-sqlrelay121.oraproxy
+                                     the same program against a -buildtree
+                                      listener at serverversion 12.1,
+                                      after the fix: the describe and the
+                                      locator at [0026] have the real
+                                      server's nclob form and the reads
+                                      return the text.  Before it the
+                                      nclob described as a clob and read
+                                      back empty (#10698)
+
     10700-dev-ojdbc-failedstmt-realserver-oracle122.oraproxy
                                      ojdbc 23.26 (a scratch program: each
                                       failure shape seven times on one

@@ -836,6 +836,10 @@
 #define LOB_LOCATOR_SIZE		114
 #define LOB_LOCATOR_CLOB		0x02
 #define LOB_LOCATOR_BLOB		0x01
+#define LOB_LOCATOR_NCLOB		0x04
+#define LOB_LOCATOR_NCLOB_KIND		0x4c
+#define LOB_LOCATOR_NCLOB_FORM_OFFSET	0x1c
+#define LOB_LOCATOR_NCLOB_FORM		2
 #define LOB_LOCATOR_BFILE		0x08
 #define LOB_LOCATOR_CHARSET_PRESENT	0x80
 #define LOB_LOCATOR_LENGTH_OFFSET	0x00
@@ -2071,6 +2075,8 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_oracle : public sqlrprotocol {
 		bool	putRowData(sqlrservercursor *cursor,
 							uint32_t colcount);
 		bool	isLobColumnType(uint16_t columntype);
+		bool	isNclobColumn(sqlrservercursor *cursor,
+						uint32_t column);
 		bool	isInlineLobColumnType(uint16_t columntype);
 		bool	hasLobColumn(sqlrservercursor *cursor,
 							uint32_t colcount);
@@ -16587,6 +16593,12 @@ void sqlrprotocol_oracle::putColumnMetadata(sqlrservercursor *cursor,
 		wirescale=0;
 	}
 
+	// an nclob is described in the national character set, in its form
+	bool	nclob=isNclobColumn(cursor,column);
+	if (nclob) {
+		columncharset=CHARSET_AL16UTF16;
+	}
+
 	write(&reqpacket,(byte_t)wiretype);
 	write(&reqpacket,(byte_t)((fullencoding)?0x80:0x00));
 
@@ -16601,7 +16613,7 @@ void sqlrprotocol_oracle::putColumnMetadata(sqlrservercursor *cursor,
 	writeLenPreInt(&reqpacket,0);
 	writeLenPreInt(&reqpacket,0);
 	writeLenPreInt(&reqpacket,(fullencoding)?columncharset:0);
-	write(&reqpacket,(byte_t)((fullencoding)?1:0));
+	write(&reqpacket,(byte_t)((fullencoding)?((nclob)?CSFRM_NCHAR:1):0));
 	writeLenPreInt(&reqpacket,(fullencoding)?size:0);
 	write(&reqpacket,(byte_t)1);
 	write(&reqpacket,(byte_t)namesize);
@@ -17302,6 +17314,12 @@ uint32_t sqlrprotocol_oracle::buildLobLocator(sqlrservercursor *cursor,
 
 	bytestring::zero(locator,LOB_LOCATOR_SIZE);
 
+	// an nclob's locator is a clob's with the national character set
+	// form marked in its header, as a real 12.2 server sends it - [0029]
+	// of test/protocol/oracle/samples/10698-dev-ojdbc-nclob-prefetch0-
+	// realserver-oracle122.oraproxy
+	bool	nclob=(wiretype==ORACLE_TYPE_CLOB &&
+				isNclobColumn(cursor,column));
 	byte_t	loctype=(wiretype==ORACLE_TYPE_CLOB)?
 				LOB_LOCATOR_CLOB:LOB_LOCATOR_BLOB;
 
@@ -17316,7 +17334,17 @@ uint32_t sqlrprotocol_oracle::buildLobLocator(sqlrservercursor *cursor,
 	putLocatorUB2(locator+LOB_LOCATOR_SEQUENCE_OFFSET,LOB_LOCATOR_SEQUENCE);
 
 	// only a clob has a character set
-	if (wiretype==ORACLE_TYPE_CLOB) {
+	if (nclob) {
+		locator[LOB_LOCATOR_TYPE_OFFSET]=LOB_LOCATOR_NCLOB;
+		locator[LOB_LOCATOR_KIND_OFFSET]=LOB_LOCATOR_NCLOB_KIND;
+		locator[LOB_LOCATOR_FLAGS_OFFSET]=0;
+		putLocatorUB2(locator+LOB_LOCATOR_NCLOB_FORM_OFFSET,
+						LOB_LOCATOR_NCLOB_FORM);
+		putLocatorUB2(locator+LOB_LOCATOR_NCLOB_FORM_OFFSET+2,
+						LOB_LOCATOR_NCLOB_FORM);
+		putLocatorUB2(locator+LOB_LOCATOR_CHARSET_OFFSET,
+						(uint16_t)CHARSET_AL16UTF16);
+	} else if (wiretype==ORACLE_TYPE_CLOB) {
 		locator[LOB_LOCATOR_FLAGS_OFFSET]=LOB_LOCATOR_CHARSET_PRESENT;
 		putLocatorUB2(locator+LOB_LOCATOR_CHARSET_OFFSET,
 						(uint16_t)CHARSET_AL32UTF8);
@@ -17604,7 +17632,8 @@ bool sqlrprotocol_oracle::decodeLobLocator(const byte_t *locator,
 	const byte_t	*magic;
 	const byte_t	*gen;
 	byte_t		loctype=locator[LOB_LOCATOR_TYPE_OFFSET];
-	if (loctype==LOB_LOCATOR_CLOB || loctype==LOB_LOCATOR_BLOB) {
+	if (loctype==LOB_LOCATOR_CLOB || loctype==LOB_LOCATOR_BLOB ||
+		loctype==LOB_LOCATOR_NCLOB) {
 		if (locatorsize!=LOB_LOCATOR_SIZE) {
 			debugWrite("lob locator size %d isn't %d",
 					locatorsize,LOB_LOCATOR_SIZE);
@@ -22190,8 +22219,10 @@ uint16_t sqlrprotocol_oracle::getLobColumnType(sqlrservercursor *cursor,
 		return columntype;
 	}
 
+	// an oracle backend names an nclob CLOB(NCHAR)
 	const char	*name=cont->getColumnTypeName(cursor,column);
-	if (!charstring::compareIgnoringCase(name,"CLOB")) {
+	if (!charstring::compareIgnoringCase(name,"CLOB") ||
+		!charstring::compareIgnoringCase(name,"CLOB(NCHAR)")) {
 		return ORACLE_TYPE_LOB_CLOB;
 	}
 	if (!charstring::compareIgnoringCase(name,"BLOB")) {
@@ -22201,6 +22232,20 @@ uint16_t sqlrprotocol_oracle::getLobColumnType(sqlrservercursor *cursor,
 		return ORACLE_TYPE_LOB_BFILE;
 	}
 	return columntype;
+}
+
+bool sqlrprotocol_oracle::isNclobColumn(sqlrservercursor *cursor,
+						uint32_t column) {
+
+	// an oracle backend's nclob column is a clob that the connection
+	// module names CLOB(NCHAR), the national character set form being
+	// all that tells it from a clob
+	if (charstring::compare(cont->getNativeDbType(),"oracle")) {
+		return false;
+	}
+	return !charstring::compareIgnoringCase(
+			cont->getColumnTypeName(cursor,column),
+			"CLOB(NCHAR)");
 }
 
 uint16_t sqlrprotocol_oracle::getInlineLobColumnType(sqlrservercursor *cursor,
