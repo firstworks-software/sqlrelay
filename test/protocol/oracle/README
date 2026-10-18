@@ -3959,6 +3959,56 @@ that statement, except where noted.
                                       the real server's.  Before it the
                                       create got ORA-03001 (#10693)
 
+    10713-dev-oci23-portable-lobops-realserver-oracle122.oraproxy
+                                     an OCI 23.26 OCI8 client (a scratch
+                                      program, through oraproxy with
+                                      ORAPROXY_UNIVERSAL_REPS=1 and the
+                                      banner rewritten) on two temporary
+                                      lobs of each type: write, open,
+                                      is open, erase 3 at 2, close, append
+                                      the second to the first, copy 2 from
+                                      the 2nd of the second over the 4th
+                                      of the first, erase 100 at 5 and
+                                      free; then a lob in a row (is open,
+                                      open, read, close, copy and append
+                                      into a temporary clob), and a bfile
+                                      loaded into a temporary blob.  OCI
+                                      keeps open state for a temporary lob
+                                      itself: nothing is sent for open,
+                                      is open or close, and both frees go
+                                      in one request at [0047], 80 bytes
+                                      of two locators.  An erase is 0x08
+                                      ([0023]), with the offset in the
+                                      offset field and the count in the
+                                      amount, and is answered with the
+                                      locator and the count it erased,
+                                      which stops at the end of the lob; an
+                                      append is 0x80 ([0029]) and a copy is
+                                      0x04 ([0035]), the lob copied from in
+                                      the first locator and the one copied
+                                      into in the second, the copy's
+                                      destination offset in the amount kind
+                                      field, and each is answered with both
+                                      locators, the copy with the count; a
+                                      load from a file is 0x2000 ([0134]),
+                                      laid out like a copy.  Is open on a lob in a row is
+                                      0x11000 (not 0x1100), answered count
+                                      prefixed (00 or 01 01).  Erase fills
+                                      a clob with spaces and a blob with
+                                      zeros (#10713)
+
+    10713-dev-oci23-portable-lobops-sqlrelay121.oraproxy
+                                     the same program against a -buildtree
+                                      listener at serverversion 12.1, after
+                                      the module did these on its
+                                      temporary lobs: every call works and
+                                      the results are the real server's.
+                                      Before it they got ORA-03001, and
+                                      the temporary lobs' locators gave
+                                      the client nothing to tell them
+                                      apart by, so the second free in a row
+                                      failed with ORA-64201 (#10713)
+
     10702-redhat9x86-oci8-ociselect-lob-sqlrelay121.oraproxy
     10702-redhat9x86-oci8-ociselect-lob-sqlrelay121-singlebyte.oraproxy
                                      the 9.2.0.4 ociselect with

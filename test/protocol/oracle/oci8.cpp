@@ -4057,6 +4057,299 @@ int main(int argc, char **argv) {
 	stdoutput.printf("\n\n");
 
 
+	stdoutput.printf("OCILobIsOpen, OCILobErase, OCILobAppend, OCILobCopy - "
+					"temporary lobs\n");
+	// the same calls on two temporary lobs of each type: open state, an
+	// erase that fills with spaces or zeros and stops at the end, an
+	// append and a copy into the middle.  #10713
+	for (int blob=0; blob<2; blob++) {
+		OCILobLocator	*lobs[2]={NULL,NULL};
+		for (int i=0; i<2; i++) {
+			assertEquals(
+				OCIDescriptorAlloc(env,(void **)&lobs[i],
+							OCI_DTYPE_LOB,0,NULL),
+				OCI_SUCCESS);
+			assertEquals(
+				OCILobCreateTemporary(svc,err,lobs[i],
+					OCI_DEFAULT,SQLCS_IMPLICIT,
+					(blob)?OCI_TEMP_BLOB:OCI_TEMP_CLOB,
+					OCI_ATTR_NOCACHE,OCI_DURATION_SESSION),
+				OCI_SUCCESS);
+		}
+		ub4	opamount=10;
+		assertEquals(
+			OCILobWrite(svc,err,lobs[0],&opamount,1,
+					(void *)"0123456789",10,
+					OCI_ONE_PIECE,NULL,NULL,0,
+					SQLCS_IMPLICIT),
+			OCI_SUCCESS);
+		opamount=3;
+		assertEquals(
+			OCILobWrite(svc,err,lobs[1],&opamount,1,
+					(void *)"xyz",3,
+					OCI_ONE_PIECE,NULL,NULL,0,
+					SQLCS_IMPLICIT),
+			OCI_SUCCESS);
+
+		boolean	opened=1;
+		assertEquals(OCILobIsOpen(svc,err,lobs[0],&opened),OCI_SUCCESS);
+		assertEquals((int)opened,0);
+		assertEquals(OCILobOpen(svc,err,lobs[0],OCI_LOB_READWRITE),
+								OCI_SUCCESS);
+		opened=0;
+		assertEquals(OCILobIsOpen(svc,err,lobs[0],&opened),OCI_SUCCESS);
+		assertEquals((int)opened,1);
+
+		// erase 3 at 2: what is erased is space (clob) or zero (blob)
+		char	expected[64];
+		char	opbuffer[64];
+		char	blank=(blob)?'\0':' ';
+		ub4	erased=3;
+		assertEquals(OCILobErase(svc,err,lobs[0],&erased,2),
+								OCI_SUCCESS);
+		assertEquals((int)erased,3);
+		bytestring::zero(opbuffer,sizeof(opbuffer));
+		opamount=10;
+		assertEquals(
+			OCILobRead(svc,err,lobs[0],&opamount,1,
+					opbuffer,sizeof(opbuffer),
+					NULL,NULL,0,SQLCS_IMPLICIT),
+			OCI_SUCCESS);
+		assertEquals((int)opamount,10);
+		bytestring::copy(expected,"0123456789",10);
+		expected[1]=blank;
+		expected[2]=blank;
+		expected[3]=blank;
+		assertTrue(!bytestring::compare(opbuffer,expected,10));
+
+		assertEquals(OCILobClose(svc,err,lobs[0]),OCI_SUCCESS);
+		opened=1;
+		assertEquals(OCILobIsOpen(svc,err,lobs[0],&opened),OCI_SUCCESS);
+		assertEquals((int)opened,0);
+
+		// append the second to the first
+		assertEquals(OCILobAppend(svc,err,lobs[0],lobs[1]),OCI_SUCCESS);
+		ub4	oplength=0;
+		assertEquals(OCILobGetLength(svc,err,lobs[0],&oplength),
+								OCI_SUCCESS);
+		assertEquals((int)oplength,13);
+
+		// copy 2 of the second, from its 2nd, over the first's 4th
+		assertEquals(OCILobCopy(svc,err,lobs[0],lobs[1],2,4,2),
+								OCI_SUCCESS);
+		bytestring::zero(opbuffer,sizeof(opbuffer));
+		opamount=13;
+		assertEquals(
+			OCILobRead(svc,err,lobs[0],&opamount,1,
+					opbuffer,sizeof(opbuffer),
+					NULL,NULL,0,SQLCS_IMPLICIT),
+			OCI_SUCCESS);
+		assertEquals((int)opamount,13);
+		bytestring::copy(expected,"0123456789xyz",13);
+		expected[1]=blank;
+		expected[2]=blank;
+		expected[3]='y';
+		expected[4]='z';
+		assertTrue(!bytestring::compare(opbuffer,expected,13));
+
+		// an erase of more than is left stops at the end
+		erased=100;
+		assertEquals(OCILobErase(svc,err,lobs[0],&erased,5),
+								OCI_SUCCESS);
+		assertEquals((int)erased,9);
+
+		for (int i=0; i<2; i++) {
+			assertEquals(OCILobFreeTemporary(svc,err,lobs[i]),
+								OCI_SUCCESS);
+			assertEquals(
+				OCIDescriptorFree(lobs[i],OCI_DTYPE_LOB),
+				OCI_SUCCESS);
+		}
+	}
+	stdoutput.printf("\n\n");
+
+
+	stdoutput.printf("OCILobIsOpen, OCILobCopy, OCILobAppend - "
+				"a lob in a row into a temporary lob\n");
+	// the lob in the row can be the source, and opening it is state the
+	// module keeps for it
+	execImmediate("drop table protocolrowlob");
+	assertEquals(
+		execImmediate("create table protocolrowlob (testclob clob)"),
+		OCI_SUCCESS);
+	assertEquals(
+		execImmediate("insert into protocolrowlob values "
+				"('persistent clob')"),
+		OCI_SUCCESS);
+	OCIStmt		*rowlobstmt=NULL;
+	OCILobLocator	*rowlob=NULL;
+	OCIDefine	*rowlobdef=NULL;
+	sb2		rowlobind=-1;
+	assertEquals(
+		OCIHandleAlloc(env,(void **)&rowlobstmt,OCI_HTYPE_STMT,0,NULL),
+		OCI_SUCCESS);
+	assertEquals(
+		OCIDescriptorAlloc(env,(void **)&rowlob,OCI_DTYPE_LOB,0,NULL),
+		OCI_SUCCESS);
+	const char	*rowlobquery="select testclob from protocolrowlob";
+	assertEquals(
+		OCIStmtPrepare(rowlobstmt,err,(text *)rowlobquery,
+				charstring::getLength(rowlobquery),
+				OCI_NTV_SYNTAX,OCI_DEFAULT),
+		OCI_SUCCESS);
+	assertEquals(
+		OCIDefineByPos(rowlobstmt,&rowlobdef,err,1,
+				&rowlob,0,SQLT_CLOB,
+				&rowlobind,NULL,NULL,OCI_DEFAULT),
+		OCI_SUCCESS);
+	assertEquals(
+		OCIStmtExecute(svc,rowlobstmt,err,1,0,NULL,NULL,OCI_DEFAULT),
+		OCI_SUCCESS);
+	boolean	rowopened=1;
+	assertEquals(OCILobIsOpen(svc,err,rowlob,&rowopened),OCI_SUCCESS);
+	assertEquals((int)rowopened,0);
+	assertEquals(OCILobOpen(svc,err,rowlob,OCI_LOB_READONLY),OCI_SUCCESS);
+	rowopened=0;
+	assertEquals(OCILobIsOpen(svc,err,rowlob,&rowopened),OCI_SUCCESS);
+	assertEquals((int)rowopened,1);
+
+	OCILobLocator	*rowtemp=NULL;
+	assertEquals(
+		OCIDescriptorAlloc(env,(void **)&rowtemp,OCI_DTYPE_LOB,0,NULL),
+		OCI_SUCCESS);
+	assertEquals(
+		OCILobCreateTemporary(svc,err,rowtemp,OCI_DEFAULT,
+				SQLCS_IMPLICIT,OCI_TEMP_CLOB,
+				OCI_ATTR_NOCACHE,OCI_DURATION_SESSION),
+		OCI_SUCCESS);
+	assertEquals(OCILobCopy(svc,err,rowtemp,rowlob,10,1,1),OCI_SUCCESS);
+	assertEquals(OCILobAppend(svc,err,rowtemp,rowlob),OCI_SUCCESS);
+	ub4	rowtemplength=0;
+	assertEquals(OCILobGetLength(svc,err,rowtemp,&rowtemplength),
+								OCI_SUCCESS);
+	ub4	rowlength=0;
+	assertEquals(OCILobGetLength(svc,err,rowlob,&rowlength),OCI_SUCCESS);
+	assertEquals((int)rowlength,15);
+	assertEquals((int)rowtemplength,25);
+	char	rowbuffer[64];
+	bytestring::zero(rowbuffer,sizeof(rowbuffer));
+	ub4	rowamount=20;
+	assertEquals(
+		OCILobRead(svc,err,rowtemp,&rowamount,1,
+				rowbuffer,sizeof(rowbuffer)-1,
+				NULL,NULL,0,SQLCS_IMPLICIT),
+		OCI_SUCCESS);
+	assertEquals((int)rowamount,20);
+	// the copy and then the whole lob appended after it
+	char	rowfirst[64];
+	bytestring::zero(rowfirst,sizeof(rowfirst));
+	rowamount=10;
+	assertEquals(
+		OCILobRead(svc,err,rowlob,&rowamount,1,
+				rowfirst,sizeof(rowfirst)-1,
+				NULL,NULL,0,SQLCS_IMPLICIT),
+		OCI_SUCCESS);
+	assertEquals((int)rowamount,10);
+	assertTrue(!bytestring::compare(rowbuffer,rowfirst,10));
+	assertTrue(!bytestring::compare(rowbuffer+10,rowfirst,10));
+	assertEquals(OCILobClose(svc,err,rowlob),OCI_SUCCESS);
+	assertEquals(OCILobFreeTemporary(svc,err,rowtemp),OCI_SUCCESS);
+	assertEquals(OCIDescriptorFree(rowtemp,OCI_DTYPE_LOB),OCI_SUCCESS);
+	assertEquals(OCIDescriptorFree(rowlob,OCI_DTYPE_LOB),OCI_SUCCESS);
+	assertEquals(OCIHandleFree(rowlobstmt,OCI_HTYPE_STMT),OCI_SUCCESS);
+	execImmediate("drop table protocolrowlob");
+	stdoutput.printf("\n\n");
+
+
+	stdoutput.printf("OCILobLoadFromFile - a bfile into a temporary "
+							"blob\n");
+	// needs a file the backend user can write, as above.  #10713
+	if (execImmediate(
+		"declare f utl_file.file_type; begin "
+		"f:=utl_file.fopen('DMP_DIR','protocolload.txt','w'); "
+		"utl_file.put(f,'file data'); "
+		"utl_file.fclose(f); end;")!=OCI_SUCCESS) {
+		stdoutput.printf("(skipped - the backend user can't write "
+					"DMP_DIR)\n");
+	} else {
+		OCIStmt		*loadstmt=NULL;
+		OCILobLocator	*loadfile=NULL;
+		OCILobLocator	*loadblob=NULL;
+		OCIDefine	*loaddef=NULL;
+		sb2		loadind=-1;
+		assertEquals(
+			OCIHandleAlloc(env,(void **)&loadstmt,
+					OCI_HTYPE_STMT,0,NULL),
+			OCI_SUCCESS);
+		assertEquals(
+			OCIDescriptorAlloc(env,(void **)&loadfile,
+						OCI_DTYPE_FILE,0,NULL),
+			OCI_SUCCESS);
+		assertEquals(
+			OCIDescriptorAlloc(env,(void **)&loadblob,
+						OCI_DTYPE_LOB,0,NULL),
+			OCI_SUCCESS);
+		const char	*loadquery="select bfilename('DMP_DIR',"
+						"'protocolload.txt') from dual";
+		assertEquals(
+			OCIStmtPrepare(loadstmt,err,(text *)loadquery,
+				charstring::getLength(loadquery),
+				OCI_NTV_SYNTAX,OCI_DEFAULT),
+			OCI_SUCCESS);
+		assertEquals(
+			OCIDefineByPos(loadstmt,&loaddef,err,1,
+					&loadfile,0,SQLT_BFILEE,
+					&loadind,NULL,NULL,OCI_DEFAULT),
+			OCI_SUCCESS);
+		assertEquals(
+			OCIStmtExecute(svc,loadstmt,err,1,0,NULL,NULL,
+								OCI_DEFAULT),
+			OCI_SUCCESS);
+		assertEquals(
+			OCILobCreateTemporary(svc,err,loadblob,OCI_DEFAULT,
+					0,OCI_TEMP_BLOB,
+					OCI_ATTR_NOCACHE,OCI_DURATION_SESSION),
+			OCI_SUCCESS);
+		assertEquals(
+			OCILobFileOpen(svc,err,loadfile,OCI_FILE_READONLY),
+			OCI_SUCCESS);
+
+		// 4 bytes from the file's 2nd, into the blob's 3rd
+		assertEquals(
+			OCILobLoadFromFile(svc,err,loadblob,loadfile,4,3,2),
+			OCI_SUCCESS);
+		ub4	loadlength=0;
+		assertEquals(OCILobGetLength(svc,err,loadblob,&loadlength),
+								OCI_SUCCESS);
+		assertEquals((int)loadlength,6);
+		char	loadbuffer[16];
+		bytestring::zero(loadbuffer,sizeof(loadbuffer));
+		ub4	loadamount=6;
+		assertEquals(
+			OCILobRead(svc,err,loadblob,&loadamount,1,
+					loadbuffer,sizeof(loadbuffer),
+					NULL,NULL,0,0),
+			OCI_SUCCESS);
+		assertEquals((int)loadamount,6);
+		assertTrue(!bytestring::compare(loadbuffer,"\0\0ile ",6));
+
+		assertEquals(OCILobFileClose(svc,err,loadfile),OCI_SUCCESS);
+		assertEquals(OCILobFreeTemporary(svc,err,loadblob),
+								OCI_SUCCESS);
+		assertEquals(OCIDescriptorFree(loadblob,OCI_DTYPE_LOB),
+								OCI_SUCCESS);
+		assertEquals(OCIDescriptorFree(loadfile,OCI_DTYPE_FILE),
+								OCI_SUCCESS);
+		assertEquals(OCIHandleFree(loadstmt,OCI_HTYPE_STMT),
+								OCI_SUCCESS);
+		assertEquals(
+			execImmediate("begin utl_file.fremove("
+					"'DMP_DIR','protocolload.txt'); end;"),
+			OCI_SUCCESS);
+	}
+	stdoutput.printf("\n\n");
+
+
 	stdoutput.printf("OCILobFileGetName - bfile\n");
 	// this one never reaches the server - the client reads the directory
 	// alias and the file name straight out of the locator it was handed,
