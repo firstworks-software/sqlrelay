@@ -10621,23 +10621,34 @@ bool sqlrprotocol_oracle::sendErrorPacket(const char *what,
 	byte_t		ttccode=TTC_ERROR;
 
 	// the end of call status, the rows processed count, the ora number as
-	// a length-prefixed int, then a run of zeros with the call number
-	// partway through, then the message.  reproduced from a real OCI7
-	// portable-mode login failure (ORA-01017, wrong password;
-	// solaris8sparc SPARC client against a real 10.2 server), whose call
-	// number was its phase two sequence number, 3
+	// a length-prefixed int, then a run of zeros with the statement type
+	// and the call number partway through, then the message.  reproduced
+	// from real OCI7 portable-mode login failures (ORA-01017, wrong
+	// password; solaris8sparc SPARC client against real 10.2 and 12.2
+	// servers, the latter packet [0017] of test/protocol/oracle/samples/
+	// 10717-solaris8sparc-oci7-portable-login-wrongpassword-realserver-
+	// oracle122.oraproxy), whose call number was its phase two sequence
+	// number, 3
 	static const byte_t	prefix[]={
 		0x01, 0x01, 0x00
 	};
+	static const byte_t	beforestatementtype[]={
+		0x00, 0x00, 0x00, 0x00
+	};
 	static const byte_t	beforecallnumber[]={
 		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-		0x00
+		0x00, 0x00, 0x00, 0x00
 	};
 	static const byte_t	aftercallnumber[]={
 		0x00, 0x00,
 		0x00, 0x00, 0x00, 0x00
 	};
+
+	// a 12c server puts 2 in the statement type of a second phase error
+	// only, whatever the encoding or field version.  10.2 and 11.2 servers
+	// send 0.
+	byte_t	statementtype=
+		(secondphase && serverfieldversion>=CCAP_FIELD_VERSION_12_1)?2:0;
 
 	writeBE(&reqpacket,dataflags);
 	write(&reqpacket,ttccode);
@@ -10647,16 +10658,13 @@ bool sqlrprotocol_oracle::sendErrorPacket(const char *what,
 	debugTtcCode(ttccode);
 	debugWrite("encoding: %s",(nativeencoding)?"native":"portable");
 	debugWrite("error: %d",oranum);
+	debugWrite("statement type: %d",statementtype);
 	debugWrite("message: %s",message);
 
 	if (nativeencoding) {
 
-		// the end to end field is 0 in every real login error, and a
-		// 12c server puts 2 in the statement type for a second phase
-		// error only
-		bool	twelvec=
-			(serverfieldversion>=CCAP_FIELD_VERSION_12_1);
-		putNativeSummary(0,oranum,(secondphase && twelvec)?2:0);
+		// the end to end field is 0 in every real login error
+		putNativeSummary(0,oranum,statementtype);
 	} else if (isO3Logon() && !oci7endtoendseqnumber) {
 
 		// the modern branch below is this one plus the end to end
@@ -10667,6 +10675,9 @@ bool sqlrprotocol_oracle::sendErrorPacket(const char *what,
 		// ORA-03120 for what is really ORA-01017
 		reqpacket.append(prefix,sizeof(prefix));
 		writeLenPreInt(&reqpacket,oranum);
+		reqpacket.append(beforestatementtype,
+					sizeof(beforestatementtype));
+		write(&reqpacket,statementtype);
 		reqpacket.append(beforecallnumber,sizeof(beforecallnumber));
 		write(&reqpacket,callnumber);
 		reqpacket.append(aftercallnumber,sizeof(aftercallnumber));
@@ -10675,21 +10686,31 @@ bool sqlrprotocol_oracle::sendErrorPacket(const char *what,
 
 		// the end of call status, a reserved field and the rows
 		// processed count, all ahead of the ora number.  reproduced
-		// byte for byte from a real 11.2 server refusing an
-		// ojdbc 23.26 login with ORA-28001, packet [0017] of
+		// byte for byte from a real 12.2 server refusing an OCI 23
+		// login with ORA-01017, packet [0017] of
 		// test/protocol/oracle/samples/
-		// oracle112-login-expiredpwd-break.cap
+		// 10717-dev-oci23-portable-loginretry-wrongpassword-
+		// bannerrewrite-both-universalreps-realserver-
+		// oracle122.oraproxy, and checked against an 11.2 client's
+		// (10717-fedora16x86-oci11-portable-loginretry-
+		// wrongpassword-bannerrewrite-both-universalreps-
+		// realserver-oracle122.oraproxy) and a real 11.2 server's
+		// ORA-28001 (oracle112-login-expiredpwd-break.cap)
 		static const byte_t	modernprefix[]={
 			0x01, 0x01, 0x00, 0x00
 		};
 
-		// two reserved fields, the cursor id, the parse error
-		// offset, the command type, five reserved bytes, the five
-		// rowid fields and two more reserved - all zero for a login
+		// two reserved fields, the cursor id and the parse error
+		// offset, ahead of the statement type
+		static const byte_t	modernbeforestatementtype[]={
+			0x00, 0x00, 0x00, 0x00
+		};
+
+		// five reserved bytes, the five rowid fields and two more
+		// reserved - all zero for a login
 		static const byte_t	modernmiddle[]={
 			0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-			0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-			0x00
+			0x00, 0x00, 0x00, 0x00
 		};
 
 		// a reserved field, the success iteration count and four
@@ -10700,6 +10721,9 @@ bool sqlrprotocol_oracle::sendErrorPacket(const char *what,
 
 		reqpacket.append(modernprefix,sizeof(modernprefix));
 		writeLenPreInt(&reqpacket,oranum);
+		reqpacket.append(modernbeforestatementtype,
+					sizeof(modernbeforestatementtype));
+		write(&reqpacket,statementtype);
 		reqpacket.append(modernmiddle,sizeof(modernmiddle));
 
 		// the sequence number of the login being refused - the same
@@ -20408,10 +20432,15 @@ void sqlrprotocol_oracle::putSummaryExtension(uint32_t oranum,
 	// and putOci7Summary().  the native login struct's ub8 row count
 	// follows the same field version - see putNativeSummary().
 	//
-	// checked against both live servers, which differ here and nowhere
-	// else in the object: 11.2 ends at the message, and 12.2 puts
-	// 02 05 7b 01 01 in front of it for an ORA-01403 after one row, and
-	// 02 03 f9 00 for an ORA-01017.
+	// checked against both live servers: 11.2 ends at the message, and
+	// 12.2 puts 02 05 7b 01 01 in front of it for an ORA-01403 after one
+	// row, and 02 03 f9 00 for an ORA-01017 (packet [0017] of
+	// test/protocol/oracle/samples/10717-dev-oci23-portable-loginretry-
+	// wrongpassword-bannerrewrite-both-universalreps-realserver-
+	// oracle122.oraproxy).  12.2 leaves it out for an 11.2 client
+	// (10717-fedora16x86-oci11-portable-loginretry-wrongpassword-
+	// bannerrewrite-both-universalreps-realserver-oracle122.oraproxy),
+	// so it follows the negotiated field version, not the server's.
 	debugStart("summary extension");
 	if (fieldversion<CCAP_FIELD_VERSION_12_1) {
 		debugWrite("field version below 12.1, omitted");

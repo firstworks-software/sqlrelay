@@ -484,7 +484,10 @@ class oracleprotocolclient {
 		// o3logon challenge, which a client whose CCAP_LOGON_TYPES
 		// lacks O5LOGON gets.  its answer is an oci7 summary object,
 		// with no AUTH_ pairs, and this fails unless that summary
-		// carries no error
+		// carries no error.  a phase two the listener refuses is
+		// answered the way answerChallenge() answers it: gotBreak()
+		// says the markers came, and the error is left in the
+		// response
 		bool	answerO3LogonChallenge(const char *user,
 						const char *password);
 
@@ -2422,7 +2425,12 @@ bool oracleprotocolclient::answerO3LogonChallenge(const char *user,
 	appendAuthField("AUTH_PASSWORD",authpassword,0);
 	delete[] authpassword;
 
+	gotbreak=false;
 	if (!sendPacket() || !recvPacket()) {
+		return false;
+	}
+	if (resppackettype==ORA_PACKET_MARKER &&
+			!recvAfterBreak("phase two")) {
 		return false;
 	}
 

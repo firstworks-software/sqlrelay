@@ -246,9 +246,9 @@ in turn, to the 12.1, 11.2 and 10.2 listeners and to two 12.1 listeners
 with an allowedlogonversion floor of 11 and of 12a, and checks the
 verifier, the challenge and the trailer each client gets, or the ORA-28040
 a below-floor client gets instead. Its -native run does the same in the
-native encoding, twice: once with the client advertising field version
-11.2 and once 12.1, since the native struct the error object and the
-challenge trailer share is 8 bytes longer at 12.1 and up (#10544).
+native encoding, and runs twice: once with the client advertising field
+version 11.2 and once 12.1, since the native struct the error object and
+the challenge trailer share is 8 bytes longer at 12.1 and up (#10544).
 
 In the native encoding the ORA-28040 is checked byte for byte, size and
 message included. The test builds the expected object from the field rules,
@@ -268,6 +268,22 @@ checked at 136 bytes counting the 0x04 at field version 11.2 and 144 at
 and the 12.2 server's objects stand in for it. A 143 byte object is a real
 capture only at field version 9 (10039 and the 10544 ccapcf capture), and
 the module never negotiates 9.
+
+The portable run (#10717) compares the whole count prefixed error object
+byte for byte as well, size and message included, for the ORA-28040
+refusals of the 0x05 (O3LOGON shape) and 0x08 (modern shape) clients. It
+runs at client field versions 6 and 7: the 12.1 extension (the ORA number
+again and the row count before the message length) and the "00 00" at the
+end of the challenge trailers are there at 7 and not at 6. The portable
+run also logs in with a wrong password at the 12.1 and 11.2 listeners,
+with the 11g and the 9i verifier, and checks the break and reset and then
+the ORA-01017 object. The statement type is the byte that proves the fix: 2
+at the 12.1 listener and 0 at the 11.2 listener (byte 11 in the modern
+shape, byte 10 in the O3LOGON shape). The expected bytes reproduce the
+real objects in the 10717 captures, which are 12.2 (field version 9, 6 and
+1), 11.2 and 10.2 server objects. The 12.1 cases at field version 7, and
+the O3LOGON shape at field version 7 and at the 11.2 listener, are
+inferred. There is no capture of them.
 
 oci7.cpp, also in this directory, is oci8.cpp's counterpart written
 against the legacy pre-8.0 OCI7 call interface (olog/oopen/oparse/
@@ -623,7 +639,15 @@ the decoder can be exercised without live server access:
                                       "break" byte (0x21) - spliced in at
                                       a legitimate packet boundary, to
                                       exercise oradecode's break-byte
-                                      resync logic (#9694)
+                                      resync logic (#9694). Its portable
+                                      ORA-28001 packet is what
+                                      sendErrorPacket()'s modern portable
+                                      branch was first written against
+                                      (#10039). It is no longer the only
+                                      reference: the 10717 captures back
+                                      both portable branches, with an
+                                      ORA-28001 from a real 11.2 server
+                                      among them (#10717)
     oracle102-oci7-native-login-wrongpassword.cap
                                      an OCI7 olog login with the wrong
                                       password against the real 10.2
@@ -640,9 +664,15 @@ the decoder can be exercised without live server access:
     oracle102-oci7-portable-login-wrongpassword.cap
                                      the same, from a SPARC Solaris client
                                       9.0.1.0.0 instead, portable
-                                      encoding - the reference
-                                      sendErrorPacket()'s portable branch
-                                      is written against
+                                      encoding - the first reference for
+                                      the O3LOGON shape of
+                                      sendErrorPacket()'s portable branch,
+                                      from a 10.2 server (statement type
+                                      0). It is no longer the only one:
+                                      the 10717 solaris8sparc captures
+                                      are the same client against the
+                                      12.2 server, which sends statement
+                                      type 2 there (#10717)
     oracle102-oci7-native-lob-clob-fetch.cap
                                      OCI7 olog login + odefin/oexec/ofen
                                       fetch of a CLOB column (dty=5)
@@ -3050,8 +3080,8 @@ that statement, except where noted.
                                       is fixed width little endian, not the
                                       count prefixed portable form, so it is
                                       not a byte for byte reference for the
-                                      module. Kept for the portable follow-up
-                                      (#10544)
+                                      module. The count prefixed form is in
+                                      the 10717 captures (#10544, #10717)
 
     10544-dev-oci23-native-loginretry-unknownuser-ccap04zero-realserver-oracle122.oraproxy
                                      a failed attempt to get ORA-28040 from
@@ -4808,6 +4838,235 @@ that statement, except where noted.
                                       encoding.  Its sys.dbms_lob.
                                       fileGetName block ([0017]) gets
                                       PLS-00306 at [0018] (#10696)
+
+    10717-dev-oci23-portable-loginretry-unknownuser-bannerrewrite-both-universalreps-realserver-oracle122.oraproxy
+                                     a phase two ORA-01017 from the real 12.2
+                                      server in the count prefixed portable
+                                      form, the form sendErrorPacket()'s
+                                      modern branch sends. OCI 23.26 on dev,
+                                      ociloginretry with an unknown user,
+                                      both ends' platform banners rewritten
+                                      and ORAPROXY_UNIVERSAL_REPS=1, against
+                                      the stock oracle122 listener (no server
+                                      change). [0013] is the password, [0014]
+                                      [0015] [0016] the BREAK and RESET and
+                                      the client's RESET, and [0017] the
+                                      error as an ordinary DATA packet, 87
+                                      bytes behind the 0x04: end of call
+                                      01 01, end to end 00, row 00, the ORA
+                                      number as 02 03 f9 at 4-6, four zero
+                                      fields, the statement type as a raw
+                                      byte at 11, call number 3 at 24, and at
+                                      field version 9 the extension 02 03 f9
+                                      00 (the ORA number again and the row
+                                      count) at 31-34, then the message
+                                      length 0x33 at 35 and the message. The
+                                      statement type is 2, which a 10.2 or
+                                      11.2 server sends as 0. Field version
+                                      9, because OCI 23 negotiates 12.2. The
+                                      retry at [0018] to [0022] ends in a
+                                      correct login. The reference for the
+                                      12.1 modern shape, and the capture
+                                      behind the 02 03 f9 00 extension
+                                      (#10717)
+
+    10717-dev-oci23-portable-loginretry-wrongpassword-bannerrewrite-both-universalreps-realserver-oracle122.oraproxy
+                                     the same with the right user and a wrong
+                                      password. The packets and the 87 byte
+                                      object at [0017] are byte for byte the
+                                      unknown user's, so a real server does
+                                      not tell the two apart (#10717)
+
+    10717-fedora16x86-oci11-portable-loginretry-unknownuser-bannerrewrite-both-universalreps-realserver-oracle122.oraproxy
+                                     the genuine 32 bit Oracle 11.2 Instant
+                                      Client on fedora16x86 (a scratch C copy
+                                      of ociloginretry's login sequence, not
+                                      kept) against the 12.2 server, banners
+                                      rewritten and ORAPROXY_UNIVERSAL_REPS=1.
+                                      The client negotiates field version 6.
+                                      The ORA-01017 at [0017] is 83 bytes:
+                                      the same layout with the same statement
+                                      type 2 at byte 11, but no extension,
+                                      so the message length 0x33 is at 31.
+                                      So the statement type follows the
+                                      server's version and the extension
+                                      follows the negotiated field version
+                                      (#10717)
+
+    10717-fedora16x86-oci11-portable-loginretry-wrongpassword-bannerrewrite-both-universalreps-realserver-oracle122.oraproxy
+                                     the same with a wrong password. The same
+                                      83 byte object at [0017] (#10717)
+
+    10717-solaris8sparc-oci7-portable-login-unknownuser-realserver-oracle122.oraproxy
+                                     a pre-10g client. The genuine Oracle
+                                      9.0.1 OCI7 client on solaris8sparc
+                                      (SPARC, so the portable encoding with
+                                      no banner rewriting and no
+                                      ORAPROXY_UNIVERSAL_REPS), an olog login
+                                      with an unknown user, against the
+                                      stock 12.2 server (which accepts 9i
+                                      logins, #10273). The O3LOGON handshake:
+                                      [0011] the user, [0012] the challenge,
+                                      [0013] the password, [0014] [0015]
+                                      [0016] BREAK, RESET and RESET, [0017]
+                                      the ORA-01017 as a DATA packet. The
+                                      object is 82 bytes, the O3LOGON shape:
+                                      no end to end byte, so everything after
+                                      byte 2 is one lower than the modern
+                                      shape. The ORA number is at 3-5, the
+                                      statement type at 10 and it is 2 (the
+                                      10.2 capture has 0), call number 3 at
+                                      23, the message length 0x33 at 30. No
+                                      extension at field version 1. [0018] is
+                                      the client's EOF (#10717)
+
+    10717-solaris8sparc-oci7-portable-login-wrongpassword-realserver-oracle122.oraproxy
+                                     the same with the right user and a wrong
+                                      password. The same 82 byte object at
+                                      [0017] (#10717)
+
+    10717-dev-oci23-portable-loginretry-unknownuser-bannerrewrite-both-universalreps-realserver-oracle112.oraproxy
+                                     OCI 23.26 against the real 11.2 server
+                                      (oracle112), banners rewritten and
+                                      ORAPROXY_UNIVERSAL_REPS=1. The
+                                      negotiated field version is 6. The
+                                      ORA-01017 at [0017] is 83 bytes, the
+                                      12.2 server's field version 6 object
+                                      with the statement type 0 and no
+                                      extension. The retry's password is
+                                      right but the account's password has
+                                      expired, so [0024] is ORA-28001, a 68
+                                      byte object with call number 5 and no
+                                      login. The reference for the 11.2
+                                      server's portable error objects
+                                      (#10717)
+
+    10717-dev-oci23-portable-loginretry-unknownuser-universalreps-realserver-oracle102.oraproxy
+                                     OCI 23.26 against the real 10.2 server
+                                      (oracle102), ORAPROXY_UNIVERSAL_REPS=1
+                                      and no banner rewriting, since a 32 bit
+                                      server already differs from the 64 bit
+                                      client. The ORA-01017 at [0019] is 83
+                                      bytes, byte for byte the 11.2 server's:
+                                      statement type 0, no extension. The
+                                      retry at [0020] to [0024] ends in a
+                                      login. The count prefixed counterpart
+                                      of 10544-dev-oci23-portable-loginretry-
+                                      unknownuser-realserver-oracle102, whose
+                                      65 byte object is fixed width (#10717)
+
+    10717-dev-oci23-portable-loginretry-unknownuser-ccapcf-bannerrewrite-both-universalreps-realserver-oracle122-allowed12a.oraproxy
+                                     a phase one ORA-28040 in the count
+                                      prefixed form. The scratch listener of
+                                      10544-dev-oci23-native-loginretry-
+                                      unknownuser-ccapcf-realserver-oracle122-
+                                      allowed12a (oracle122 port 1621, its own
+                                      TNS_ADMIN with
+                                      SQLNET.ALLOWED_LOGON_VERSION_SERVER=12a,
+                                      an ssh tunnel to oraproxy on dev, torn
+                                      down afterward, the stock listener and
+                                      its network/admin files unchanged), with
+                                      OCI 23.26, banners rewritten,
+                                      ORAPROXY_UNIVERSAL_REPS=1 and the logon
+                                      types byte 0xef changed to 0xcf by a
+                                      scratch copy of oraproxy, so the 12a
+                                      floor refuses it. There is no challenge:
+                                      [0011] the user, [0012] [0013] [0014]
+                                      BREAK, RESET and RESET, [0015] the
+                                      ORA-28040, [0016] the client's EOF. The
+                                      object is 83 bytes at field version 9:
+                                      statement type 0 (a phase one error),
+                                      call number 2 at 24, the extension 02
+                                      6d 88 00 at 31-34, the message length
+                                      0x2f at 35. The reference for the
+                                      modern shape's refusal (#10717)
+
+    10717-fedora16x86-oci11-portable-loginretry-unknownuser-bannerrewrite-both-universalreps-realserver-oracle122-allowed12a.oraproxy
+                                     the genuine 32 bit 11.2 client against
+                                      the same scratch listener, refused with
+                                      no byte patch. The ORA-28040 at [0015]
+                                      is 79 bytes at field version 6: the
+                                      same with no extension, so the message
+                                      length is at 31 (#10717)
+
+    10717-solaris8sparc-oci7-portable-login-unknownuser-realserver-oracle122-allowed12a.oraproxy
+                                     the genuine 9.0.1 client against the
+                                      same scratch listener. A 12a floor
+                                      refuses its O3LOGON login in phase one
+                                      with the same ORA-28040, which the
+                                      client reports. [0011] the user,
+                                      [0012] [0013] [0014] BREAK, RESET and
+                                      RESET, [0015] the error, 78 bytes in
+                                      the O3LOGON shape: statement type 0 at
+                                      10, call number 2 at 23, the message
+                                      length 0x2f at 30, no extension.
+                                      [0016] is the client's EOF (#10717)
+
+    10717-dev-oci23-portable-loginretry-wrongpassword-correctpassword-sqlrelay112-after.oraproxy
+                                     ociloginretry (OCI 23.26 on dev) with a
+                                      wrong password and then the correct
+                                      one, on one attach, against sqlr-
+                                      listener with the oracle protocol
+                                      emulating 11.2, after the statement
+                                      type fix. 23 packets. The ORA-01017 at
+                                      [0017] is 83 bytes at field version 6
+                                      with the statement type 0 and no
+                                      extension, as the real 11.2 server's
+                                      is, and the correct password at [0018]
+                                      to [0023] logs in. Byte for byte the
+                                      real server's object, except the call
+                                      numbers where the two sequences
+                                      differ (#10717)
+
+    10717-dev-oci23-portable-loginretry-wrongpassword-unknownuser-emptypassword-correctpassword-sqlrelay121-after.oraproxy
+                                     ociloginretry with all four attempts, in
+                                      that order, against sqlr-listener
+                                      emulating 12.1, after the fix. 31
+                                      packets. The wrong password at [0017]
+                                      and the unknown user (nosuchuser) at
+                                      [0024] each get the 87 byte ORA-01017
+                                      with the statement type 2 and the
+                                      extension 02 03 f9 00, as the real 12.2
+                                      server's. The empty password puts
+                                      nothing on the wire: OCI raises
+                                      ORA-01005 itself, so there is no
+                                      packet for it, and the correct
+                                      password at [0025] to [0030] logs in on
+                                      the same attach. [0031] is the client's
+                                      EOF. Byte for byte the real server's
+                                      objects, except the call numbers where
+                                      the two sequences differ (#10717)
+
+    10717-solaris8sparc-oci7-portable-login-wrongpassword-sqlrelay121-after.oraproxy
+                                     the genuine Oracle 9.0.1 OCI7 client on
+                                      solaris8sparc, an olog login with a
+                                      wrong password, against sqlr-listener
+                                      emulating 12.1, after the fix. 18
+                                      packets. The ORA-01017 at [0017] is the
+                                      82 byte O3LOGON shape with the
+                                      statement type 2 at 10, call number 3
+                                      at 23 and no extension, as the real
+                                      12.2 server's. [0018] is the client's
+                                      EOF. Byte for byte the real server's
+                                      object (#10717)
+
+    10717-solaris8sparc-oci7-portable-login-wrongpassword-sqlrelay121-allowed12a-after.oraproxy
+                                     the same client against sqlr-listener
+                                      emulating 12.1 with an
+                                      allowedlogonversion floor of 12a. 16
+                                      packets. The login is refused in phase
+                                      one with ORA-28040 at [0015], 78 bytes
+                                      in the O3LOGON shape: statement type 0
+                                      at 10, call number 2 at 23, the message
+                                      length 0x2f at 30. The user (testuser)
+                                      is a real one; the refusal comes before
+                                      the password, so the password is never
+                                      sent and the wrong password is not
+                                      what is tested here. Byte for byte the
+                                      real server's refusal in the
+                                      -unknownuser-...-allowed12a capture,
+                                      which differs only in the user name
+                                      (#10717)
 
 The v11 time zone file for the oci8 run
 ---------------------------------------

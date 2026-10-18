@@ -1496,10 +1496,15 @@ run_protocol_test() {
 	# advertising field version 12.1, and compares the native ORA-28040
 	# and the ORA-01017 a wrong password gets (12.1 and 11.2 listeners)
 	# byte for byte against what real 11.2 and 12.2 servers send, for
-	# #10544.  it reads the ports straight from the environment, so it
-	# needs neither $server nor TNS_ADMIN.  then oracle9ibootstrap, three
-	# times, for #10538 and #10702 - it plays 9.2.0.4 sqlplus over a raw
-	# socket against the 12.1 (ORACLEPROTOCOLPORT1) and 10.2
+	# #10544.  its portable run goes through field versions 6 and 7,
+	# compares the whole count prefixed ORA-28040 byte for byte, and
+	# compares the ORA-01017 a wrong password gets (12.1 and 11.2
+	# listeners, 11g and 9i verifiers) against what real 10.2, 11.2 and
+	# 12.2 servers send, for #10717.  it reads the ports straight from
+	# the environment, so it needs neither $server nor TNS_ADMIN.  then
+	# oracle9ibootstrap, three times, for #10538 and #10702 - it plays
+	# 9.2.0.4 sqlplus over a raw socket against the 12.1
+	# (ORACLEPROTOCOLPORT1) and 10.2
 	# (ORACLEPROTOCOLPORT12) listeners: its data type negotiation, an
 	# o3logon login with the 9i verifier, its bootstrap TTI_QUERY,
 	# TTI_QUERY2 and TTI_FETCH, and the OALL8 behind them.  it checks that
