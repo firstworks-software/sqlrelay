@@ -80,11 +80,11 @@
 #define	MARKER_TYPE_RESET	2
 #define	MARKER_TYPE_INTERRUPT	3
 
-// a marker packet also carries this bit in the packet header's normally
-// unused reserved byte; see go-ora's v2/network/marker_packet.go
-// newMarkerPacket() (MIT license), which sets it on every marker it
-// sends - a real client's marker carries it too, and a reply without it
-// goes unrecognized, leaving the client blocked in read()
+// the bit a marker packet may carry in the packet header's normally unused
+// reserved byte.  a real server sets it on its markers when the negotiated
+// version uses the large header (PROTOCOL_VERSION_12 and up) and clears it
+// below that.  oci and jdbc clients follow the same rule; python-oracledb
+// never sets it
 #define	PACKET_FLAG_MARKER	0x20
 
 // protocol versions
@@ -4933,13 +4933,10 @@ bool sqlrprotocol_oracle::sendMarker(byte_t markertype) {
 	debugEnd();
 
 	// build packet - 1 (one data byte follows), 0 (reserved), then
-	// the marker type.  the header's reserved byte carries the marker
-	// flag, same as a real client's marker does - except on the o3logon
-	// path, where it doesn't: a capture of the 10.2 server and an oci7
-	// client shows both sending a marker with that byte clear, and that
-	// client aborts on bytes it doesn't expect
+	// the marker type.  the marker flag goes in the header only with
+	// the large header, as a real server's does
 	resetSendPacketBuffer(PACKET_MARKER);
-	reqpacketflags=(isO3Logon())?0:PACKET_FLAG_MARKER;
+	reqpacketflags=(largeheader)?PACKET_FLAG_MARKER:0;
 	write(&reqpacket,(byte_t)1);
 	write(&reqpacket,(byte_t)0);
 	write(&reqpacket,markertype);

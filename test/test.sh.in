@@ -1500,7 +1500,10 @@ run_protocol_test() {
 	# compares the whole count prefixed ORA-28040 byte for byte, and
 	# compares the ORA-01017 a wrong password gets (12.1 and 11.2
 	# listeners, 11g and 9i verifiers) against what real 10.2, 11.2 and
-	# 12.2 servers send, for #10717.  it reads the ports straight from
+	# 12.2 servers send, for #10717.  both runs also check the flags
+	# byte of the break and reset markers, 0x20 at a negotiated TNS
+	# version of 0x013b and up and 0 below it, at connect offers of
+	# 0x0140 and 0x013a, for #10720.  it reads the ports straight from
 	# the environment, so it needs neither $server nor TNS_ADMIN.  then
 	# oracle9ibootstrap, three times, for #10538 and #10702 - it plays
 	# 9.2.0.4 sqlplus over a raw socket against the 12.1

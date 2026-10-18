@@ -456,6 +456,21 @@ class oracleprotocolclient {
 		// what both ends settled on, read off the accept packet
 		uint16_t	getSdu();
 
+		// the tns version this client's connect packet offers.  the
+		// listener answers with the lower of it and its own, so a
+		// test that needs a session below PROTOCOL_VERSION_12
+		// (0x013b) offers a lower one, 0x013a say.  below
+		// PROTOCOL_VERSION_12 the connect packet is the shape a
+		// genuine 11.2 client sends: no 32-bit sdu and tdu, no
+		// filler, and the connect descriptor at offset 58.  0, the
+		// default, offers one above it.  it has to be set before
+		// connect()
+		void		setConnectVersion(uint16_t version);
+
+		// the version the accept named, which is what the session
+		// runs at.  0 until connect() has read the accept
+		uint16_t	getAcceptVersion();
+
 		// the whole handshake through the accept: the connect
 		// packet (twice - the listener asks for a resend, the way a
 		// real database does), then the tti protocol and data type
@@ -479,6 +494,12 @@ class oracleprotocolclient {
 		bool	requestChallenge(const char *user);
 		bool	answerChallenge(const char *user, const char *password);
 		bool	gotBreak();
+
+		// the tns flags byte of the break marker and of the reset
+		// marker a refused login got, as the listener sent them.
+		// meaningful once gotBreak() says they came
+		unsigned char	getBreakFlags();
+		unsigned char	getResetFlags();
 
 		// answerChallenge()'s counterpart for the 9i verifier's
 		// o3logon challenge, which a client whose CCAP_LOGON_TYPES
@@ -770,11 +791,18 @@ class oracleprotocolclient {
 		unsigned char		authseqphaseone;
 		unsigned char		authseqphasetwo;
 		bool			gotbreak;
+		unsigned char		breakflags;
+		unsigned char		resetflags;
 
 		// what the connect packet asks for, and what the accept
 		// answered with
 		uint16_t		offeredsdu;
 		uint16_t		negotiatedsdu;
+
+		// the version the connect packet offers, 0 for the default,
+		// and the one the accept answered with
+		uint16_t		connectversion;
+		uint16_t		acceptversion;
 
 		// setBigChunkClrFraming()'s answer, and whether it was ever
 		// given.  two members rather than one tri-state so the
@@ -800,6 +828,7 @@ class oracleprotocolclient {
 		unsigned char	*resppacket;
 		size_t		respsize;
 		unsigned char	resppackettype;
+		unsigned char	resppacketflags;
 		size_t		respposition;
 
 		char		errormessage[1024];
@@ -981,6 +1010,10 @@ oracleprotocolclient::oracleprotocolclient() {
 	authseqphaseone=2;
 	authseqphasetwo=2;
 	gotbreak=false;
+	breakflags=0;
+	resetflags=0;
+	connectversion=0;
+	acceptversion=0;
 	bigchunkclrframingset=false;
 	bigchunkclrframing=false;
 	offeredsdu=ORA_DEFAULT_SDU;
@@ -993,6 +1026,7 @@ oracleprotocolclient::oracleprotocolclient() {
 	resppacket=new unsigned char[ORA_MAX_PACKET_SIZE];
 	respsize=0;
 	resppackettype=0;
+	resppacketflags=0;
 	respposition=0;
 	errormessage[0]='\0';
 }
@@ -1065,6 +1099,14 @@ void oracleprotocolclient::setSdu(uint16_t sdu) {
 
 uint16_t oracleprotocolclient::getSdu() {
 	return negotiatedsdu;
+}
+
+void oracleprotocolclient::setConnectVersion(uint16_t version) {
+	connectversion=version;
+}
+
+uint16_t oracleprotocolclient::getAcceptVersion() {
+	return acceptversion;
 }
 
 // which framing this client has to read and write - which is not the same
@@ -1429,6 +1471,9 @@ bool oracleprotocolclient::recvFragment(bool continuation,
 		return false;
 	}
 	resppackettype=header[4];
+	if (!continuation) {
+		resppacketflags=header[5];
+	}
 
 	size_t	overhead=(continuation)?ORA_FRAGMENT_OVERHEAD:sizeof(header);
 	if (size<overhead || size>ORA_MAX_PACKET_SIZE) {
@@ -1630,8 +1675,14 @@ bool oracleprotocolclient::readLenBytes(unsigned char *value,
 // client at PROTOCOL_VERSION_12 repeats behind them, 8 bytes of filler,
 // and then the connect descriptor.  field order and the 74-byte data
 // offset are what a real OCI client sends, and what
-// recvConnectRequest() reads
+// recvConnectRequest() reads.  a client that offers less than
+// PROTOCOL_VERSION_12 sends neither the 32-bit fields nor the filler, and
+// its data offset is 58, as a genuine 11.2 client's is
 bool oracleprotocolclient::sendConnect(const char *sid) {
+
+	uint16_t	version=(connectversion)?connectversion:
+					ORA_PROTOCOL_VERSION_12+5;
+	bool		large=(version>=ORA_PROTOCOL_VERSION_12);
 
 	char	*connectdata=NULL;
 	charstring::printf(&connectdata,
@@ -1640,7 +1691,7 @@ bool oracleprotocolclient::sendConnect(const char *sid) {
 	size_t	connectdatasize=charstring::getLength(connectdata);
 
 	beginPacket(ORA_PACKET_CONNECT);
-	appendBE16(ORA_PROTOCOL_VERSION_12+5);	// version offered
+	appendBE16(version);			// version offered
 	appendBE16(0x012c);			// lowest version supported
 	appendBE16(0x0c41);			// global service options
 	appendBE16(offeredsdu);			// sdu
@@ -1654,7 +1705,7 @@ bool oracleprotocolclient::sendConnect(const char *sid) {
 	appendByte(1);
 	appendByte(0);
 	appendBE16((uint16_t)connectdatasize);
-	appendBE16(74);				// connect data offset
+	appendBE16((large)?74:58);		// connect data offset
 	appendBE32(5120);			// max connect data receivable
 	appendBE16(ORA_ANO_FLAGS_NO_SERVICES);
 	appendBE32(0);				// trace cross facility item 1
@@ -1663,10 +1714,12 @@ bool oracleprotocolclient::sendConnect(const char *sid) {
 	appendBE32(0);
 	appendBE32(0);				// trace unique connection id 2
 	appendBE32(0);
-	appendBE32(offeredsdu);			// sdu, 32 bit
-	appendBE32(2097152);			// tdu, 32 bit
-	unsigned char	filler[8]={0,0,0,0,0,0,0,1};
-	appendBytes(filler,sizeof(filler));
+	if (large) {
+		appendBE32(offeredsdu);		// sdu, 32 bit
+		appendBE32(2097152);		// tdu, 32 bit
+		unsigned char	filler[8]={0,0,0,0,0,0,0,1};
+		appendBytes(filler,sizeof(filler));
+	}
 	reqpacket.append(connectdata,connectdatasize);
 
 	delete[] connectdata;
@@ -1923,7 +1976,7 @@ bool oracleprotocolclient::connect(const char *host, uint16_t port,
 	// the accept itself keeps the 16-bit header whatever version it
 	// announces - only the packets after it switch.  sendAccept() flips
 	// its own end at exactly this point, so flip this one here too
-	uint16_t	acceptversion=
+	acceptversion=
 			(uint16_t)(((uint16_t)resppacket[0]<<8)|resppacket[1]);
 	largeheader=(acceptversion>=ORA_PROTOCOL_VERSION_12);
 
@@ -2139,6 +2192,7 @@ bool oracleprotocolclient::requestChallenge(const char *user) {
 // sendAuthenticationBreak() in src/protocols/oracle.cpp.  the break is
 // the packet in the response already
 bool oracleprotocolclient::recvAfterBreak(const char *phase) {
+	breakflags=resppacketflags;
 	if (respsize!=3 || resppacket[2]!=ORA_MARKER_TYPE_BREAK ||
 			!recvPacket() ||
 			resppackettype!=ORA_PACKET_MARKER ||
@@ -2147,6 +2201,7 @@ bool oracleprotocolclient::recvAfterBreak(const char *phase) {
 		return false;
 	}
 	gotbreak=true;
+	resetflags=resppacketflags;
 	if (!sendMarker(ORA_MARKER_TYPE_RESET) || !recvPacket()) {
 		return false;
 	}
@@ -2159,6 +2214,14 @@ bool oracleprotocolclient::recvAfterBreak(const char *phase) {
 
 bool oracleprotocolclient::gotBreak() {
 	return gotbreak;
+}
+
+unsigned char oracleprotocolclient::getBreakFlags() {
+	return breakflags;
+}
+
+unsigned char oracleprotocolclient::getResetFlags() {
+	return resetflags;
 }
 
 // one data byte follows, a reserved byte, then the marker type - see

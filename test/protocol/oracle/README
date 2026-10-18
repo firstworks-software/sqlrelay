@@ -285,6 +285,20 @@ real objects in the 10717 captures, which are 12.2 (field version 9, 6 and
 the O3LOGON shape at field version 7 and at the 11.2 listener, are
 inferred. There is no capture of them.
 
+Both runs also check the TNS flags byte of the break and reset markers
+(#10720). A real server sets it to 0x20 when the negotiated TNS version is
+0x013b or higher (the large header) and 0 below that, so the matrix runs
+at two connect offers: 0x0140, which the module negotiates down to 0x013b,
+and 0x013a, which it accepts as is. Every refusal and wrong-password login
+must carry 0x20 at the first and 0 at the second. The 0x013a and lower
+cases are real captures (11.2 and 10.2 servers, 0x013a and 0x0139). The
+0x013b case was measured through an oraproxy that rewrote the offered
+version on the way to the stock oracle122 listener (see
+10720-dev-oci23-native-loginretry-unknownuser-accept013b-realserver-
+oracle122.oraproxy). The module used to take the flag from the logon shape
+instead of the negotiated version, so it sent 0x20 to an 11.2 client and 0
+to a 10g classic login at 0x013b.
+
 oci7.cpp, also in this directory, is oci8.cpp's counterpart written
 against the legacy pre-8.0 OCI7 call interface (olog/oopen/oparse/
 odefin/oexec/ofen/oexfet/oclose/ologof/odescr/obndrv) instead of the
@@ -5067,6 +5081,75 @@ that statement, except where noted.
                                       -unknownuser-...-allowed12a capture,
                                       which differs only in the user name
                                       (#10717)
+
+    10720-dev-oci23-native-loginretry-unknownuser-accept013b-realserver-oracle122.oraproxy
+                                     the real 12.2 server accepting TNS
+                                      version 0x013b, which it does not do
+                                      by itself (it accepts 0x013c). OCI 23.26
+                                      on dev, ociloginretry with an unknown
+                                      user, through an oraproxy that rewrote
+                                      the offered connect version from 0x0140
+                                      to 0x013b in both CONNECT packets, so
+                                      the stock oracle122 listener (no server
+                                      change) negotiated 0x013b. 26 packets.
+                                      The login break [0016] and reset [0017]
+                                      carry TNS flags 0x20, and so does the
+                                      client's reset at [0018]. The ANO
+                                      response at [0008] is 0x20 too. This is
+                                      the measurement of the 0x013b boundary:
+                                      0x20 at 0x013b and up, 0 below it
+                                      (#10720)
+
+    10720-dev-oci23-portable-loginretry-wrongpassword-unknownuser-correctpassword-sqlrelay121-after.oraproxy
+                                     ociloginretry (OCI 23.26 on dev) with a
+                                      wrong password, an unknown user and then
+                                      the correct password, on one attach,
+                                      against sqlr-listener emulating 12.1,
+                                      after the fix. 31 packets. The module
+                                      negotiates 0x013b, and the break and
+                                      reset markers at [0014] to [0016] and
+                                      [0021] to [0023] carry 0x20, as the real
+                                      server's do at 0x013b (#10720)
+
+    10720-dev-oci23api7-portable-login-wrongpassword-sqlrelay121-after.oraproxy
+                                     a classic OCI7-style login from OCI 23
+                                      (oci7bind, on dev) with a wrong
+                                      password, against sqlr-listener
+                                      emulating 12.1, after the fix. 18
+                                      packets, 0x013b. The break and reset
+                                      at [0014] to [0016] carry 0x20. Before
+                                      the fix they carried 0, which a real
+                                      server does not send at 0x013b
+                                      (#10720)
+
+    10720-fedora16x86-oci11-portable-loginretry-wrongpassword-unknownuser-correctpassword-sqlrelay121-before.oraproxy
+                                     the genuine 32 bit Oracle 11.2 Instant
+                                      Client on fedora16x86, the same login
+                                      sequence as the 10717 captures, against
+                                      sqlr-listener emulating 12.1 before the
+                                      fix. 31 packets. The client offers and
+                                      gets 0x013a (the small header). The
+                                      module's break and reset at [0014],
+                                      [0015], [0021] and [0022] carry 0x20,
+                                      where a real server sends 0. The
+                                      client's own reset at [0016] is 0. The
+                                      client tolerates it and the login
+                                      works (#10720)
+
+    10720-fedora16x86-oci11-portable-loginretry-wrongpassword-unknownuser-correctpassword-sqlrelay121-after.oraproxy
+                                     the same after the fix. The markers at
+                                      [0014] to [0016] and [0021] to [0023]
+                                      all carry 0, as the real server's do at
+                                      0x013a (#10720)
+
+    10720-solaris8sparc-oci7-portable-login-wrongpassword-sqlrelay121-after.oraproxy
+                                     the genuine Oracle 9.0.1 OCI7 client on
+                                      solaris8sparc, an olog login with a
+                                      wrong password, against sqlr-listener
+                                      emulating 12.1, after the fix. 18
+                                      packets, 0x0137. The break and reset at
+                                      [0014] to [0016] carry 0, unchanged by
+                                      the fix (#10720)
 
 The v11 time zone file for the oci8 run
 ---------------------------------------

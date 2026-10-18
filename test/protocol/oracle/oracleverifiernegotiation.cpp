@@ -67,6 +67,15 @@
 // 11.2 and 12.2 server send - see checkNativeError() for the native encoding
 // and checkPortableError() for the portable one.  The portable run tries a
 // wrong password with the 9i verifier too.
+//
+// Every pass runs at two tns versions: the one a client offering a newer one
+// negotiates, 0x013b, and 0x013a, which a genuine 11.2 client offers and a
+// real 11.2 server accepts.  A real server sets the tns flags byte of its
+// break and reset markers to 0x20 when the version it accepted is 0x013b or
+// higher, which is also where the packet header grows to a 32-bit length,
+// and to 0 below it.  The markers a refused login or a wrong password gets
+// are checked against the version the client read off the accept, not against
+// anything the listener was configured with.
 
 // the verifier types - the VERIFIER_TYPE_* defines in
 // src/protocols/oracle.cpp.  only the ones that run under o5logon go out on
@@ -97,6 +106,12 @@ static const unsigned char	LOGON_TYPES_11G=ORA_CCAP_O5LOGON;
 static const unsigned char	LOGON_TYPES_12C=
 				ORA_CCAP_O7LOGON|ORA_CCAP_O5LOGON|
 				ORA_CCAP_O5LOGON_NP;
+
+// PROTOCOL_VERSION_11 in src/protocols/oracle.cpp, the version a genuine 11.2
+// client offers, and the flags byte of a marker packet from a large header
+// session - PACKET_FLAG_MARKER there
+static const uint16_t	ORA_CONNECT_VERSION_11=0x013a;
+static const unsigned char	ORA_MARKER_PACKET_FLAGS=0x20;
 
 // ORA_NO_MATCHING_AUTH_PROTOCOL in src/protocols/oracle.cpp
 static const uint32_t	ORA_NO_MATCHING_AUTH_PROTOCOL=28040;
@@ -271,6 +286,12 @@ static bool	nativeencoding=false;
 // listener settles on, which is the lower of its own and the client's
 static unsigned char	clientfieldversion=ORA_CCAP_FIELD_VERSION_11_2;
 static unsigned char	negotiatedfieldversion=ORA_CCAP_FIELD_VERSION_11_2;
+
+// the tns version the client offers, 0 for the default, which settles on
+// ORA_PROTOCOL_VERSION_12, and the one the current case's listener settles
+// on
+static uint16_t	clientconnectversion=0;
+static uint16_t	negotiatedconnectversion=ORA_PROTOCOL_VERSION_12;
 
 int	status=0;
 const char	*success="\033[32msuccess\033[0m";
@@ -629,6 +650,47 @@ static void checkNativeError(oracleprotocolclient *client,
 	}
 }
 
+// the break and reset markers a refused login got, against the flags byte a
+// real server sets: 0x20 when the version the client read off the accept is
+// 0x013b or higher, 0 below it
+static void checkMarkerFlags(oracleprotocolclient *client,
+					const char *label) {
+
+	unsigned char	expected=(client->getAcceptVersion()>=
+					ORA_PROTOCOL_VERSION_12)?
+					ORA_MARKER_PACKET_FLAGS:0;
+
+	stringbuffer	l;
+	l.append(label)->append(" accepted tns version is ");
+	char	version[16];
+	charstring::printf(version,sizeof(version),"0x%04x",
+						negotiatedconnectversion);
+	l.append(version);
+	report(l.getString(),
+		client->getAcceptVersion()==negotiatedconnectversion);
+
+	char	flags[16];
+	charstring::printf(flags,sizeof(flags),"0x%02x",expected);
+
+	l.clear();
+	l.append(label)->append(" break marker flags are ")->append(flags);
+	bool	breakok=(client->getBreakFlags()==expected);
+	report(l.getString(),breakok);
+
+	l.clear();
+	l.append(label)->append(" reset marker flags are ")->append(flags);
+	bool	resetok=(client->getResetFlags()==expected);
+	report(l.getString(),resetok);
+
+	if (!breakok || !resetok) {
+		stdoutput.printf("    accept version 0x%04x, break flags "
+					"0x%02x, reset flags 0x%02x\n",
+					client->getAcceptVersion(),
+					client->getBreakFlags(),
+					client->getResetFlags());
+	}
+}
+
 static void putByte(unsigned char *buffer, size_t *size,
 						unsigned char value) {
 	buffer[(*size)++]=value;
@@ -806,6 +868,9 @@ static void checkRefusal(oracleprotocolclient *client,
 
 	l.append(label)->append(" got a break and a reset first");
 	report(l.getString(),client->gotBreak());
+	if (client->gotBreak()) {
+		checkMarkerFlags(client,label);
+	}
 
 	l.clear();
 	l.append(label)->append(" got ORA-28040");
@@ -878,8 +943,9 @@ static void runWrongPassword(size_t index, bool o3logon) {
 	char	label[256];
 	charstring::printf(label,sizeof(label),
 			"%s, logon types 0x%02x, field version %d, "
-			"wrong password",li->name,logontypes,
-			clientfieldversion);
+			"tns version 0x%04x, wrong password",li->name,
+			logontypes,clientfieldversion,
+			negotiatedconnectversion);
 	stdoutput.printf("\n%s - expect ORA-01017\n",label);
 
 	negotiatedfieldversion=(li->fieldversion<clientfieldversion)?
@@ -888,6 +954,7 @@ static void runWrongPassword(size_t index, bool o3logon) {
 	oracleprotocolclient	client;
 	client.setNativeEncoding(nativeencoding);
 	client.setFieldVersion(clientfieldversion);
+	client.setConnectVersion(clientconnectversion);
 	client.setLogonTypes(logontypes);
 	client.setAuthSequenceNumbers(seqnumber,seqnumber+1);
 
@@ -923,6 +990,9 @@ static void runWrongPassword(size_t index, bool o3logon) {
 	l.clear();
 	l.append(label)->append(" got a break and a reset first");
 	report(l.getString(),client.gotBreak());
+	if (client.gotBreak()) {
+		checkMarkerFlags(&client,label);
+	}
 
 	l.clear();
 	l.append(label)->append(" got ORA-01017");
@@ -958,8 +1028,10 @@ static void runCase(size_t index) {
 
 	char	label[256];
 	charstring::printf(label,sizeof(label),
-				"%s, logon types 0x%02x, field version %d",
-				li->name,tc->logontypes,clientfieldversion);
+				"%s, logon types 0x%02x, field version %d, "
+				"tns version 0x%04x",
+				li->name,tc->logontypes,clientfieldversion,
+				negotiatedconnectversion);
 	stdoutput.printf("\n%s - expect %s%s\n",label,
 				verifiernames[tc->expected],
 				(tc->refused)?", refused":"");
@@ -970,6 +1042,7 @@ static void runCase(size_t index) {
 	oracleprotocolclient	client;
 	client.setNativeEncoding(nativeencoding);
 	client.setFieldVersion(clientfieldversion);
+	client.setConnectVersion(clientconnectversion);
 	client.setLogonTypes(tc->logontypes);
 	client.setAuthSequenceNumbers(seqnumber,seqnumber+1);
 
@@ -1037,26 +1110,42 @@ int main(int argc, char **argv) {
 
 	// the native struct changes size at 12.1 and the portable trailer and
 	// error object gain an extension, so both runs go through everything
-	// at 11.2 and again at 12.1
+	// at 11.2 and again at 12.1.  the markers' flags byte follows the tns
+	// version, so all of that runs at the default offer, which settles on
+	// 0x013b, and again offering 0x013a
 	unsigned char	fieldversions[]={ORA_CCAP_FIELD_VERSION_11_2,
 						ORA_CCAP_FIELD_VERSION_12_1};
 	size_t		passes=sizeof(fieldversions)/sizeof(fieldversions[0]);
-	for (size_t p=0; p<passes; p++) {
+	uint16_t	connectversions[]={0,ORA_CONNECT_VERSION_11};
+	size_t		versions=sizeof(connectversions)/
+					sizeof(connectversions[0]);
+	for (size_t v=0; v<versions; v++) {
 
-		clientfieldversion=fieldversions[p];
-		stdoutput.printf("\n------ client field version %d ------\n",
-							clientfieldversion);
+		clientconnectversion=connectversions[v];
+		negotiatedconnectversion=(clientconnectversion)?
+					clientconnectversion:
+					ORA_PROTOCOL_VERSION_12;
+		stdoutput.printf("\n====== tns version 0x%04x ======\n",
+						negotiatedconnectversion);
 
-		for (size_t i=0;
-			i<sizeof(testcases)/sizeof(testcases[0]); i++) {
-			runCase(i);
-		}
+		for (size_t p=0; p<passes; p++) {
 
-		for (size_t i=0; i<sizeof(wrongpasswordlisteners)/
+			clientfieldversion=fieldversions[p];
+			stdoutput.printf("\n------ client field version %d "
+						"------\n",clientfieldversion);
+
+			for (size_t i=0;
+				i<sizeof(testcases)/sizeof(testcases[0]);
+				i++) {
+				runCase(i);
+			}
+
+			for (size_t i=0; i<sizeof(wrongpasswordlisteners)/
 				sizeof(wrongpasswordlisteners[0]); i++) {
-			runWrongPassword(i,false);
-			if (!nativeencoding) {
-				runWrongPassword(i,true);
+				runWrongPassword(i,false);
+				if (!nativeencoding) {
+					runWrongPassword(i,true);
+				}
 			}
 		}
 	}
