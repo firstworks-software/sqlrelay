@@ -2989,6 +2989,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   module
 - added temporary lob support (OCILobCreateTemporary and the writes, reads
   and binds on them) to the oracle protocol module
+- fixed the oracle connection module failing to build with ORACLE_AT_RUNTIME
 
 ### Security
 - fixed an authentication hole in the des password encryption module

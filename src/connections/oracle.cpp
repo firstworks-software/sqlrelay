@@ -5752,7 +5752,7 @@ bool oraclecursor::openBfile(uint32_t col, bool *opened) {
 	if (desc[col].dbtype!=BFILE_TYPE) {
 		return true;
 	}
-	boolean	isopen=FALSE;
+	boolean	isopen=0;
 	if (OCILobFileIsOpen(oracleconn->svc,oracleconn->err,
 				def_lob[col][row],&isopen)!=OCI_SUCCESS) {
 		return false;

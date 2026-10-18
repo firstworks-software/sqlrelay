@@ -16,6 +16,7 @@
 #define CONST const
 #define dvoid void
 typedef signed int sword;
+typedef signed char sb1;
 typedef unsigned char ub1;
 typedef unsigned short ub2;
 typedef short sb2;
@@ -261,6 +262,17 @@ sword (*OCILobFileGetName)(OCIEnv *,
 				ub2 *,
 				OraText *,
 				ub2 *);
+sword (*OCILobFileIsOpen)(OCISvcCtx *,
+				OCIError *,
+				OCILobLocator *,
+				boolean *);
+sword (*OCILobFileOpen)(OCISvcCtx *,
+				OCIError *,
+				OCILobLocator *,
+				ub1);
+sword (*OCILobFileClose)(OCISvcCtx *,
+				OCIError *,
+				OCILobLocator *);
 sword (*OCIDescriptorFree)(void *descp,
 				const ub4);
 sword (*OCIHandleFree)(void *,
@@ -330,6 +342,8 @@ sword (*OCIDateToText)(OCIError *,
 #define OCI_ATTR_DATA_TYPE	2
 #define OCI_ATTR_NAME		4
 #define OCI_ATTR_PRECISION	5
+#define OCI_ATTR_CHARSET_FORM	32
+#define OCI_FILE_READONLY	1
 #define OCI_ATTR_SCALE		6
 #define OCI_ATTR_IS_NULL	7
 #define OCI_ATTR_TRANS		8
@@ -394,6 +408,7 @@ sword (*OCIDateToText)(OCIError *,
 #define SQLT_ODT	156
 
 #define SQLCS_IMPLICIT	1
+#define SQLCS_NCHAR	2
 
 
 // dlopen infrastructure...
@@ -833,6 +848,32 @@ static bool loadLibraries(stringbuffer *errormessage) {
 					ub2 *))
 				lib.getSymbol("OCILobFileGetName");
 	if (!OCILobFileGetName) {
+		goto error;
+	}
+
+	OCILobFileIsOpen=(sword (*)(OCISvcCtx *,
+					OCIError *,
+					OCILobLocator *,
+					boolean *))
+				lib.getSymbol("OCILobFileIsOpen");
+	if (!OCILobFileIsOpen) {
+		goto error;
+	}
+
+	OCILobFileOpen=(sword (*)(OCISvcCtx *,
+					OCIError *,
+					OCILobLocator *,
+					ub1))
+				lib.getSymbol("OCILobFileOpen");
+	if (!OCILobFileOpen) {
+		goto error;
+	}
+
+	OCILobFileClose=(sword (*)(OCISvcCtx *,
+					OCIError *,
+					OCILobLocator *))
+				lib.getSymbol("OCILobFileClose");
+	if (!OCILobFileClose) {
 		goto error;
 	}
 
