@@ -4478,6 +4478,16 @@ zones, the 12.2 server version string): 39 fail against oracle122. The
 12.1 listener fails 70. The extra ones are the temporary lob calls and an
 nclob read for a pre-10g client, which are still unanswered (#10713).
 
+The 9.2.0.4 client's timestamp binds (#10710): oci8's bind sections
+(OCIBindByName of a timestamp, a timestamp with time zone and a
+timestamp with local time zone, with and without an indicator, and a
+named region) give the same results through the 12.1 listener as against
+real oracle122, in the same run as above - none of the failing checks
+there are binds. So the module reads the 9i client's bind descriptors
+(the scale rule in getQuery3BindDescriptor()) correctly. No 10g OCI client
+or go toolchain is on any host here, so those two clients stay
+unmeasured.
+
 The three real Oracle test servers on this network
 --------------------------------------------------
 
