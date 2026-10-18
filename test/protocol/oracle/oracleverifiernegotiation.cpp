@@ -56,6 +56,15 @@
 // trailer is a marshalled struct with the call number at offset 49.  The
 // module reads and answers a 0x76 o3logon login in the portable encoding
 // only, so a native run checks what the 0x05 cases advertise and stops there.
+//
+// A native run goes through every case twice, once with the client
+// advertising field version 11.2 and once 12.1, since the native struct
+// the trailer and the error object share is 8 bytes longer at 12.1 and up.
+// What a listener sends follows the lower of its field version and the
+// client's.  The ORA-28040 a below-floor login gets in the native encoding
+// is compared byte for byte, and so is the ORA-01017 a wrong password gets
+// in phase two, against the objects a real 11.2 and 12.2 server send - see
+// checkNativeError().
 
 // the verifier types - the VERIFIER_TYPE_* defines in
 // src/protocols/oracle.cpp.  only the ones that run under o5logon go out on
@@ -112,17 +121,37 @@ static const size_t	ORA_TRAILER_SIZE=31;
 static const size_t	ORA_OCI7_SUMMARY_CALL_NUMBER=22;
 static const size_t	ORA_OCI7_SUMMARY_SIZE=29;
 
-// the native trailer: a 136 byte struct with the ttc code, the end of call
-// status, the end to end field at 5, a 1 at 7 that nothing names, the call
-// number at 49 and the "36 01" marker at 56
+// the native trailer: a struct with the ttc code, the end of call status,
+// the end to end field at 5, a 1 at 7 that nothing names, the call number at
+// 49 and the "36 01" marker at 56.  136 bytes at field version 11.2, which
+// the client negotiates by default, and 144 at 12.1 and up
 static const size_t	ORA_NATIVE_TRAILER_SIZE=136;
+static const size_t	ORA_NATIVE_TRAILER_SIZE_12_1=144;
 static const size_t	ORA_NATIVE_TRAILER_END_TO_END=5;
 static const size_t	ORA_NATIVE_TRAILER_UNNAMED=7;
 static const size_t	ORA_NATIVE_TRAILER_MARKER=56;
 
-// the refusal's ora number, as a little endian uint32 behind the 9 byte
-// native prefix sendErrorPacket() writes
-static const size_t	ORA_NATIVE_ERROR_ORA_NUMBER=9;
+// the same struct as an error object's, counted from the byte behind the ttc
+// code: the end of call status at 0, the end to end field at 4, a 1 at 6,
+// the ora number at 11, the statement type at 21, the call number at 48, the
+// "36 01" marker at 55 and the ora number again at 131.  135 bytes at field
+// version 11.2, 143 at 12.1 and up, then a one byte message length and the
+// message
+static const size_t	ORA_NATIVE_ERROR_END_OF_CALL=0;
+static const size_t	ORA_NATIVE_ERROR_UNNAMED=6;
+static const size_t	ORA_NATIVE_ERROR_ORA_NUMBER=11;
+static const size_t	ORA_NATIVE_ERROR_STATEMENT_TYPE=21;
+static const size_t	ORA_NATIVE_ERROR_CALL_NUMBER=48;
+static const size_t	ORA_NATIVE_ERROR_MARKER=55;
+static const size_t	ORA_NATIVE_ERROR_ORA_NUMBER_AGAIN=131;
+static const size_t	ORA_NATIVE_ERROR_SIZE=135;
+static const size_t	ORA_NATIVE_ERROR_SIZE_12_1=143;
+
+// the statement type a 12.1 server's phase two error carries
+static const unsigned char	ORA_NATIVE_ERROR_STATEMENT_TYPE_PHASE_TWO=2;
+
+// ORA_INVALID_USERNAME_PASSWORD in src/protocols/oracle.cpp
+static const uint32_t	ORA_INVALID_USERNAME_PASSWORD=1017;
 
 // AUTH_SESSKEY and AUTH_VFR_DATA sizes in hex characters - twice the
 // SESSION_KEY_SIZE_* and VFR_DATA_SIZE_* defines in src/protocols/oracle.cpp
@@ -225,6 +254,11 @@ static const char	*password="testpassword";
 
 static bool	nativeencoding=false;
 
+// the field version the client advertises, and the one the current case's
+// listener settles on, which is the lower of its own and the client's
+static unsigned char	clientfieldversion=ORA_CCAP_FIELD_VERSION_11_2;
+static unsigned char	negotiatedfieldversion=ORA_CCAP_FIELD_VERSION_11_2;
+
 int	status=0;
 const char	*success="\033[32msuccess\033[0m";
 const char	*failure="\033[31mfailure\033[0m";
@@ -242,6 +276,17 @@ static uint16_t getPort(const listenerinfo *li) {
 		return li->defaultport;
 	}
 	return (uint16_t)charstring::convertToInteger(value);
+}
+
+static void writeLittleEndian(unsigned char *buffer, uint32_t value) {
+	for (size_t i=0; i<4; i++) {
+		buffer[i]=(unsigned char)(value>>(8*i));
+	}
+}
+
+static uint32_t readLittleEndian(const unsigned char *buffer) {
+	return ((uint32_t)buffer[0])|((uint32_t)buffer[1]<<8)|
+		((uint32_t)buffer[2]<<16)|((uint32_t)buffer[3]<<24);
 }
 
 static bool isHex(const char *value, size_t size) {
@@ -287,10 +332,11 @@ static bool hasField(oracleprotocolclient *client, const char *name) {
 	return client->getAuthField(name,NULL,NULL);
 }
 
-static void dumpTrailer(const unsigned char *trailer, size_t size) {
-	stdoutput.printf("    trailer (%d bytes):",(int)size);
+static void dumpBytes(const char *what, const unsigned char *bytes,
+								size_t size) {
+	stdoutput.printf("    %s (%d bytes):",what,(int)size);
 	for (size_t i=0; i<size; i++) {
-		stdoutput.printf(" %02x",trailer[i]);
+		stdoutput.printf(" %02x",bytes[i]);
 	}
 	stdoutput.printf("\n");
 }
@@ -308,7 +354,7 @@ static void checkTrailer(oracleprotocolclient *client, const char *label,
 		return;
 	}
 
-	unsigned char	expected[ORA_NATIVE_TRAILER_SIZE];
+	unsigned char	expected[ORA_NATIVE_TRAILER_SIZE_12_1];
 	bytestring::zero(expected,sizeof(expected));
 	size_t		expectedsize=0;
 	size_t		callnumberoffset=0;
@@ -319,7 +365,10 @@ static void checkTrailer(oracleprotocolclient *client, const char *label,
 		expected[ORA_NATIVE_TRAILER_UNNAMED]=1;
 		expected[ORA_NATIVE_TRAILER_MARKER]=0x36;
 		expected[ORA_NATIVE_TRAILER_MARKER+1]=0x01;
-		expectedsize=ORA_NATIVE_TRAILER_SIZE;
+		expectedsize=(negotiatedfieldversion>=
+					ORA_CCAP_FIELD_VERSION_12_1)?
+					ORA_NATIVE_TRAILER_SIZE_12_1:
+					ORA_NATIVE_TRAILER_SIZE;
 		callnumberoffset=ORA_NATIVE_TRAILER_CALL_NUMBER;
 	} else if (oci7summary) {
 		expected[1]=1;
@@ -349,7 +398,7 @@ static void checkTrailer(oracleprotocolclient *client, const char *label,
 	report(l.getString(),exact);
 
 	if (!ok || !exact) {
-		dumpTrailer(trailer,size);
+		dumpBytes("trailer",trailer,size);
 	}
 }
 
@@ -470,12 +519,106 @@ static void checkChallenge(oracleprotocolclient *client,
 			ORA_AUTH_PHASE_CHALLENGE,seqnumber,expected==VERIFIER_9I);
 }
 
+// a native error object, byte for byte.  it is the struct the native trailer
+// is, with the ora number in it and the message behind it: the end of call
+// status 1, the end to end field 0, a 1 at 6, the ora number at 11, the call
+// number at 48, the "36 01" marker at 55 and, when the emulated server is
+// 12.1, the ora number again at 131 and the statement type 2 at 21 for an
+// error that answers phase two.  the struct is 8 bytes longer when the
+// negotiated field version is 12.1 or up.  the pointer at 71 is live memory
+// on a real server and zero here.
+//
+// the expected bytes are the objects a real server sends, with that pointer
+// zeroed and the call number set to the one this case sent:
+//
+//	- ORA-28040, field version 11.2: packet [0015] of
+//	  samples/10544-centos6x64-oci11-native-loginretry-unknownuser-
+//	  realserver-oracle122-allowed12a.oraproxy, from a 12.2 server
+//	- ORA-01017, 12.1 emulated at field version 11.2: packet [0017] of
+//	  samples/10544-centos6x64-oci11-native-loginretry-unknownuser-
+//	  realserver-oracle122.oraproxy
+//	- ORA-01017, 11.2 emulated: packet [0017] of
+//	  samples/10544-centos6x64-oci11-native-loginretry-unknownuser-
+//	  realserver-oracle112.oraproxy, from an 11.2 server
+//	- field version 12.1 and up: the same, 8 zero bytes longer, as in packet
+//	  [0017] of samples/10039-dev-oci23-native-loginretry-realserver.oraproxy
+//
+// the 12.1 server is inferred from the 12.2 one
+static void checkNativeError(oracleprotocolclient *client,
+				const char *label,
+				const listenerinfo *li,
+				uint32_t oranum,
+				const char *message,
+				unsigned char callnumber,
+				bool secondphase) {
+
+	bool	longstruct=(negotiatedfieldversion>=
+					ORA_CCAP_FIELD_VERSION_12_1);
+	bool	server121=(li->fieldversion>=ORA_CCAP_FIELD_VERSION_12_1);
+	size_t	structsize=(longstruct)?ORA_NATIVE_ERROR_SIZE_12_1:
+						ORA_NATIVE_ERROR_SIZE;
+	size_t	messagesize=charstring::getLength(message);
+
+	unsigned char	expected[ORA_NATIVE_ERROR_SIZE_12_1+1+255];
+	bytestring::zero(expected,sizeof(expected));
+	expected[ORA_NATIVE_ERROR_END_OF_CALL]=1;
+	expected[ORA_NATIVE_ERROR_UNNAMED]=1;
+	writeLittleEndian(expected+ORA_NATIVE_ERROR_ORA_NUMBER,oranum);
+	if (secondphase && server121) {
+		expected[ORA_NATIVE_ERROR_STATEMENT_TYPE]=
+				ORA_NATIVE_ERROR_STATEMENT_TYPE_PHASE_TWO;
+	}
+	expected[ORA_NATIVE_ERROR_CALL_NUMBER]=callnumber;
+	expected[ORA_NATIVE_ERROR_MARKER]=0x36;
+	expected[ORA_NATIVE_ERROR_MARKER+1]=0x01;
+	if (server121) {
+		writeLittleEndian(expected+ORA_NATIVE_ERROR_ORA_NUMBER_AGAIN,
+								oranum);
+	}
+	expected[structsize]=(unsigned char)messagesize;
+	bytestring::copy(expected+structsize+1,message,messagesize);
+	size_t	expectedsize=structsize+1+messagesize;
+
+	// behind the data flags and the ttc code
+	const size_t		prefix=3;
+	size_t			responsesize=client->getResponseSize();
+	const unsigned char	*object=client->getResponse()+prefix;
+	size_t			objectsize=(responsesize>prefix)?
+						responsesize-prefix:0;
+
+	stringbuffer	l;
+	l.append(label)->append(" ora number is ")->append(oranum);
+	bool	oranumok=(objectsize>ORA_NATIVE_ERROR_ORA_NUMBER+3 &&
+			readLittleEndian(object+ORA_NATIVE_ERROR_ORA_NUMBER)==
+								oranum);
+	report(l.getString(),oranumok);
+
+	l.clear();
+	l.append(label)->append(" error call number is the sequence number");
+	bool	callnumberok=(objectsize>ORA_NATIVE_ERROR_CALL_NUMBER &&
+			object[ORA_NATIVE_ERROR_CALL_NUMBER]==callnumber);
+	report(l.getString(),callnumberok);
+
+	l.clear();
+	l.append(label)->append(" native error is exact");
+	bool	exact=(objectsize==expectedsize &&
+			!bytestring::compare(object,expected,expectedsize));
+	report(l.getString(),exact);
+
+	if (!oranumok || !callnumberok || !exact) {
+		dumpBytes("error",object,objectsize);
+		dumpBytes("expected",expected,expectedsize);
+	}
+}
+
 // the ORA-28040 a below-floor login gets in place of the challenge.  a 9i
 // session gets the narrow oci7 error shape and any other the modern one,
 // which has one more zero field ahead of the ora number - see
-// sendErrorPacket() in src/protocols/oracle.cpp
+// sendErrorPacket() in src/protocols/oracle.cpp.  in the native encoding
+// every session gets the native struct
 static void checkRefusal(oracleprotocolclient *client,
 				const char *label,
+				const listenerinfo *li,
 				verifier expected,
 				unsigned char seqnumber) {
 
@@ -495,18 +638,10 @@ static void checkRefusal(oracleprotocolclient *client,
 	}
 
 	if (nativeencoding) {
-		const unsigned char	*r=client->getResponse()+3+
-						ORA_NATIVE_ERROR_ORA_NUMBER;
-		uint32_t		oranum=((uint32_t)r[0])|
-						((uint32_t)r[1]<<8)|
-						((uint32_t)r[2]<<16)|
-						((uint32_t)r[3]<<24);
-		l.clear();
-		l.append(label)->append(" ora number is 28040");
-		report(l.getString(),
-			client->getResponseSize()>3+
-				ORA_NATIVE_ERROR_ORA_NUMBER+4 &&
-			oranum==ORA_NO_MATCHING_AUTH_PROTOCOL);
+		checkNativeError(client,label,li,
+				ORA_NO_MATCHING_AUTH_PROTOCOL,
+				"ORA-28040: No matching authentication "
+				"protocol\n",seqnumber,false);
 		return;
 	}
 
@@ -569,6 +704,84 @@ static void checkLogin(oracleprotocolclient *client,
 	checkTrailer(client,l.getString(),ORA_AUTH_PHASE_ANSWER,seqnumber,false);
 }
 
+// the listeners a wrong password is tried against: 12.1, where a phase two
+// error has the statement type and the second ora number, and 11.2, where
+// it has neither
+static const size_t	wrongpasswordlisteners[]={LISTENER_12_1,LISTENER_11_2};
+
+// phase two with a password that isn't the user's, native encoding only: a
+// break and a reset, then ORA-01017 in the native struct, with the phase two
+// sequence number as its call number
+static void runWrongPassword(size_t index) {
+
+	const listenerinfo	*li=&listeners[wrongpasswordlisteners[index]];
+
+	// a sequence number per case, apart from runCase()'s
+	unsigned char	seqnumber=(unsigned char)(0x50+2*index);
+
+	char	label[256];
+	charstring::printf(label,sizeof(label),
+			"%s, logon types 0x%02x, field version %d, "
+			"wrong password",li->name,LOGON_TYPES_11G,
+			clientfieldversion);
+	stdoutput.printf("\n%s - expect ORA-01017\n",label);
+
+	negotiatedfieldversion=(li->fieldversion<clientfieldversion)?
+					li->fieldversion:clientfieldversion;
+
+	oracleprotocolclient	client;
+	client.setNativeEncoding(nativeencoding);
+	client.setFieldVersion(clientfieldversion);
+	client.setLogonTypes(LOGON_TYPES_11G);
+	client.setAuthSequenceNumbers(seqnumber,seqnumber+1);
+
+	stringbuffer	l;
+	l.append(label)->append(" connect");
+	if (!client.connect(host,getPort(li),sid)) {
+		report(l.getString(),false);
+		stdoutput.printf("    %s\n",client.getError());
+		return;
+	}
+
+	l.clear();
+	l.append(label)->append(" phase one");
+	if (!client.requestChallenge(user) ||
+			client.getResponseTtcCode()!=ORA_TTC_OK) {
+		report(l.getString(),false);
+		stdoutput.printf("    %s\n",client.getError());
+		return;
+	}
+
+	// refused, so answerChallenge() fails and leaves the error in the
+	// response
+	l.clear();
+	l.append(label)->append(" phase two is refused");
+	bool	refused=!client.answerChallenge(user,"notthepassword");
+	report(l.getString(),refused);
+	if (!refused) {
+		client.disconnect();
+		return;
+	}
+
+	l.clear();
+	l.append(label)->append(" got a break and a reset first");
+	report(l.getString(),client.gotBreak());
+
+	l.clear();
+	l.append(label)->append(" got ORA-01017");
+	bool	ok=(client.getResponseTtcCode()==ORA_TTC_ERROR &&
+			client.responseContains("ORA-01017: invalid "
+						"username/password"));
+	report(l.getString(),ok);
+	if (ok) {
+		checkNativeError(&client,label,li,ORA_INVALID_USERNAME_PASSWORD,
+				"ORA-01017: invalid username/password; "
+				"logon denied\n",seqnumber+1,true);
+	}
+
+	client.disconnect();
+}
+
 static void runCase(size_t index) {
 
 	const testcase		*tc=&testcases[index];
@@ -579,14 +792,19 @@ static void runCase(size_t index) {
 	unsigned char	seqnumber=(unsigned char)(0x10+2*index);
 
 	char	label[256];
-	charstring::printf(label,sizeof(label),"%s, logon types 0x%02x",
-						li->name,tc->logontypes);
+	charstring::printf(label,sizeof(label),
+				"%s, logon types 0x%02x, field version %d",
+				li->name,tc->logontypes,clientfieldversion);
 	stdoutput.printf("\n%s - expect %s%s\n",label,
 				verifiernames[tc->expected],
 				(tc->refused)?", refused":"");
 
+	negotiatedfieldversion=(li->fieldversion<clientfieldversion)?
+					li->fieldversion:clientfieldversion;
+
 	oracleprotocolclient	client;
 	client.setNativeEncoding(nativeencoding);
+	client.setFieldVersion(clientfieldversion);
 	client.setLogonTypes(tc->logontypes);
 	client.setAuthSequenceNumbers(seqnumber,seqnumber+1);
 
@@ -634,7 +852,7 @@ static void runCase(size_t index) {
 	}
 
 	if (tc->refused) {
-		checkRefusal(&client,label,tc->expected,seqnumber);
+		checkRefusal(&client,label,li,tc->expected,seqnumber);
 	} else {
 		checkChallenge(&client,label,tc->expected,seqnumber);
 		if (tc->fulllogin) {
@@ -652,8 +870,30 @@ int main(int argc, char **argv) {
 	stdoutput.printf("\n====== #10515 verifier negotiation (%s encoding) "
 				"======\n",(nativeencoding)?"native":"portable");
 
-	for (size_t i=0; i<sizeof(testcases)/sizeof(testcases[0]); i++) {
-		runCase(i);
+	// the native struct changes size at 12.1, so a native run goes
+	// through everything at 11.2 and again at 12.1.  the portable run
+	// stays at 11.2
+	unsigned char	fieldversions[]={ORA_CCAP_FIELD_VERSION_11_2,
+						ORA_CCAP_FIELD_VERSION_12_1};
+	size_t		passes=(nativeencoding)?2:1;
+	for (size_t p=0; p<passes; p++) {
+
+		clientfieldversion=fieldversions[p];
+		stdoutput.printf("\n------ client field version %d ------\n",
+							clientfieldversion);
+
+		for (size_t i=0;
+			i<sizeof(testcases)/sizeof(testcases[0]); i++) {
+			runCase(i);
+		}
+
+		if (nativeencoding) {
+			for (size_t i=0; i<sizeof(wrongpasswordlisteners)/
+					sizeof(wrongpasswordlisteners[0]);
+					i++) {
+				runWrongPassword(i);
+			}
+		}
 	}
 
 	if (status==0) {

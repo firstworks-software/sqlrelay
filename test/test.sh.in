@@ -1491,30 +1491,35 @@ run_protocol_test() {
 	# each client gets, or the ORA-28040 a below-floor client gets
 	# instead, and completes the login wherever the 11g verifier comes
 	# back.  no real client can send all three bytes, and the genuine 9i
-	# clients that send 0x05 only run on the buildfarm.  it reads the
-	# ports straight from the environment, so it needs neither $server
-	# nor TNS_ADMIN.  then oracle9ibootstrap, three times, for #10538 and
-	# #10702 - it plays 9.2.0.4 sqlplus over a raw socket against the 12.1
-	# (ORACLEPROTOCOLPORT1) and 10.2 (ORACLEPROTOCOLPORT12) listeners: its
-	# data type negotiation, an o3logon login with the 9i verifier, its
-	# bootstrap TTI_QUERY, TTI_QUERY2 and TTI_FETCH, and the OALL8 behind
-	# them.  it checks that the fetch sends a value's indicator and return
-	# code only when the define's flag asks for them, and that the OALL8's
-	# answer has the shape a real 10.2 server sends a 9i client, and then
-	# reads a clob the way 9.2.0.4 ociselect does, which a real server
-	# sends a 9i client in the database character set, not in utf-16.  the
-	# third run is that read against the single-byte listener of the
-	# oracleprotocoloci7 instance (ORACLEPROTOCOLPORT7).  it reads
-	# the ports from the environment too.  then ojdbc, three times, for
-	# #10569 - an ojdbc (thin driver) check of getDatabaseProductVersion()
-	# and of CLOB and BLOB selects at the driver's default lob prefetch
-	# size and at 0 and -1 - for #10701, of plain dml update counts,
-	# batches, commit and rollback - and for #10700, of failed statements
-	# past maxcursors - against the 12.1 (ORACLEPROTOCOLPORT1),
-	# 10.2 (ORACLEPROTOCOLPORT12) and 11.2 (ORACLEPROTOCOLPORT2)
-	# listeners.  ojdbc asks for prefetched
-	# lob data inside the row, which no OCI client here does.  it connects
-	# to the ports directly, so it needs neither $server nor TNS_ADMIN.
+	# clients that send 0x05 only run on the buildfarm.  its -native run
+	# also goes through every case a second time with the client
+	# advertising field version 12.1, and compares the native ORA-28040
+	# and the ORA-01017 a wrong password gets (12.1 and 11.2 listeners)
+	# byte for byte against what real 11.2 and 12.2 servers send, for
+	# #10544.  it reads the ports straight from the environment, so it
+	# needs neither $server nor TNS_ADMIN.  then oracle9ibootstrap, three
+	# times, for #10538 and #10702 - it plays 9.2.0.4 sqlplus over a raw
+	# socket against the 12.1 (ORACLEPROTOCOLPORT1) and 10.2
+	# (ORACLEPROTOCOLPORT12) listeners: its data type negotiation, an
+	# o3logon login with the 9i verifier, its bootstrap TTI_QUERY,
+	# TTI_QUERY2 and TTI_FETCH, and the OALL8 behind them.  it checks that
+	# the fetch sends a value's indicator and return code only when the
+	# define's flag asks for them, and that the OALL8's answer has the
+	# shape a real 10.2 server sends a 9i client, and then reads a clob
+	# the way 9.2.0.4 ociselect does, which a real server sends a 9i
+	# client in the database character set, not in utf-16.  the third run
+	# is that read against the single-byte listener of the
+	# oracleprotocoloci7 instance (ORACLEPROTOCOLPORT7).  it reads the
+	# ports from the environment too.  then ojdbc, three times, for #10569
+	# - an ojdbc (thin driver) check of getDatabaseProductVersion() and of
+	# CLOB and BLOB selects at the driver's default lob prefetch size and
+	# at 0 and -1 - for #10701, of plain dml update counts, batches,
+	# commit and rollback - and for #10700, of failed statements past
+	# maxcursors - against the 12.1 (ORACLEPROTOCOLPORT1), 10.2
+	# (ORACLEPROTOCOLPORT12) and 11.2 (ORACLEPROTOCOLPORT2) listeners.
+	# ojdbc asks for prefetched lob data inside the row, which no OCI
+	# client here does.  it connects to the ports directly, so it needs
+	# neither $server nor TNS_ADMIN.
 	# ojdbc.class is built only when a jdk is configured, so the runs are
 	# skipped, and treated as a pass, without it or without a java to run
 	# it with.  the last oci8 run is the default one again with

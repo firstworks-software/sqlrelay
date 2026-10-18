@@ -239,6 +239,36 @@ though the server sends ORA-01017, and no capture on file covers a modern
 client retrying a login on one connection - the ones there are all
 single-attempt failures.
 
+oracleverifiernegotiation.cpp, also built by `make` here, is the
+oracleprotocol suite's check of the logon negotiation (#10515). It sends
+phase one of a login by hand, advertising logon types 0x05, 0x08 and 0x2a
+in turn, to the 12.1, 11.2 and 10.2 listeners and to two 12.1 listeners
+with an allowedlogonversion floor of 11 and of 12a, and checks the
+verifier, the challenge and the trailer each client gets, or the ORA-28040
+a below-floor client gets instead. Its -native run does the same in the
+native encoding, twice: once with the client advertising field version
+11.2 and once 12.1, since the native struct the error object and the
+challenge trailer share is 8 bytes longer at 12.1 and up (#10544).
+
+In the native encoding the ORA-28040 is checked byte for byte, size and
+message included. The test builds the expected object from the field rules,
+with the live pointer at offset 71 zeroed and the call number set to the
+one the case sent. Those rules reproduce packet [0015] of 10544-centos6x64-
+oci11-native-loginretry-unknownuser-realserver-oracle122-allowed12a.oraproxy
+once the pointer is zeroed and the call number is set. Also in
+the native run, at the 12.1 and 11.2 listeners, a login completes phase
+one and answers the challenge with a wrong password. It checks the break
+and reset and then the ORA-01017 object byte for byte. The expected
+bytes come from the field rules, which reproduce packet [0017] of the
+10544 oracle122 (12.1) and oracle112 (11.2) captures, so the
+phase two call number, byte 21 (2 at 12.1, 0 at 11.2) and the second ORA
+number at offset 131 (12.1 only) are covered. The challenge trailer is
+checked at 136 bytes counting the 0x04 at field version 11.2 and 144 at
+12.1 and up. The 12.1 cases are inferred: there is no 12.1 server capture,
+and the 12.2 server's objects stand in for it. A 143 byte object is a real
+capture only at field version 9 (10039 and the 10544 ccapcf capture), and
+the module never negotiates 9.
+
 oci7.cpp, also in this directory, is oci8.cpp's counterpart written
 against the legacy pre-8.0 OCI7 call interface (olog/oopen/oparse/
 odefin/oexec/ofen/oexfet/oclose/ologof/odescr/obndrv) instead of the
@@ -599,8 +629,14 @@ the decoder can be exercised without live server access:
                                       password against the real 10.2
                                       server, x86 Linux client 9.2.0.4.0,
                                       native encoding (the control) - the
-                                      reference sendErrorPacket()'s native
-                                      branch is written against
+                                      reference for the 32 bit OCI7 native
+                                      error object putOci7Error() and
+                                      putOci7SummaryNative() write.
+                                      sendErrorPacket()'s native branch does
+                                      not use it, since an OCI7 login never
+                                      reaches that branch - it is written
+                                      against the 10544-*-allowed12a
+                                      captures and 10039 (#10544)
     oracle102-oci7-portable-login-wrongpassword.cap
                                      the same, from a SPARC Solaris client
                                       9.0.1.0.0 instead, portable
@@ -2863,6 +2899,176 @@ that statement, except where noted.
                                       twice, then closes, and reports
                                       ORA-03114 locally (#10538, also at
                                       10.2) (#10541)
+
+    10544-centos6x64-oci11-native-loginretry-unknownuser-realserver-oracle112.oraproxy
+                                     the genuine Oracle 11.2 Instant Client
+                                      on centos6x64 (the farm's, 64 bit,
+                                      native encoding), ociloginretry with an
+                                      unknown user, through oraproxy against
+                                      the real 11.2 server (oracle112,
+                                      10.0.2.2). The login is refused in phase
+                                      two. [0012] is the challenge, ending in
+                                      a 136 byte native trailer counting the
+                                      0x04, [0013] the password, [0014] [0015]
+                                      [0016] the server's BREAK and RESET and
+                                      the client's RESET, and [0017] ORA-01017
+                                      as an ordinary DATA packet. The error
+                                      object is 135 bytes behind the 0x04,
+                                      then a one byte message length and the
+                                      message. ORA number at offset 11, call
+                                      number 3 at 48, the 36 01 marker at 55,
+                                      the server's live pointer at 71. Byte 21
+                                      is 0 and nothing sits at 131-134, so an
+                                      11.2 server sends no second ORA number
+                                      and no row count behind the 135 bytes.
+                                      The reference for the native error
+                                      object at field version 11.2 (#10544)
+
+    10544-dev-oci23-native-loginretry-unknownuser-realserver-oracle112.oraproxy
+                                     the same run from OCI 23.26 on dev,
+                                      against the same 11.2 server. The packet
+                                      sequence is the same and so is the 135
+                                      byte error object at [0017], byte for
+                                      byte, so the object follows the server
+                                      and the negotiated field version, not
+                                      the client (#10544)
+
+    10544-centos6x64-oci11-native-loginretry-unknownuser-realserver-oracle122.oraproxy
+                                     the 11.2 client's run again, against the
+                                      real 12.2 server (oracle122centos7x64).
+                                      The client negotiates field version 6
+                                      (11.2), so the object at [0017] is 135
+                                      bytes again and the challenge trailer
+                                      136, the length following the negotiated
+                                      field version. Two fields follow the
+                                      server's version instead: byte 21 is 2
+                                      and the ORA number is filled in a second
+                                      time at offset 131, neither of which the
+                                      11.2 server sends. Everything else is
+                                      the 11.2 server's. Compare packet [0017]
+                                      of 10039-dev-oci23-native-loginretry-
+                                      realserver.oraproxy, the 12.2 server's
+                                      143 byte object at field version 9
+                                      (#10544)
+
+    10544-centos6x64-oci11-portable-loginretry-unknownuser-realserver-oracle102.oraproxy
+                                     the same 11.2 client against the real
+                                      10.2 server (oracle102, 10.0.2.3).
+                                      oracle102 is a 32 bit server, so a 64
+                                      bit client does not get the 64 bit
+                                      native struct from it. The ORA-01017 at
+                                      [0019] is a 65 byte object behind the
+                                      0x04: ORA number at offset 10, call
+                                      number 3 at 44, no 36 01 marker, no
+                                      pointer and no second ORA number. The
+                                      module classifies the session as
+                                      portable, because a 64 bit client sends
+                                      the full data type negotiation and the
+                                      login request starts with 0x01, but the
+                                      fields are fixed width little endian, as
+                                      a real server sends them with no
+                                      ORAPROXY_UNIVERSAL_REPS, not the count
+                                      prefixed form the module sends a
+                                      portable session, so this is not a byte
+                                      for byte reference for the module. A
+                                      native 10.2 object needs a 32 bit client
+                                      (redhat9x86) (#10544)
+
+    10544-dev-oci23-portable-loginretry-unknownuser-realserver-oracle102.oraproxy
+                                     the same run from OCI 23.26 on dev
+                                      against the 10.2 server. The same 65
+                                      byte object at [0019], byte for byte.
+                                      The session is portable by the module's
+                                      classification for the same reasons,
+                                      and the object is fixed width little
+                                      endian (#10544)
+
+    10544-centos6x64-oci11-native-loginretry-unknownuser-realserver-oracle122-allowed12a.oraproxy
+                                     a real phase one ORA-28040. A scratch
+                                      listener on oracle122 at port 1621, with
+                                      its own TNS_ADMIN whose sqlnet.ora sets
+                                      SQLNET.ALLOWED_LOGON_VERSION_SERVER=12a,
+                                      reached through an ssh tunnel to
+                                      oraproxy on dev and torn down afterward
+                                      (the stock listener and its
+                                      network/admin files are unchanged). As a
+                                      control OCI 23 logged in through it and
+                                      the 11.2 client was refused. [0011] is
+                                      the client's TTI_LOGON_PRESENT_USER and
+                                      there is no challenge. [0012] [0013]
+                                      [0014] are the server's BREAK and RESET
+                                      and the client's RESET, [0015] is
+                                      ORA-28040 as an ordinary DATA packet and
+                                      [0016] the client's 2 byte EOF packet.
+                                      The object is 135 bytes, the 11.2 field
+                                      version's: ORA number 28040 at offset 11
+                                      and again at 131, call number 2 at 48
+                                      (the phase one sequence), byte 21 0, the
+                                      36 01 marker at 55, the live pointer at
+                                      71, the message length 0x2f at 135. It
+                                      has the layout of the phase two
+                                      ORA-01017 above; the differences are the
+                                      ORA numbers, byte 21 (0 here, 2 there),
+                                      the call number, the pointer and the
+                                      message. The reference
+                                      sendErrorPacket()'s native branch is
+                                      written against. The expected bytes
+                                      oracleverifiernegotiation builds from
+                                      the field rules equal this object with
+                                      the pointer zeroed and the call number
+                                      set (#10544)
+
+    10544-dev-oci23-native-loginretry-unknownuser-ccapcf-realserver-oracle122-allowed12a.oraproxy
+                                     the same scratch listener with OCI 23.26
+                                      on dev. A 12a floor does not refuse OCI
+                                      23 as it is, so to make it look like an
+                                      11g client one byte of the client's data
+                                      type negotiation is rewritten on the way
+                                      past: compile capability index 4,
+                                      CCAP_LOGON_TYPES, from 0xef to 0xcf,
+                                      which clears the O7LOGON bit. Refused in
+                                      phase one the same way, with the same
+                                      BREAK, RESET, RESET and DATA packets at
+                                      [0012] to [0015]. This is the 12.2 field
+                                      version (9), so the object is 143 bytes:
+                                      the 11.2 layout with 8 zero bytes after
+                                      the second ORA number (the row count),
+                                      the message length at 143, 194 body
+                                      bytes in all (#10544)
+
+    10544-dev-oci23-portable-loginretry-unknownuser-ccapcf-bannerrewrite-both-realserver-oracle122-allowed12a.oraproxy
+                                     the same again with both ends' platform
+                                      banners rewritten, as in 10048-dev-
+                                      oci23api7-bannerrewrite-both-
+                                      realserver.oraproxy, with no
+                                      ORAPROXY_UNIVERSAL_REPS. The break and
+                                      reset still come first, and the
+                                      ORA-28040 at [0015] is a 70 byte object
+                                      behind the 0x04: ORA number at offset 10
+                                      and again at 65, call number 2 at 44, no
+                                      36 01 marker and no pointer. The object
+                                      is fixed width little endian, not the
+                                      count prefixed portable form, so it is
+                                      not a byte for byte reference for the
+                                      module. Kept for the portable follow-up
+                                      (#10544)
+
+    10544-dev-oci23-native-loginretry-unknownuser-ccap04zero-realserver-oracle122.oraproxy
+                                     a failed attempt to get ORA-28040 from
+                                      the stock oracle122 listener without a
+                                      scratch one: compile capability index 4,
+                                      CCAP_LOGON_TYPES, rewritten to 0x00 in
+                                      the client's data type negotiation, to
+                                      try to make the server refuse it. That
+                                      did not work. The server accepted the
+                                      login and answered phase one with a
+                                      challenge at [0012], an AUTH_SESSKEY of
+                                      16 hex characters and a 144 byte native
+                                      trailer. OCI 23 then gave up on its own
+                                      side with ORA-28041 and sent a 2 byte
+                                      EOF packet at [0013]. No error object in
+                                      this capture. Kept as the record of what
+                                      does not work (#10544)
 
     10554-dev-oci23-native-ociselect-realserver-oracle102.oraproxy
                                      ociselect (OCI 23.26, OCI8 calls,

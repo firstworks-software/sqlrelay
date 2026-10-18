@@ -409,6 +409,16 @@ class oracleprotocolclient {
 		// the byte goes out in the data type negotiation
 		void	setLogonTypes(unsigned char logontypes);
 
+		// the CCAP_FIELD_VERSION byte this client advertises, 11.2
+		// (6) by default.  the listener negotiates down to the lower
+		// of its own and this, and the native error object and
+		// trailer grow 8 bytes at 12.1 (7) and up, so a test that
+		// checks them runs once at each.  it has to be set before
+		// connect(), since the byte goes out in the data type
+		// negotiation.  a bind descriptor's shape depends on it
+		// too, so a test that sets it only logs in
+		void	setFieldVersion(unsigned char fieldversion);
+
 		// the data type negotiation's body - everything behind its
 		// ttc code - sent as is in place of the one
 		// sendDataTypeNegotiation() builds.  for a test that imitates
@@ -461,7 +471,11 @@ class oracleprotocolclient {
 		// login a break marker, a reset marker and then the error.
 		// it answers the markers itself, and gotBreak() says whether
 		// they came.  answerChallenge() sends phase two, built from
-		// the challenge still in the response, and reads the answer
+		// the challenge still in the response, and reads the answer.
+		// a phase two the listener refuses, a wrong password's, gets
+		// the same break and reset first, which it answers the same
+		// way: gotBreak() says they came, the error is left in the
+		// response, and it returns false
 		bool	requestChallenge(const char *user);
 		bool	answerChallenge(const char *user, const char *password);
 		bool	gotBreak();
@@ -740,6 +754,7 @@ class oracleprotocolclient {
 					char **value, uint32_t *flags,
 					uint32_t *count);
 		bool	sendMarker(unsigned char markertype);
+		bool	recvAfterBreak(const char *phase);
 
 		inetsocketclient	sock;
 		bool			connected;
@@ -1023,6 +1038,10 @@ bool oracleprotocolclient::getNativeEncoding() {
 
 void oracleprotocolclient::setLogonTypes(unsigned char logontypes) {
 	this->logontypes=logontypes;
+}
+
+void oracleprotocolclient::setFieldVersion(unsigned char fieldversion) {
+	this->fieldversion=fieldversion;
 }
 
 void oracleprotocolclient::setDataTypeRequest(const unsigned char *request,
@@ -2108,14 +2127,20 @@ bool oracleprotocolclient::requestChallenge(const char *user) {
 		return true;
 	}
 
-	// a refused login: a break marker and a reset marker, which this
-	// client answers with a reset marker of its own, and then the error.
-	// see sendAuthenticationBreak() in src/protocols/oracle.cpp
+	// markers first for a refused login
+	return recvAfterBreak("phase one");
+}
+
+// a refused login: a break marker and a reset marker, which this client
+// answers with a reset marker of its own, and then the error.  see
+// sendAuthenticationBreak() in src/protocols/oracle.cpp.  the break is
+// the packet in the response already
+bool oracleprotocolclient::recvAfterBreak(const char *phase) {
 	if (respsize!=3 || resppacket[2]!=ORA_MARKER_TYPE_BREAK ||
 			!recvPacket() ||
 			resppackettype!=ORA_PACKET_MARKER ||
 			respsize!=3 || resppacket[2]!=ORA_MARKER_TYPE_RESET) {
-		setError("bad marker exchange at phase one");
+		setError("bad marker exchange",phase);
 		return false;
 	}
 	gotbreak=true;
@@ -2123,7 +2148,7 @@ bool oracleprotocolclient::requestChallenge(const char *user) {
 		return false;
 	}
 	if (resppackettype!=ORA_PACKET_DATA) {
-		setError("no error behind the markers at phase one");
+		setError("no error behind the markers",phase);
 		return false;
 	}
 	return true;
@@ -2289,7 +2314,12 @@ bool oracleprotocolclient::answerChallenge(const char *user,
 	delete[] sesskey;
 	delete[] authpassword;
 
+	gotbreak=false;
 	if (!sendPacket() || !recvPacket()) {
+		return false;
+	}
+	if (resppackettype==ORA_PACKET_MARKER &&
+			!recvAfterBreak("phase two")) {
 		return false;
 	}
 	if (getResponseTtcCode()!=ORA_TTC_OK) {

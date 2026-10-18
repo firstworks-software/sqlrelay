@@ -1872,6 +1872,12 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_oracle : public sqlrprotocol {
 						uint32_t flags);
 		void	putAuthField(const char *fieldname, const char *field);
 		void	putAuthTrailer(bool secondphase);
+
+		// writes the 64-bit native summary struct that follows the ttc
+		// 0x04 of a native login error and a native auth trailer
+		void	putNativeSummary(byte_t endtoend,
+						uint32_t oranum,
+						byte_t statementtype);
 		void	putO3LogonSummary();
 
 		byte_t	oci7CommandType(sqlrservercursor *cursor);
@@ -1929,9 +1935,11 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_oracle : public sqlrprotocol {
 		bool	sendAuthenticationSuccess();
 		bool	sendErrorPacket(const char *what,
 						uint32_t oranum,
-						const char *message);
+						const char *message,
+						bool secondphase);
 		bool	sendAuthenticationError(uint32_t oranum,
-						const char *message);
+						const char *message,
+						bool secondphase);
 		bool	sendAuthenticationBreak();
 
 		void	debugTtcCode(byte_t ttccode);
@@ -2626,11 +2634,15 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_oracle : public sqlrprotocol {
 		// every one on file goes through the 9i/classic dispatch
 		// instead, which returns ahead of the probe that sets this.
 		//
-		// the branches behind it are still exercised, though -
-		// test/protocol/oracle/oracledescribe.cpp writes the sentinel
-		// by hand, and test.sh runs it with -native on every pass,
-		// against a real server's own bytes from the captures in
-		// test/protocol/oracle/samples/
+		// the branches behind it are still exercised, though - the
+		// raw-socket test client in
+		// test/protocol/oracle/oracleprotocolclient.cpp writes the
+		// sentinel by hand, and test.sh runs oracledescribe and the
+		// others built on it with -native on every pass, against a
+		// real server's own bytes from the captures in
+		// test/protocol/oracle/samples/.  that client marshals 8-byte
+		// pointers, so a native login is answered with the 64-bit
+		// native struct - see putNativeSummary()
 		bool		nativeencoding;
 
 		// whether the client's own byte order is little endian, from
@@ -6007,7 +6019,8 @@ bool sqlrprotocol_oracle::sendTtiResponse() {
 		// refuse is only valid before it
 		return sendErrorPacket("tti version error",
 					ORA_VERSION_NOT_SUPPORTED,
-					ORA_VERSION_NOT_SUPPORTED_MESSAGE);
+					ORA_VERSION_NOT_SUPPORTED_MESSAGE,
+					false);
 	}
 
 	resetSendPacketBuffer(PACKET_DATA);
@@ -9663,7 +9676,8 @@ bool sqlrprotocol_oracle::sendAuthenticationChallenge() {
 		return sendAuthenticationError(
 				ORA_NO_MATCHING_AUTH_PROTOCOL,
 				"ORA-28040: No matching authentication "
-				"protocol\n");
+				"protocol\n",
+				false);
 	}
 
 	bool	pbkdf2=(verifiertype==VERIFIER_TYPE_12C);
@@ -9857,41 +9871,99 @@ void sqlrprotocol_oracle::putAuthTrailer(bool secondphase) {
 		return;
 	}
 
-	// a marshalled struct rather than a field stream, so it gets no
-	// summary extension: the ttc code, a 4 byte end of call status, the
-	// end to end field at offset 5, the call number at offset 49 and the
-	// "36 01" marker at offset 56.  the live pointer value the 11.2
-	// capture carried is zeroed.
+	// the native trailer is the 64-bit native struct with no error in it,
+	// 136 bytes with the ttc code below field version 12.1 and 144 at and
+	// above it.
 	// see "Oracle Wire Protocol - Authentication - Username"
-	static const byte_t	nativetrailer[]={
-		0x04, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01,
-		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	write(&reqpacket,(byte_t)TTC_ERROR);
+	putNativeSummary(phase,0,0);
+
+	debugEnd();
+}
+
+void sqlrprotocol_oracle::putNativeSummary(byte_t endtoend,
+						uint32_t oranum,
+						byte_t statementtype) {
+
+	// a marshalled struct rather than a field stream, so it gets no
+	// summary extension.  reproduced byte for byte, with the live pointer
+	// zeroed, from a real server's login errors and auth trailers to a
+	// 64-bit OCI client in native mode, in test/protocol/oracle/samples/:
+	//  - 12.2 server at field version 11.2: packet [0015] (ORA-28040) of
+	//    10544-centos6x64-oci11-native-loginretry-unknownuser-realserver-
+	//    oracle122-allowed12a.oraproxy
+	//  - 12.2 server at field version 12.2: packet [0015] (ORA-28040) of
+	//    10544-dev-oci23-native-loginretry-unknownuser-ccapcf-realserver-
+	//    oracle122-allowed12a.oraproxy, and packets [0017] and [0024]
+	//    (ORA-01017) of 10039-dev-oci23-native-loginretry-
+	//    realserver.oraproxy
+	//  - 11.2 server: packet [0017] (ORA-01017) of the 10544-*-native-
+	//    loginretry-unknownuser-realserver-oracle112.oraproxy captures
+	// no capture of a 12.1 server or of a 64-bit 10.2 one exists.  a 12.1
+	// server is taken to send what a 12.2 one does, and a 10.2 server
+	// what an 11.2 one does.
+
+	// end of call status, end to end field, then a byte that is 1 in
+	// every capture, unexplained
+	writeLE(&reqpacket,(uint32_t)1);
+	writeLE(&reqpacket,(uint16_t)endtoend);
+	write(&reqpacket,(byte_t)1);
+
+	// rows processed, error number
+	writeLE(&reqpacket,(uint32_t)0);
+	writeLE(&reqpacket,oranum);
+
+	// array error, cursor id, error position
+	static const byte_t	pad1[6]={0};
+	reqpacket.append(pad1,sizeof(pad1));
+
+	// statement type, then call number
+	write(&reqpacket,statementtype);
+	static const byte_t	pad2[26]={0};
+	reqpacket.append(pad2,sizeof(pad2));
+	write(&reqpacket,callnumber);
+
+	// success iterations
+	static const byte_t	pad3[2]={0};
+	reqpacket.append(pad3,sizeof(pad3));
+	writeLE(&reqpacket,(uint32_t)0);
+
+	// "36 01" is the marker; the live pointer sits 16 bytes behind it
+	static const byte_t	pad4[16]={
 		0x36, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
 		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
 	};
+	reqpacket.append(pad4,sizeof(pad4));
 
-	debugWrite("bytes: %d",(uint32_t)sizeof(nativetrailer));
-	debugHexDump(nativetrailer,sizeof(nativetrailer));
+	// the live pointer itself - a real value in every capture, zeroed
+	// because nothing reproduces it and no client reads it back
+	static const byte_t	livepointer[8]={0};
+	reqpacket.append(livepointer,sizeof(livepointer));
 
-	reqpacket.append(nativetrailer,5);
-	write(&reqpacket,phase);
-	reqpacket.append(nativetrailer+6,43);
-	write(&reqpacket,callnumber);
-	reqpacket.append(nativetrailer+50,sizeof(nativetrailer)-50);
+	static const byte_t	pad5[52]={0};
+	reqpacket.append(pad5,sizeof(pad5));
 
+	// a 12c server repeats the error number here, whatever field
+	// version it negotiated, and an 11.2 server leaves it zero
+	uint32_t	oranum2=
+		(serverfieldversion>=CCAP_FIELD_VERSION_12_1)?oranum:0;
+	writeLE(&reqpacket,oranum2);
+
+	// row count - the same ub8 the portable summary extension carries,
+	// at the same field version
+	uint32_t	structsize=135;
+	if (fieldversion>=CCAP_FIELD_VERSION_12_1) {
+		writeLE(&reqpacket,(uint64_t)0);
+		structsize+=8;
+	}
+
+	debugStart("native summary");
+	debugWrite("struct size: %d",structsize);
+	debugWrite("end to end: %d",endtoend);
+	debugWrite("call number: %d",callnumber);
+	debugWrite("error: %d",oranum);
+	debugWrite("second error: %d",oranum2);
+	debugWrite("statement type: %d",statementtype);
 	debugEnd();
 }
 
@@ -10212,23 +10284,23 @@ void sqlrprotocol_oracle::putOci7SummaryNative(uint32_t cursorid,
 	// the byte behind it is 1 in all four captures - unexplained, but
 	// confirmed constant rather than assumed. rows processed and success
 	// iterations are only ever confirmed as 0 or a small single digit in
-	// the four captures on file, but sendErrorPacket()'s native branch
-	// places its own ora-number field 4 bytes wide at the equivalent
-	// distance from that same "36 01" marker below, which only lines up if
-	// the fields ahead of it here are 4 bytes too - so each goes out the
-	// same width as end of call status, not truncated to whatever a capture
-	// happened to need.  the cursor id is the exception: it is 2 bytes,
-	// followed by the 2-byte parse error offset, which together fill the
-	// same 4 bytes - see below.  call number is confirmed as one byte
-	// across all four, and command type is a byte everywhere
-	// putOci7Summary() sends it too, so both stay bytes.  two more bytes
-	// go out non-zero in every capture here (a marker, "36 01", 4 bytes
-	// ahead of a live value) - the same marker sendErrorPacket()'s native
-	// branch and putAuthTrailer()'s native trailer both carry too (at
-	// their own equivalent positions, not this one), so it reads as a
-	// real constant, and the live value after it as the same class of
-	// non-reproducible server-side data sendErrorPacket()'s native branch
-	// zeroes rather than guesses
+	// the four captures on file, but the login failure in packet [0017] of
+	// samples/oracle102-oci7-native-login-wrongpassword.cap places its
+	// error number 4 bytes wide at the equivalent distance from that same
+	// "36 01" marker below, which only lines up if the fields ahead of it
+	// here are 4 bytes too - so each goes out the same width as end of
+	// call status, not truncated to whatever a capture happened to need.
+	// the cursor id is the exception: it is 2 bytes, followed by the
+	// 2-byte parse error offset, which together fill the same 4 bytes -
+	// see below.  call number is confirmed as one byte across all four,
+	// and command type is a byte everywhere putOci7Summary() sends it too,
+	// so both stay bytes.  two more bytes go out non-zero in every capture
+	// here (a marker, "36 01", 4 bytes ahead of a live value) - the same
+	// marker the 64-bit native struct carries too (see
+	// putNativeSummary(), at its own position, not this one), so it reads
+	// as a real constant, and the live value after it as the same class of
+	// non-reproducible server-side data putNativeSummary() zeroes rather
+	// than guesses
 
 	write(&reqpacket,(byte_t)TTC_ERROR);
 
@@ -10289,9 +10361,8 @@ void sqlrprotocol_oracle::putOci7SummaryNative(uint32_t cursorid,
 	reqpacket.append(pad6,sizeof(pad6));
 
 	// the live pointer itself - a real value in every capture on file,
-	// and zeroed here for the same reason sendErrorPacket()'s native
-	// branch zeroes its own: nothing reproduces it, and no client reads
-	// it back
+	// and zeroed here for the same reason putNativeSummary() zeroes its
+	// own: nothing reproduces it, and no client reads it back
 	static const byte_t	livepointer[4]={0};
 	reqpacket.append(livepointer,sizeof(livepointer));
 
@@ -10322,7 +10393,8 @@ bool sqlrprotocol_oracle::sendAuthenticationResponse() {
 		return sendAuthenticationError(
 				ORA_INVALID_USERNAME_PASSWORD,
 				"ORA-01017: invalid username/password; "
-				"logon denied\n");
+				"logon denied\n",
+				true);
 	}
 
 	// a zero length AUTH_PASSWORD is what an 11g client sends when it
@@ -10332,7 +10404,8 @@ bool sqlrprotocol_oracle::sendAuthenticationResponse() {
 		debugWrite("no auth password");
 		return sendAuthenticationError(ORA_NULL_PASSWORD,
 				"ORA-01005: null password given; "
-				"logon denied\n");
+				"logon denied\n",
+				true);
 	}
 
 	bool	o3logon=isO3Logon();
@@ -10352,7 +10425,8 @@ bool sqlrprotocol_oracle::sendAuthenticationResponse() {
 		return sendAuthenticationError(
 				ORA_INVALID_USERNAME_PASSWORD,
 				"ORA-01017: invalid username/password; "
-				"logon denied\n");
+				"logon denied\n",
+				true);
 	}
 	debugWrite("auth succeeded");
 
@@ -10375,7 +10449,8 @@ bool sqlrprotocol_oracle::sendAuthenticationResponse() {
 		return sendAuthenticationError(
 				ORA_INVALID_USERNAME_PASSWORD,
 				"ORA-01017: invalid username/password; "
-				"logon denied\n");
+				"logon denied\n",
+				true);
 	}
 
 	resetSendPacketBuffer(PACKET_DATA);
@@ -10457,7 +10532,8 @@ bool sqlrprotocol_oracle::sendAuthenticationSuccess() {
 }
 
 bool sqlrprotocol_oracle::sendAuthenticationError(uint32_t oranum,
-						const char *message) {
+						const char *message,
+						bool secondphase) {
 
 	// a real server doesn't just send the error for a failed login - it
 	// breaks the call first, with a marker exchange, and only then sends
@@ -10483,7 +10559,8 @@ bool sqlrprotocol_oracle::sendAuthenticationError(uint32_t oranum,
 	loginrefused=true;
 	priorloginattemptrefused=true;
 
-	return sendErrorPacket("authentication error",oranum,message);
+	return sendErrorPacket("authentication error",oranum,message,
+								secondphase);
 }
 
 bool sqlrprotocol_oracle::sendAuthenticationBreak() {
@@ -10513,7 +10590,8 @@ bool sqlrprotocol_oracle::sendAuthenticationBreak() {
 
 bool sqlrprotocol_oracle::sendErrorPacket(const char *what,
 						uint32_t oranum,
-						const char *message) {
+						const char *message,
+						bool secondphase) {
 
 	// a refuse packet can't be used after the accept - it's an ns layer
 	// packet type, and a client that has already been accepted reads one
@@ -10532,7 +10610,11 @@ bool sqlrprotocol_oracle::sendErrorPacket(const char *what,
 	// for a wrong password and ORA-24327 for the OCISessionBegin after
 	// it, never the ORA-01017 actually on the wire.  the field values
 	// stay literals because this call runs before the login is far
-	// enough along for them to come from anywhere else
+	// enough along for them to come from anywhere else.
+	//
+	// the native encoding gets neither: it gets the 64-bit native struct
+	// (see putNativeSummary()), not the oci7 one, since only an o5logon
+	// session is ever native
 	resetSendPacketBuffer(PACKET_DATA);
 
 	uint16_t	dataflags=0;
@@ -10557,30 +10639,6 @@ bool sqlrprotocol_oracle::sendErrorPacket(const char *what,
 		0x00, 0x00, 0x00, 0x00
 	};
 
-	// the same packet in the native encoding, a marshalled struct whose
-	// only identifiable field is the ora number, as a little endian
-	// uint32 right after the prefix.  reproduced byte for byte from a
-	// real OCI7 native-mode login failure (redhat9x86 x86 client against
-	// the same server); the live pointer value that capture carried
-	// (right after the "36 01" marker) is zeroed
-	static const byte_t	nativeprefix[]={
-		0x01, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00,
-		0x00
-	};
-	static const byte_t	nativesuffix[]={
-		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-		0x00, 0x03, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-		0x36, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-		0x00, 0x00, 0x00, 0x00,
-		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-		0x00, 0x00, 0x00, 0x00
-	};
-
 	writeBE(&reqpacket,dataflags);
 	write(&reqpacket,ttccode);
 
@@ -10592,9 +10650,13 @@ bool sqlrprotocol_oracle::sendErrorPacket(const char *what,
 	debugWrite("message: %s",message);
 
 	if (nativeencoding) {
-		reqpacket.append(nativeprefix,sizeof(nativeprefix));
-		putAuthCount(oranum,4);
-		reqpacket.append(nativesuffix,sizeof(nativesuffix));
+
+		// the end to end field is 0 in every real login error, and a
+		// 12c server puts 2 in the statement type for a second phase
+		// error only
+		bool	twelvec=
+			(serverfieldversion>=CCAP_FIELD_VERSION_12_1);
+		putNativeSummary(0,oranum,(secondphase && twelvec)?2:0);
 	} else if (isO3Logon() && !oci7endtoendseqnumber) {
 
 		// the modern branch below is this one plus the end to end
@@ -11365,14 +11427,11 @@ bool sqlrprotocol_oracle::sendOci7StatementError(
 	// a general-purpose oci7 statement-level error, for any call whose
 	// failure the caller can name with an ora number and message.  a real
 	// server answers such a call with the summary object every other oci7
-	// call is answered with - not sendErrorPacket()'s template, which is
-	// that same object frozen with a login failure's field values in it.
-	// the cursor id, command type and call number all go out live here,
-	// which is the whole difference between the two: for the
-	// describe-out-of-range case, the ORA-01007 in
-	// 9808-redhat9x86-native-realtable-outofrange.oraproxy and its portable
-	// counterpart match this byte for byte, and sendErrorPacket() would
-	// send the login's 0, 0 and 3 for those three instead.
+	// call is answered with, with the cursor id, command type and call
+	// number all live - not sendErrorPacket()'s login error, which has no
+	// cursor or statement in it.  for the describe-out-of-range case, the
+	// ORA-01007 in 9808-redhat9x86-native-realtable-outofrange.oraproxy
+	// and its portable counterpart match this byte for byte.
 	//
 	// the success iteration count is the one field those two captures
 	// disagree about - the native one sends 1 and the portable one 0.
@@ -20346,7 +20405,8 @@ void sqlrprotocol_oracle::putSummaryExtension(uint32_t oranum,
 	// reports ORA-17401, python-oracledb and node-oracledb block on the
 	// socket forever.  so this owes every portable ttc 0x04 the module
 	// writes: both authentication trailers, the error packet, putSummary()
-	// and putOci7Summary().
+	// and putOci7Summary().  the native login struct's ub8 row count
+	// follows the same field version - see putNativeSummary().
 	//
 	// checked against both live servers, which differ here and nowhere
 	// else in the object: 11.2 ends at the message, and 12.2 puts
@@ -24775,8 +24835,7 @@ void sqlrprotocol_oracle::putOci7Error(uint32_t cursorid,
 	//    putOci7SummaryNative()'s 93-byte object with 1403 in the error field,
 	//    then a ub1 length of 25 and "ORA-01403: no data found\n".  the same
 	//    object plus message answers a login failure in packet [0017] of
-	//    samples/oracle102-oci7-native-login-wrongpassword.cap, which is what
-	//    sendErrorPacket()'s native branch already reproduces.
+	//    samples/oracle102-oci7-native-login-wrongpassword.cap.
 	//
 	//  - the portable half is packet [0017] of samples/
 	//    oracle102-oci7-portable-login-wrongpassword.cap: an 82-byte payload
