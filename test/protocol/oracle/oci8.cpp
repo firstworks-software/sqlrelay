@@ -4254,6 +4254,126 @@ int main(int argc, char **argv) {
 	stdoutput.printf("\n\n");
 
 
+	stdoutput.printf("bfile - a file that exists\n");
+	// the file is written with utl_file, which needs the backend user to
+	// have read and write on the DMP_DIR directory object (grant read,
+	// write on directory dmp_dir to dev - see the README).  without that
+	// the section is skipped, and the missing file checks above are all
+	// there is.  #10712
+	// utl_file ends the line when it closes the file
+	const char	*bfilecontent="hello bfile\n";
+	if (execImmediate(
+		"declare f utl_file.file_type; begin "
+		"f:=utl_file.fopen('DMP_DIR','protocolbfile.txt','w'); "
+		"utl_file.put(f,'hello bfile'); "
+		"utl_file.fclose(f); end;")!=OCI_SUCCESS) {
+		stdoutput.printf("(skipped - the backend user can't write "
+					"DMP_DIR)\n");
+	} else {
+		// the locator comes out of a row, as the module hands out its
+		// own.  one built on the client with OCILobFileSetName has
+		// nothing in it that names a row, and the module answers it
+		// with ORA-22275 (#10715)
+		execImmediate("drop table protocoltestbfile");
+		assertEquals(
+			execImmediate("create table protocoltestbfile "
+					"(testbfile bfile)"),
+			OCI_SUCCESS);
+		assertEquals(
+			execImmediate("insert into protocoltestbfile values "
+				"(bfilename('DMP_DIR','protocolbfile.txt'))"),
+			OCI_SUCCESS);
+		OCIStmt		*filestmt=NULL;
+		OCILobLocator	*filebfile=NULL;
+		OCIDefine	*filedef=NULL;
+		sb2		fileind=-1;
+		assertEquals(
+			OCIHandleAlloc(env,(void **)&filestmt,
+					OCI_HTYPE_STMT,0,NULL),
+			OCI_SUCCESS);
+		assertEquals(
+			OCIDescriptorAlloc(env,(void **)&filebfile,
+						OCI_DTYPE_FILE,0,NULL),
+			OCI_SUCCESS);
+		const char	*filequery="select testbfile from "
+						"protocoltestbfile";
+		assertEquals(
+			OCIStmtPrepare(filestmt,err,(text *)filequery,
+					charstring::getLength(filequery),
+					OCI_NTV_SYNTAX,OCI_DEFAULT),
+			OCI_SUCCESS);
+		assertEquals(
+			OCIDefineByPos(filestmt,&filedef,err,1,
+					&filebfile,0,SQLT_BFILEE,
+					&fileind,NULL,NULL,OCI_DEFAULT),
+			OCI_SUCCESS);
+		assertEquals(
+			OCIStmtExecute(svc,filestmt,err,1,0,NULL,NULL,
+								OCI_DEFAULT),
+			OCI_SUCCESS);
+		assertEquals((int)fileind,OCI_IND_NOTNULL);
+
+		boolean	fileexists=0;
+		assertEquals(
+			OCILobFileExists(svc,err,filebfile,&fileexists),
+			OCI_SUCCESS);
+		assertEquals((int)fileexists,1);
+
+		boolean	fileopen=1;
+		assertEquals(
+			OCILobFileIsOpen(svc,err,filebfile,&fileopen),
+			OCI_SUCCESS);
+		assertEquals((int)fileopen,0);
+		assertEquals(
+			OCILobFileOpen(svc,err,filebfile,OCI_FILE_READONLY),
+			OCI_SUCCESS);
+		fileopen=0;
+		assertEquals(
+			OCILobFileIsOpen(svc,err,filebfile,&fileopen),
+			OCI_SUCCESS);
+		assertEquals((int)fileopen,1);
+
+		ub4	filelength=0;
+		assertEquals(
+			OCILobGetLength(svc,err,filebfile,&filelength),
+			OCI_SUCCESS);
+		assertEquals((int)filelength,12);
+
+		ub1	filebuffer[64];
+		bytestring::zero(filebuffer,sizeof(filebuffer));
+		ub4	fileamount=sizeof(filebuffer);
+		assertEquals(
+			OCILobRead(svc,err,filebfile,&fileamount,1,
+					filebuffer,sizeof(filebuffer),
+					NULL,NULL,0,0),
+			OCI_SUCCESS);
+		assertEquals((int)fileamount,12);
+		assertEquals((const char *)filebuffer,bfilecontent);
+
+		assertEquals(
+			OCILobFileClose(svc,err,filebfile),OCI_SUCCESS);
+		fileopen=1;
+		assertEquals(
+			OCILobFileIsOpen(svc,err,filebfile,&fileopen),
+			OCI_SUCCESS);
+		assertEquals((int)fileopen,0);
+		assertEquals(OCILobFileCloseAll(svc,err),OCI_SUCCESS);
+		assertEquals(
+			OCIDescriptorFree(filebfile,OCI_DTYPE_FILE),
+			OCI_SUCCESS);
+		assertEquals(OCIHandleFree(filestmt,OCI_HTYPE_STMT),
+								OCI_SUCCESS);
+		execImmediate("drop table protocoltestbfile");
+
+		assertEquals(
+			execImmediate("begin utl_file.fremove("
+					"'DMP_DIR','protocolbfile.txt'); "
+					"end;"),
+			OCI_SUCCESS);
+	}
+	stdoutput.printf("\n\n");
+
+
 	stdoutput.printf("OCIStmtFetch2, OCIStmtExecute - null lobs\n");
 	// a null lob column is reported null, in the prefetched row and in a
 	// fetched one, rather than as a lob that exists and is empty - a real

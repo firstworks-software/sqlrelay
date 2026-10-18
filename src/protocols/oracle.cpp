@@ -929,9 +929,12 @@
 // summary object: a count prefixed 8 byte value, or nothing at all for a
 // close.  a file exists and a file is open answer 1 or 0 the count prefixed
 // way to an OCI client ([0018] and [0020] of test/protocol/oracle/samples/
-// 10699-dev-oci23-portable-bfile-open-realserver-oracle122.oraproxy) and as
-// a single byte to a thin driver ([0018] and [0022] of 10699-dev-
-// pythonoracledb-thin-bfile-read-realserver-oracle122.oraproxy), and a
+// 10699-dev-oci23-portable-bfile-open-realserver-oracle122.oraproxy) and to
+// ojdbc ([0022] and [0026] of 10712-dev-ojdbc-bfile-exists-realserver-
+// oracle122.oraproxy), and as a single byte to python-oracledb ([0018] and
+// [0022] of 10699-dev-pythonoracledb-thin-bfile-read-realserver-
+// oracle122.oraproxy).  a single byte of 0 reads as a count of 0, so the
+// wrong form only shows when the answer is yes.  A
 // client given the other form loses the stream
 #define LOB_RESULT_NONE			0
 #define LOB_RESULT_UB8			1
@@ -19576,7 +19579,8 @@ bool sqlrprotocol_oracle::lobOperations(const byte_t *rp,
 		uint64_t	exists=(cont->getLobFieldLength(cursor,column,
 						&loblength))?1:0;
 		return sendLobOperationResponse(sourcelocator,sourcesize,
-						(ociclient)?LOB_RESULT_UB8:
+						(ociclient || jdbcclient)?
+							LOB_RESULT_UB8:
 							LOB_RESULT_BOOL,
 						exists);
 	}
@@ -19600,7 +19604,8 @@ bool sqlrprotocol_oracle::lobOperations(const byte_t *rp,
 	}
 	if (operation==LOB_OP_FILE_IS_OPEN) {
 		return sendLobOperationResponse(sourcelocator,sourcesize,
-					(ociclient)?LOB_RESULT_UB8:
+					(ociclient || jdbcclient)?
+							LOB_RESULT_UB8:
 							LOB_RESULT_BOOL,
 					(isLobOpen(cursor,column))?1:0);
 	}

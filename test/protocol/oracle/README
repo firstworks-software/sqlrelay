@@ -4072,6 +4072,26 @@ that statement, except where noted.
                                       taken for a close and python-oracledb
                                       failed with DPY-5000 (#10699)
 
+    10712-dev-ojdbc-bfile-exists-realserver-oracle122.oraproxy
+    10712-dev-ojdbc-bfile-exists-sqlrelay121.oraproxy
+                                     ojdbc 23.26 on a bfile whose file
+                                      exists (a scratch program writes it
+                                      with utl_file, selects
+                                      bfilename() and runs fileExists(),
+                                      openFile(), isFileOpen(), length(),
+                                      getBytes() and closeFile()), against
+                                      the real 12.2 server and a -buildtree
+                                      listener at 12.1 after the fix.
+                                      Exists at [0022] and is open at
+                                      [0026] are count prefixed values (01
+                                      01) like OCI's, where the module sent
+                                      python-oracledb's single byte.  A 0
+                                      reads the same either way, which is
+                                      why a missing file never showed it,
+                                      and a 1 made ojdbc read the next
+                                      byte as the value and fail with
+                                      ORA-17401 (#10712)
+
     10699-dev-oci23-portable-bfile-open-realserver-oracle122.oraproxy
                                      an OCI 23.26 OCI8 client (a scratch
                                       program: exists, is open, open, is
@@ -4533,6 +4553,12 @@ DESCRIPTION connect string - no oraproxy, and no separate scoped
 listener, needed for that login itself. oracle122 is a pure testbed
 with no sensitive data, so this was done in place rather than standing
 up a separate AL32UTF8 database elsewhere.
+
+oracle122's DMP_DIR directory object (/home/oracle) also has read and
+write granted to the backend user dev (grant read, write on directory
+dmp_dir to dev, #10712), so the oci8 and ojdbc runs can write a file with
+utl_file and read it back through a bfile. Without the grant they skip
+that part and only check the missing file behavior.
 
 This is intended to stay in place permanently, not just for #10273's
 duration - the user asked for OCI7 access to oracle122 to be kept

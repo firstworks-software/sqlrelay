@@ -909,6 +909,56 @@ class ojdbc {
 			cs.close();
 		}
 
+		// a file that exists.  it is written with utl_file, which needs
+		// the backend user to have read and write on the DMP_DIR
+		// directory object (grant read, write on directory dmp_dir to
+		// dev - see the README), and the part is skipped without that.
+		// utl_file ends the line when it closes the file.  #10712
+		boolean	filemade=true;
+		try {
+			st.execute("declare f utl_file.file_type; begin "+
+				"f:=utl_file.fopen('DMP_DIR',"+
+				"'protocolbfile.txt','w'); "+
+				"utl_file.put(f,'hello bfile'); "+
+				"utl_file.fclose(f); end;");
+		} catch (SQLException e) {
+			System.out.println("(skipped - the backend user can't "+
+						"write DMP_DIR)");
+			filemade=false;
+		}
+		if (filemade) {
+			st.execute("begin execute immediate "+
+				"'drop table protocoltestojdbcbffile'; "+
+				"exception when others then null; end;");
+			st.execute("create table protocoltestojdbcbffile "+
+				"(f bfile)");
+			st.executeUpdate("insert into protocoltestojdbcbffile "+
+				"values (bfilename('DMP_DIR',"+
+				"'protocolbfile.txt'))");
+			rs=st.executeQuery("select f from "+
+						"protocoltestojdbcbffile");
+			check("existing file row",rs.next(),"");
+			BFILE	f=((OracleResultSet)rs).getBFILE(1);
+			check("existing file fileExists",f.fileExists(),"");
+			check("existing file isFileOpen before",
+							!f.isFileOpen(),"");
+			f.openFile();
+			check("existing file isFileOpen",f.isFileOpen(),"");
+			check("existing file length",f.length()==12,
+						"got "+f.length());
+			String	content=new String(f.getBytes(1,12),"US-ASCII");
+			check("existing file content",
+				"hello bfile\n".equals(content),
+				"got \""+content+"\"");
+			f.closeFile();
+			check("existing file isFileOpen after close",
+							!f.isFileOpen(),"");
+			rs.close();
+			st.execute("drop table protocoltestojdbcbffile");
+			st.execute("begin utl_file.fremove('DMP_DIR',"+
+						"'protocolbfile.txt'); end;");
+		}
+
 		// a query that still works after the bfiles
 		rs=st.executeQuery("select 1 from dual");
 		check("query after bfiles",rs.next() && rs.getInt(1)==1,"");
