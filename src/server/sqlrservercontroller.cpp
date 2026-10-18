@@ -6596,6 +6596,30 @@ bool sqlrservercontroller::getNeedsCommitOrRollback() {
 	return pvt->_needscommitorrollback;
 }
 
+// true if the query has the words "for update" in it.  this doesn't look for
+// them in a string or a comment, but a false match only costs a rollback at
+// the end of the session
+static bool hasForUpdate(const char *query) {
+	for (const char *ptr=query; *ptr; ptr++) {
+		if ((ptr==query || !character::isAlphanumeric(*(ptr-1))) &&
+			!charstring::compareIgnoringCase(ptr,"for",3)) {
+			const char	*after=ptr+3;
+			if (!character::isWhitespace(*after)) {
+				continue;
+			}
+			while (character::isWhitespace(*after)) {
+				after++;
+			}
+			if (!charstring::compareIgnoringCase(
+						after,"update",6) &&
+				!character::isAlphanumeric(*(after+6))) {
+				return true;
+			}
+		}
+	}
+	return false;
+}
+
 void sqlrservercontroller::commitOrRollback(sqlrservercursor *cursor) {
 
 	debugStart("commit or rollback check");
@@ -6605,6 +6629,12 @@ void sqlrservercontroller::commitOrRollback(sqlrservercursor *cursor) {
 		if (cursor->queryIsCommitOrRollback()) {
 			pvt->_needscommitorrollback=false;
 		} else if (cursor->queryIsNotSelect()) {
+			pvt->_needscommitorrollback=true;
+		} else if (!pvt->_autocommit &&
+				hasForUpdate(cursor->getQueryBuffer())) {
+			// a select for update holds its row locks until the
+			// transaction ends, so the session's end has to roll
+			// it back or the pooled connection keeps them
 			pvt->_needscommitorrollback=true;
 		}
 	}

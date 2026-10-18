@@ -902,6 +902,49 @@ int main(int argc, char **argv) {
 	stdoutput.printf("\n");
 
 
+	// a select for update's row lock does not outlive the session
+	stdoutput.printf("SELECT FOR UPDATE LOCK RELEASED AT SESSION END: \n");
+	cur->sendQuery("drop table testtable");
+	assertTrue(cur->sendQuery("create table testtable (col1 int)"));
+	assertTrue(cur->sendQuery("insert into testtable values (1)"));
+	assertTrue(con->commit());
+	secondcon=new sqlrconnection("sqlrelay",9001,"/tmp/oracle.socket",
+						"testuser","testpassword",0,1);
+	secondcur=new sqlrcursor(secondcon);
+	assertTrue(secondcon->autoCommitOff());
+	assertTrue(secondcur->sendQuery(
+			"select col1 from testtable for update"));
+	assertEquals(secondcur->getField(0,(uint32_t)0),"1");
+	// an autonomous transaction can't take the row while it's locked
+	// by another transaction, whichever session holds that one
+	const char	*trylock=
+			"declare "
+			"pragma autonomous_transaction; "
+			"c integer; "
+			"begin "
+			"select col1 into c from testtable for update nowait; "
+			"rollback; "
+			"end;";
+	assertFalse(cur->sendQuery(trylock));
+	assertTrue(!charstring::compare(cur->errorMessage(),"ORA-00054",9));
+	delete secondcur;
+	secondcur=NULL;
+	delete secondcon;
+	secondcon=NULL;
+	// the session end is handled after the client has gone, so give it
+	// a moment
+	bool	released=false;
+	for (uint8_t i=0; i<50 && !released; i++) {
+		released=cur->sendQuery(trylock);
+		if (!released) {
+			snooze::microsnooze(0,100000);
+		}
+	}
+	assertTrue(released);
+	assertTrue(cur->sendQuery("drop table testtable"));
+	stdoutput.printf("\n");
+
+
 	// transaction behavior - explicit
 	stdoutput.printf("TRANSACTION BEHAVIOR - explicit: \n");
 	assertTrue(con->setTransactionModel("explicit"));
