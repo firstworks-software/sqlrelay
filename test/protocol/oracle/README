@@ -4447,6 +4447,37 @@ from a host that can ssh to oracle122:
 timezlrg_26.dat is in the same directory. Any other version works as a
 client file too: the module only compares the client's version with 11.
 
+Running oci8 with the genuine Oracle 9.2.0.4 client (redhat9x86)
+-----------------------------------------------------------------
+
+oci8 builds and runs against the 9.2.0.4 client on redhat9x86, against
+real oracle122 ("native") and against a listener. Two things to know
+(#10711):
+
+* NLS_LANG must be set. With none, the 9i client defaults to US7ASCII,
+  and against a database whose character set is AL32UTF8 (oracle122) it
+  dies right after OCISessionBegin with "Internal heap ERROR 17112",
+  OCI-21500 and a segfault. sqlplus does the same, so it is the client
+  and not the test or the module. NLS_LANG=AMERICAN_AMERICA.WE8ISO8859P1
+  runs oci8 to the end; with ...AL32UTF8 the login works but every lob
+  call that converts text fails with ORA-24812 and a later call crashes.
+* The 9.2 headers have no OCIRowidToChar, so build without
+  HAVE_OCIROWIDTOCHAR (configure never ran there, so a config.h copy
+  without that line first on the include path does it):
+
+    g++ -g -o oci8 -Iinc -I/usr/local/firstworks/include \
+        -I$ORACLE_HOME/rdbms/public -I$ORACLE_HOME/rdbms/demo \
+        oci8.cpp -L$ORACLE_HOME/lib -lclntsh \
+        -L/usr/local/firstworks/lib -lrudiments -lpthread -ldl
+
+Run it as "./oci8 native" or "./oci8 sqlrelay12c" with TNS_ADMIN pointing
+at a tnsnames.ora that names the targets and NLS_LANG set. Some checks
+fail with this client against the real server too, because the 9.2
+client lacks features (time zone regions, timestamps with local time
+zones, the 12.2 server version string): 39 fail against oracle122. The
+12.1 listener fails 70. The extra ones are the temporary lob calls and an
+nclob read for a pre-10g client, which are still unanswered (#10713).
+
 The three real Oracle test servers on this network
 --------------------------------------------------
 
