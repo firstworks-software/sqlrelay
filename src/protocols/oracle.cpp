@@ -910,7 +910,8 @@
 #define LOB_OP_GET_LENGTH		0x00001
 #define LOB_OP_READ			0x00002
 #define LOB_OP_WRITE			0x00040
-#define LOB_OP_TRIM			0x00080
+#define LOB_OP_TRIM			0x00020
+#define LOB_OP_WRITE_APPEND		0x20000
 #define LOB_OP_FILE_OPEN		0x00100
 #define LOB_OP_FILE_CLOSE		0x00200
 #define LOB_OP_FILE_IS_OPEN		0x00400
@@ -919,6 +920,7 @@
 #define LOB_OP_GET_CHUNK_SIZE		0x04000
 #define LOB_OP_CREATE_TEMPORARY		0x00110
 #define LOB_OP_FREE_TEMPORARY		0x00111
+#define LOB_OP_FREE_FLAG		0x80000
 #define LOB_OP_IS_OPEN			0x01100
 #define LOB_OP_OPEN			0x08000
 #define LOB_OP_CLOSE			0x10000
@@ -961,6 +963,17 @@
 
 // the most data of a lob that a bound locator is read into memory for
 #define LOB_LOCATOR_BIND_MAX_SIZE	(64*1024*1024)
+
+// a temporary lob's locator: the 40 bytes a real 12.2 server's is, from
+// [0016] and [0038] of test/protocol/oracle/samples/10693-dev-oci23-
+// portable-templob-realserver-oracle122.oraproxy, with the module's own
+// marker and the lob's id where the server's per-lob bytes are
+#define TEMP_LOCATOR_SIZE		40
+#define TEMP_LOCATOR_MAGIC_OFFSET	12
+#define TEMP_LOCATOR_ID_OFFSET		28
+#define TEMP_LOCATOR_MAGIC		"SQLT"
+#define TEMP_LOB_MAX_SIZE		(64*1024*1024)
+#define TEMP_LOB_CREATE_BUFFER_SIZE	76
 
 // what a number with no declared scale is described as, which tells the
 // client not to rescale the value.  the controller hands oracle's scale back
@@ -1574,6 +1587,16 @@ struct oraclequery3bindvalue {
 	bool		isnull;
 };
 
+// a temporary lob, held in the module's own memory for the session.  a
+// clob's characters are kept whole, a ub4 each, so offsets and lengths in
+// characters are plain indexes; a blob's bytes are kept as they are
+struct oracletemplob {
+	bool		clob;
+	byte_t		*data;
+	uint64_t	length;
+	uint64_t	avail;
+};
+
 class SQLRSERVER_DLLSPEC sqlrprotocol_oracle : public sqlrprotocol {
 	public:
 		sqlrprotocol_oracle(sqlrservercontroller *cont,
@@ -2048,6 +2071,27 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_oracle : public sqlrprotocol {
 		bool	sendLocalRegionBindError(uint32_t cursorid);
 		bool	sendBadLocatorBindError(uint32_t cursorid);
 		bool	sendBindFailureError(uint32_t cursorid);
+		bool	isTempLocator(const byte_t *locator, uint32_t size);
+		oracletemplob	*getTempLob(const byte_t *locator,
+							uint32_t size);
+		uint32_t	buildTempLocator(uint32_t id, bool clob,
+							bool freed,
+							byte_t *locator);
+		void	freeTempLobs();
+		bool	tempLobOperation(uint32_t operation,
+					const byte_t *locator,
+					uint32_t locatorsize,
+					uint64_t sourceoffset,
+					uint64_t amount,
+					bool amountpresent,
+					const byte_t *writedata,
+					uint32_t writedatasize);
+		bool	createTempLob(uint32_t amountkind);
+		bool	readLobWriteData(bytebuffer *data);
+		bool	writeTempLob(oracletemplob *lob, uint64_t offset,
+					const byte_t *data, uint32_t size,
+					uint64_t *written);
+		bool	readTempLobData(oracletemplob *lob, bytebuffer *out);
 		bool	lobDefinedAsData(sqlrservercursor *cursor,
 						uint32_t column);
 		bool	readLobData(sqlrservercursor *cursor,
@@ -2142,7 +2186,8 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_oracle : public sqlrprotocol {
 						uint32_t column);
 
 		// lob operations...
-		bool	lobOperations(const byte_t *rp);
+		bool	lobOperations(const byte_t *rp,
+						const byte_t **rpout);
 		// reads a pre-10g client's lob operation request
 		bool	getLegacyLobOperationRequest(const byte_t *rp,
 							byte_t *sequence,
@@ -2829,6 +2874,11 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_oracle : public sqlrprotocol {
 		// told from one that's still good
 		uint16_t	*lobpingeneration;
 
+		// the session's temporary lobs, by id less one.  an unused slot
+		// is NULL
+		oracletemplob	**templobs;
+		uint32_t	templobcount;
+
 		// the columns of a pinned row whose file the client has
 		// opened, one bit each, for the first 64 columns
 		uint64_t	*lobopenmask;
@@ -3226,6 +3276,8 @@ sqlrprotocol_oracle::sqlrprotocol_oracle(sqlrservercontroller *cont,
 	lobpincolcount=new uint32_t[maxcursorcount];
 	lobpingeneration=new uint16_t[maxcursorcount];
 	lobopenmask=new uint64_t[maxcursorcount];
+	templobs=NULL;
+	templobcount=0;
 	cursorbinds=new oraclequery3bind *[maxcursorcount];
 	cursorbindcounts=new uint32_t[maxcursorcount];
 	cursordefines=new oraclequery3define *[maxcursorcount];
@@ -3326,6 +3378,7 @@ sqlrprotocol_oracle::~sqlrprotocol_oracle() {
 	delete[] lobpincolcount;
 	delete[] lobpingeneration;
 	delete[] lobopenmask;
+	freeTempLobs();
 
 	delete[] query3binds;
 	delete[] query3bindvalues;
@@ -3435,6 +3488,9 @@ void sqlrprotocol_oracle::init() {
 }
 
 void sqlrprotocol_oracle::free() {
+
+	// a session's temporary lobs go with it
+	freeTempLobs();
 
 	delete[] encryptiondrivers;
 	encryptiondrivers=NULL;
@@ -3607,8 +3663,11 @@ clientsessionexitstatus_t sqlrprotocol_oracle::clientSession(
 					rp=NULL;
 					break;
 				case TTI_LOB_OPERATIONS:
-					loop=lobOperations(rp);
-					rp=NULL;
+
+					// a free of a temporary lob rides in
+					// front of another call and gets no
+					// answer of its own
+					loop=lobOperations(rp,&rp);
 					break;
 				case TTI_OSQL7:
 					loop=osql7(rp);
@@ -17740,6 +17799,406 @@ bool sqlrprotocol_oracle::readLenPreUB8(const byte_t *rp,
 	return true;
 }
 
+bool sqlrprotocol_oracle::isTempLocator(const byte_t *locator,
+							uint32_t size) {
+
+	// whether a locator is one of the module's temporary lobs'
+	return (locator && size==TEMP_LOCATOR_SIZE &&
+		!bytestring::compare(locator+TEMP_LOCATOR_MAGIC_OFFSET,
+					TEMP_LOCATOR_MAGIC,4));
+}
+
+oracletemplob *sqlrprotocol_oracle::getTempLob(const byte_t *locator,
+							uint32_t size) {
+
+	// the temporary lob a locator names, or NULL if it names none or
+	// the lob has been freed
+	if (!isTempLocator(locator,size)) {
+		return NULL;
+	}
+	const byte_t	*id=locator+TEMP_LOCATOR_ID_OFFSET;
+	uint32_t	index=(((uint32_t)id[0])<<24)|(((uint32_t)id[1])<<16)|
+				(((uint32_t)id[2])<<8)|id[3];
+	if (!index || index>templobcount || !templobs[index-1]) {
+		return NULL;
+	}
+
+	// a clob's locator and a blob's differ in their type byte
+	oracletemplob	*lob=templobs[index-1];
+	if (locator[LOB_LOCATOR_TYPE_OFFSET]!=
+			((lob->clob)?LOB_LOCATOR_CLOB:LOB_LOCATOR_BLOB)) {
+		return NULL;
+	}
+	return lob;
+}
+
+uint32_t sqlrprotocol_oracle::buildTempLocator(uint32_t id, bool clob,
+							bool freed,
+							byte_t *locator) {
+
+	// a real server's header for each type, with the module's marker and
+	// the lob's id where its per-lob bytes are.  freeing a lob clears the
+	// 0x08 in the kind byte and takes one off the next - [0036] and [0058]
+	// of the real server capture
+	bytestring::zero(locator,TEMP_LOCATOR_SIZE);
+	putLocatorUB2(locator+LOB_LOCATOR_LENGTH_OFFSET,
+					(uint16_t)(TEMP_LOCATOR_SIZE-2));
+	putLocatorUB2(locator+LOB_LOCATOR_VERSION_OFFSET,1);
+	locator[LOB_LOCATOR_TYPE_OFFSET]=(clob)?LOB_LOCATOR_CLOB:
+							LOB_LOCATOR_BLOB;
+	locator[LOB_LOCATOR_KIND_OFFSET]=(freed)?0x00:0x08;
+	locator[LOB_LOCATOR_FLAGS_OFFSET]=(clob)?0x80:0x00;
+	locator[LOB_LOCATOR_INIT_OFFSET]=(freed)?0x02:0x03;
+	locator[9]=(clob)?0x02:0x01;
+	bytestring::copy(locator+TEMP_LOCATOR_MAGIC_OFFSET,
+				TEMP_LOCATOR_MAGIC,4);
+	locator[19]=(clob)?0x01:0x02;
+	if (clob) {
+		putLocatorUB2(locator+20,(uint16_t)CHARSET_AL32UTF8);
+	}
+	locator[23]=0x0a;
+	locator[27]=0x01;
+	locator[TEMP_LOCATOR_ID_OFFSET]=(byte_t)(id>>24);
+	locator[TEMP_LOCATOR_ID_OFFSET+1]=(byte_t)(id>>16);
+	locator[TEMP_LOCATOR_ID_OFFSET+2]=(byte_t)(id>>8);
+	locator[TEMP_LOCATOR_ID_OFFSET+3]=(byte_t)id;
+	return TEMP_LOCATOR_SIZE;
+}
+
+void sqlrprotocol_oracle::freeTempLobs() {
+	for (uint32_t i=0; i<templobcount; i++) {
+		if (templobs[i]) {
+			delete[] templobs[i]->data;
+			delete templobs[i];
+		}
+	}
+	delete[] templobs;
+	templobs=NULL;
+	templobcount=0;
+}
+
+bool sqlrprotocol_oracle::createTempLob(uint32_t amountkind) {
+
+	// a new, empty temporary lob, of the type the request names: 0x70 is a
+	// clob and 0x71 a blob.  the answer is its locator and nothing else
+	bool	clob=(amountkind!=ORACLE_TYPE_BLOB);
+
+	// a client that creates one before it has run a statement still gets
+	// the modern summary
+	query3session=true;
+
+	uint32_t	index=0;
+	while (index<templobcount && templobs[index]) {
+		index++;
+	}
+	if (index==templobcount) {
+		oracletemplob	**newlobs=new oracletemplob *[templobcount+8];
+		for (uint32_t i=0; i<templobcount+8; i++) {
+			newlobs[i]=(i<templobcount)?templobs[i]:NULL;
+		}
+		delete[] templobs;
+		templobs=newlobs;
+		templobcount+=8;
+	}
+	oracletemplob	*lob=new oracletemplob;
+	lob->clob=clob;
+	lob->data=NULL;
+	lob->length=0;
+	lob->avail=0;
+	templobs[index]=lob;
+
+	byte_t		locator[TEMP_LOCATOR_SIZE];
+	uint32_t	size=buildTempLocator(index+1,clob,false,locator);
+	debugWrite("temporary %s created: %d",(clob)?"clob":"blob",index+1);
+
+	// the client passed a blank locator buffer for the new locator, and
+	// gets the buffer back with the locator in the front of it: 76 bytes
+	// in all, then four ones for a clob and a zero and two ones for a blob
+	// - [0016] and [0038] of the real server capture
+	resetSendPacketBuffer(PACKET_DATA);
+	writeBE(&reqpacket,(uint16_t)0);
+	write(&reqpacket,(byte_t)TTC_OK);
+	write(&reqpacket,locator,(size_t)size);
+	for (uint32_t i=size; i<TEMP_LOB_CREATE_BUFFER_SIZE; i++) {
+		write(&reqpacket,(byte_t)0);
+	}
+	if (clob) {
+		write(&reqpacket,(byte_t)1);
+		write(&reqpacket,(byte_t)1);
+		write(&reqpacket,(byte_t)1);
+		write(&reqpacket,(byte_t)1);
+	} else {
+		write(&reqpacket,(byte_t)0);
+		write(&reqpacket,(byte_t)1);
+		write(&reqpacket,(byte_t)1);
+	}
+	putSummary(0,0,0,NULL);
+	return sendPacket(true);
+}
+
+bool sqlrprotocol_oracle::writeTempLob(oracletemplob *lob, uint64_t offset,
+						const byte_t *data,
+						uint32_t size,
+						uint64_t *written) {
+
+	// writes "size" bytes of what a client sent behind "offset", which
+	// counts from 1: a clob's data is utf-16, a character each unit or
+	// two, and a blob's is its bytes.  what lies between the end of the
+	// lob and the offset is filled in with spaces, or zeros
+	uint32_t	elemsize=(lob->clob)?4:1;
+	uint64_t	count=0;
+	uint32_t	*chars=NULL;
+	if (lob->clob) {
+
+		// utf-16 big endian to characters
+		chars=new uint32_t[size/2+1];
+		for (uint32_t i=0; i+1<size; i+=2) {
+			uint32_t	unit=(((uint32_t)data[i])<<8)|data[i+1];
+			if (unit>=0xd800 && unit<0xdc00 && i+3<size) {
+				uint32_t	low=
+					(((uint32_t)data[i+2])<<8)|data[i+3];
+				if (low>=0xdc00 && low<0xe000) {
+					unit=0x10000+((unit-0xd800)<<10)+
+								(low-0xdc00);
+					i+=2;
+				}
+			}
+			chars[count++]=unit;
+		}
+	} else {
+		count=size;
+	}
+
+	uint64_t	start=(offset)?offset-1:0;
+	uint64_t	newlength=start+count;
+	if (newlength<lob->length) {
+		newlength=lob->length;
+	}
+	if (newlength*elemsize>TEMP_LOB_MAX_SIZE) {
+		delete[] chars;
+		return false;
+	}
+	if (newlength*elemsize>lob->avail) {
+		uint64_t	newavail=newlength*elemsize*2;
+		if (newavail>TEMP_LOB_MAX_SIZE) {
+			newavail=TEMP_LOB_MAX_SIZE;
+		}
+		byte_t	*newdata=new byte_t[newavail];
+		bytestring::zero(newdata,(size_t)newavail);
+		if (lob->length) {
+			bytestring::copy(newdata,lob->data,
+					(size_t)(lob->length*elemsize));
+		}
+		delete[] lob->data;
+		lob->data=newdata;
+		lob->avail=newavail;
+	}
+	for (uint64_t i=lob->length; i<start; i++) {
+		if (lob->clob) {
+			uint32_t	space=' ';
+			bytestring::copy(lob->data+i*4,&space,4);
+		} else {
+			lob->data[i]=0;
+		}
+	}
+	if (count) {
+		if (lob->clob) {
+			bytestring::copy(lob->data+start*4,chars,
+							(size_t)(count*4));
+		} else {
+			bytestring::copy(lob->data+start,data,(size_t)count);
+		}
+	}
+	delete[] chars;
+	lob->length=newlength;
+	*written=count;
+	return true;
+}
+
+bool sqlrprotocol_oracle::readTempLobData(oracletemplob *lob,
+							bytebuffer *out) {
+
+	// all of a temporary lob, as a backend takes it: a blob's bytes, and a
+	// clob's characters in the backend's character set
+	if (!lob->clob) {
+		if (lob->length) {
+			out->append(lob->data,(size_t)lob->length);
+		}
+		return true;
+	}
+	bool	utf8=clientCharsetIsUtf8();
+	for (uint64_t i=0; i<lob->length; i++) {
+		uint32_t	c;
+		bytestring::copy(&c,lob->data+i*4,4);
+		if (!utf8) {
+			out->append((byte_t)((c<256)?c:'?'));
+		} else if (c<0x80) {
+			out->append((byte_t)c);
+		} else if (c<0x800) {
+			out->append((byte_t)(0xc0|(c>>6)));
+			out->append((byte_t)(0x80|(c&0x3f)));
+		} else if (c<0x10000) {
+			out->append((byte_t)(0xe0|(c>>12)));
+			out->append((byte_t)(0x80|((c>>6)&0x3f)));
+			out->append((byte_t)(0x80|(c&0x3f)));
+		} else {
+			out->append((byte_t)(0xf0|(c>>18)));
+			out->append((byte_t)(0x80|((c>>12)&0x3f)));
+			out->append((byte_t)(0x80|((c>>6)&0x3f)));
+			out->append((byte_t)(0x80|(c&0x3f)));
+		}
+		if (out->getSize()>LOB_LOCATOR_BIND_MAX_SIZE) {
+			return false;
+		}
+	}
+	return true;
+}
+
+bool sqlrprotocol_oracle::tempLobOperation(uint32_t operation,
+					const byte_t *locator,
+					uint32_t locatorsize,
+					uint64_t sourceoffset,
+					uint64_t amount,
+					bool amountpresent,
+					const byte_t *writedata,
+					uint32_t writedatasize) {
+
+	// an operation on a temporary lob, which lives in this module and not
+	// in the backend, so writes work on it.  the client may not have run a
+	// statement yet, but it is a modern one
+	query3session=true;
+	oracletemplob	*lob=getTempLob(locator,locatorsize);
+	if (!lob) {
+		return sendLobOperationError(ORA_INVALID_LOB_LOCATOR,
+					ORA_INVALID_LOB_LOCATOR_MESSAGE);
+	}
+
+	if (operation==LOB_OP_GET_LENGTH) {
+		return sendLobOperationResponse(locator,locatorsize,
+					LOB_RESULT_UB8,lob->length);
+	}
+
+	if (operation==LOB_OP_GET_CHUNK_SIZE) {
+		return sendLobOperationResponse(locator,locatorsize,
+					LOB_RESULT_UB8,LOB_CHUNK_SIZE);
+	}
+
+	// opening and closing are client side state
+	if (operation==LOB_OP_OPEN) {
+		return sendLobOperationResponse(locator,locatorsize,
+					LOB_RESULT_UB8,
+					(amountpresent)?amount:1);
+	}
+	if (operation==LOB_OP_CLOSE) {
+		return sendLobOperationResponse(locator,locatorsize,
+					LOB_RESULT_NONE,0);
+	}
+
+	if (operation==LOB_OP_WRITE || operation==LOB_OP_WRITE_APPEND) {
+		uint64_t	written=0;
+		if (!writeTempLob(lob,
+			(operation==LOB_OP_WRITE_APPEND)?lob->length+1:
+							sourceoffset,
+			writedata,writedatasize,&written)) {
+			return sendLobOperationError(
+				ORA_MAX_RESPONSE_SIZE_EXCEEDED,
+				ORA_MAX_RESPONSE_SIZE_EXCEEDED_MESSAGE);
+		}
+		return sendLobOperationResponse(locator,locatorsize,
+					LOB_RESULT_UB8,written);
+	}
+
+	if (operation==LOB_OP_TRIM) {
+		if (amountpresent && amount<lob->length) {
+			lob->length=amount;
+		}
+		return sendLobOperationResponse(locator,locatorsize,
+					LOB_RESULT_UB8,lob->length);
+	}
+
+	// a free comes with an extra bit set, 0x80000, from some clients and
+	// some calls - [0023] of the real capture is the plain one, and OCI sends
+	// the other after it has bound the lob to a statement it committed
+	if ((operation&~LOB_OP_FREE_FLAG)==LOB_OP_FREE_TEMPORARY) {
+
+		// the answer is the locator with its kind and state changed,
+		// and nothing else
+		uint32_t	index=
+			(((uint32_t)locator[TEMP_LOCATOR_ID_OFFSET])<<24)|
+			(((uint32_t)locator[TEMP_LOCATOR_ID_OFFSET+1])<<16)|
+			(((uint32_t)locator[TEMP_LOCATOR_ID_OFFSET+2])<<8)|
+			locator[TEMP_LOCATOR_ID_OFFSET+3];
+		byte_t		freed[TEMP_LOCATOR_SIZE];
+		uint32_t	size=buildTempLocator(index,lob->clob,true,
+								freed);
+		delete[] lob->data;
+		delete lob;
+		templobs[index-1]=NULL;
+		debugWrite("temporary lob freed: %d",index);
+		return sendLobOperationResponse(freed,size,LOB_RESULT_NONE,0);
+	}
+
+	if (operation==LOB_OP_READ) {
+
+		// a read goes out inline, in the one packet, as a bfile's
+		// does, and a clob's characters as utf-16
+		uint64_t	start=(sourceoffset)?sourceoffset-1:0;
+		uint64_t	count=0;
+		if (start<lob->length) {
+			count=lob->length-start;
+			if (amountpresent && amount && amount<count) {
+				count=amount;
+			}
+		}
+		bytebuffer	out;
+		uint64_t	chars=0;
+		if (lob->clob) {
+			for (uint64_t i=0; i<count; i++) {
+				uint32_t	c;
+				bytestring::copy(&c,lob->data+(start+i)*4,4);
+				if (c>=0x10000) {
+					c-=0x10000;
+					uint32_t	hi=0xd800+(c>>10);
+					uint32_t	lo=0xdc00+(c&0x3ff);
+					out.append((byte_t)(hi>>8));
+					out.append((byte_t)(hi&0xff));
+					out.append((byte_t)(lo>>8));
+					out.append((byte_t)(lo&0xff));
+				} else {
+					out.append((byte_t)(c>>8));
+					out.append((byte_t)(c&0xff));
+				}
+				chars++;
+			}
+		} else {
+			if (count) {
+				out.append(lob->data+start,(size_t)count);
+			}
+			chars=count;
+		}
+		if ((uint64_t)out.getSize()>MAX_RESPONSE_SIZE) {
+			return sendLobOperationError(
+				ORA_MAX_RESPONSE_SIZE_EXCEEDED,
+				ORA_MAX_RESPONSE_SIZE_EXCEEDED_MESSAGE);
+		}
+		resetSendPacketBuffer(PACKET_DATA);
+		writeBE(&reqpacket,(uint16_t)0);
+		write(&reqpacket,(byte_t)TTC_LOB_AND_BFILE_DATA);
+		write(&reqpacket,(byte_t)CLR_LONG_FORM_MARKER);
+		if (out.getSize()) {
+			putLenBytesChunks((const char *)out.getBuffer(),
+						(uint32_t)out.getSize());
+		}
+		write(&reqpacket,(byte_t)0);
+		return sendLobOperationResponse(locator,locatorsize,
+					LOB_RESULT_UB8,chars,true);
+	}
+
+	debugWrite("temporary lob operation 0x%05x not implemented",operation);
+	return sendLobOperationError(ORA_UNIMPLEMENTED_FEATURE,
+					ORA_UNIMPLEMENTED_FEATURE_MESSAGE);
+}
+
 bool sqlrprotocol_oracle::readLobData(sqlrservercursor *cursor,
 						uint32_t column,
 						bool clob,
@@ -17886,17 +18345,24 @@ bool sqlrprotocol_oracle::installLobLocatorBind(const byte_t *value,
 	// fetched, for example, sends the locator it was given.  the lob is
 	// read out of the row the locator came from, so the row has to still
 	// be pinned
-	sqlrservercursor	*cursor=NULL;
-	uint32_t		column=0;
-	uint16_t		wiretype=0;
-	if (!decodeLobLocator(value,size,&cursor,&column,&wiretype)) {
-		return false;
-	}
-
 	bool		clob=(bindtype==ORACLE_TYPE_CLOB);
 	bytebuffer	data;
-	if (!readLobData(cursor,column,clob,&data)) {
-		return false;
+	oracletemplob	*templob=getTempLob(value,size);
+	if (templob) {
+
+		// a temporary lob is in this module's memory
+		if (!readTempLobData(templob,&data)) {
+			return false;
+		}
+	} else {
+		sqlrservercursor	*cursor=NULL;
+		uint32_t		column=0;
+		uint16_t		wiretype=0;
+		if (!decodeLobLocator(value,size,&cursor,&column,
+								&wiretype) ||
+			!readLobData(cursor,column,clob,&data)) {
+			return false;
+		}
 	}
 
 	bv->type=(clob)?SQLRSERVERBINDVARTYPE_CLOB:
@@ -18192,6 +18658,46 @@ uint32_t sqlrprotocol_oracle::putUtf16Chars(const char *in,
 	}
 
 	return outsize;
+}
+
+bool sqlrprotocol_oracle::readLobWriteData(bytebuffer *data) {
+
+	// reads the packets a client sends the data of a write behind its
+	// request in, up to the one marked last, the way discardLobDataPacket()
+	// reads one: a 64 byte descriptor whose second field is the byte count,
+	// and the bytes themselves riding after the packet's declared end
+	for (;;) {
+		if (!recvPacket() || resppackettype!=PACKET_DATA_DESCRIPTOR ||
+				resppacketsize<LOB_DATA_DESCRIPTOR_SIZE) {
+			debugWrite("expected lob write data");
+			return false;
+		}
+		const byte_t	*rp=resppacket;
+		uint32_t	flags=0;
+		uint32_t	size=0;
+		readBE(rp,&flags,&rp);
+		readBE(rp,&size,&rp);
+		debugWrite("lob write data: %d bytes",size);
+		if ((uint64_t)data->getSize()+size>TEMP_LOB_MAX_SIZE) {
+			return false;
+		}
+		byte_t	buffer[1024];
+		while (size) {
+			uint32_t	chunk=(size<(uint32_t)sizeof(buffer))?
+						size:(uint32_t)sizeof(buffer);
+			if (clientsock->read(buffer,(size_t)chunk)!=
+							(ssize_t)chunk) {
+				debugWrite("read lob write data failed");
+				debugSystemError();
+				return false;
+			}
+			data->append(buffer,(size_t)chunk);
+			size=size-chunk;
+		}
+		if (flags==LOB_DATA_LAST) {
+			return true;
+		}
+	}
 }
 
 bool sqlrprotocol_oracle::discardLobDataPacket() {
@@ -18742,7 +19248,12 @@ bool sqlrprotocol_oracle::getLegacyLobOperationRequest(const byte_t *rp,
 	return true;
 }
 
-bool sqlrprotocol_oracle::lobOperations(const byte_t *rp) {
+bool sqlrprotocol_oracle::lobOperations(const byte_t *rp,
+						const byte_t **rpout) {
+
+	// nothing is left of the packet for the caller to read unless a call
+	// rides in front of another
+	*rpout=NULL;
 
 	// the call a client makes to work with a lob it was handed a locator
 	// for.  the read side operations are answered for real; the write side
@@ -18770,6 +19281,11 @@ bool sqlrprotocol_oracle::lobOperations(const byte_t *rp) {
 	uint32_t	amountkind=0;
 	byte_t		amountpresent=0;
 	uint64_t	amount=0;
+
+	// the data of a write, when it comes in the request, or after it
+	const byte_t	*writedata=NULL;
+	uint32_t	writedatasize=0;
+	bool		writedatabehind=false;
 
 	// a pre-10g client's request has its own layout
 	const byte_t	*sourcelocator=NULL;
@@ -18873,6 +19389,29 @@ bool sqlrprotocol_oracle::lobOperations(const byte_t *rp) {
 			debugWrite("truncated lob operation amount");
 			return false;
 		}
+
+		// a write's data rides behind the request, behind a ttc code of
+		// its own, when it fits the packet
+		if ((operation==LOB_OP_WRITE ||
+			operation==LOB_OP_WRITE_APPEND) &&
+			rp<end && *rp==TTC_LOB_AND_BFILE_DATA) {
+			rp++;
+
+			// a write too big for the packet has its data in
+			// packets of their own behind it
+			if (rp<end) {
+				bool	datanull=false;
+				if (!getLenBytes(rp,end,&writedata,
+							&writedatasize,
+							&datanull,&rp)) {
+					debugWrite("truncated lob write "
+								"data");
+					return false;
+				}
+			} else {
+				writedatabehind=true;
+			}
+		}
 	}
 
 	// the summary object has to echo this back
@@ -18899,11 +19438,67 @@ bool sqlrprotocol_oracle::lobOperations(const byte_t *rp) {
 		debugEnd();
 	}
 
-	// only the read side is implemented.  a write, a temporary lob, a
-	// trim or an erase gets a real oracle error rather than a wrong
-	// answer, and so does a file's name, which no client asks for this
-	// way - OCI and python-oracledb read it out of the locator, and ojdbc
-	// runs dbms_lob.fileGetName() (see isFileGetNameCall())
+	// a temporary lob lives in this module, so everything but a copy, an
+	// erase and the like can be done to it.  creating one is a request
+	// with a blank locator, which names the type in the amount kind.
+	// a pre-10g client's request has no such field
+	if (fieldversion>=CCAP_FIELD_VERSION_10_2) {
+		if (operation==LOB_OP_CREATE_TEMPORARY) {
+			return createTempLob(amountkind);
+		}
+		if (isTempLocator(sourcelocator,sourcesize) &&
+			operation==(LOB_OP_FREE_TEMPORARY|LOB_OP_FREE_FLAG) &&
+			lastttccode==TTC_PIGGYBACK_TTI_FUNCTION) {
+
+			// OCI frees a temporary lob in front of its next call,
+			// with the extra bit set, and expects nothing back
+			oracletemplob	*lob=getTempLob(sourcelocator,
+								sourcesize);
+			if (lob) {
+				uint32_t	index=
+				(((uint32_t)sourcelocator[
+					TEMP_LOCATOR_ID_OFFSET])<<24)|
+				(((uint32_t)sourcelocator[
+					TEMP_LOCATOR_ID_OFFSET+1])<<16)|
+				(((uint32_t)sourcelocator[
+					TEMP_LOCATOR_ID_OFFSET+2])<<8)|
+				sourcelocator[TEMP_LOCATOR_ID_OFFSET+3];
+				delete[] lob->data;
+				delete lob;
+				templobs[index-1]=NULL;
+				debugWrite("temporary lob freed: %d",index);
+			}
+			*rpout=rp;
+			return true;
+		}
+		if (isTempLocator(sourcelocator,sourcesize)) {
+
+			// the locator is in the request, which the data
+			// packets replace, so it is kept
+			byte_t		locator[TEMP_LOCATOR_SIZE];
+			bytestring::copy(locator,sourcelocator,
+							TEMP_LOCATOR_SIZE);
+			bytebuffer	behind;
+			if (writedatabehind) {
+				if (!readLobWriteData(&behind)) {
+					return false;
+				}
+				writedata=behind.getBuffer();
+				writedatasize=(uint32_t)behind.getSize();
+			}
+			return tempLobOperation(operation,locator,
+						sourcesize,sourceoffset,
+						amount,amountpresent,
+						writedata,writedatasize);
+		}
+	}
+
+	// only the read side is implemented for a lob in the backend.  a
+	// write, a temporary lob, a trim or an erase gets a real oracle error
+	// rather than a wrong answer, and so does a file's name, which no
+	// client asks for this way - OCI and python-oracledb read it out of
+	// the locator, and ojdbc runs dbms_lob.fileGetName() (see
+	// isFileGetNameCall())
 	if (operation!=LOB_OP_GET_LENGTH &&
 		operation!=LOB_OP_READ &&
 		operation!=LOB_OP_GET_CHUNK_SIZE &&

@@ -3876,6 +3876,187 @@ int main(int argc, char **argv) {
 	stdoutput.printf("\n\n");
 
 
+	stdoutput.printf("OCILobCreateTemporary - clob and blob\n");
+	// a temporary lob lives in the module, so it can be written, appended
+	// to, trimmed, read, bound to a statement and freed.  #10693
+	execImmediate("drop table protocoltesttemplob");
+	assertEquals(
+		execImmediate("create table protocoltesttemplob ("
+				"testclob clob,testblob blob)"),
+		OCI_SUCCESS);
+	ub1	*tempbig=new ub1[40001];
+	ub1	*tempbigread=new ub1[40001];
+	for (int i=0; i<40000; i++) {
+		tempbig[i]=(ub1)('a'+(i%25));
+	}
+	tempbig[40000]='\0';
+	for (int blob=0; blob<2; blob++) {
+		OCILobLocator	*temp=NULL;
+		assertEquals(
+			OCIDescriptorAlloc(env,(void **)&temp,
+						OCI_DTYPE_LOB,0,NULL),
+			OCI_SUCCESS);
+		assertEquals(
+			OCILobCreateTemporary(svc,err,temp,OCI_DEFAULT,
+				SQLCS_IMPLICIT,
+				(blob)?OCI_TEMP_BLOB:OCI_TEMP_CLOB,
+				OCI_ATTR_NOCACHE,OCI_DURATION_SESSION),
+			OCI_SUCCESS);
+		boolean	istemp=0;
+		assertEquals(OCILobIsTemporary(env,err,temp,&istemp),
+								OCI_SUCCESS);
+		assertEquals((int)istemp,1);
+
+		ub4	tempamount=10;
+		assertEquals(
+			OCILobWrite(svc,err,temp,&tempamount,1,
+					(void *)"0123456789",10,
+					OCI_ONE_PIECE,NULL,NULL,0,
+					SQLCS_IMPLICIT),
+			OCI_SUCCESS);
+		assertEquals((int)tempamount,10);
+		ub4	templength=0;
+		assertEquals(OCILobGetLength(svc,err,temp,&templength),
+								OCI_SUCCESS);
+		assertEquals((int)templength,10);
+		char	tempbuffer[64];
+		bytestring::zero(tempbuffer,sizeof(tempbuffer));
+		tempamount=10;
+		assertEquals(
+			OCILobRead(svc,err,temp,&tempamount,1,
+					tempbuffer,sizeof(tempbuffer)-1,
+					NULL,NULL,0,SQLCS_IMPLICIT),
+			OCI_SUCCESS);
+		assertEquals((int)tempamount,10);
+		assertEquals((const char *)tempbuffer,"0123456789");
+
+		// bound to a statement, the lob's data is what the statement
+		// gets - the length, and then an insert
+		OCIStmt	*tempstmt=NULL;
+		OCIBind	*tempout=NULL;
+		OCIBind	*tempin=NULL;
+		sb4	tempresult=-1;
+		const char	*tempquery=
+			"begin :1 := dbms_lob.getlength(:2); end;";
+		assertEquals(
+			OCIHandleAlloc(env,(void **)&tempstmt,
+					OCI_HTYPE_STMT,0,NULL),
+			OCI_SUCCESS);
+		assertEquals(
+			OCIStmtPrepare(tempstmt,err,(text *)tempquery,
+				charstring::getLength(tempquery),
+				OCI_NTV_SYNTAX,OCI_DEFAULT),
+			OCI_SUCCESS);
+		assertEquals(
+			OCIBindByPos(tempstmt,&tempout,err,1,
+				&tempresult,sizeof(tempresult),SQLT_INT,
+				NULL,NULL,NULL,0,NULL,OCI_DEFAULT),
+			OCI_SUCCESS);
+		assertEquals(
+			OCIBindByPos(tempstmt,&tempin,err,2,
+				&temp,0,(blob)?SQLT_BLOB:SQLT_CLOB,
+				NULL,NULL,NULL,0,NULL,OCI_DEFAULT),
+			OCI_SUCCESS);
+		assertEquals(
+			OCIStmtExecute(svc,tempstmt,err,1,0,NULL,NULL,
+								OCI_DEFAULT),
+			OCI_SUCCESS);
+		assertEquals((int)tempresult,10);
+		assertEquals(OCIHandleFree(tempstmt,OCI_HTYPE_STMT),
+								OCI_SUCCESS);
+
+		// appended to and trimmed
+		tempamount=3;
+		assertEquals(
+			OCILobWriteAppend(svc,err,temp,&tempamount,
+					(void *)"abc",3,OCI_ONE_PIECE,
+					NULL,NULL,0,SQLCS_IMPLICIT),
+			OCI_SUCCESS);
+		assertEquals(OCILobGetLength(svc,err,temp,&templength),
+								OCI_SUCCESS);
+		assertEquals((int)templength,13);
+		assertEquals(OCILobTrim(svc,err,temp,4),OCI_SUCCESS);
+		assertEquals(OCILobGetLength(svc,err,temp,&templength),
+								OCI_SUCCESS);
+		assertEquals((int)templength,4);
+		bytestring::zero(tempbuffer,sizeof(tempbuffer));
+		tempamount=4;
+		assertEquals(
+			OCILobRead(svc,err,temp,&tempamount,1,
+					tempbuffer,sizeof(tempbuffer)-1,
+					NULL,NULL,0,SQLCS_IMPLICIT),
+			OCI_SUCCESS);
+		assertEquals((const char *)tempbuffer,"0123");
+
+		// a lob bigger than a packet, written, read and inserted
+		tempamount=40000;
+		assertEquals(
+			OCILobWrite(svc,err,temp,&tempamount,1,
+					tempbig,40000,OCI_ONE_PIECE,
+					NULL,NULL,0,SQLCS_IMPLICIT),
+			OCI_SUCCESS);
+		assertEquals(OCILobTrim(svc,err,temp,40000),OCI_SUCCESS);
+		assertEquals(OCILobGetLength(svc,err,temp,&templength),
+								OCI_SUCCESS);
+		assertEquals((int)templength,40000);
+		bytestring::zero(tempbigread,40001);
+		tempamount=40000;
+		assertEquals(
+			OCILobRead(svc,err,temp,&tempamount,1,
+					tempbigread,40000,NULL,NULL,0,
+					SQLCS_IMPLICIT),
+			OCI_SUCCESS);
+		assertEquals((int)tempamount,40000);
+		assertTrue(!bytestring::compare(tempbigread,tempbig,40000));
+
+		OCIStmt	*insertstmt=NULL;
+		OCIBind	*insertbind=NULL;
+		const char	*insertquery=(blob)?
+			"insert into protocoltesttemplob (testblob) "
+								"values (:1)":
+			"insert into protocoltesttemplob (testclob) "
+								"values (:1)";
+		assertEquals(
+			OCIHandleAlloc(env,(void **)&insertstmt,
+					OCI_HTYPE_STMT,0,NULL),
+			OCI_SUCCESS);
+		assertEquals(
+			OCIStmtPrepare(insertstmt,err,(text *)insertquery,
+				charstring::getLength(insertquery),
+				OCI_NTV_SYNTAX,OCI_DEFAULT),
+			OCI_SUCCESS);
+		assertEquals(
+			OCIBindByPos(insertstmt,&insertbind,err,1,
+				&temp,0,(blob)?SQLT_BLOB:SQLT_CLOB,
+				NULL,NULL,NULL,0,NULL,OCI_DEFAULT),
+			OCI_SUCCESS);
+		assertEquals(
+			OCIStmtExecute(svc,insertstmt,err,1,0,NULL,NULL,
+							OCI_COMMIT_ON_SUCCESS),
+			OCI_SUCCESS);
+		assertEquals(OCIHandleFree(insertstmt,OCI_HTYPE_STMT),
+								OCI_SUCCESS);
+
+		assertEquals(OCILobFreeTemporary(svc,err,temp),OCI_SUCCESS);
+
+		// a freed lob is gone
+		assertTrue(OCILobGetLength(svc,err,temp,&templength)!=
+								OCI_SUCCESS);
+		assertEquals(
+			OCIDescriptorFree(temp,OCI_DTYPE_LOB),OCI_SUCCESS);
+	}
+	assertEquals(
+		countRows("protocoltesttemplob where "
+				"dbms_lob.getlength(testclob)=40000"),1);
+	assertEquals(
+		countRows("protocoltesttemplob where "
+				"dbms_lob.getlength(testblob)=40000"),1);
+	execImmediate("drop table protocoltesttemplob");
+	delete[] tempbig;
+	delete[] tempbigread;
+	stdoutput.printf("\n\n");
+
+
 	stdoutput.printf("OCILobFileGetName - bfile\n");
 	// this one never reaches the server - the client reads the directory
 	// alias and the file name straight out of the locator it was handed,

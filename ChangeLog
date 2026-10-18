@@ -2987,6 +2987,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   fetch_lobs=False, failing through the oracle protocol module
 - fixed reading a clob from an Oracle 9i client through the oracle protocol
   module
+- added temporary lob support (OCILobCreateTemporary and the writes, reads
+  and binds on them) to the oracle protocol module
 
 ### Security
 - fixed an authentication hole in the des password encryption module

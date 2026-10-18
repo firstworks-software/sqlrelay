@@ -3915,6 +3915,50 @@ that statement, except where noted.
                                       only the exact text did, and the
                                       others got PLS-00306 (#10709)
 
+    10693-dev-oci23-portable-templob-realserver-oracle122.oraproxy
+                                     an OCI 23.26 OCI8 client (a scratch
+                                      program: for a clob and then a blob
+                                      OCILobCreateTemporary,
+                                      OCILobIsTemporary, OCILobWrite of
+                                      10 characters, OCILobGetLength,
+                                      OCILobRead, the lob bound to a
+                                      pl/sql call of dbms_lob.getlength,
+                                      OCILobWriteAppend of 3, OCILobTrim to
+                                      4, a read and OCILobFreeTemporary,
+                                      and then a 40000 character write and
+                                      read of each) against the real 12.2
+                                      server, through oraproxy with
+                                      ORAPROXY_UNIVERSAL_REPS=1 and the
+                                      banner rewritten.  The create (op
+                                      0x110, with the type, 0x70 or 0x71, in
+                                      the amount kind field) is answered
+                                      with the 40 byte temporary lob
+                                      locator in the front of the 76 byte
+                                      buffer the client passed in
+                                      ([0016], [0038]), a write (0x40,
+                                      [0017]) carries its data in the
+                                      request behind a ttc code 0x0e - a
+                                      clob's as utf-16 - and is answered
+                                      with the locator and the amount, as
+                                      are the append (0x20000, piggybacked
+                                      on a 0x69 call at [0025]) and the
+                                      trim (0x20, [0029], the new length as
+                                      the amount); a read ([0021]) comes
+                                      back inline in the one packet; a free
+                                      (0x111, [0035]) is answered with the
+                                      locator with its kind byte cleared
+                                      and its state byte lowered.  The
+                                      bound lob goes in the bind as its
+                                      40 byte locator (#10693)
+
+    10693-dev-oci23-portable-templob-sqlrelay121.oraproxy
+                                     the same program against a -buildtree
+                                      listener at serverversion 12.1,
+                                      after the module held temporary lobs:
+                                      every call works and the results are
+                                      the real server's.  Before it the
+                                      create got ORA-03001 (#10693)
+
     10702-redhat9x86-oci8-ociselect-lob-sqlrelay121.oraproxy
     10702-redhat9x86-oci8-ociselect-lob-sqlrelay121-singlebyte.oraproxy
                                      the 9.2.0.4 ociselect with
