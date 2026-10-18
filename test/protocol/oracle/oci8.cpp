@@ -4162,6 +4162,68 @@ int main(int argc, char **argv) {
 	stdoutput.printf("\n\n");
 
 
+	stdoutput.printf("OCIDefineByPos - clob as string, blob as raw\n");
+	// a clob defined as a string is converted by the server and comes
+	// back as text, a blob defined as raw as bytes, in the row and not
+	// as a locator.  #10703
+	ub1	*asdatabuffer=new ub1[biglength+1];
+	ub1	asdatablob[sizeof(blobvalue)+1];
+	for (int iters=0; iters<2; iters++) {
+		OCIStmt		*asdatastmt=NULL;
+		OCIDefine	*asdatadef[2];
+		sb2		asdataind[2];
+		ub2		asdatalen[2];
+		bytestring::zero(asdatadef,sizeof(asdatadef));
+		bytestring::zero(asdatabuffer,biglength+1);
+		bytestring::zero(asdatablob,sizeof(asdatablob));
+		asdataind[0]=-1;
+		asdataind[1]=-1;
+		asdatalen[0]=0;
+		asdatalen[1]=0;
+		const char	*asdataquery=
+				"select testclob,testblob from protocoltestlob";
+		assertEquals(
+			OCIHandleAlloc(env,(void **)&asdatastmt,
+					OCI_HTYPE_STMT,0,NULL),
+			OCI_SUCCESS);
+		assertEquals(
+			OCIStmtPrepare(asdatastmt,err,(text *)asdataquery,
+				charstring::getLength(asdataquery),
+				OCI_NTV_SYNTAX,OCI_DEFAULT),
+			OCI_SUCCESS);
+		assertEquals(
+			OCIDefineByPos(asdatastmt,&asdatadef[0],err,1,
+				asdatabuffer,(sb4)(biglength+1),SQLT_STR,
+				&asdataind[0],NULL,NULL,OCI_DEFAULT),
+			OCI_SUCCESS);
+		assertEquals(
+			OCIDefineByPos(asdatastmt,&asdatadef[1],err,2,
+				asdatablob,(sb4)sizeof(blobvalue),SQLT_BIN,
+				&asdataind[1],&asdatalen[1],NULL,OCI_DEFAULT),
+			OCI_SUCCESS);
+		assertEquals(
+			OCIStmtExecute(svc,asdatastmt,err,iters,0,NULL,NULL,
+								OCI_DEFAULT),
+			OCI_SUCCESS);
+		if (!iters) {
+			assertEquals(
+				OCIStmtFetch2(asdatastmt,err,1,
+						OCI_FETCH_NEXT,0,OCI_DEFAULT),
+				OCI_SUCCESS);
+		}
+		assertEquals((int)asdataind[0],OCI_IND_NOTNULL);
+		assertEquals((int)asdataind[1],OCI_IND_NOTNULL);
+		assertEquals((const char *)asdatabuffer,(const char *)bigvalue);
+		assertEquals((int)asdatalen[1],(int)sizeof(blobvalue));
+		assertTrue(!bytestring::compare(asdatablob,blobvalue,
+							sizeof(blobvalue)));
+		assertEquals(OCIHandleFree(asdatastmt,OCI_HTYPE_STMT),
+								OCI_SUCCESS);
+	}
+	delete[] asdatabuffer;
+	stdoutput.printf("\n\n");
+
+
 	stdoutput.printf("OCILobRead - nclob\n");
 	// an nclob describes with the national character set form, and its
 	// data reads back as text, not empty.  #10698

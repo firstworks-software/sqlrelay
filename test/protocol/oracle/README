@@ -3915,6 +3915,47 @@ that statement, except where noted.
                                       only the exact text did, and the
                                       others got PLS-00306 (#10709)
 
+    10703-dev-oci23-portable-clobasstring-realserver-oracle122.oraproxy
+                                     ociselect (OCI 23.26, banner rewritten
+                                      and ORAPROXY_UNIVERSAL_REPS=1 so the
+                                      real server answers it in the
+                                      module's representation) running
+                                      "select to_clob('clobvalue'),
+                                      to_blob(hextoraw('0102')) from
+                                      dual" with its first column defined
+                                      as a string against the real 12.2
+                                      server.  The row at [0016] has the
+                                      clob converted, in the long form
+                                      (fe 01 09, the text, 00, two more
+                                      zeros), and the undefined blob
+                                      column as a locator (#10703)
+
+    10703-dev-oci23-portable-clobasstring-sqlrelay121.oraproxy
+                                     the same select against a -buildtree
+                                      listener at serverversion 12.1,
+                                      after the fix: the row at [0016]
+                                      is the same bytes up to the blob's
+                                      locator.  Before it the clob column
+                                      was a locator and OCI failed with
+                                      ORA-03120 (#10703)
+
+    10703-dev-pythonoracledb-thin-fetchlobsfalse-realserver-oracle122.oraproxy
+                                     python-oracledb thin with fetch_lobs
+                                      set False (a scratch program: a
+                                      clob, a blob, a null clob and an
+                                      8000 character clob in one select)
+                                      against the real 12.2 server, through
+                                      oraproxy.  The client defines the
+                                      columns as long and long raw and
+                                      gets the values in the row (#10703)
+
+    10703-dev-pythonoracledb-thin-fetchlobsfalse-sqlrelay121.oraproxy
+                                     the same program against a -buildtree
+                                      listener at serverversion 12.1,
+                                      after the fix, with the same
+                                      results.  Before it the client
+                                      failed with DPY-5002 (#10703)
+
     10706-dev-pythonoracledb-thin-loblocatorbind-realserver-oracle122.oraproxy
                                      python-oracledb thin (a scratch
                                       program: fetch a clob, a blob and

@@ -1558,6 +1558,7 @@ struct oraclequery3define {
 	uint32_t	contflags;
 	uint32_t	maxdatasize;
 	byte_t		csfrm;
+	byte_t		type;
 };
 
 // one placeholder's value for one execution iteration.  the bytes are left
@@ -2042,6 +2043,16 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_oracle : public sqlrprotocol {
 		bool	sendLocalRegionBindError(uint32_t cursorid);
 		bool	sendBadLocatorBindError(uint32_t cursorid);
 		bool	sendBindFailureError(uint32_t cursorid);
+		bool	lobDefinedAsData(sqlrservercursor *cursor,
+						uint32_t column);
+		bool	readLobData(sqlrservercursor *cursor,
+						uint32_t column,
+						bool clob,
+						bytebuffer *data);
+		bool	putLobDataField(sqlrservercursor *cursor,
+						uint32_t column,
+						uint16_t wiretype,
+						bool null);
 		bool	isLobLocatorBind(const byte_t *value,
 							uint32_t size);
 		bool	installLobLocatorBind(const byte_t *value,
@@ -15073,6 +15084,7 @@ bool sqlrprotocol_oracle::getQuery3BindDescriptor(const byte_t *rp,
 		define->contflags=0;
 		define->maxdatasize=0;
 		define->csfrm=0;
+		define->type=0;
 	}
 
 	byte_t		precision=0;
@@ -15166,6 +15178,7 @@ bool sqlrprotocol_oracle::getQuery3BindDescriptor(const byte_t *rp,
 		define->contflags=contflags;
 		define->maxdatasize=maxdatasize;
 		define->csfrm=csfrm;
+		define->type=*type;
 	}
 
 	*rpout=rp;
@@ -15828,13 +15841,19 @@ void sqlrprotocol_oracle::saveQuery3Binds(sqlrservercursor *cursor) {
 
 void sqlrprotocol_oracle::saveQuery3Defines(sqlrservercursor *cursor) {
 
-	// a column past the last define that asks for a lob prefetch gets
-	// what it would get with no define at all, so only that many are kept,
-	// and no more than the cursor can have columns
+	// a column past the last define that asks for a lob prefetch, or for a
+	// lob's data in place of its locator, gets what it would get with no
+	// define at all, so only that many are kept, and no more than the
+	// cursor can have columns
 	uint32_t	count=0;
 	for (uint32_t i=0; i<query3defines; i++) {
-		if (query3definelist[i].contflags&
-					DEFINE_CONTFLAG_LOB_PREFETCH) {
+		byte_t	type=query3definelist[i].type;
+		if ((query3definelist[i].contflags&
+					DEFINE_CONTFLAG_LOB_PREFETCH) ||
+			(type &&
+			type!=ORACLE_TYPE_CLOB &&
+			type!=ORACLE_TYPE_BLOB &&
+			type!=ORACLE_TYPE_BFILE)) {
 			count=i+1;
 		}
 	}
@@ -17114,7 +17133,17 @@ bool sqlrprotocol_oracle::putRowData(sqlrservercursor *cursor,
 		// a lob column's value is a locator rather than the lob's
 		// bytes - the client reads the bytes themselves back with lob
 		// operation requests of its own, quoting the locator
-		if (wiretype==ORACLE_TYPE_CLOB ||
+		if ((wiretype==ORACLE_TYPE_CLOB ||
+			wiretype==ORACLE_TYPE_BLOB) &&
+			lobDefinedAsData(cursor,i)) {
+			debugWrite("lob defined as data");
+			if (!putLobDataField(cursor,i,wiretype,
+							(null || !lob))) {
+				debugEnd();
+				return false;
+			}
+			cont->closeLobField(cursor,i);
+		} else if (wiretype==ORACLE_TYPE_CLOB ||
 			wiretype==ORACLE_TYPE_BLOB ||
 			wiretype==ORACLE_TYPE_BFILE) {
 			debugWrite("lob");
@@ -17685,6 +17714,119 @@ bool sqlrprotocol_oracle::readLenPreUB8(const byte_t *rp,
 	return true;
 }
 
+bool sqlrprotocol_oracle::readLobData(sqlrservercursor *cursor,
+						uint32_t column,
+						bool clob,
+						bytebuffer *data) {
+
+	// reads the whole of a lob out of the row the cursor is on: characters
+	// for a clob and bytes for a blob, a buffer at a time, a clob's at
+	// the most four bytes a character
+	bool		utf8=(clob && clientCharsetIsUtf8());
+	uint64_t	loblength=0;
+	if (!cont->getLobFieldLength(cursor,column,&loblength)) {
+		loblength=0;
+	}
+	uint64_t	charsperread=(clob)?sizeof(lobbuffer)/4:
+						sizeof(lobbuffer);
+	uint64_t	position=0;
+	while (position<loblength) {
+		if (data->getSize()>LOB_LOCATOR_BIND_MAX_SIZE) {
+			debugWrite("lob past %d bytes",
+						LOB_LOCATOR_BIND_MAX_SIZE);
+			return false;
+		}
+		uint64_t	toread=loblength-position;
+		if (toread>charsperread) {
+			toread=charsperread;
+		}
+		uint64_t	got=0;
+		if (!cont->getLobFieldSegment(cursor,column,
+					lobbuffer,sizeof(lobbuffer),
+					position,toread,&got) || !got) {
+			break;
+		}
+		data->append(lobbuffer,(size_t)got);
+
+		// under a utf-8 client character set, the amount a clob
+		// read reports is bytes, but positions count characters
+		uint64_t	units=got;
+		if (utf8) {
+			units=countUtf8Chars(lobbuffer,got);
+			if (units>toread) {
+				units=toread;
+			}
+		}
+		position+=units;
+	}
+	return true;
+}
+
+bool sqlrprotocol_oracle::lobDefinedAsData(sqlrservercursor *cursor,
+							uint32_t column) {
+
+	// whether a lob column's define asks for its data rather than a
+	// locator - a clob defined as a string, a blob as a raw, either as a
+	// long or a long raw - which OCI does with SQLT_STR and the like and
+	// python-oracledb does with fetch_lobs=False.  a column with no
+	// define of its own gets a locator
+	uint16_t	curid=cont->getId(cursor);
+	if (column>=cursordefinecounts[curid]) {
+		return false;
+	}
+	byte_t	type=cursordefines[curid][column].type;
+	return (type &&
+		type!=ORACLE_TYPE_CLOB &&
+		type!=ORACLE_TYPE_BLOB &&
+		type!=ORACLE_TYPE_BFILE);
+}
+
+bool sqlrprotocol_oracle::putLobDataField(sqlrservercursor *cursor,
+						uint32_t column,
+						uint16_t wiretype,
+						bool null) {
+
+	// writes a lob column's data where its define asked for the data: a
+	// real server converts the lob and sends its value in the long form,
+	// as it does a long - [0016] of test/protocol/oracle/samples/10703-
+	// dev-oci23-portable-clobasstring-realserver-oracle122.oraproxy
+	uint16_t	curid=cont->getId(cursor);
+	byte_t		definetype=cursordefines[curid][column].type;
+	bool		longtype=(definetype==ORACLE_TYPE_LONG ||
+					definetype==ORACLE_TYPE_LONG_RAW);
+
+	bytebuffer	data;
+	if (!null && !readLobData(cursor,column,
+				(wiretype==ORACLE_TYPE_CLOB),&data)) {
+		lobprefetcherror=ORA_MAX_RESPONSE_SIZE_EXCEEDED;
+		lobprefetcherrormessage=ORA_MAX_RESPONSE_SIZE_EXCEEDED_MESSAGE;
+		return false;
+	}
+	if ((uint64_t)reqpacket.getSize()+data.getSize()>MAX_RESPONSE_SIZE) {
+		debugWrite("lob data would exceed %d bytes",
+						MAX_RESPONSE_SIZE);
+		lobprefetcherror=ORA_MAX_RESPONSE_SIZE_EXCEEDED;
+		lobprefetcherrormessage=ORA_MAX_RESPONSE_SIZE_EXCEEDED_MESSAGE;
+		return false;
+	}
+
+	// a null lob, and an empty one, are null
+	if (null || !data.getSize()) {
+		debugWrite("null");
+		if (longtype) {
+			putNullLongField();
+		} else {
+			write(&reqpacket,(byte_t)0);
+		}
+		return true;
+	}
+
+	debugWrite("lob data: %lld bytes",(long long)data.getSize());
+	putLongBytes((const char *)data.getBuffer(),
+				(uint32_t)data.getSize(),true);
+	return true;
+}
+
 bool sqlrprotocol_oracle::isLobLocatorBind(const byte_t *value,
 							uint32_t size) {
 
@@ -17725,46 +17867,10 @@ bool sqlrprotocol_oracle::installLobLocatorBind(const byte_t *value,
 		return false;
 	}
 
-	// characters for a clob and bytes for a blob, read a buffer at a
-	// time, a clob's at the most four bytes a character
 	bool		clob=(bindtype==ORACLE_TYPE_CLOB);
-	bool		utf8=(clob && clientCharsetIsUtf8());
-	uint64_t	loblength=0;
-	if (!cont->getLobFieldLength(cursor,column,&loblength)) {
-		loblength=0;
-	}
-	uint64_t	charsperread=(clob)?sizeof(lobbuffer)/4:
-						sizeof(lobbuffer);
 	bytebuffer	data;
-	uint64_t	position=0;
-	while (position<loblength) {
-		if (data.getSize()>LOB_LOCATOR_BIND_MAX_SIZE) {
-			debugWrite("lob locator bind past %d bytes",
-						LOB_LOCATOR_BIND_MAX_SIZE);
-			return false;
-		}
-		uint64_t	toread=loblength-position;
-		if (toread>charsperread) {
-			toread=charsperread;
-		}
-		uint64_t	got=0;
-		if (!cont->getLobFieldSegment(cursor,column,
-					lobbuffer,sizeof(lobbuffer),
-					position,toread,&got) || !got) {
-			break;
-		}
-		data.append(lobbuffer,(size_t)got);
-
-		// under a utf-8 client character set, the amount a clob
-		// read reports is bytes, but positions count characters
-		uint64_t	units=got;
-		if (clob && utf8) {
-			units=countUtf8Chars(lobbuffer,got);
-			if (units>toread) {
-				units=toread;
-			}
-		}
-		position+=units;
+	if (!readLobData(cursor,column,clob,&data)) {
+		return false;
 	}
 
 	bv->type=(clob)?SQLRSERVERBINDVARTYPE_CLOB:
