@@ -57,6 +57,17 @@
 // samples/10714-redhat9x86-oci8-ociarray-fetchonly-realserver-oracle102.
 // oraproxy.
 //
+// And #10716, temporary lobs for a 9i client.  The calls are 9.2.0.4 OCI8's
+// (create, write, get length, read, erase, copy, append and free of two
+// clobs, from samples/10716-redhat9x86-oci8-templobs-sqlrelay102.oraproxy),
+// and the answers are what the real oracle102 server sent it, from
+// samples/10716-redhat9x86-oci8-templobs-realserver-oracle102.oraproxy: a
+// create answers the 86 byte buffer the client sent with the locator in the
+// front of it, then the character set and a 1, a write the locator and the
+// amount, a read the characters in the database character set - plain
+// bytes from a single-byte database, each behind its size from a multibyte
+// one - the locator and the amount.
+//
 // It runs against the oracleprotocol instance's 12.1 listener
 // (ORACLEPROTOCOLPORT1), or with "10.2", its 10.2 one (ORACLEPROTOCOLPORT12),
 // or with "singlebyte", the single-byte one.
@@ -863,6 +874,271 @@ static void runFetchOnly(oracleprotocolclient *client) {
 	report(l,client->readByte(&okcode) && okcode==ORA_TTC_OK);
 }
 
+// the fixed part of a pre-10g lob operation request, behind its sequence
+// number: the pointers are the client's own and mean nothing here but
+// whether they are null.  [0017] and the ones after it of the capture cited
+// above
+static void beginLegacyLobOperation(oracleprotocolclient *client,
+					const unsigned char *source,
+					uint32_t sourcesize,
+					const unsigned char *dest,
+					uint32_t destsize,
+					uint32_t sourceoffset,
+					uint32_t destoffset,
+					bool amountpointer,
+					uint32_t operation) {
+	static const unsigned char	pointer[]={0x30, 0x18, 0x06, 0x08};
+	static const unsigned char	amountptr[]={0x8c, 0xef, 0xff, 0xbf};
+	static const unsigned char	null[]={0x00, 0x00, 0x00, 0x00};
+	client->beginTtiCall(ORA_TTI_LOB_OPERATIONS);
+	client->appendByte(seqnumber++);
+	client->appendBytes(pointer,sizeof(pointer));
+	client->appendLenPreInt(sourcesize);
+	client->appendBytes((dest)?pointer:null,sizeof(null));
+	client->appendLenPreInt(destsize);
+	client->appendLenPreInt(sourceoffset);
+	client->appendLenPreInt(destoffset);
+	client->appendBytes(null,sizeof(null));
+	client->appendBytes((amountpointer)?amountptr:null,sizeof(null));
+	client->appendBytes(null,sizeof(null));
+	client->appendLenPreInt(operation);
+	client->appendBytes(null,sizeof(null));
+	client->appendLenPreInt(0);
+	if (source) {
+		client->appendBytes(source,sourcesize);
+	}
+	if (dest) {
+		client->appendBytes(dest,destsize);
+	}
+}
+
+// the answer to a lob operation that quotes a locator: the locator back, and
+// the amount
+static bool expectLobAnswer(oracleprotocolclient *client,
+				const unsigned char *locator,
+				uint32_t locatorsize,
+				uint32_t amount) {
+	unsigned char	echoed[64];
+	unsigned char	okcode=0;
+	uint32_t	value=0;
+	client->rewindResponse();
+	unsigned char	dataflags[2];
+	return (locatorsize<=sizeof(echoed) &&
+		client->readBytes(dataflags,sizeof(dataflags)) &&
+		client->readByte(&okcode) && okcode==ORA_TTC_OK &&
+		client->readBytes(echoed,locatorsize) &&
+		!bytestring::compare(echoed,locator,locatorsize) &&
+		client->readLenPreInt(&value) && value==amount);
+}
+
+static void runTempLobs(oracleprotocolclient *client, bool framed) {
+
+	const char	*label=(framed)?"temporary clob, multibyte database":
+					"temporary clob, single-byte database";
+	stdoutput.printf("\n%s\n",label);
+	char	l[256];
+
+	// create: a blank 86 byte locator, a duration of 10, a clob (csfrm 1,
+	// type 0x70), and the character set, the duration and a 0 behind it
+	unsigned char	blank[86];
+	bytestring::zero(blank,sizeof(blank));
+	blank[1]=0x54;
+	beginLegacyLobOperation(client,blank,sizeof(blank),NULL,10,1,0x70,
+					true,0x110);
+	client->appendLenPreInt(31);
+	client->appendLenPreInt(10);
+	client->appendLenPreInt(0);
+	charstring::printf(l,sizeof(l),"%s: create",label);
+	bool	ok=(client->sendPacket() && client->recvPacket());
+	report(l,ok);
+	if (!ok) {
+		stdoutput.printf("    %s\n",client->getError());
+		return;
+	}
+
+	// the locator is in front of the zeros that fill the buffer, which
+	// is 86 bytes in all, and a clob's character set and a 1 follow it
+	unsigned char	dataflags[2];
+	unsigned char	okcode=0;
+	unsigned char	buffer[86];
+	uint32_t	csid=0;
+	uint32_t	one=0;
+	client->rewindResponse();
+	charstring::printf(l,sizeof(l),"%s: the buffer comes back with a "
+					"locator in it, then the character "
+					"set and a 1",label);
+	ok=(client->readBytes(dataflags,sizeof(dataflags)) &&
+		client->readByte(&okcode) && okcode==ORA_TTC_OK &&
+		client->readBytes(buffer,sizeof(buffer)) &&
+		client->readLenPreInt(&csid) && csid==((framed)?873:31) &&
+		client->readLenPreInt(&one) && one==1);
+	report(l,ok);
+	if (!ok) {
+		dumpResponse(client);
+		return;
+	}
+	unsigned char	locator[40];
+	bytestring::copy(locator,buffer,sizeof(locator));
+	charstring::printf(l,sizeof(l),"%s: the rest of the buffer is "
+						"zeros",label);
+	bool	zeros=true;
+	for (size_t i=sizeof(locator); i<sizeof(buffer); i++) {
+		zeros=(zeros && !buffer[i]);
+	}
+	report(l,zeros);
+
+	// the locator says how the characters are sent
+	charstring::printf(l,sizeof(l),"%s: the locator says how the "
+					"characters are sent",label);
+	report(l,((locator[6]&0x80)!=0)==framed);
+
+	// write 10 characters at 1
+	if (framed) {
+		beginLegacyLobOperation(client,locator,sizeof(locator),NULL,0,
+						1,0,true,0x40);
+		client->appendLenPreInt(10);
+		client->appendByte(ORA_TTC_LOB_DATA);
+		client->appendByte(0xfe);
+		for (const char *c="0123456789"; *c; c++) {
+			client->appendByte(2);
+			client->appendByte(1);
+			client->appendByte((unsigned char)*c);
+		}
+		client->appendByte(0);
+	} else {
+		beginLegacyLobOperation(client,locator,sizeof(locator),NULL,0,
+						1,0,true,0x40);
+		client->appendLenPreInt(10);
+		client->appendByte(ORA_TTC_LOB_DATA);
+		client->appendByte(10);
+		client->appendBytes((const unsigned char *)"0123456789",10);
+	}
+	charstring::printf(l,sizeof(l),"%s: write",label);
+	ok=(client->sendPacket() && client->recvPacket() &&
+		expectLobAnswer(client,locator,sizeof(locator),10));
+	report(l,ok);
+	if (!ok) {
+		dumpResponse(client);
+		return;
+	}
+
+	// the length
+	beginLegacyLobOperation(client,locator,sizeof(locator),NULL,0,0,0,
+								true,1);
+	client->appendLenPreInt(0);
+	charstring::printf(l,sizeof(l),"%s: get length",label);
+	ok=(client->sendPacket() && client->recvPacket() &&
+		expectLobAnswer(client,locator,sizeof(locator),10));
+	report(l,ok);
+	if (!ok) {
+		dumpResponse(client);
+		return;
+	}
+
+	// erase 3 characters at 2
+	beginLegacyLobOperation(client,locator,sizeof(locator),NULL,0,2,0,
+								true,8);
+	client->appendLenPreInt(3);
+	charstring::printf(l,sizeof(l),"%s: erase",label);
+	ok=(client->sendPacket() && client->recvPacket() &&
+		expectLobAnswer(client,locator,sizeof(locator),3));
+	report(l,ok);
+	if (!ok) {
+		dumpResponse(client);
+		return;
+	}
+
+	// read it all: 0, three spaces and 456789
+	beginLegacyLobOperation(client,locator,sizeof(locator),NULL,0,1,0,
+								true,2);
+	client->appendLenPreInt(10);
+	charstring::printf(l,sizeof(l),"%s: read",label);
+	ok=(client->sendPacket() && client->recvPacket());
+	report(l,ok);
+	if (!ok) {
+		stdoutput.printf("    %s\n",client->getError());
+		return;
+	}
+	const char	*expected="0   456789";
+	unsigned char	marker=0;
+	unsigned char	chunk[256];
+	size_t		chars=0;
+	bool		good=true;
+	unsigned char	size=0;
+	client->rewindResponse();
+	charstring::printf(l,sizeof(l),"%s: the characters are sent the way "
+					"a real server sends them",label);
+	good=(client->readBytes(dataflags,sizeof(dataflags)) &&
+		client->readByte(&okcode) && okcode==ORA_TTC_LOB_DATA &&
+		client->readByte(&marker) && marker==0xfe);
+	while (good) {
+		if (!client->readByte(&size)) {
+			good=false;
+			break;
+		}
+		if (!size) {
+			break;
+		}
+		if (!client->readBytes(chunk,size)) {
+			good=false;
+			break;
+		}
+		if (framed) {
+			good=(good && size==2 && chunk[0]==1 && chars<10 &&
+						chunk[1]==expected[chars]);
+			chars++;
+		} else {
+			for (unsigned char i=0; i<size; i++) {
+				good=(good && chars<10 &&
+						chunk[i]==expected[chars]);
+				chars++;
+			}
+		}
+	}
+	report(l,good && chars==10);
+	if (!good || chars!=10) {
+		dumpResponse(client);
+		return;
+	}
+	charstring::printf(l,sizeof(l),"%s: the locator and the amount "
+					"follow the characters",label);
+	unsigned char	okcode2=0;
+	unsigned char	echoed[40];
+	uint32_t	amount=0;
+	ok=(client->readByte(&okcode2) && okcode2==ORA_TTC_OK &&
+		client->readBytes(echoed,sizeof(echoed)) &&
+		!bytestring::compare(echoed,locator,sizeof(locator)) &&
+		client->readLenPreInt(&amount) && amount==10);
+	report(l,ok);
+	if (!ok) {
+		dumpResponse(client);
+		return;
+	}
+
+	// free
+	beginLegacyLobOperation(client,locator,sizeof(locator),NULL,0,0,0,
+								false,0x111);
+	charstring::printf(l,sizeof(l),"%s: free",label);
+	ok=(client->sendPacket() && client->recvPacket());
+	report(l,ok);
+	if (!ok) {
+		stdoutput.printf("    %s\n",client->getError());
+		return;
+	}
+	client->rewindResponse();
+	unsigned char	freed[40];
+	charstring::printf(l,sizeof(l),"%s: the locator comes back freed",
+									label);
+	ok=(client->readBytes(dataflags,sizeof(dataflags)) &&
+		client->readByte(&okcode) && okcode==ORA_TTC_OK &&
+		client->readBytes(freed,sizeof(freed)) &&
+		freed[5]==0 && freed[4]==locator[4]);
+	report(l,ok);
+	if (!ok) {
+		dumpResponse(client);
+	}
+}
+
 int main(int argc, char **argv) {
 
 	bool	at102=(argc>1 && !charstring::compare(argv[1],"10.2"));
@@ -916,6 +1192,7 @@ int main(int argc, char **argv) {
 		runFetchOnly(&client);
 	}
 	runClobRead(&client,!singlebyte);
+	runTempLobs(&client,!singlebyte);
 
 	client.disconnect();
 

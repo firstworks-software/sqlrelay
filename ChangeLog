@@ -2989,7 +2989,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   module
 - added temporary lob support (OCILobCreateTemporary and the writes, reads,
   erases, copies, appends, loads from a file and binds on them) to the
-  oracle protocol module
+  oracle protocol module, for Oracle 9i clients too
 - fixed the oracle connection module failing to build with ORACLE_AT_RUNTIME
 - fixed a select for update's row locks staying on the pooled connection
   after its client left, for every protocol: the controller now rolls
@@ -2998,6 +2998,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   fetch-only call with one row
 - fixed the oracle protocol module refusing a bfile locator the client
   built itself with ORA-22275
+- fixed is open on a lob in a row, and a bfile locator built by the client,
+  for Oracle 9i clients of the oracle protocol module
 
 ### Security
 - fixed an authentication hole in the des password encryption module

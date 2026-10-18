@@ -4009,6 +4009,57 @@ that statement, except where noted.
                                       apart by, so the second free in a row
                                       failed with ORA-64201 (#10713)
 
+    10716-redhat9x86-oci8-templobs-realserver-oracle102.oraproxy
+    10716-redhat9x86-oci8-templobs-sqlrelay121-before.oraproxy
+    10716-redhat9x86-oci8-templobs-sqlrelay102.oraproxy
+    10716-redhat9x86-oci8-rowlobs-realserver-oracle102.oraproxy
+    10716-redhat9x86-oci8-trim-realserver-oracle102.oraproxy
+    10716-redhat9x86-oci8-trim-sqlrelay102.oraproxy
+                                     a scratch OCI8 program built against
+                                      the 9.2.0.4 client on redhat9x86
+                                      (the probe of #10713 with the 9i
+                                      headers), NLS_LANG=AMERICAN_AMERICA.
+                                      WE8ISO8859P1.  The first captures it
+                                      against the real server, native:
+                                      two clobs and then two blobs, each
+                                      created, written (0123456789 and
+                                      xyz), erased 3 at 2, appended to,
+                                      copied into (2 of the second at 2
+                                      into the first at 4), erased 100 at
+                                      5, read after each, and freed.  A 9i
+                                      request has the type of the lob in
+                                      the destination offset (0x70 clob,
+                                      0x71 blob, as the amount kind is
+                                      for a modern client), the clob's
+                                      character set flag in the source
+                                      offset, the duration in the
+                                      destination size, and a write's
+                                      data behind the amount.  The create
+                                      answers the 86 byte buffer the
+                                      client sent with the 40 byte locator
+                                      in front of it, then the character
+                                      set (0 for a blob) and a 1.  The
+                                      client opens, closes and asks if
+                                      a temporary lob is open itself, with
+                                      no call.  The second is the same
+                                      program against a 12.1 listener
+                                      before the change - ORA-03001 for
+                                      the create, so the rest fails - and
+                                      the third a 10.2 listener after it,
+                                      whose results are the real server's
+                                      line for line.  The fourth, a
+                                      clob and a blob in a row, opened,
+                                      read, copied and appended into a
+                                      temporary clob: the answer to is
+                                      open is a single byte ([0013]),
+                                      where the module sent the count
+                                      prefixed form a modern OCI client
+                                      is sent.  The trim ones are the same
+                                      program, one clob created, written,
+                                      erased, trimmed to 5 (0x20) and
+                                      freed, against the real server and
+                                      the 10.2 listener (#10716)
+
     10715-dev-oci23-portable-bfile-byname-realserver-oracle122.oraproxy
     10715-dev-oci23-portable-bfile-byname-sqlrelay121-before.oraproxy
     10715-dev-oci23-portable-bfile-byname-sqlrelay121.oraproxy
@@ -4607,9 +4658,10 @@ Run it as "./oci8 native" or "./oci8 sqlrelay12c" with TNS_ADMIN pointing
 at a tnsnames.ora that names the targets and NLS_LANG set. Some checks
 fail with this client against the real server too, because the 9.2
 client lacks features (time zone regions, timestamps with local time
-zones, the 12.2 server version string): 39 fail against oracle122. The
-12.1 listener fails 70. The extra ones are the temporary lob calls and an
-nclob read for a pre-10g client, which are still unanswered (#10713).
+zones, the 12.2 server version string): 32 fail against oracle122, and
+the same 32 fail against a 12.1 listener whose backend is oracle122, with
+the same output line for line (#10716). Before it, the temporary lob
+calls and an nclob read for a pre-10g client were unanswered.
 
 The 9.2.0.4 client's timestamp binds (#10710): oci8's bind sections
 (OCIBindByName of a timestamp, a timestamp with time zone and a
