@@ -46,6 +46,17 @@
 // run with the framed read, and the single-byte one - the instance of
 // ORACLEPROTOCOLPORT7 - with the plain one.
 //
+// And #10714, a 9i client's call that only fetches.  9.2.0.4 OCI8 defines a
+// column after it has executed a statement with no iterations, and then
+// fetches 15 rows with a TTI_QUERY3 that has no parse, no execute and no
+// descriptors.  It names the 15 in the al8i4 vector, and a real server sends
+// 15 rows for it.  The module sent one, and the client made up the rest with
+// a TTI_FETCH for each.  Both calls are as 9.2.0.4 sent them, from
+// samples/10714-redhat9x86-oci8-ociarray-fetchonly-sqlrelay102.oraproxy, and
+// the 15 rows are what a real server sent, [0018] of
+// samples/10714-redhat9x86-oci8-ociarray-fetchonly-realserver-oracle102.
+// oraproxy.
+//
 // It runs against the oracleprotocol instance's 12.1 listener
 // (ORACLEPROTOCOLPORT1), or with "10.2", its 10.2 one (ORACLEPROTOCOLPORT12),
 // or with "singlebyte", the single-byte one.
@@ -717,6 +728,141 @@ static void runClobRead(oracleprotocolclient *client, bool framed) {
 	}
 }
 
+// the OALL8 9.2.0.4 OCI8 sends for "select level from dual connect by
+// level<=40" with no iterations, behind the piggyback's header, and the
+// fetch of 15 rows that only fetches, behind its sequence number and the
+// cursor id.  [0015] and [0017] of the capture cited above
+static const unsigned char	fetchonlyselecttail[]={
+	0x02, 0x80, 0x61, 0x00, 0x44, 0x15, 0x06, 0x08,
+	0x01, 0x2b, 0xf8, 0xcc, 0x05, 0x08, 0x01, 0x0c,
+	0x00, 0x00, 0x00, 0x00, 0x28, 0xcd, 0x05, 0x08,
+	0x00, 0x01, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x00, 0x2a, 0xcd, 0x05, 0x08, 0xb8, 0x15, 0x06,
+	0x08, 0x00, 0x2b,
+	's', 'e', 'l', 'e', 'c', 't', ' ', 'l',
+	'e', 'v', 'e', 'l', ' ', 'f', 'r', 'o',
+	'm', ' ', 'd', 'u', 'a', 'l', ' ', 'c',
+	'o', 'n', 'n', 'e', 'c', 't', ' ', 'b',
+	'y', ' ', 'l', 'e', 'v', 'e', 'l', '<',
+	'=', '4', '0',
+	0x01, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x01, 0x01, 0x00, 0x00, 0x00, 0x00
+};
+static const unsigned char	fetchonlyhead[]={
+	0x01, 0x40, 0x01
+};
+static const unsigned char	fetchonlytail[]={
+	0x00, 0x00, 0x00, 0x00, 0x00, 0xf8, 0xcc, 0x05,
+	0x08, 0x01, 0x0c, 0x00, 0x00, 0x00, 0x00, 0x28,
+	0xcd, 0x05, 0x08, 0x00, 0x00, 0x01, 0x40, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x2a, 0xcd, 0x05, 0x08,
+	0xb8, 0x15, 0x06, 0x08, 0x00, 0x00, 0x01, 0x0f,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x01, 0x00,
+	0x00, 0x00, 0x00
+};
+
+static void runFetchOnly(oracleprotocolclient *client) {
+
+	const char	*label="fetch only";
+	stdoutput.printf("\n%s\n",label);
+
+	unsigned char	piggybackseqnumber=seqnumber++;
+	unsigned char	callseqnumber=seqnumber++;
+	client->beginPacket(ORA_PACKET_DATA);
+	client->appendBE16(0);
+	client->appendByte(ORA_TTC_PIGGYBACK_TTI_FUNCTION);
+	client->appendByte(ORA_TTI_SWITCH_SESSION);
+	client->appendByte(piggybackseqnumber);
+	client->appendBytes(oall8head,sizeof(oall8head));
+	client->appendByte(callseqnumber);
+	client->appendBytes(fetchonlyselecttail,sizeof(fetchonlyselecttail));
+	char	l[256];
+	charstring::printf(l,sizeof(l),"%s: execute with no iterations",label);
+	bool	ok=(client->sendPacket() && client->recvPacket());
+	report(l,ok);
+	if (!ok) {
+		stdoutput.printf("    %s\n",client->getError());
+		return;
+	}
+
+	// the cursor id is the third al8o4 value, behind the TTC_OK
+	static const unsigned char	al8o4head[]={
+		ORA_TTC_OK, 0x01, 0x06, 0x00, 0x00, 0x01
+	};
+	const unsigned char	*response=client->getResponse();
+	size_t			responsesize=client->getResponseSize();
+	unsigned char		cursorid=0;
+	for (size_t i=0; i+sizeof(al8o4head)<responsesize; i++) {
+		if (!bytestring::compare(response+i,al8o4head,
+						sizeof(al8o4head))) {
+			cursorid=response[i+sizeof(al8o4head)];
+			break;
+		}
+	}
+	charstring::printf(l,sizeof(l),"%s: the answer carries a cursor id",
+									label);
+	report(l,cursorid!=0);
+	if (!cursorid) {
+		dumpResponse(client);
+		return;
+	}
+
+	// the fetch.  it names 15 rows in the al8i4 vector
+	client->beginTtiCall(ORA_TTI_QUERY3);
+	client->appendByte(seqnumber++);
+	client->appendBytes(fetchonlyhead,sizeof(fetchonlyhead));
+	client->appendByte(cursorid);
+	client->appendBytes(fetchonlytail,sizeof(fetchonlytail));
+	charstring::printf(l,sizeof(l),"%s: fetch 15 rows",label);
+	ok=(client->sendPacket() && client->recvPacket());
+	report(l,ok);
+	if (!ok) {
+		stdoutput.printf("    %s\n",client->getError());
+		return;
+	}
+
+	// a real server sends all 15, in one row header that says so, the
+	// rows being 2 through 16 because the execute sent the first
+	static const unsigned char	rowheader[]={
+		ORA_TTC_ROW_HEADER,
+		0x02, 0x01, 0x01, 0x00, 0x01, 0x0f, 0x00, 0x00, 0x00
+	};
+	unsigned char	dataflags[2];
+	client->rewindResponse();
+	charstring::printf(l,sizeof(l),"%s: the row header says 15 rows",label);
+	ok=(client->readBytes(dataflags,sizeof(dataflags)) &&
+		expectBytes(client,rowheader,sizeof(rowheader)));
+	report(l,ok);
+	if (!ok) {
+		dumpResponse(client);
+		return;
+	}
+	bool	rowsok=true;
+	for (unsigned char i=3; i<=17 && rowsok; i++) {
+		const unsigned char	row[]={
+			ORA_TTC_ROW_DATA, 0x02, 0xc1, i
+		};
+		rowsok=expectBytes(client,row,sizeof(row));
+	}
+	charstring::printf(l,sizeof(l),"%s: 15 rows follow, 2 through 16",
+									label);
+	report(l,rowsok);
+	if (!rowsok) {
+		dumpResponse(client);
+		return;
+	}
+
+	// then the return parameters
+	unsigned char	okcode=0;
+	charstring::printf(l,sizeof(l),"%s: the return parameters follow",
+									label);
+	report(l,client->readByte(&okcode) && okcode==ORA_TTC_OK);
+}
+
 int main(int argc, char **argv) {
 
 	bool	at102=(argc>1 && !charstring::compare(argv[1],"10.2"));
@@ -767,6 +913,7 @@ int main(int argc, char **argv) {
 		runSelect(&client,"indicator, return length and return code",
 									0x07);
 		runOall8(&client);
+		runFetchOnly(&client);
 	}
 	runClobRead(&client,!singlebyte);
 

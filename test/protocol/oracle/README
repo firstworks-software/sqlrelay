@@ -4009,6 +4009,36 @@ that statement, except where noted.
                                       apart by, so the second free in a row
                                       failed with ORA-64201 (#10713)
 
+    10714-redhat9x86-oci8-ociarray-fetchonly-realserver-oracle102.oraproxy
+    10714-redhat9x86-oci8-ociarray-fetchonly-sqlrelay102-before.oraproxy
+    10714-redhat9x86-oci8-ociarray-fetchonly-sqlrelay102.oraproxy
+                                     a scratch OCI8 program built against
+                                      the 9.2.0.4 client on redhat9x86
+                                      (ociselect with an array define of 15
+                                      strings, OCIDefineArrayOfStruct, the
+                                      define made after an OCIStmtExecute
+                                      of 0 iterations and then
+                                      OCIStmtFetch2 of 15 rows), "select
+                                      level from dual connect by
+                                      level<=40", NLS_LANG=AMERICAN_AMERICA.
+                                      WE8ISO8859P1.  Against the real
+                                      server, native, [0017] is a
+                                      TTI_QUERY3 that only fetches - options
+                                      0x40, no parse, execute or
+                                      descriptors - and the real server
+                                      answers it ([0018]) with 15 rows, the
+                                      al8i4 vector's second element (the
+                                      0f at 0x50 of the request).  The
+                                      first, the execute, had sent row 1.
+                                      Two TTI_FETCH of 15 follow.  The
+                                      before capture, a -buildtree
+                                      listener at serverversion 10.2, sent
+                                      one row for it, so the client
+                                      fetched the rest a call at a time;
+                                      the last, after the fix, sends 15 and
+                                      the client makes the same three calls
+                                      the real server's does (#10714)
+
     10702-redhat9x86-oci8-ociselect-lob-sqlrelay121.oraproxy
     10702-redhat9x86-oci8-ociselect-lob-sqlrelay121-singlebyte.oraproxy
                                      the 9.2.0.4 ociselect with

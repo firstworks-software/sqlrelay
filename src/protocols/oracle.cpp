@@ -14886,6 +14886,32 @@ bool sqlrprotocol_oracle::getQuery3Binds(const byte_t *rp,
 		if ((options&OPTION_PARSE) || !cursorid) {
 			return true;
 		}
+
+		// a pre-10g client's call that only fetches - no parse, no
+		// execute - asks for its rows through the second element of
+		// the al8i4 vector, where a 10g or later client puts them in
+		// the prefetch row count.  a real server sends that many.
+		// see #10714
+		if ((options&OPTION_FETCH) && !(options&OPTION_EXECUTE) &&
+				fieldversion<CCAP_FIELD_VERSION_10_2) {
+			if (vectorsize>(uint32_t)
+					(resppacket+maxrequestsize-rp)) {
+				debugWrite("al8i4 vector past the request");
+				return false;
+			}
+			for (uint32_t i=0; i<vectorsize; i++) {
+				uint32_t	value=0;
+				if (!getLenPreInt(rp,&end,&value,&rp)) {
+					debugWrite("truncated al8i4 vector");
+					return false;
+				}
+				if (i==1) {
+					query3iterations=value;
+				}
+			}
+			debugWrite("fetch rows: %d",query3iterations);
+			return true;
+		}
 		reusecursor=wireIdToCursor(cursorid);
 		if (!reusecursor ||
 			!cursorbindcounts[cont->getId(reusecursor)]) {
@@ -16039,6 +16065,19 @@ bool sqlrprotocol_oracle::sendQuery3Response(sqlrservercursor *cursor,
 		uint32_t	rowstofetch=prefetchrows;
 		if (!rowstofetch && (options&OPTION_FETCH)) {
 			rowstofetch=1;
+
+			// a pre-10g client's call that only fetches names the
+			// rows it wants in the al8i4 vector, and a real server
+			// sends them all rather than one at a time.  see
+			// getQuery3Binds() and #10714
+			if (!(options&(OPTION_EXECUTE|OPTION_PARSE)) &&
+				query3iterations &&
+				fieldversion<CCAP_FIELD_VERSION_10_2) {
+				rowstofetch=query3iterations;
+				if (rowstofetch>MAX_FETCH_ROW_COUNT) {
+					rowstofetch=MAX_FETCH_ROW_COUNT;
+				}
+			}
 		}
 
 		// a describe asks about the statement, not for its data.  a
