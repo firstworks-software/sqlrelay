@@ -955,6 +955,10 @@
 // character read with 800 bytes
 #define LOB_CLOB_BYTES_PER_CHAR		2
 
+// the most bytes a clob character takes in a pre-10g client's framed read:
+// four for the character, and the two bytes of its framing
+#define LOB_LEGACY_FRAMED_MAX		6
+
 // the most data of a lob that a bound locator is read into memory for
 #define LOB_LOCATOR_BIND_MAX_SIZE	(64*1024*1024)
 
@@ -969,6 +973,7 @@
 #define CHARSET_WE8ISO8859P1		31
 #define CHARSET_WE8MSWIN1252		178
 #define CHARSET_AL32UTF8		873
+#define CHARSET_UTF8			871
 #define CHARSET_AL16UTF16		2000
 
 // options
@@ -2209,6 +2214,13 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_oracle : public sqlrprotocol {
 							uint16_t *ch);
 		uint64_t	countUtf8Chars(const char *in, uint64_t insize);
 		bool		clientCharsetIsUtf8();
+		bool		charsetIsMultibyte();
+		uint32_t	convertLegacyClobSegment(bool framed,
+							bool utf8,
+							uint64_t got,
+							uint64_t remaining,
+							byte_t *chunk,
+							uint64_t *units);
 		bool	discardLobDataPacket();
 		bool	sendLobDataMarker();
 		bool	sendLobDataChunk(const byte_t *data,
@@ -17430,9 +17442,23 @@ uint32_t sqlrprotocol_oracle::buildLobLocator(sqlrservercursor *cursor,
 		putLocatorUB2(locator+LOB_LOCATOR_CHARSET_OFFSET,
 						(uint16_t)CHARSET_AL16UTF16);
 	} else if (wiretype==ORACLE_TYPE_CLOB) {
-		locator[LOB_LOCATOR_FLAGS_OFFSET]=LOB_LOCATOR_CHARSET_PRESENT;
+
+		// a pre-10g client is sent the clob in the database character
+		// set, and what tells it how is the locator.  a clob of a
+		// single-byte database doesn't mark its character set present,
+		// which tells a client to expect the characters one byte each -
+		// the 84 byte locator of [0018] of the 10538-solaris8sparc-
+		// oci8-ociselect-lob-realserver-oracle102 capture.  every
+		// other client is sent utf-16 whatever the database character
+		// set is
+		bool	legacy=(fieldversion<CCAP_FIELD_VERSION_10_2);
+		if (!legacy || charsetIsMultibyte()) {
+			locator[LOB_LOCATOR_FLAGS_OFFSET]=
+					LOB_LOCATOR_CHARSET_PRESENT;
+		}
 		putLocatorUB2(locator+LOB_LOCATOR_CHARSET_OFFSET,
-						(uint16_t)CHARSET_AL32UTF8);
+				(uint16_t)((legacy)?charset:
+						CHARSET_AL32UTF8));
 	}
 
 	putLocatorUB2(locator+LOB_LOCATOR_ID_OFFSET,curid);
@@ -18306,6 +18332,20 @@ bool sqlrprotocol_oracle::sendLobReadResponse(sqlrservercursor *cursor,
 				LOB_CHUNK_SIZE/LOB_CLOB_BYTES_PER_CHAR:
 				LOB_CHUNK_SIZE;
 
+	// a pre-10g client gets a clob's characters in the database character
+	// set rather than in utf-16, as a real server sends them: one byte
+	// each from a single-byte database, and from a multibyte one each
+	// character as a chunk of its own, behind its size - [0024] of the two
+	// 10538-solaris8sparc-oci8-ociselect-lob-realserver captures in
+	// test/protocol/oracle/samples
+	bool		legacyclob=(clob &&
+				fieldversion<CCAP_FIELD_VERSION_10_2);
+	bool		framed=(legacyclob && charsetIsMultibyte());
+	if (legacyclob) {
+		charsperchunk=(framed)?LOB_CHUNK_SIZE/LOB_LEGACY_FRAMED_MAX:
+					LOB_CHUNK_SIZE;
+	}
+
 	// the client counts from 1 where the controller counts from 0
 	uint64_t	position=(offset)?offset-1:0;
 	uint64_t	remaining=amount;
@@ -18390,8 +18430,13 @@ bool sqlrprotocol_oracle::sendLobReadResponse(sqlrservercursor *cursor,
 				debugStart("lob data chunk");
 				debugWrite("bytes: %d",chunksize);
 				debugEnd();
-				putLenBytesChunks((const char *)chunk,
-								chunksize);
+				if (framed) {
+					write(&reqpacket,chunk,
+							(size_t)chunksize);
+				} else {
+					putLenBytesChunks(
+						(const char *)chunk,chunksize);
+				}
 			} else {
 				if (!markersent) {
 					if (!sendLobDataMarker()) {
@@ -18412,8 +18457,14 @@ bool sqlrprotocol_oracle::sendLobReadResponse(sqlrservercursor *cursor,
 
 		// hold this one back
 		uint64_t	charsthischunk=0;
-		chunksize=convertLobSegment(clob,utf8,got,remaining,
+		if (legacyclob) {
+			chunksize=convertLegacyClobSegment(framed,utf8,got,
+						remaining,chunk,
+						&charsthischunk);
+		} else {
+			chunksize=convertLobSegment(clob,utf8,got,remaining,
 						chunk,&charsthischunk);
+		}
 		held=true;
 
 		charsread=charsread+charsthischunk;
@@ -18430,6 +18481,55 @@ bool sqlrprotocol_oracle::sendLobReadResponse(sqlrservercursor *cursor,
 
 	return sendLobOperationResponse(locator,locatorsize,
 					LOB_RESULT_UB8,charsread,singlepacket);
+}
+
+bool sqlrprotocol_oracle::charsetIsMultibyte() {
+
+	// whether the character set the module reports is one with characters
+	// of different widths
+	return (charset==CHARSET_AL32UTF8 || charset==CHARSET_UTF8);
+}
+
+uint32_t sqlrprotocol_oracle::convertLegacyClobSegment(bool framed,
+						bool utf8,
+						uint64_t got,
+						uint64_t remaining,
+						byte_t *chunk,
+						uint64_t *units) {
+
+	// a segment of a clob in the backend's character set, as a pre-10g
+	// client reads it.  "got" is bytes - a utf-8 read reports bytes - and
+	// no more than "remaining" characters go out.  a framed character is
+	// its size plus one, its size and then its bytes
+	uint64_t	chars=0;
+	uint32_t	out=0;
+	uint64_t	in=0;
+	while (in<got && chars<remaining) {
+		uint32_t	size=1;
+		if (utf8) {
+			byte_t	first=(byte_t)lobbuffer[in];
+			if (first>=0xf0) {
+				size=4;
+			} else if (first>=0xe0) {
+				size=3;
+			} else if (first>=0xc0) {
+				size=2;
+			}
+			if (in+size>got) {
+				size=(uint32_t)(got-in);
+			}
+		}
+		if (framed) {
+			chunk[out++]=(byte_t)(size+1);
+			chunk[out++]=(byte_t)size;
+		}
+		bytestring::copy(chunk+out,lobbuffer+in,(size_t)size);
+		out+=size;
+		in+=size;
+		chars++;
+	}
+	*units=chars;
+	return out;
 }
 
 uint32_t sqlrprotocol_oracle::convertLobSegment(bool clob,

@@ -33,8 +33,22 @@
 // samples/10538-redhat9x86-sqlplus-select-sqlrelay121-after.oraproxy - "the
 // capture" below.
 //
+// It also covers #10702, a 9i client reading a clob.  The module sent the
+// clob as utf-16, which a client of a 9i era reads as garbage and breaks on
+// (ORA-03120).  A real server sends such a client the clob in the database
+// character set: one byte a character from a single-byte database, and from
+// a multibyte one each character as a chunk of its own, behind its size.
+// The select and the read are as 9.2.0.4 ociselect sent them, from
+// samples/10538-redhat9x86-oci8-ociselect-lob-sqlrelay121.oraproxy, and the
+// answers are what the two real servers sent a 9i client, from
+// samples/10538-solaris8sparc-oci8-ociselect-lob-realserver-oracle122.oraproxy
+// and ...-oracle102.oraproxy.  A listener with a multibyte character set is
+// run with the framed read, and the single-byte one - the instance of
+// ORACLEPROTOCOLPORT7 - with the plain one.
+//
 // It runs against the oracleprotocol instance's 12.1 listener
-// (ORACLEPROTOCOLPORT1), or with "10.2", its 10.2 one (ORACLEPROTOCOLPORT12).
+// (ORACLEPROTOCOLPORT1), or with "10.2", its 10.2 one (ORACLEPROTOCOLPORT12),
+// or with "singlebyte", the single-byte one.
 
 static const char	*host="127.0.0.1";
 static const char	*sid="ora1";
@@ -47,6 +61,8 @@ static const unsigned char	ORA_TTI_CLOSE=0x08;
 static const unsigned char	ORA_TTC_STATUS=0x09;
 static const unsigned char	ORA_TTC_PIGGYBACK_TTI_FUNCTION=0x11;
 static const unsigned char	ORA_TTI_SWITCH_SESSION=0x6b;
+static const unsigned char	ORA_TTI_LOB_OPERATIONS=0x60;
+static const unsigned char	ORA_TTC_LOB_DATA=0x0e;
 
 // the define flag bits - OCI7_DEFINE_* in src/protocols/oracle.cpp
 static const unsigned char	DEFINE_INDICATOR=0x01;
@@ -514,17 +530,209 @@ static void runOall8(oracleprotocolclient *client) {
 	}
 }
 
+// the select of a 400 character clob, parsed, defined as a clob and executed
+// as 9.2.0.4 ociselect sent its select - [0019] of the module capture - and
+// then the read of the clob as it sent that - [0025].  returns the locator
+// the row carried
+static const unsigned char	clobselecthead[]={
+	0x02, 0x80, 0x71, 0x00, 0xfc, 0xf1, 0x05, 0x08,
+	0x01, 0x29, 0xc0, 0xcb, 0x05, 0x08, 0x01, 0x0c,
+	0x00, 0x00, 0x00, 0x00, 0xf0, 0xcb, 0x05, 0x08,
+	0x00, 0x01, 0x01, 0x01, 0x14, 0x00, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0xf2, 0xcb, 0x05, 0x08,
+	0x70, 0xf2, 0x05, 0x08, 0x01, 0x03
+};
+static const unsigned char	clobselecttail[]={
+	0x01, 0x01, 0x01, 0x01, 0x00, 0x00, 0x00, 0x00,
+	0x00, 0x01, 0x01, 0x00, 0x00, 0x00, 0x00,
+	0x70, 0x01, 0x00, 0x00, 0x01, 0x14, 0x00, 0x00,
+	0x00, 0x00, 0x01, 0x1f, 0x01, 0x00,
+	0x71, 0x01, 0x00, 0x00, 0x01, 0x14, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x00,
+	0x72, 0x01, 0x00, 0x00, 0x01, 0x14, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x00
+};
+static const unsigned char	clobreadhead[]={
+	0x01, 0x72, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01,
+	0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x7c, 0xe7,
+	0xff, 0xbf, 0x00, 0x00, 0x00, 0x00, 0x01, 0x02,
+	0x00, 0x00, 0x00, 0x00, 0x00
+};
+static const unsigned char	clobreadtail[]={
+	0x02, 0x01, 0x90
+};
+static const unsigned char	clobreadpointer[]={
+	0xbc, 0x25, 0x07, 0x08
+};
+
+#define LOCATOR_SIZE 114
+
+static void runClobRead(oracleprotocolclient *client, bool framed) {
+
+	const char	*label=(framed)?"clob read, multibyte database":
+						"clob read, single-byte database";
+	stdoutput.printf("\n%s\n",label);
+
+	char		l[256];
+	static const char	query[]=
+			"select to_clob(rpad('C',400,'C')),to_blob(hextoraw("
+			"'0102')),bfilename('DMP_DIR','x') from dual";
+	client->beginTtiCall(ORA_TTI_QUERY3);
+	client->appendByte(seqnumber++);
+
+	// the statement's size is at offset 9 of the head, and again in front
+	// of the text
+	unsigned char	head[sizeof(clobselecthead)];
+	bytestring::copy(head,clobselecthead,sizeof(head));
+	head[9]=(unsigned char)(sizeof(query)-1);
+	client->appendBytes(head,sizeof(head));
+	client->appendByte((unsigned char)(sizeof(query)-1));
+	client->appendBytes((const unsigned char *)query,sizeof(query)-1);
+	client->appendBytes(clobselecttail,sizeof(clobselecttail));
+	charstring::printf(l,sizeof(l),"%s: select",label);
+	bool	ok=(client->sendPacket() && client->recvPacket());
+	report(l,ok);
+	if (!ok) {
+		stdoutput.printf("    %s\n",client->getError());
+		return;
+	}
+
+	// the locator is the 114 bytes behind the 0x72 that ends the row's
+	// lob length prefix.  the row carries nothing else a clob's
+	// characters would be in
+	static const unsigned char	locatorhead[]={
+		0x00, 0x70, 0x00, 0x02, 0x02, 0x0c
+	};
+	const unsigned char	*response=client->getResponse();
+	size_t			responsesize=client->getResponseSize();
+	size_t			start=0;
+	bool			found=false;
+	for (size_t i=0; i+LOCATOR_SIZE<=responsesize; i++) {
+		if (!bytestring::compare(response+i,locatorhead,
+						sizeof(locatorhead))) {
+			start=i;
+			found=true;
+			break;
+		}
+	}
+	charstring::printf(l,sizeof(l),"%s: the row carries a locator",label);
+	report(l,found);
+	if (!found) {
+		dumpResponse(client);
+		return;
+	}
+	unsigned char	locator[LOCATOR_SIZE];
+	bytestring::copy(locator,response+start,sizeof(locator));
+
+	// the locator says whether the clob's characters are one byte each,
+	// by whether it marks its character set present - flags 0x80 at
+	// offset 6.  a real server's clob of a single-byte database leaves
+	// it clear, [0018] of the 10.2 capture
+	charstring::printf(l,sizeof(l),"%s: the locator says how the "
+					"characters are sent",label);
+	report(l,((locator[6]&0x80)!=0)==framed);
+
+	// the read, of all 400 characters from the first
+	client->beginTtiCall(ORA_TTI_LOB_OPERATIONS);
+	client->appendByte(seqnumber++);
+	client->appendBytes(clobreadpointer,sizeof(clobreadpointer));
+	client->appendBytes(clobreadhead,sizeof(clobreadhead));
+	client->appendBytes(locator,sizeof(locator));
+	client->appendBytes(clobreadtail,sizeof(clobreadtail));
+	charstring::printf(l,sizeof(l),"%s: read",label);
+	ok=(client->sendPacket() && client->recvPacket());
+	report(l,ok);
+	if (!ok) {
+		stdoutput.printf("    %s\n",client->getError());
+		return;
+	}
+
+	// the data, in the long form, and then the locator and the amount
+	unsigned char	dataflags[2];
+	unsigned char	ttccode=0;
+	unsigned char	marker=0;
+	client->rewindResponse();
+	charstring::printf(l,sizeof(l),"%s: lob data follows",label);
+	ok=(client->readBytes(dataflags,sizeof(dataflags)) &&
+		client->readByte(&ttccode) && ttccode==ORA_TTC_LOB_DATA &&
+		client->readByte(&marker) && marker==0xfe);
+	report(l,ok);
+	if (!ok) {
+		dumpResponse(client);
+		return;
+	}
+
+	// a multibyte database sends each character as a chunk of its own,
+	// its size plus one, its size and its byte - 02 01 43 - [0024] of the
+	// 12.2 capture; a single-byte one sends the bytes in chunks of up to
+	// 255 - ff, then 91 for the rest - [0024] of the 10.2 capture
+	unsigned char	chunk[256];
+	size_t		chars=0;
+	bool		good=true;
+	for (;;) {
+		unsigned char	size=0;
+		if (!client->readByte(&size)) {
+			good=false;
+			break;
+		}
+		if (!size) {
+			break;
+		}
+		if (!client->readBytes(chunk,size)) {
+			good=false;
+			break;
+		}
+		if (framed) {
+			good=(good && size==2 && chunk[0]==1 &&
+							chunk[1]=='C');
+			chars++;
+		} else {
+			for (unsigned char i=0; i<size; i++) {
+				good=(good && chunk[i]=='C');
+			}
+			chars+=size;
+			good=(good && (size==255 || chars==400));
+		}
+	}
+	stdoutput.printf("    characters: %d\n",(int)chars);
+	charstring::printf(l,sizeof(l),"%s: the 400 characters are "
+					"sent the way a real server "
+					"sends them",label);
+	report(l,good && chars==400);
+
+	// then 08, the locator as it came and the amount, 400
+	unsigned char	okcode=0;
+	unsigned char	echoed[LOCATOR_SIZE];
+	charstring::printf(l,sizeof(l),"%s: the locator and the amount "
+					"follow",label);
+	ok=(client->readByte(&okcode) && okcode==ORA_TTC_OK &&
+		client->readBytes(echoed,sizeof(echoed)) &&
+		!bytestring::compare(echoed,locator,sizeof(locator)) &&
+		expectBytes(client,clobreadtail,sizeof(clobreadtail)));
+	report(l,ok);
+	if (!ok) {
+		dumpResponse(client);
+	}
+}
+
 int main(int argc, char **argv) {
 
 	bool	at102=(argc>1 && !charstring::compare(argv[1],"10.2"));
+	bool	singlebyte=(argc>1 && !charstring::compare(argv[1],
+							"singlebyte"));
 
-	stdoutput.printf("\n====== #10538 9i sqlplus bootstrap "
-				"(serverversion %s) ======\n",
-				(at102)?"10.2":"12.1");
+	stdoutput.printf("\n====== #10538 9i sqlplus bootstrap and #10702 "
+				"clob read (%s) ======\n",
+				(singlebyte)?"single-byte database":
+				(at102)?"serverversion 10.2":
+					"serverversion 12.1");
 
-	const char	*portvariable=(at102)?"ORACLEPROTOCOLPORT12":
+	const char	*portvariable=(singlebyte)?"ORACLEPROTOCOLPORT7":
+					(at102)?"ORACLEPROTOCOLPORT12":
 						"ORACLEPROTOCOLPORT1";
-	uint16_t	port=(at102)?1532:1521;
+	uint16_t	port=(singlebyte)?1527:(at102)?1532:1521;
 	const char	*portoverride=environment::getValue(portvariable);
 	if (!charstring::isNullOrEmpty(portoverride)) {
 		port=(uint16_t)charstring::convertToInteger(portoverride);
@@ -553,10 +761,14 @@ int main(int argc, char **argv) {
 		return status;
 	}
 
-	runSelect(&client,"sqlplus bootstrap",0x00);
-	runSelect(&client,"indicator",DEFINE_INDICATOR);
-	runSelect(&client,"indicator, return length and return code",0x07);
-	runOall8(&client);
+	if (!singlebyte) {
+		runSelect(&client,"sqlplus bootstrap",0x00);
+		runSelect(&client,"indicator",DEFINE_INDICATOR);
+		runSelect(&client,"indicator, return length and return code",
+									0x07);
+		runOall8(&client);
+	}
+	runClobRead(&client,!singlebyte);
 
 	client.disconnect();
 

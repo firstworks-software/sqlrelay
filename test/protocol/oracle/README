@@ -3915,6 +3915,29 @@ that statement, except where noted.
                                       only the exact text did, and the
                                       others got PLS-00306 (#10709)
 
+    10702-redhat9x86-oci8-ociselect-lob-sqlrelay121.oraproxy
+    10702-redhat9x86-oci8-ociselect-lob-sqlrelay121-singlebyte.oraproxy
+                                     the 9.2.0.4 ociselect with
+                                      OCISELECT_LOB=1 against a -buildtree
+                                      listener at serverversion 12.1, after
+                                      the fix: the first with the default
+                                      AL32UTF8 character set, the second
+                                      with charset="31".  The clob reads
+                                      (400 characters at [0026], 32000 at
+                                      the end) send the characters the way
+                                      the real servers do in the 10538
+                                      solaris8sparc captures above: from
+                                      the multibyte listener each as a
+                                      chunk of its own (02 01 43), from
+                                      the single-byte one one byte each in
+                                      chunks of up to 255.  The clob's
+                                      locator leaves the character set
+                                      present flag clear for the
+                                      single-byte one, as the real 10.2
+                                      server's does.  Before it the client
+                                      got utf-16 and failed with ORA-03120
+                                      (#10702)
+
     10703-dev-oci23-portable-clobasstring-realserver-oracle122.oraproxy
                                      ociselect (OCI 23.26, banner rewritten
                                       and ORAPROXY_UNIVERSAL_REPS=1 so the

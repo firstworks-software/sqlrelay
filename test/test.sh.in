@@ -1493,14 +1493,18 @@ run_protocol_test() {
 	# back.  no real client can send all three bytes, and the genuine 9i
 	# clients that send 0x05 only run on the buildfarm.  it reads the
 	# ports straight from the environment, so it needs neither $server
-	# nor TNS_ADMIN.  then oracle9ibootstrap, twice, for #10538 - it plays
-	# 9.2.0.4 sqlplus over a raw socket against the 12.1
+	# nor TNS_ADMIN.  then oracle9ibootstrap, three times, for #10538 and
+	# #10702 - it plays 9.2.0.4 sqlplus over a raw socket against the 12.1
 	# (ORACLEPROTOCOLPORT1) and 10.2 (ORACLEPROTOCOLPORT12) listeners: its
 	# data type negotiation, an o3logon login with the 9i verifier, its
 	# bootstrap TTI_QUERY, TTI_QUERY2 and TTI_FETCH, and the OALL8 behind
 	# them.  it checks that the fetch sends a value's indicator and return
 	# code only when the define's flag asks for them, and that the OALL8's
-	# answer has the shape a real 10.2 server sends a 9i client.  it reads
+	# answer has the shape a real 10.2 server sends a 9i client, and then
+	# reads a clob the way 9.2.0.4 ociselect does, which a real server
+	# sends a 9i client in the database character set, not in utf-16.  the
+	# third run is that read against the single-byte listener of the
+	# oracleprotocoloci7 instance (ORACLEPROTOCOLPORT7).  it reads
 	# the ports from the environment too.  then ojdbc, three times, for
 	# #10569 - an ojdbc (thin driver) check of getDatabaseProductVersion()
 	# and of CLOB and BLOB selects at the driver's default lob prefetch
@@ -1519,7 +1523,7 @@ run_protocol_test() {
 	# client with that file, and a client that read them as local time
 	# would get wrong values.  the file comes from an Oracle server and
 	# isn't checked in (see the README), so the run is skipped without it.
-	# all thirty-seven runs have to succeed for the instance to pass
+	# all thirty-eight runs have to succeed for the instance to pass
 	if ( test "$instance" = "oracleprotocol" )
 	then
 		./$prog
@@ -1560,6 +1564,8 @@ run_protocol_test() {
 		result9ibootstrap="$?"
 		./oracle9ibootstrap 10.2
 		result9ibootstrap10g="$?"
+		./oracle9ibootstrap singlebyte
+		result9ibootstrapsinglebyte="$?"
 		./oracleclrchunks
 		resultclrchunks="$?"
 		./oracleiterations0
@@ -1634,7 +1640,7 @@ run_protocol_test() {
 			echo "no oci7inlinelob test found (built only with HAVE_OCI7), or no db2 module built"
 			resultoci7inlinelob="0"
 		fi
-		if ( test "$resultdefault" = "0" ) && ( test "$result10g" = "0" ) && ( test "$result11g" = "0" ) && ( test "$result12c" = "0" ) && ( test "$resultconnectstrings" = "0" ) && ( test "$resultfetchatonce" = "0" ) && ( test "$resultdescribeonly" = "0" ) && ( test "$resultdescribe" = "0" ) && ( test "$resultdescribenative" = "0" ) && ( test "$resultmidfetchdescribe" = "0" ) && ( test "$resultmidfetchdescribenative" = "0" ) && ( test "$resultlegacyfetch" = "0" ) && ( test "$resulttransaction" = "0" ) && ( test "$resulttransactionnative" = "0" ) && ( test "$resultreexecuteandfetch" = "0" ) && ( test "$resultverifiernegotiation" = "0" ) && ( test "$resultverifiernegotiationnative" = "0" ) && ( test "$result9ibootstrap" = "0" ) && ( test "$result9ibootstrap10g" = "0" ) && ( test "$resultclrchunks" = "0" ) && ( test "$resultiterations0" = "0" ) && ( test "$resultbigchunksoff" = "0" ) && ( test "$resultrefcursorreuse" = "0" ) && ( test "$resultsplitrequest" = "0" ) && ( test "$resultsplitquery3" = "0" ) && ( test "$resultsplitresponse" = "0" ) && ( test "$resultmaxdescriptors" = "0" ) && ( test "$resultmaxfetchrowcount" = "0" ) && ( test "$resultutf8clob" = "0" ) && ( test "$resultinlinelob" = "0" ) && ( test "$resultojdbc" = "0" ) && ( test "$resultojdbc10g" = "0" ) && ( test "$resultojdbc11g" = "0" ) && ( test "$resulttzv11" = "0" ) && ( test "$resultoci7" = "0" ) && ( test "$resultoci7utf8clob" = "0" ) && ( test "$resultoci7inlinelob" = "0" )
+		if ( test "$resultdefault" = "0" ) && ( test "$result10g" = "0" ) && ( test "$result11g" = "0" ) && ( test "$result12c" = "0" ) && ( test "$resultconnectstrings" = "0" ) && ( test "$resultfetchatonce" = "0" ) && ( test "$resultdescribeonly" = "0" ) && ( test "$resultdescribe" = "0" ) && ( test "$resultdescribenative" = "0" ) && ( test "$resultmidfetchdescribe" = "0" ) && ( test "$resultmidfetchdescribenative" = "0" ) && ( test "$resultlegacyfetch" = "0" ) && ( test "$resulttransaction" = "0" ) && ( test "$resulttransactionnative" = "0" ) && ( test "$resultreexecuteandfetch" = "0" ) && ( test "$resultverifiernegotiation" = "0" ) && ( test "$resultverifiernegotiationnative" = "0" ) && ( test "$result9ibootstrap" = "0" ) && ( test "$result9ibootstrap10g" = "0" ) && ( test "$result9ibootstrapsinglebyte" = "0" ) && ( test "$resultclrchunks" = "0" ) && ( test "$resultiterations0" = "0" ) && ( test "$resultbigchunksoff" = "0" ) && ( test "$resultrefcursorreuse" = "0" ) && ( test "$resultsplitrequest" = "0" ) && ( test "$resultsplitquery3" = "0" ) && ( test "$resultsplitresponse" = "0" ) && ( test "$resultmaxdescriptors" = "0" ) && ( test "$resultmaxfetchrowcount" = "0" ) && ( test "$resultutf8clob" = "0" ) && ( test "$resultinlinelob" = "0" ) && ( test "$resultojdbc" = "0" ) && ( test "$resultojdbc10g" = "0" ) && ( test "$resultojdbc11g" = "0" ) && ( test "$resulttzv11" = "0" ) && ( test "$resultoci7" = "0" ) && ( test "$resultoci7utf8clob" = "0" ) && ( test "$resultoci7inlinelob" = "0" )
 		then
 			printf "    % 8s: success\n" "protocol" >> "$RESULTSLOG"
 			cd ../..
@@ -1715,6 +1721,10 @@ run_protocol_test() {
 		if ( test "$result9ibootstrap10g" != "0" )
 		then
 			printf "    % 8s: failed (9i bootstrap, serverversion 10.2)\n" "protocol" >> "$RESULTSLOG"
+		fi
+		if ( test "$result9ibootstrapsinglebyte" != "0" )
+		then
+			printf "    % 8s: failed (9i clob read, single-byte database)\n" "protocol" >> "$RESULTSLOG"
 		fi
 		if ( test "$resultclrchunks" != "0" )
 		then
