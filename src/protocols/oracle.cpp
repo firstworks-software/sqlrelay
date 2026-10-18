@@ -856,6 +856,7 @@
 #define LOB_LOCATOR_INIT_OFFSET		0x07
 #define LOB_LOCATOR_TYPE2_OFFSET	0x09
 #define LOB_LOCATOR_SEQUENCE_OFFSET	0x0c
+#define LOB_LOCATOR_OPEN_OFFSET		0x0b
 #define LOB_LOCATOR_ID_OFFSET		0x10
 #define LOB_LOCATOR_CHARSET_OFFSET	0x20
 #define LOB_LOCATOR_MAGIC_OFFSET	0x22
@@ -2229,6 +2230,23 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_oracle : public sqlrprotocol {
 							const byte_t *end,
 							uint64_t *value,
 							const byte_t **rpout);
+		bool	lobFieldOperation(uint32_t operation,
+						sqlrservercursor *cursor,
+						uint32_t column,
+						uint16_t wiretype,
+						const byte_t *sourcelocator,
+						uint32_t sourcesize,
+						uint64_t sourceoffset,
+						uint64_t amount,
+						bool amountpresent,
+						bool byname);
+		bool	sendBfileOpenResponse(const byte_t *locator,
+						uint32_t locatorsize,
+						bool open,
+						uint64_t amount);
+		sqlrservercursor	*openBfileByName(
+						const byte_t *locator,
+						uint32_t locatorsize);
 		bool	decodeLobLocator(const byte_t *locator,
 							uint32_t locatorsize,
 							sqlrservercursor **cursor,
@@ -19843,11 +19861,54 @@ bool sqlrprotocol_oracle::lobOperations(const byte_t *rp,
 	sqlrservercursor	*cursor=NULL;
 	uint32_t		column=0;
 	uint16_t		wiretype=0;
-	if (!decodeLobLocator(sourcelocator,sourcesize,
+	if (decodeLobLocator(sourcelocator,sourcesize,
 					&cursor,&column,&wiretype)) {
+		return lobFieldOperation(operation,cursor,column,wiretype,
+					sourcelocator,sourcesize,
+					sourceoffset,amount,amountpresent,
+					false);
+	}
+
+	// a bfile locator the client built itself, with OCILobFileSetName(),
+	// names a file and nothing else: there's no row behind it.  the
+	// backend is asked about the names on a cursor of the module's own
+	// instead.  see #10715
+	cursor=openBfileByName(sourcelocator,sourcesize);
+	if (!cursor) {
 		return sendLobOperationError(ORA_INVALID_LOB_LOCATOR,
 					ORA_INVALID_LOB_LOCATOR_MESSAGE);
 	}
+	bool	result=lobFieldOperation(operation,cursor,0,
+					ORACLE_TYPE_BFILE,
+					sourcelocator,sourcesize,
+					sourceoffset,amount,amountpresent,
+					true);
+	cont->closeLobField(cursor,0);
+	cont->closeResultSet(cursor);
+	cont->close(cursor);
+	cont->deleteCursor(cursor);
+	return result;
+}
+
+bool sqlrprotocol_oracle::lobFieldOperation(uint32_t operation,
+						sqlrservercursor *cursor,
+						uint32_t column,
+						uint16_t wiretype,
+						const byte_t *sourcelocator,
+						uint32_t sourcesize,
+						uint64_t sourceoffset,
+						uint64_t amount,
+						bool amountpresent,
+						bool byname) {
+
+	// the read side of a lob operation on a column of a cursor's current
+	// row.  byname says the cursor is the module's own, running a select
+	// of a bfile by its names for a locator the client built: it has no
+	// pin to hang an open state on, so the state rides in the locator, as
+	// a real server's does - the byte at LOB_LOCATOR_OPEN_OFFSET, which
+	// the answer to an open sets and the answer to a close clears -
+	// [0022] and [0024] of test/protocol/oracle/samples/10715-dev-oci23-
+	// portable-bfile-byname-realserver-oracle122.oraproxy
 
 	// the length, in characters for a clob and bytes for a blob, which
 	// is what getLobFieldLength() answers either way
@@ -19903,14 +19964,22 @@ bool sqlrprotocol_oracle::lobOperations(const byte_t *rp,
 			return sendLobOperationError(ORA_FILE_OPEN_FAILED,
 					ORA_FILE_OPEN_FAILED_MESSAGE);
 		}
+		if (byname) {
+			return sendBfileOpenResponse(sourcelocator,sourcesize,
+					true,(amountpresent)?amount:1);
+		}
 		setLobOpen(cursor,column,true);
 	}
 	if (operation==LOB_OP_FILE_IS_OPEN || operation==LOB_OP_IS_OPEN) {
+		bool	open=(byname)?
+			(sourcesize>LOB_LOCATOR_OPEN_OFFSET &&
+				sourcelocator[LOB_LOCATOR_OPEN_OFFSET]):
+			isLobOpen(cursor,column);
 		return sendLobOperationResponse(sourcelocator,sourcesize,
 					(ociclient || jdbcclient)?
 							LOB_RESULT_UB8:
 							LOB_RESULT_BOOL,
-					(isLobOpen(cursor,column))?1:0);
+					(open)?1:0);
 	}
 	if (operation==LOB_OP_OPEN || operation==LOB_OP_FILE_OPEN) {
 		if (operation==LOB_OP_OPEN) {
@@ -19925,10 +19994,98 @@ bool sqlrprotocol_oracle::lobOperations(const byte_t *rp,
 	// have handed out more than one locator, and the others are still
 	// good - and comes off at the cursor's next fetch, the way it would
 	// have without this call.  see releaseLobPin()
+	if (byname) {
+		return sendBfileOpenResponse(sourcelocator,sourcesize,
+							false,0);
+	}
 	setLobOpen(cursor,column,false);
 	cont->closeLobField(cursor,column);
 	return sendLobOperationResponse(sourcelocator,sourcesize,
 						LOB_RESULT_NONE,0);
+}
+
+bool sqlrprotocol_oracle::sendBfileOpenResponse(const byte_t *locator,
+						uint32_t locatorsize,
+						bool open,
+						uint64_t amount) {
+
+	// the answer to an open or a close of a file named by a locator the
+	// client built: the locator back with its open byte changed, which is
+	// all the state there is.  the open's result is the mode, the close's
+	// nothing
+	byte_t	copy[ORACLE_BFILE_SIZE];
+	if (locatorsize>sizeof(copy)) {
+		return sendLobOperationError(ORA_INVALID_LOB_LOCATOR,
+					ORA_INVALID_LOB_LOCATOR_MESSAGE);
+	}
+	bytestring::copy(copy,locator,locatorsize);
+	if (locatorsize>LOB_LOCATOR_OPEN_OFFSET) {
+		copy[LOB_LOCATOR_OPEN_OFFSET]=(open)?1:0;
+	}
+	return sendLobOperationResponse(copy,locatorsize,
+					(open)?LOB_RESULT_UB8:LOB_RESULT_NONE,
+					amount);
+}
+
+sqlrservercursor *sqlrprotocol_oracle::openBfileByName(
+						const byte_t *locator,
+						uint32_t locatorsize) {
+
+	// a cursor of the module's own, on the row of a select of the bfile a
+	// locator the client built names, for the lob operations to work on
+	// the way they would on a row's.  NULL for anything but a well formed
+	// bfile locator with names in it and none of the bookkeeping behind
+	// them, which is the module's own and would have decoded unless its
+	// row had gone
+	const byte_t	*diralias=NULL;
+	uint16_t	diraliassize=0;
+	const byte_t	*filename=NULL;
+	uint16_t	filenamesize=0;
+	const byte_t	*bk=NULL;
+	if (!parseBfileLocator(locator,locatorsize,
+				&diralias,&diraliassize,
+				&filename,&filenamesize,&bk) ||
+		bk || !diraliassize || !filenamesize) {
+		return NULL;
+	}
+
+	// the names go into the statement as literals
+	stringbuffer	query;
+	query.append("select bfilename('");
+	for (uint16_t i=0; i<diraliassize; i++) {
+		if (diralias[i]=='\'') {
+			query.append('\'');
+		}
+		query.append((char)diralias[i]);
+	}
+	query.append("','");
+	for (uint16_t i=0; i<filenamesize; i++) {
+		if (filename[i]=='\'') {
+			query.append('\'');
+		}
+		query.append((char)filename[i]);
+	}
+	query.append("') from dual");
+	debugWrite("bfile by name: %s",query.getString());
+
+	sqlrservercursor	*cursor=cont->newCursor();
+	if (!cursor) {
+		return NULL;
+	}
+	bool	error=false;
+	if (!cont->open(cursor) ||
+		!cont->prepareQuery(cursor,query.getString(),
+					query.getSize(),
+					false,false,false,false) ||
+		!cont->executeQuery(cursor,false,false,false,false) ||
+		!cont->fetchRow(cursor,&error)) {
+		debugWrite("bfile by name failed");
+		cont->closeResultSet(cursor);
+		cont->close(cursor);
+		cont->deleteCursor(cursor);
+		return NULL;
+	}
+	return cursor;
 }
 
 void sqlrprotocol_oracle::putReturnParameters(uint32_t cursorid) {

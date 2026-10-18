@@ -2996,6 +2996,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   the session back at its end when autocommit was off
 - fixed the oracle protocol module answering a pre-10g client's
   fetch-only call with one row
+- fixed the oracle protocol module refusing a bfile locator the client
+  built itself with ORA-22275
 
 ### Security
 - fixed an authentication hole in the des password encryption module

@@ -4564,9 +4564,7 @@ int main(int argc, char **argv) {
 					"DMP_DIR)\n");
 	} else {
 		// the locator comes out of a row, as the module hands out its
-		// own.  one built on the client with OCILobFileSetName has
-		// nothing in it that names a row, and the module answers it
-		// with ORA-22275 (#10715)
+		// own.  one built on the client is further down
 		execImmediate("drop table protocoltestbfile");
 		assertEquals(
 			execImmediate("create table protocoltestbfile "
@@ -4657,6 +4655,87 @@ int main(int argc, char **argv) {
 		assertEquals(OCIHandleFree(filestmt,OCI_HTYPE_STMT),
 								OCI_SUCCESS);
 		execImmediate("drop table protocoltestbfile");
+
+		// a locator the client builds itself, with the directory alias
+		// and the file name and nothing else.  the module answers from
+		// the names.  #10715
+		OCILobLocator	*namedbfile=NULL;
+		assertEquals(
+			OCIDescriptorAlloc(env,(void **)&namedbfile,
+						OCI_DTYPE_FILE,0,NULL),
+			OCI_SUCCESS);
+		assertEquals(
+			OCILobFileSetName(env,err,&namedbfile,
+					(text *)"DMP_DIR",7,
+					(text *)"protocolbfile.txt",17),
+			OCI_SUCCESS);
+		fileexists=0;
+		assertEquals(
+			OCILobFileExists(svc,err,namedbfile,&fileexists),
+			OCI_SUCCESS);
+		assertEquals((int)fileexists,1);
+		fileopen=1;
+		assertEquals(
+			OCILobFileIsOpen(svc,err,namedbfile,&fileopen),
+			OCI_SUCCESS);
+		assertEquals((int)fileopen,0);
+		assertEquals(
+			OCILobFileOpen(svc,err,namedbfile,OCI_FILE_READONLY),
+			OCI_SUCCESS);
+		fileopen=0;
+		assertEquals(
+			OCILobFileIsOpen(svc,err,namedbfile,&fileopen),
+			OCI_SUCCESS);
+		assertEquals((int)fileopen,1);
+		filelength=0;
+		assertEquals(
+			OCILobGetLength(svc,err,namedbfile,&filelength),
+			OCI_SUCCESS);
+		assertEquals((int)filelength,12);
+		bytestring::zero(filebuffer,sizeof(filebuffer));
+		fileamount=sizeof(filebuffer);
+		assertEquals(
+			OCILobRead(svc,err,namedbfile,&fileamount,1,
+					filebuffer,sizeof(filebuffer),
+					NULL,NULL,0,0),
+			OCI_SUCCESS);
+		assertEquals((int)fileamount,12);
+		assertEquals((const char *)filebuffer,bfilecontent);
+		bytestring::zero(filebuffer,sizeof(filebuffer));
+		fileamount=5;
+		assertEquals(
+			OCILobRead(svc,err,namedbfile,&fileamount,3,
+					filebuffer,sizeof(filebuffer),
+					NULL,NULL,0,0),
+			OCI_SUCCESS);
+		assertEquals((int)fileamount,5);
+		assertEquals((const char *)filebuffer,"llo b");
+		assertEquals(
+			OCILobFileClose(svc,err,namedbfile),OCI_SUCCESS);
+		fileopen=1;
+		assertEquals(
+			OCILobFileIsOpen(svc,err,namedbfile,&fileopen),
+			OCI_SUCCESS);
+		assertEquals((int)fileopen,0);
+
+		// a file that isn't there
+		assertEquals(
+			OCILobFileSetName(env,err,&namedbfile,
+					(text *)"DMP_DIR",7,
+					(text *)"nosuchfile.txt",14),
+			OCI_SUCCESS);
+		fileexists=1;
+		assertEquals(
+			OCILobFileExists(svc,err,namedbfile,&fileexists),
+			OCI_SUCCESS);
+		assertEquals((int)fileexists,0);
+		assertEquals(
+			OCILobFileOpen(svc,err,namedbfile,OCI_FILE_READONLY),
+			OCI_ERROR);
+		assertEquals(OCILobFileCloseAll(svc,err),OCI_SUCCESS);
+		assertEquals(
+			OCIDescriptorFree(namedbfile,OCI_DTYPE_FILE),
+			OCI_SUCCESS);
 
 		assertEquals(
 			execImmediate("begin utl_file.fremove("

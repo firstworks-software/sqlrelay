@@ -4009,6 +4009,39 @@ that statement, except where noted.
                                       apart by, so the second free in a row
                                       failed with ORA-64201 (#10713)
 
+    10715-dev-oci23-portable-bfile-byname-realserver-oracle122.oraproxy
+    10715-dev-oci23-portable-bfile-byname-sqlrelay121-before.oraproxy
+    10715-dev-oci23-portable-bfile-byname-sqlrelay121.oraproxy
+                                     a scratch OCI 23.26 program (banner
+                                      rewritten, ORAPROXY_UNIVERSAL_REPS=1
+                                      for the real server) that builds a
+                                      bfile locator with OCIDescriptorAlloc
+                                      and OCILobFileSetName - DMP_DIR and
+                                      a file utl_file wrote, then a
+                                      missing file, then a missing
+                                      directory - and runs exists, is
+                                      open, open, is open, getlength, read
+                                      (all, and 5 from the 3rd), close and
+                                      is open on each.  The locator is
+                                      just the header and the two names;
+                                      the real server keeps the open state
+                                      in the byte at offset 11 of the
+                                      locator it sends back (the answer
+                                      at [0022] sets it, and the requests
+                                      after carry it).  The
+                                      before capture, against a -buildtree
+                                      listener at serverversion 12.1,
+                                      answers every call with ORA-22275;
+                                      the last one, after the change, runs
+                                      the existing file's calls to the
+                                      real server's results.  A missing
+                                      file or directory is answered as a
+                                      row's locator is: exists is 0, the
+                                      open fails with ORA-22288, and
+                                      length and read give nothing, where
+                                      the real server gives ORA-22288,
+                                      ORA-22285 and ORA-22289 (#10715)
+
     10714-redhat9x86-oci8-ociarray-fetchonly-realserver-oracle102.oraproxy
     10714-redhat9x86-oci8-ociarray-fetchonly-sqlrelay102-before.oraproxy
     10714-redhat9x86-oci8-ociarray-fetchonly-sqlrelay102.oraproxy
