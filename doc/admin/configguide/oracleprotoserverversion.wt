@@ -45,17 +45,21 @@ The verifier is how the client and the module prove the password to each other w
 ||A genuine OCI7 era client (older than Oracle 10g)||O3LOGON, 9i verifier||O3LOGON, 9i verifier||O3LOGON, 9i verifier||
 ||An OCI7 interface call from a modern OCI client||O3LOGON, 10g verifier||O3LOGON, 10g verifier||O3LOGON, 10g verifier||
 ||A modern OCI, ojdbc or thin driver client||O5LOGON, 10g verifier||O5LOGON, 11g verifier||O5LOGON, 12c verifier||
-||A client that advertises O5LOGON only||O5LOGON, 10g verifier||O5LOGON, 11g verifier||O5LOGON, 11g verifier||
+||A genuine Oracle 10g (10.2) OCI client||O5LOGON, 10g verifier (OCI8 calls) or O3LOGON, 10g verifier (OCI7 calls)||O5LOGON, 11g verifier or O3LOGON, 10g verifier||O5LOGON, 11g verifier or O3LOGON, 10g verifier||
+||A client that advertises O5LOGON but not O7LOGON, such as a genuine 11g OCI client||O5LOGON, 10g verifier (OCI8 calls) or O3LOGON, 10g verifier (OCI7 calls)||O5LOGON, 11g verifier or O3LOGON, 10g verifier||O5LOGON, 11g verifier or O3LOGON, 10g verifier||
 
 Notes on the table:
 
 * A client older than Oracle 10g doesn't say that it supports O5LOGON, so it gets the 9i verifier.  So does any other client that doesn't say it.
 * A modern OCI client can also use the old OCI7 call interface.  Its login call is a "classic" one, which has no O5LOGON form, so it gets O3LOGON, with the 10g verifier.
-* A modern client gets 12c when the ceiling is 12.1 and the client says it supports 12c.  ojdbc and OCI 23.26 copy the logon types the module advertises, so they ask for 12c at 12.1 and for 11g at 11.2.  A client that doesn't support 12c gets 11g at both.
+* A modern client gets 12c when the ceiling is 12.1 and the client says it supports 12c.  ojdbc copies the logon types the module advertises, so it asks for 12c at 12.1 and for 11g at 11.2.  OCI 23.26 always sends the same logon types, and gets the same result.  A client that doesn't support 12c gets 11g at both.
+* A genuine Oracle 10g client says that it supports O5LOGON, but not the newer O5LOGON_NP or O7LOGON.  It gets the 11g verifier at 11.2 and 12.1, and completes it.  A real Oracle 11.2 server does the same for it, and a real 12.2 server gives it the 10g verifier instead.  The 10g client does not accept the 9i verifier.
+* A genuine Oracle 11.2 client (11.2.0.3) also says that it supports O5LOGON and O5LOGON_NP, but not O7LOGON.  Its OCI8 calls get the 11g verifier at 11.2 and 12.1, and the 10g verifier at 10.2.  Its OCI7 calls get O3LOGON with the 10g verifier.  A real Oracle 12.2 server gives its OCI7 calls a longer session key than the module does.
+* The genuine ojdbc14 10.2 driver advertises no logon types at all, so it gets the 9i verifier.  A real Oracle server gives it a different exchange, with a shorter session key, and it logs in.  It does not log in to the module: it fails at every ceiling and floor with "No more data to read from socket".  See [#oracleserverversionclients Which Clients Work].
 * Oracle 10.2 has no 11g or 12c verifier.  So at 10.2 a modern client gets O5LOGON with the 10g verifier, as it does from a real Oracle 10.2 server.
 * The logon types the module advertises follow the ceiling: O7LOGON, the 12c bit, is in the list only at 12.1.
 
-O3LOGON is the older exchange.  See [#oracleallowedlogonversion Allowed Logon Version] if you want to refuse it.
+O3LOGON is the older exchange.  See [#oracleallowedlogonversion Allowed Logon Version] for what each floor refuses, and for why no floor keeps it off the wire for a classic login.
 
 [=#oracleserverversionclients]
 == Which Clients Work ==
@@ -65,14 +69,20 @@ Which clients work at which ceiling:
 ||= Client =||= 10.2 =||= 11.2 =||= 12.1 =||
 ||OCI7 interface calls from a modern OCI client||Yes||Yes||Yes||
 ||Genuine Oracle 9i OCI7 client (9.0.1 and 9.2)||Yes||Yes||Yes||
+||Genuine Oracle 10g OCI client (10.2.0.5), OCI8 and OCI7 calls||Yes||Yes||Yes||
+||Genuine Oracle 11g OCI client (11.2.0.3), OCI8 and OCI7 calls||Yes||Yes||Yes||
 ||OCI 23.26||Yes||Yes||Yes||
 ||ojdbc||Yes||Yes||Yes||
+||ojdbc14 10.2 (the old thin driver)||No||No||No||
 ||python-oracledb and node-oracledb||No||No||Yes||
 
 * python-oracledb and node-oracledb need 12.1, the default.  At 11.2 their logins hang, and they don't work at 10.2 either.
 * OCI 23.26 works at any ceiling, including LOB fetch and read, and temporary LOBs.
 * ojdbc can select CLOB, BLOB and BFILE columns (including a BFILE's getDirAlias() and getName()) and call getDatabaseProductVersion() at any ceiling.  As on a real server, a statement left open, failed or not, holds one of the instance's //maxcursors// (default 5) until it is closed, so once a client has that many open, its next statement gets ORA-01000 (see [oracleprotolimitations.html Limitations]).
 * Modern clients that use the OCI7 call interface work at any ceiling.
+* Genuine Oracle 10g OCI clients, 10.2.0.5, work at any ceiling, with both OCI8 and OCI7 calls.  Such a client asks for a session data unit of 2048, so it sends its data type request in two packets, and the module puts them back together.
+* Genuine Oracle 11g OCI clients, 11.2.0.3, work at any ceiling, with both OCI8 and OCI7 calls.
+* ojdbc14 10.2.0.5, the old thin driver, does not work at any ceiling or with any //allowedlogonversion//.  It sends a version call ahead of its login that the module doesn't answer, so it fails with "No more data to read from socket".  A real Oracle server logs it in at the default floor of 8, and refuses it at 9 and up.  Newer ojdbc drivers, such as ojdbc8, work.
 * Genuine Oracle 9i OCI7 clients, 9.0.1 and 9.2, work at any ceiling.  The Oracle 9i sqlplus (9.0.1 and 9.2) works at any ceiling too, from login through queries to exit.  Oracle 9i OCI8 clients can run selects, and read CLOBs, BLOBs and BFILEs, at any ceiling.
 
 To serve clients that need different ceilings, add a listener for each one.  They can share an instance and its back-end database.  Just give each its own port, as shown below for a 10.2 listener beside a default one.
@@ -92,12 +102,15 @@ The //allowedlogonversion// option sets the oldest logon protocol the module acc
 
 ||= Value =||= Allows =||= Refuses =||
 ||8||every client||nothing||
-||10||10g, 11g and 12c verifiers||the 9i verifier (clients older than Oracle 10g)||
-||11||11g and 12c verifiers||the 9i and 10g verifiers, so all O3LOGON clients||
-||12||11g and 12c verifiers||the same as 11||
-||12a||the 12c verifier||every other verifier||
+||9||every client whose logon types include O5LOGON (0x08) or a pre-10g logon type (0x01 or 0x04)||a client whose logon types include none of those, such as the genuine ojdbc14 10.2 driver, which advertises none at all||
+||10||clients that advertise O5LOGON: the 10g, 11g and 12c verifiers, including O3LOGON with the 10g verifier||clients older than Oracle 10g (the 9i verifier), and the above||
+||11||the same as 10||the same as 10||
+||12||clients that advertise O5LOGON_NP (such as the genuine 11.2.0.3 client) and log in with the 11g or 12c verifier, and a classic login from such a client, which gets the challenge and then ORA-01017||clients that do not advertise O5LOGON_NP, such as genuine Oracle 10g clients, and a tagged login that would use the 9i or 10g verifier||
+||12a||the 12c verifier, and a classic login from a client that advertises O7LOGON, which gets the challenge and then ORA-01017||a tagged login that would use any other verifier, and a classic login from a client that does not advertise O7LOGON||
 
-8 is the default, and so are 9 and any other value.  Oracle's 12 also requires some client features that the module doesn't check, so here it is the same as 11.  A client below the floor is refused with ORA-28040, "No matching authentication protocol".  A refused attempt counts toward [oracleprotologinattempts.html Login Attempts].
+8 is the default, and so is any other value.  A client below the floor is refused with ORA-28040, "No matching authentication protocol", before the module sends it a challenge.  A refused attempt counts toward [oracleprotologinattempts.html Login Attempts].
+
+At 12 and 12a, a classic (OCI7 call) login from a client that passes the floor's checks is not refused up front.  It still runs the classic O3LOGON exchange: it gets the challenge, and then ORA-01017 whatever password it sends, as it does from a real Oracle 12.2 server.  A classic login whose logon types fall short of the floor is refused with ORA-28040 before any challenge, like any other.
 
 {{{#!blockquote
 {{{#!code
@@ -105,11 +118,13 @@ The //allowedlogonversion// option sets the oldest logon protocol the module acc
 }}}
 }}}
 
-Because the module negotiates down, any client can ask for an older verifier.  O3LOGON is built on a DES based password hash, and is the weakest one the module offers.  A client gets it by leaving O5LOGON out of the logon types in its login request, or by using the classic login call, and an attacker who can change that byte on the network can do the same to a client.  So if no client needs O3LOGON, set //allowedlogonversion// to refuse it:
+Because the module negotiates down, any client can ask for an older verifier.  O3LOGON is built on a DES based password hash, and is the weakest one the module offers.  A client gets it by leaving O5LOGON out of the logon types in its login request, or by using the classic login call, and an attacker who can change that byte on the network can do the same to a client.  Setting //allowedlogonversion// refuses most of those logins, but not all of them:
 
-* 11 refuses O3LOGON.  It also refuses genuine pre-10g clients and OCI7 interface calls from modern OCI clients, since both log in with O3LOGON.
-* 12a allows only the 12c verifier.  It needs a ceiling of 12.1.  At 11.2, every login is refused.
-* 11 and 12 at a ceiling of 10.2 refuse every login too, since every login there uses the 9i or 10g verifier.
+* 12 refuses a client that does not advertise O5LOGON_NP, which includes genuine pre-10g and 10g clients, and a tagged login that would use the 9i or 10g verifier.  It does not keep O3LOGON off the wire for a classic login.  A classic login from a client that advertises O5LOGON_NP still gets an O3LOGON challenge, as it does from a real Oracle server, and only fails afterward with ORA-01017.  A legitimate classic client that answers the challenge sends an AUTH_PASSWORD encrypted from its DES based password hash, which an eavesdropper could try to crack offline.
+* 12a is the same for O7LOGON.  A classic login from a client that advertises O7LOGON still gets the challenge and then ORA-01017.  A tagged login is refused unless it uses the 12c verifier.  It needs a ceiling of 12.1.  At 11.2, every login fails.
+* No floor refuses a classic login ahead of the challenge when its logon types meet the floor.  Only a client whose logon types fall short of the floor, or a tagged login that cannot be served, is refused before any challenge, with ORA-28040.
+* 10 and 11 refuse only the 9i verifier, which is the weakest.  Genuine 10g clients, and OCI7 interface calls from modern OCI clients, still get in with O3LOGON and the 10g verifier.
+* 12 and 12a at a ceiling of 10.2 fail every login too, since every login there uses the 9i or 10g verifier.
 
 ----
 

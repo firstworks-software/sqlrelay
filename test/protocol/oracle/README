@@ -240,15 +240,54 @@ client retrying a login on one connection - the ones there are all
 single-attempt failures.
 
 oracleverifiernegotiation.cpp, also built by `make` here, is the
-oracleprotocol suite's check of the logon negotiation (#10515). It sends
-phase one of a login by hand, advertising logon types 0x05, 0x08 and 0x2a
-in turn, to the 12.1, 11.2 and 10.2 listeners and to two 12.1 listeners
-with an allowedlogonversion floor of 11 and of 12a, and checks the
-verifier, the challenge and the trailer each client gets, or the ORA-28040
-a below-floor client gets instead. Its -native run does the same in the
-native encoding, and runs twice: once with the client advertising field
-version 11.2 and once 12.1, since the native struct the error object and
-the challenge trailer share is 8 bytes longer at 12.1 and up (#10544).
+oracleprotocol suite's check of the logon negotiation (#10515, #10545). It
+sends phase one of a login by hand, advertising logon types 0x00, 0x05,
+0x0d, 0x0f and 0xef in turn (the bytes of ojdbc14 10.2.0.5, a genuine 9i
+client, a genuine 10.2 OCI client, a genuine 11.2 client and OCI 23), to
+the 12.1, 11.2 and 10.2 listeners and to four 12.1 listeners with an
+allowedlogonversion floor of 9, 11, 12 and 12a. The hand-built cases send
+every byte but 0x0d as a tagged 0x76 login, and 0x0f and 0xef also as a
+classic 0x52 one. It checks the verifier, the challenge and the trailer
+each client gets, the ORA-28040 a client the floor refuses gets instead,
+and for a classic login that gets past the bits at 12 and 12a the
+challenge and the ORA-01017 that follows it. Which logins a floor admits
+and refuses are the measurements of the 10545 -allowedN captures: 9 needs
+0x01, 0x04 or 0x08, 10 and 11 need 0x08, 12 needs 0x02 and 12a needs 0x20.
+
+The 0x0d client is played as the genuine 10.2.0.5 OCI client sends itself,
+in sessions of their own, as both a tagged and a classic login, at the 12.1,
+11.2 and 10.2 listeners and at floors 9, 11, 12 and 12a. It offers TNS
+version 0x0139, advertises field version 4, and sends its 2279 byte data
+type request behind the ttc code. The session runs twice. At an sdu of 2048
+the request goes out split into 2011 and 289 bytes, mid list and short of
+the sdu (packets [0009] and [0010] of 10545-fedora9x86-oci10-oci8-
+correctpassword-realserver-oracle122), which the listener has to
+reassemble. At an sdu of 8192 it goes out in one packet ([0009] of
+10545-fedora9x86-oci10-oci8-sdu8192-correctpassword-sqlrelay121). Its
+classic login is the 0x52 call and the 0x51 that answers the challenge, as
+the client sent them ([0011] and [0013] of 10545-fedora9x86-oci10-olog-
+sdu8192-correctpassword-sqlrelay121-before). Nothing is asserted for what
+no real server was measured doing: the classic login of the 0x00 and 0x05
+clients, the 0x00 client's verifier (a real server gives it a 16 hex
+character DES exchange where the module sends the 9i one) and its ORA-28040
+object, the 0x0f classic challenge (a real server makes its key 96 hex
+characters and the module 64), the fixed width error objects of the
+classic login, and which legacy bit, 0x01 or 0x04, floor 9 looks at. The
+test cannot complete an ojdbc14 login, since ojdbc14 cannot log in to the
+module at all: it sends a bare TTI 0x3b version call ahead of its login that
+the module drops, at every ceiling and floor (#10734, 10545-dev-ojdbc14-
+correctpassword-sqlrelay121-allowed8). The module's answers to the genuine
+11.2 client are in the 10545-fedora10x86-oci11 captures, not in the test.
+The 0x0d client's tagged verifier at 12.1 is the module's too: a real 12.2
+server gives it the 10g one where the module gives it 11g, which the client
+completes.
+
+Its -native run does the same in the native encoding for the tagged logins
+with the 10g and later verifiers, and runs twice: once with the client
+advertising field version 11.2 and once 12.1, since the native struct the
+error object and the challenge trailer share is 8 bytes longer at 12.1 and
+up (#10544). The classic logins, the 9i verifier and the genuine 10.2
+session run in the portable encoding only, and the -native run skips them.
 
 In the native encoding the ORA-28040 is checked byte for byte, size and
 message included. The test builds the expected object from the field rules,
@@ -5464,6 +5503,852 @@ that statement, except where noted.
                                       and flags match the real server's
                                       capture one for one (#10721)
 
+    10545-fedora9x86-oci10-oci8-correctpassword-realserver-oracle102.oraproxy
+                                     the genuine Oracle 10.2.0.5 Instant
+                                      Client (32 bit, fedora9x86, installed at
+                                      /usr/local/instantclient_10_2) logging
+                                      in with OCISessionBegin against the real
+                                      oracle102 server, through oraproxy. 19
+                                      packets, TNS 0x0139. The client sends
+                                      CCAP_LOGON_TYPES 0x0d (O5LOGON 0x08 set,
+                                      O5LOGON_NP 0x02 and O7LOGON 0x20 clear)
+                                      and CCAP_FIELD_VERSION 4, with 36
+                                      compile caps bytes. It logs in tagged
+                                      (TTI 0x76 then 0x73). Native encoding
+                                      (the client's banner equals the
+                                      server's, so the data type request is
+                                      the 72 byte short one with no type
+                                      list). The server answers with a 64 hex
+                                      AUTH_SESSKEY and AUTH_VFR_DATA flags
+                                      0x0939, the 10g verifier. The login
+                                      completes (#10545)
+
+    10545-fedora9x86-oci10-oci8-correctpassword-realserver-oracle112.oraproxy
+                                     the same client against the real
+                                      oracle112 server. 19 packets, portable
+                                      encoding. The server answers the tagged
+                                      login with a 96 hex AUTH_SESSKEY and
+                                      AUTH_VFR_DATA flags 0x1b25, the 11g
+                                      verifier, and the 10.2 client completes
+                                      that exchange: the run ends in ORA-28001
+                                      (the testuser account is expired there),
+                                      not ORA-01017. The data type request is
+                                      2300 bytes sent as two packets, 2011 and
+                                      289 bytes ([0009] and [0010]), because
+                                      the client asks for an SDU of 2048; the
+                                      real server reassembles it (#10545)
+
+    10545-fedora9x86-oci10-oci8-correctpassword-realserver-oracle122.oraproxy
+                                     the same client against the real
+                                      oracle122 server (ALLOWED_LOGON_VERSION_
+                                      SERVER=8). 21 packets, portable
+                                      encoding, the same split data type
+                                      request at [0009] and [0010]. The tagged
+                                      login gets a 64 hex AUTH_SESSKEY and
+                                      AUTH_VFR_DATA flags 0x0939, the 10g
+                                      verifier, with no AUTH_PBKDF2 fields, so
+                                      a real 12.2 server gives this client the
+                                      10g verifier where oracle112 gives it
+                                      the 11g one. The login completes
+                                      (#10545)
+
+    10545-fedora9x86-oci10-olog-correctpassword-realserver-oracle102.oraproxy
+                                     the same client in its OCI7 olog form
+                                      against the real oracle102 server. 35
+                                      packets, native encoding. The login is
+                                      the classic one (TTI 0x52 then 0x51),
+                                      the field version is 4 and the logon
+                                      types byte 0x0d again. The server's
+                                      O3LOGON challenge carries a 64 hex
+                                      session key (the 10g key). The login
+                                      completes and a row is fetched (#10545)
+
+    10545-fedora9x86-oci10-olog-correctpassword-realserver-oracle112.oraproxy
+                                     the olog form against the real oracle112
+                                      server. 20 packets, portable encoding.
+                                      The classic challenge is a 64 hex
+                                      O3LOGON key, not the 96 hex key the same
+                                      server gives the tagged login. The run
+                                      ends in ORA-28001, as the oci8 one does
+                                      (the account is expired). The client's
+                                      0x51 password is 64 hex here, as in
+                                      every run of this client; a genuine 9i
+                                      client sends 48 (#10545)
+
+    10545-fedora9x86-oci10-olog-correctpassword-realserver-oracle122.oraproxy
+                                     the olog form against the real oracle122
+                                      server. 37 packets, portable encoding. A
+                                      64 hex O3LOGON key, and the login
+                                      completes with a fetch. The client's
+                                      0x51 password is verified, so the real
+                                      server accepts the 10.2 client's classic
+                                      answer, which is encrypted under the
+                                      second half of the 32 byte session key
+                                      (#10545)
+
+    10545-fedora9x86-oci10-oci8-correctpassword-ccap0f-realserver-oracle122.oraproxy
+                                     the oci8 run through a scratch oraproxy
+                                      that rewrote one byte, the client's
+                                      CCAP_LOGON_TYPES at offset 21 of the
+                                      data type request, from 0x0d to 0x0f (it
+                                      sets O5LOGON_NP 0x02). The field version
+                                      stays 4. 19 packets. The real server
+                                      switches from AUTH_VFR_DATA 0x0939 to
+                                      0x1b25 and a 96 hex key, so it picks the
+                                      verifier by the 0x02 bit and not by the
+                                      field version. The 10.2 client then
+                                      answers the 0x1b25 exchange and gets
+                                      ORA-01017 for the right password
+                                      (#10545)
+
+    10545-fedora9x86-oci10-oci8-correctpassword-ccap05-realserver-oracle102.oraproxy
+                                     the oci8 run with the logon types byte
+                                      rewritten from 0x0d to 0x05, the bits of
+                                      a genuine 9i client. 12 packets, native
+                                      encoding. With 0x08 clear the real
+                                      server drops to a 32 hex AUTH_SESSKEY
+                                      and sends no AUTH_VFR_DATA at all (the
+                                      9i exchange). The 10.2 client never
+                                      sends its 0x73: it gives up locally with
+                                      ORA-28041. So a 10.2 client does not
+                                      accept the 9i exchange (#10545)
+
+    10545-fedora9x86-oci10-olog-correctpassword-ccap05-realserver-oracle102.oraproxy
+                                     the olog form with the same 0x0d to 0x05
+                                      rewrite. 18 packets, native encoding.
+                                      The server sends a 32 hex O3LOGON key.
+                                      The classic client does answer, with a
+                                      64 hex password, and the server refuses
+                                      the right password with ORA-01017 (that
+                                      the client ignores the key size is
+                                      inferred) (#10545)
+
+    10545-fedora9x86-oci10-oci8-correctpassword-ccap05-realserver-oracle122.oraproxy
+                                     the oci8 run with the 0x05 rewrite
+                                      against the real oracle122 server. 14
+                                      packets, portable encoding. The same
+                                      outcome as against oracle102: a 32 hex
+                                      AUTH_SESSKEY, no AUTH_VFR_DATA, and no
+                                      0x73 from the client (#10545)
+
+    10545-fedora9x86-oci10-oci8-correctpassword-realserver-oracle122-allowed10.oraproxy
+                                     the oci8 run against a scratch listener
+                                      on oracle122 at port 1621, with its own
+                                      TNS_ADMIN whose sqlnet.ora sets
+                                      SQLNET.ALLOWED_LOGON_VERSION_SERVER =10,
+                                      reached through oraproxy on dev (the
+                                      stock listener and its network/ admin
+                                      files are unchanged, and the scratch
+                                      listener was torn down afterward; the
+                                      same setup as the 10544 allowed12a
+                                      captures). 21 packets, the same login as
+                                      the stock listener's: the 10.2 client
+                                      sets O5LOGON, so floor 10 admits it, and
+                                      it gets the 10g verifier 0x0939. All the
+                                      real-server -allowedN captures of this
+                                      ticket come from that listener (#10545)
+
+    10545-fedora9x86-oci10-olog-correctpassword-realserver-oracle122-allowed10.oraproxy
+                                     the olog form at floor 10. 37 packets,
+                                      the classic 64 hex O3LOGON login
+                                      completes, as at floor 8 (#10545)
+
+    10545-fedora9x86-oci10-oci8-correctpassword-realserver-oracle122-allowed11.oraproxy
+                                     the oci8 run at floor 11. 21 packets and
+                                      the same 10g verifier 0x0939 login as at
+                                      floor 10. Real floor 11 behaves exactly
+                                      like floor 10 for every client measured;
+                                      it does not bar the 10g verifier
+                                      (#10545)
+
+    10545-fedora9x86-oci10-olog-correctpassword-realserver-oracle122-allowed11.oraproxy
+                                     the olog form at floor 11. 37 packets,
+                                      the classic 10g O3LOGON login completes
+                                      (#10545)
+
+    10545-fedora9x86-oci10-oci8-correctpassword-realserver-oracle122-allowed12.oraproxy
+                                     the oci8 run at floor 12: refused in
+                                      phase one. 17 packets. [0013] is the
+                                      client's TTI 0x76 and there is no
+                                      challenge. [0014] [0015] [0016] are the
+                                      server's BREAK and RESET and the
+                                      client's RESET, [0017] is ORA-28040 as
+                                      an ordinary DATA packet and [0018] the
+                                      client's EOF. The client's 0x0d lacks
+                                      O5LOGON_NP, which floor 12 requires
+                                      (#10545)
+
+    10545-fedora9x86-oci10-olog-correctpassword-realserver-oracle122-allowed12.oraproxy
+                                     the olog form at floor 12: the same
+                                      phase one refusal, ORA-28040, for the
+                                      classic 0x52 login. 18 packets (#10545)
+
+    10545-fedora9x86-oci10-oci8-correctpassword-realserver-oracle122-allowed12a.oraproxy
+                                     the oci8 run at floor 12a: refused in
+                                      phase one with ORA-28040, the same shape
+                                      as floor 12. 17 packets (#10545)
+
+    10545-fedora9x86-oci10-olog-correctpassword-realserver-oracle122-allowed12a.oraproxy
+                                     the olog form at floor 12a: refused in
+                                      phase one with ORA-28040. 18 packets
+                                      (#10545)
+
+    10545-fedora9x86-oci10-oci8-unknownuser-ccap0f-realserver-oracle122-allowed12.oraproxy
+                                     floor 12 with the logon types byte
+                                      rewritten from 0x0d to 0x0f (nosuchuser,
+                                      so no failed login count is spent). 19
+                                      packets. Unlike the unmodified client,
+                                      the rewritten one is not refused: the
+                                      server sends the 96 hex challenge with
+                                      AUTH_VFR_DATA 0x1b25, the client answers
+                                      (0x73), and the reply is ORA-01017 for
+                                      the unknown user. O5LOGON_NP is what
+                                      floor 12 needs (#10545)
+
+    10545-fedora9x86-oci10-olog-unknownuser-ccap0f-realserver-oracle122-allowed12.oraproxy
+                                     the olog form, rewritten to 0x0f, at
+                                      floor 12 (nosuchuser). 20 packets. The
+                                      server sends the challenge, a 96 hex
+                                      O3LOGON key, the client answers with its
+                                      0x51, and the reply is ORA-01017
+                                      (#10545)
+
+    10545-fedora9x86-oci10-oci8-unknownuser-ccap09-realserver-oracle122-allowed12.oraproxy
+                                     the oci8 run rewritten to 0x09 (O5LOGON
+                                      and the 0x01 bit, no O5LOGON_NP) at
+                                      floor 12 (nosuchuser). 17 packets.
+                                      Refused in phase one with ORA-28040,
+                                      like the unmodified 0x0d (#10545)
+
+    10545-fedora9x86-oci10-oci8-unknownuser-ccap0a-realserver-oracle122-allowed12.oraproxy
+                                     the oci8 run rewritten to 0x0a (O5LOGON
+                                      and O5LOGON_NP, none of 0x01, 0x04 or
+                                      0x20) at floor 12 (nosuchuser). 19
+                                      packets. Admitted to the challenge: the
+                                      96 hex key and 0x1b25, then ORA-01017.
+                                      So floor 12 needs neither 0x01 nor 0x04
+                                      once 0x02 and 0x08 are set. A byte with
+                                      0x02 set and 0x08 clear was not measured
+                                      (#10545)
+
+    10545-fedora9x86-oci10-oci8-unknownuser-ccap0f-realserver-oracle122-allowed12a.oraproxy
+                                     the oci8 run rewritten to 0x0f at floor
+                                      12a (nosuchuser). 17 packets. Refused in
+                                      phase one with ORA-28040: 12a also needs
+                                      O7LOGON 0x20, which 0x0f lacks,
+                                      consistent with the 0xcf refusal in the
+                                      10544 captures (#10544, #10545)
+
+    10545-fedora10x86-oci11-oci8-correctpassword-realserver-oracle122-allowed11.oraproxy
+                                     the genuine Oracle 11.2.0.3 Instant
+                                      Client (32 bit, fedora10x86, unzipped
+                                      into a scratch directory for the run)
+                                      logging in with OCISessionBegin against
+                                      the scratch oracle122 listener at floor
+                                      11. 19 packets, TNS 0x013a, portable.
+                                      The client sends logon types 0x0f, field
+                                      version 6, 39 compile caps bytes in a
+                                      2667 byte data type request. The tagged
+                                      login gets a 96 hex key and
+                                      AUTH_VFR_DATA 0x1b25 and completes
+                                      (#10545)
+
+    10545-fedora10x86-oci11-olog-correctpassword-realserver-oracle122-allowed11.oraproxy
+                                     the olog form of the 11.2 client at
+                                      floor 11. 35 packets. The classic
+                                      challenge is a 96 hex O3LOGON key (the
+                                      10.2 client gets 64 hex) and the login
+                                      completes with a fetch (#10545)
+
+    10545-fedora10x86-oci11-oci8-correctpassword-realserver-oracle122-allowed12.oraproxy
+                                     the 11.2 client's oci8 login at floor
+                                      12: admitted. 19 packets, the 96 hex key
+                                      and 0x1b25, the login completes. It has
+                                      O5LOGON_NP (#10545)
+
+    10545-fedora10x86-oci11-olog-correctpassword-realserver-oracle122-allowed12.oraproxy
+                                     the 11.2 client's olog login at floor
+                                      12. 18 packets. Phase one passes and the
+                                      server sends the challenge ([0012], 176
+                                      bytes, a 96 hex O3LOGON key, the same as
+                                      at floor 11 apart from the random key).
+                                      The client answers with its 0x51
+                                      ([0013], a 64 hex AUTH_PASSWORD), then
+                                      BREAK, RESET, RESET, and [0017] is a 128
+                                      byte ORA-01017 for the correct password.
+                                      So the floor 12 phase two ORA-01017 is
+                                      not only for a client that would use the
+                                      10g verifier (#10545)
+
+    10545-fedora10x86-oci11-oci8-correctpassword-realserver-oracle122-allowed12a.oraproxy
+                                     the 11.2 client's oci8 login at floor
+                                      12a: refused in phase one with
+                                      ORA-28040. 15 packets. [0015] is the 124
+                                      byte refusal (#10545)
+
+    10545-fedora10x86-oci11-olog-correctpassword-realserver-oracle122-allowed12a.oraproxy
+                                     the 11.2 client's olog login at floor
+                                      12a: refused in phase one with
+                                      ORA-28040. 16 packets (#10545)
+
+    10545-dev-oci23-oci8-correctpassword-realserver-oracle122-allowed12.oraproxy
+                                     OCI 23.26 on dev, OCI8 form, at floor
+                                      12: admitted. 19 packets, TNS 0x013c.
+                                      The tagged login gets the 12c verifier
+                                      (0x4815, with the PBKDF2 fields) at
+                                      every floor, and logs in (#10545)
+
+    10545-dev-oci23-olog-correctpassword-realserver-oracle122-allowed11.oraproxy
+                                     OCI 23.26 in its olog form at floor 11.
+                                      35 packets. The classic login gets a 64
+                                      hex 10g O3LOGON key and completes, where
+                                      the module used to refuse it (#10545)
+
+    10545-dev-oci23-olog-correctpassword-realserver-oracle122-allowed12.oraproxy
+                                     OCI 23.26 in its olog form at floor 12:
+                                      a challenge, and then ORA-01017 for the
+                                      correct password. 18 packets. [0011] is
+                                      the client's TTI 0x52 and [0012] the 222
+                                      byte challenge (a 64 hex key). [0013] is
+                                      the client's 0x51 (345 bytes), [0014]
+                                      [0015] [0016] BREAK, RESET and the
+                                      client's RESET, and [0017] the 206 byte
+                                      ORA-01017 object, followed by the
+                                      client's EOF. Every server packet from
+                                      the challenge to the end is byte for
+                                      byte the same as in a wrong password
+                                      login at floor 8 (10042-dev-
+                                      oci23api7-native- loginwrongpassword-
+                                      realserver-oracle122) except the random
+                                      key and one 6 byte value that looks like
+                                      a server process address, so a barred
+                                      login gets exactly an ordinary failed
+                                      login's reply (#10545)
+
+    10545-dev-oci23-olog-correctpassword-realserver-oracle122-allowed12a.oraproxy
+                                     the same at floor 12a. 18 packets, the
+                                      same sequence and the same ORA-01017
+                                      reply (#10545)
+
+    10545-dev-ojdbc14-login-select1-realserver-oracle102.oraproxy
+                                     the genuine ojdbc14 10.2.0.5 thin driver
+                                      (ojdbc14.jar from the 10.2.0.5 Instant
+                                      Client basic zip, on OpenJDK 21 with the
+                                      connect program compiled for Java 8)
+                                      connecting to the real oracle102 server
+                                      and running select 1 from dual. 23
+                                      packets, TNS 0x0134. The driver sends
+                                      logon types 0x00 (not even 0x01 or
+                                      0x04), field version 3 and 29 compile
+                                      caps bytes, offers TTC versions 6 to 0
+                                      as Java_TTC-8.2.0 and logs in tagged.
+                                      The server answers with a 16 hex
+                                      AUTH_SESSKEY and no AUTH_VFR_DATA at
+                                      all, and AUTH_PASSWORD is 33 hex. The
+                                      login completes. This is an exchange
+                                      older than the 9i one, whose key is 32
+                                      hex (#10545)
+
+    10545-dev-ojdbc14-login-select1-realserver-oracle122.oraproxy
+                                     the same driver against the real
+                                      oracle122 server (floor 8). 23 packets,
+                                      the same logon types, field version and
+                                      compile caps, and the same 16 hex
+                                      exchange. The data type request carries
+                                      charset 873 where the oracle102 one
+                                      carries 31 (#10545)
+
+    10545-dev-ojdbc14-login-select1-realserver-oracle122-allowed9.oraproxy
+                                     the same driver at floor 9: refused in
+                                      phase one with ORA-28040, as at 10 and
+                                      above. 18 packets. A real floor 9 needs
+                                      a legacy logon bit or O5LOGON, and 0x00
+                                      has neither (#10545)
+
+    10545-solaris8sparc-oci9-oci7-login-realserver-oracle122-allowed9.oraproxy
+                                     the genuine Oracle 9.0.1 OCI7 client on
+                                      solaris8sparc (the oci7transaction
+                                      program, olog and select 1 from dual) at
+                                      floor 9. 35 packets, TNS 0x0137. The
+                                      client sends logon types 0x05 and field
+                                      version 1, and the 32 hex 9i O3LOGON
+                                      challenge is admitted. Floor 9 admits
+                                      0x05 (#10545)
+
+    10545-solaris8sparc-oci9-oci7-login-realserver-oracle122-allowed10.oraproxy
+                                     the same program at floor 10: refused in
+                                      phase one with ORA-28040. 16 packets.
+                                      0x05 has no O5LOGON bit (#10545)
+
+    10545-fedora9x86-oci10-oci8-correctpassword-sqlrelay121-before.oraproxy
+                                     the 10.2 client's oci8 login against
+                                      sqlr-listener emulating 12.1, before the
+                                      fix, at the client's default SDU. 13
+                                      packets. The 2300 byte data type request
+                                      arrives as 2011 and 289 bytes ([0009]
+                                      and [0010]). The module read only the
+                                      first, answered it, took the 289 byte
+                                      remainder for the login ("bad ttccode
+                                      0x79") and closed the connection, so the
+                                      verifier was never chosen and the client
+                                      got ORA-03113 (#10545)
+
+    10545-fedora9x86-oci10-oci8-sdu8192-correctpassword-sqlrelay121.oraproxy
+                                     the same oci8 login before the fix, with
+                                      (SDU=8192) in the connect descriptor.
+                                      19 packets. The 2279 byte data type
+                                      request goes out in one packet ([0009],
+                                      2282 body bytes with the data flags and
+                                      the ttc code), so the module reads it
+                                      whole, picks the 11g verifier (0x1b25, a
+                                      96 hex key) and the login completes.
+                                      oracleverifiernegotiation sends the same
+                                      bytes in one packet at an sdu of 8192
+                                      (#10545)
+
+    10545-fedora9x86-oci10-oci8-correctpassword-sqlrelay121-after.oraproxy
+                                     the same run after the fix. 21 packets,
+                                      the same split request, and the login
+                                      completes: the 12.1 module gives the
+                                      tagged 0x0d client the 11g verifier
+                                      (0x1b25, a 96 hex key), which the 10.2
+                                      client answers. A real 12.2 server gives
+                                      it the 10g one instead (#10545)
+
+    10545-fedora9x86-oci10-oci8-correctpassword-sqlrelay112-after.oraproxy
+                                     the same run against the 11.2 listener,
+                                      after the fix. 21 packets, 11g verifier
+                                      0x1b25, the login completes (#10545)
+
+    10545-fedora9x86-oci10-oci8-correctpassword-sqlrelay102-after.oraproxy
+                                     the same run against the 10.2 listener,
+                                      after the fix. 21 packets, 10g verifier
+                                      0x0939 (a 64 hex key), the login
+                                      completes (#10545)
+
+    10545-fedora9x86-oci10-olog-sdu8192-correctpassword-sqlrelay121-before.oraproxy
+                                     the olog form against sqlr-listener
+                                      emulating 12.1, before the fix, with
+                                      (SDU=8192) in the connect descriptor to
+                                      get past the split request. 18 packets.
+                                      The module gives the classic login a 64
+                                      hex 10g O3LOGON key and the client
+                                      answers, but oracle_userlist checked the
+                                      first half of the session key because
+                                      the module advertised 0x2f, and the 10.2
+                                      client encrypts under the second half.
+                                      The right password got ORA-01017
+                                      (#10545)
+
+    10545-fedora9x86-oci10-olog-correctpassword-sqlrelay121-after.oraproxy
+                                     the olog form after the fix, at the
+                                      default SDU. 37 packets, the same
+                                      sequence as the real oracle122 capture.
+                                      The module passes the client's logon
+                                      types to the auth module, which uses the
+                                      first key half only when the server and
+                                      the client both set 0x20 and 0x02. The
+                                      login completes and a row is fetched
+                                      (#10545)
+
+    10545-fedora9x86-oci10-olog-correctpassword-sqlrelay112-after.oraproxy
+                                     the olog form against the 11.2 listener,
+                                      after the fix. 37 packets, the login
+                                      completes (#10545)
+
+    10545-fedora9x86-oci10-olog-correctpassword-sqlrelay102-after.oraproxy
+                                     the olog form against the 10.2 listener,
+                                      after the fix. 37 packets, the login
+                                      completes (#10545)
+
+    10545-fedora9x86-oci10-olog-correctpassword-sqlrelay121-allowed11-after.oraproxy
+                                     the olog form against the 12.1 listener
+                                      with allowedlogonversion 11, after the
+                                      fix. 37 packets, admitted. The module
+                                      used to refuse every login with the 10g
+                                      verifier at 11, which real floor 11 does
+                                      not (#10545)
+
+    10545-fedora9x86-oci10-oci8-correctpassword-sqlrelay121-allowed12-after.oraproxy
+                                     the oci8 run against the 12.1 listener
+                                      with allowedlogonversion 12. 17 packets:
+                                      refused in phase one with ORA-28040, the
+                                      same packet sequence as the real
+                                      server's allowed12 capture of this
+                                      client. The client lacks O5LOGON_NP.
+                                      Before the fix the module admitted it
+                                      with the 11g verifier (#10545)
+
+    10545-fedora9x86-oci10-olog-correctpassword-sqlrelay121-allowed12-after.oraproxy
+                                     the olog form at the same floor. 18
+                                      packets, refused in phase one with
+                                      ORA-28040, like the real server (#10545)
+
+    10545-fedora9x86-oci10-oci8-correctpassword-ccap0f-sqlrelay121-allowed12-after.oraproxy
+                                     the oci8 run through a scratch proxy
+                                      that rewrote the logon types byte to
+                                      0x0f, against the 12.1 listener with
+                                      allowedlogonversion 12. 21 packets:
+                                      admitted with the 11g verifier, and the
+                                      login completes. The 0x02 bit is what
+                                      the module's floor 12 needs (#10545)
+
+    10545-fedora9x86-oci10-olog-correctpassword-ccap0f-sqlrelay121-allowed12-after.oraproxy
+                                     the olog form rewritten to 0x0f at floor
+                                      12. 20 packets: the module sends the
+                                      challenge, the client answers with its
+                                      0x51, and the reply is ORA-01017 for the
+                                      correct password, with the same packet
+                                      sequence and count as the real server's
+                                      olog unknownuser ccap0f capture. The
+                                      module's barred reply is the same object
+                                      it sends for a wrong password (#10545)
+
+    10545-fedora9x86-oci10-olog-correctpassword-ccap0f-sqlrelay121-allowed12a-after.oraproxy
+                                     the olog form rewritten to 0x0f at floor
+                                      12a. 18 packets, refused in phase one
+                                      with ORA-28040: 0x0f lacks O7LOGON
+                                      (#10545)
+
+    10545-fedora9x86-oci10-olog-correctpassword-ccap2f-sqlrelay121-allowed12a-after.oraproxy
+                                     the olog form rewritten to 0x2f (O7LOGON
+                                      set) at floor 12a. 20 packets: the
+                                      challenge, the client's 0x51 and
+                                      ORA-01017, as OCI 23's olog login (0xef)
+                                      gets from the real server at 12a. No
+                                      real server capture of 0x2f exists
+                                      (#10545)
+
+    10545-dev-oci23-olog-correctpassword-sqlrelay121-allowed11-after.oraproxy
+                                     OCI 23.26 olog against the 12.1 listener
+                                      with allowedlogonversion 11, after the
+                                      fix. 35 packets, admitted, as at the
+                                      real server's floor 11 (#10545)
+
+    10545-dev-oci23-olog-correctpassword-sqlrelay121-allowed12-after.oraproxy
+                                     OCI 23.26 olog at floor 12, after the
+                                      fix. 18 packets: the challenge, the
+                                      client's 0x51, BREAK, RESET, RESET and
+                                      ORA-01017, the same sequence and count
+                                      as the real server's allowed12 capture.
+                                      Before, the module refused it in phase
+                                      one with ORA-28040 (#10545)
+
+    10545-dev-oci23-olog-correctpassword-sqlrelay121-allowed12a-after.oraproxy
+                                     the same at floor 12a. 18 packets
+                                      (#10545)
+
+    10545-fedora10x86-oci11-oci8-correctpassword-sqlrelay121-allowed8.oraproxy
+                                     the genuine 11.2.0.3 client (0x0f, field
+                                      version 6) logging in with
+                                      OCISessionBegin against sqlr-listener
+                                      emulating 12.1 at floor 8, after the
+                                      fix. 19 packets, TNS 0x013a. The module
+                                      gives the tagged login the 11g verifier
+                                      (0x1b25, a 96 hex key), as real oracle112
+                                      and oracle122 do for this client, and the
+                                      login completes and runs its select
+                                      (#10545)
+
+    10545-fedora10x86-oci11-oci8-correctpassword-sqlrelay121-allowed12.oraproxy
+                                     the same at floor 12. 19 packets, the
+                                      same exchange: admitted, since 0x0f has
+                                      O5LOGON_NP, as at the real server's
+                                      floor 12 (#10545)
+
+    10545-fedora10x86-oci11-oci8-correctpassword-sqlrelay121-allowed12a.oraproxy
+                                     the same at floor 12a. 15 packets,
+                                      refused in phase one with ORA-28040
+                                      ([0015], 82 bytes where the real server
+                                      sends 124): 0x0f lacks O7LOGON. The
+                                      packet sequence is the real server's
+                                      (#10545)
+
+    10545-fedora10x86-oci11-oci8-correctpassword-sqlrelay102-allowed8.oraproxy
+                                     the same oci8 login against the 10.2
+                                      listener at floor 8. 19 packets. The
+                                      module gives the 11.2 client the 10g
+                                      verifier here (0x0939, a 64 hex key) and
+                                      the login completes (#10545)
+
+    10545-fedora10x86-oci11-olog-correctpassword-sqlrelay121-allowed8.oraproxy
+                                     the 11.2 client's olog login against the
+                                      12.1 listener at floor 8, the open item
+                                      from the key half fix. 35 packets. The
+                                      classic login gets a 64 hex 10g O3LOGON
+                                      challenge, and the login completes and
+                                      fetches a row. The client encrypts
+                                      AUTH_PASSWORD under the second half of
+                                      the session key (decrypted offline from
+                                      the module's debug log in every olog
+                                      run, as for the 10.2 client), the half
+                                      the module now checks because 0x0f
+                                      lacks O7LOGON. A real 12.2 server sends
+                                      this client a 96 hex key (#10545)
+
+    10545-fedora10x86-oci11-olog-correctpassword-sqlrelay121-allowed12.oraproxy
+                                     the 11.2 client's olog login at floor 12.
+                                      18 packets: the challenge ([0012], 101
+                                      bytes, a 64 hex key where the real
+                                      server sends 96), the client's 0x51,
+                                      BREAK, RESET, RESET and ORA-01017 for the
+                                      correct password ([0017], 86 bytes where
+                                      the real server's is 128). The same
+                                      packet sequence and count as the real
+                                      server's allowed12 capture (#10545)
+
+    10545-fedora10x86-oci11-olog-correctpassword-sqlrelay121-allowed12a.oraproxy
+                                     the 11.2 client's olog login at floor
+                                      12a. 16 packets, refused in phase one
+                                      with ORA-28040 before any challenge, as
+                                      at the real server's floor 12a (#10545)
+
+    10545-fedora10x86-oci11-olog-correctpassword-sqlrelay102-allowed8.oraproxy
+                                     the 11.2 client's olog login against the
+                                      10.2 listener at floor 8. 35 packets,
+                                      the same exchange as at 12.1: a 64 hex
+                                      challenge, the second key half, and the
+                                      login completes (#10545)
+
+    10545-dev-ojdbc14-correctpassword-sqlrelay121-allowed8.oraproxy
+                                     the genuine ojdbc14 10.2.0.5 thin driver
+                                      against sqlr-listener emulating 12.1 at
+                                      floor 8, after the fix. 12 packets, TNS
+                                      0x0134. After the data type negotiation
+                                      ([0009] and [0010]) the driver sends a
+                                      bare TTI 0x3b version call ([0011], 11
+                                      body bytes) ahead of its login, where
+                                      real oracle102 and oracle122 answer it
+                                      with their banner. The module's login
+                                      loop accepts only a login call, so it
+                                      sends nothing and the connection closes
+                                      ([0012] is the client's EOF). The driver
+                                      reports "No more data to read from
+                                      socket". No verifier is chosen and no
+                                      floor is tested: the run is the same at
+                                      every ceiling and floor measured (12.1
+                                      at floors 8 to 12a, 11.2 and 10.2 at
+                                      floor 8). ojdbc14 cannot log in to the
+                                      module at all (#10734)
+
+    10545-dev-ojdbc14-correctpassword-sqlrelay121-allowed9.oraproxy
+                                     the same run at floor 9. Byte for byte
+                                      the same as the floor 8 capture: the
+                                      module never reaches its floor check, so
+                                      it sends no ORA-28040, where real
+                                      oracle122 at floor 9 refuses this client
+                                      with a readable one (#10734)
+
+    10545-fedora9x86-oci10-oci8-sdu8192-ccap05-correctpassword-sqlrelay121.oraproxy
+                                     the oci8 run with the logon types byte
+                                      rewritten to 0x05 (and (SDU=8192) in the
+                                      descriptor), against sqlr-listener
+                                      emulating 12.1. 12 packets. The module
+                                      picks the 9i verifier and sends a 32 hex
+                                      AUTH_SESSKEY. The client never sends its
+                                      0x73 and hangs until it is killed, where
+                                      the same client against real oracle102
+                                      fails locally with ORA-28041. No genuine
+                                      client sends this byte, only a rewrite
+                                      reaches it (#10545)
+
+    10545-fedora9x86-oci10-oci8-sdu8192-ccap05-correctpassword-sqlrelay121-allowed10.oraproxy
+                                     the same at allowedlogonversion 10. 19
+                                      packets. The module refuses the 9i
+                                      verifier with ORA-28040, but the client
+                                      reports ORA-03120 and does not parse the
+                                      refusal (#10545)
+
+The genuine 10g OCI client and the logon version floors (#10545)
+----------------------------------------------------------------
+
+#10545 asked how a genuine Oracle 10g client is classified, and whether
+allowedlogonversion="10" turns it away. The 10545-* captures above answer
+it. It is not turned away: the 10.2.0.5 client sets O5LOGON, which is what
+floor 10 looks for.
+
+The clients. fedora9x86 has the genuine Oracle 10.2.0.5 Instant Client
+(32 bit, basic and sdk) at /usr/local/instantclient_10_2. Two small OCI
+programs ran against it: an OCI8 form (OCIServerAttach, OCISessionBegin,
+select from dual) and an olog form (olog, oopen, oparse, odefin, oexec,
+ofetch, ologof). fedora10x86 has no 11.2 client installed; the genuine
+11.2.0.3 32 bit zips were unzipped into a scratch directory for the floor
+11, 12 and 12a runs against real Oracle, and again for the runs against
+the module, and removed afterward each time. The ojdbc14 captures are the
+genuine ojdbc14 10.2.0.5 thin driver, from the ojdbc14.jar in the 10.2.0.5
+basic zip (the jdbc zip does not hold it), run on dev under OpenJDK 21.
+OCI 23.26 is the client on dev, and the 9.0.1 client is the
+oci7transaction program on solaris8sparc.
+
+What each client sends in CCAP_LOGON_TYPES, identical at every server and
+every floor:
+
+    client                          logon types  field version  login
+    genuine 9.0.1 OCI7              0x05         1              classic 0x52
+    genuine 10.2.0.5 OCI8           0x0d         4              tagged 0x76
+    genuine 10.2.0.5 olog           0x0d         4              classic 0x52
+    ojdbc14 10.2.0.5 thin           0x00         3              tagged 0x76
+    genuine 11.2.0.3 OCI8 and olog  0x0f         6              both
+    OCI 23.26 OCI8 and olog         0xef         27             both
+
+The bits: 0x08 is O5LOGON, 0x02 is O5LOGON_NP, 0x20 is O7LOGON, and 0x05 is
+the pair of legacy bits a 9i client sets (which of 0x01 and 0x04 is Oracle's
+O4L is unmeasured). The 10.2 client has O5LOGON only. ojdbc14 has none of
+them, not even the legacy bits. The 10.2 client's TNS version is 0x0139,
+its TTIPRO versions offered are 6 to 1 and its compile caps are 36 bytes.
+ojdbc14's are 0x0134, 6 to 0 and 29 bytes.
+
+What the real servers give the unmodified 10.2 client (the stock
+listeners; the floor is oracle122's 8):
+
+    server     tagged (OCI8)                    classic (olog)
+    oracle102  64 hex key, AUTH_VFR_DATA 0x0939 O3LOGON 64 hex key
+    oracle112  96 hex key, 0x1b25 (11g); the    O3LOGON 64 hex key
+               client answers it
+    oracle122  64 hex key, 0x0939 (10g)         O3LOGON 64 hex key
+
+Only the 10.2 client's logon types byte rewritten changes that. With 0x0f
+(the O5LOGON_NP bit added, the field version left at 4) oracle122 switches
+to 0x1b25, so a real 12.2 server picks the verifier by the 0x02 bit and not
+by the field version. With 0x05 both real servers fall to a 32 hex key
+and no AUTH_VFR_DATA, the 9i exchange, and the 10.2 client does not accept
+it: the tagged client gives up locally with ORA-28041 and never sends its
+0x73, and the classic client answers with a 64 hex password and gets
+ORA-01017. ojdbc14 (0x00) gets a 16 hex AUTH_SESSKEY, no AUTH_VFR_DATA and
+a 33 hex AUTH_PASSWORD from oracle102 and oracle122, an exchange older than
+the 9i one, and logs in. The module has no verifier for it, and ojdbc14
+cannot log in to the module at all (below).
+
+Real Oracle's floor, measured on oracle122 with a scratch listener at port
+1621 for each value of SQLNET.ALLOWED_LOGON_VERSION_SERVER. adm is a login
+that completes. REF is a phase one refusal: no challenge, then the server's
+BREAK and RESET, the client's RESET and ORA-28040 (ORA-03134 never
+appeared). ch+1017 is the challenge, the client's answer and then ORA-01017
+for the right password. Every cell is a capture; the ones checked in are
+the samples above, and the rest are in the ticket:
+
+    client                  8    9    10   11   12        12a
+    10.2 OCI8 (0x0d)        adm  adm  adm  adm  REF       REF
+    10.2 olog (0x0d)        adm  adm  adm  adm  REF       REF
+    ojdbc14 (0x00)          adm  REF  REF  REF  REF       REF
+    9.0.1 OCI7 (0x05)       adm  adm  REF  REF  REF       REF
+    11.2 OCI8 (0x0f)        -    -    -    adm  adm       REF
+    11.2 olog (0x0f)        -    -    -    adm  ch+1017   REF
+    OCI 23 OCI8 (0xef)      adm  adm  adm  adm  adm       adm
+    OCI 23 olog (0xef)      adm  adm  adm  adm  ch+1017   ch+1017
+
+What the floors look at, from those cells:
+* The check is on the client's logon types bits, in phase one, before any
+  challenge. The floor never changes which verifier the server picks.
+* 9 needs one of the legacy bits or O5LOGON: 0x00 is refused and 0x05 is
+  admitted. Which legacy bit is unmeasured.
+* 10 needs O5LOGON (0x08), and 11 is the same as 10 for every client. The
+  10g verifier is not barred at 11.
+* 12 needs O5LOGON_NP (0x02). With the 10.2 client's byte rewritten, 0x0d
+  and 0x09 are refused and 0x0f and 0x0a are not (nosuchuser, the field
+  version stays 4, so it plays no part). Whether 12 also needs 0x08 is
+  unmeasured, and no known client sets 0x02 without it. A classic login
+  that passes, the 11.2 client's as well as OCI 23's, gets the challenge
+  and then ORA-01017 whatever the password. That floor 12 rejects every
+  classic answer is inferred.
+* 12a needs O7LOGON (0x20); 0x0f and 0xcf are refused. A classic login
+  that passes gets the challenge and then ORA-01017, as at 12.
+* The phase two reply at 12 and 12a is an ordinary bad login reply. OCI 23's
+  olog login is byte for byte the same from the challenge on at 12 and 12a
+  with the right password, with an unknown user at 8, 12 and 12a, and with
+  a wrong password at floor 8 (10042-dev-oci23api7-native-
+  loginwrongpassword-realserver-oracle122), apart from the random key
+  and one 6 byte value that looks like a server process address.
+
+The module followed the same rules after #10545 (logonVersionAllowed() in
+src/protocols/oracle.cpp): 8 allows everything, 9 needs 0x01, 0x04 or
+0x08, 10 and 11 need 0x08, 12 needs 0x02, and 12a needs the 12c verifier
+(tagged) or 0x20 (classic). A tagged login is also refused at 12 when its
+verifier is the 9i or 10g one, which no real server measured picks for a
+client that has 0x02. A classic login that the check admits at 12 or 12a
+gets the challenge and then the same ORA-01017 an unknown user gets, so
+neither floor keeps the O3LOGON exchange off the wire for a classic login. The
+-after captures above are the module's runs; the allowed12 ones of the
+10.2 and OCI 23 clients match the real server's packet counts and
+sequence.
+
+The genuine 11.2.0.3 client and ojdbc14 against the module (the -sqlrelay
+captures of the fedora10x86-oci11 and dev-ojdbc14 clients, measured at the
+12.1, 11.2 and 10.2 ceilings with the default SDU and the correct
+password):
+* The 11.2 client (0x0f, field version 6, portable) works, in both forms.
+  - oci8 logs in with the 11g verifier (0x1b25) at 12.1 and 11.2 at floors
+    8, 11 and 12, and with the 10g one (0x0939) at 10.2 at floors 8 and 11.
+    It is refused with ORA-28040 at 12a, and at the 10.2 ceiling at 12
+    and 12a.
+  - olog logs in with the 10g verifier at all three ceilings at floors 8
+    and 11. It gets the challenge and then ORA-01017 at floor 12, and is
+    refused before any challenge at 12a.
+  - The olog logins use the second half of the session key, in every run
+    (decrypted offline from the module's debug log). The module advertises
+    0x2f at 12.1 and the client's 0x0f lacks 0x20, so the key half fix
+    makes the module check that half. This was the open item from the fix.
+  - At 12.1 and 11.2 every cell has the outcome real oracle122 gave in the
+    floors table, so the module and a real server treat this client alike.
+    The differences that remain are the classic key (64 hex from the
+    module, 96 from a real 12.2 server) and the error objects (82 and 86
+    bytes from the module, 124 and 128 from the real server).
+* ojdbc14 10.2.0.5 (0x00, field version 3) fails at every ceiling and floor
+  with "No more data to read from socket" (12.1 at floors 8 to 12a, 11.2
+  and 10.2 at floor 8). After the data type negotiation it sends a bare TTI
+  0x3b version call, ahead of its 0x76 login, that both real servers
+  answer with their banner. The module's login loop accepts only a login
+  call ("bad ttifunction 0x3b, expected 0x76"), so it closes the
+  connection. No verifier is chosen and no floor is reached, so the floor 8
+  and floor 9 captures are byte for byte the same, where real Oracle logs
+  ojdbc14 in at floor 8 and refuses it at 9 and up (#10734).
+  Experiments through a scratch proxy that answered the 0x3b call itself
+  with real oracle102's reply, not checked in because the proxy changed
+  bytes, found the rest of the gap:
+  - the module sends a 32 hex key, and ojdbc14 rejects it ("Internal -
+    Unexpected value"); real servers send 16 hex
+  - with the key cut to 16 hex by the proxy, ojdbc14 sends its 0x73 and the
+    module cannot read it ("no string list found")
+  - at floor 9 the module's ORA-28040 makes ojdbc14 throw a
+    NullPointerException: it cannot parse the error object of a field
+    version 3 client
+  A fix needs a reply to the early 0x3b call, a pre-9i exchange with a
+  16 hex key and a check of the 33 hex password in both auth modules (the
+  algorithm is in no capture), a reader for the 0x73 call, and an error
+  object ojdbc14 can parse. Real Oracle refuses this client at floor 9
+  and up, so only floor 8 has to work.
+
+Two module bugs the 10.2 client found, both fixed:
+* The client asks for an SDU of 2048, so its 2300 byte data type request
+  (275 types) goes out as two packets of 2011 and 289 bytes, split in the
+  middle of the type list and short of the SDU. recvDataTypeRequest()
+  read one packet, answered, and took the remainder as the login ("bad
+  ttccode 0x79"); the client got ORA-03113. The real oracle112 and
+  oracle122 servers reassemble it. Packet size gives no cue, so the module
+  reassembles when a type list has started and runs out before its
+  terminator. An empty list (the native request) never pulls in another
+  packet. Of every capture on file, 173 type lists end inside one packet,
+  56 are empty, and all 68 split ones are followed by a continuation, so
+  no capture on file is read differently.
+* The classic (olog) 10.2 client encrypts AUTH_PASSWORD under the second
+  half of the 32 byte session key, whatever the server advertised. OCI 23
+  encrypts under the first half exactly when the server advertised both
+  0x20 and 0x02. The auth modules checked the first half whenever the module
+  advertised both, so the 10.2 client got ORA-01017 at the 12.1 ceiling.
+  They now use the first half only when the client's byte has both bits too,
+  which is the old rule for OCI 23. That real Oracle keys the half on the
+  client's bits and not on its field version is inferred.
+
+Not measured: real 12.1 (the module gives the tagged 0x0d client the 11g
+verifier at 12.1, as oracle112 does; real oracle122 gives it the 10g one;
+the client completes both); floor 9's bit; whether floor 12 needs 0x08;
+the empty password at 12 and 12a; any 10.1 client; and the module's reply
+to the 10.2 client with its logon types rewritten to 0x05 (#10735). In that
+case the module picks the 9i verifier and sends a 32 hex key, the client
+never sends its 0x73 and hangs, and at floor 10 it reads the module's
+ORA-28040 as ORA-03120. No genuine client sends the byte; only a rewrite
+reaches it.
+
 The v11 time zone file for the oci8 run
 ---------------------------------------
 
@@ -5530,8 +6415,9 @@ timestamp with local time zone, with and without an indicator, and a
 named region) give the same results through the 12.1 listener as against
 real oracle122, in the same run as above - none of the failing checks
 there are binds. So the module reads the 9i client's bind descriptors
-(the scale rule in getQuery3BindDescriptor()) correctly. No 10g OCI client
-or go toolchain is on any host here, so those two clients stay
+(the scale rule in getQuery3BindDescriptor()) correctly. A genuine 10.2.0.5
+OCI client is on fedora9x86 now (#10545), but only its logon was measured,
+not its binds. No go toolchain is on any host here, so go-ora stays
 unmeasured.
 
 The three real Oracle test servers on this network

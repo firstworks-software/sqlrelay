@@ -502,6 +502,9 @@
 #define CCAP_O5LOGON_NP			0x02
 #define CCAP_O5LOGON			0x08
 #define CCAP_O7LOGON			0x20
+// the two bits a genuine 9i client sets, alone, in CCAP_LOGON_TYPES (0x05).
+// nothing names them, and which one is oracle's O4L is unmeasured
+#define CCAP_LEGACY_LOGONS		0x05
 // CCAP_TTC1 bit 0x01, and CCAP_OCI1 bit 0x01 per go-ora - another reading
 // names fast session propagate as 0x10 in that same index, and nothing on
 // the wire settles which is right
@@ -1544,6 +1547,7 @@ enum oraclebigchunks_t {
 // SQLNET.ALLOWED_LOGON_VERSION_SERVER values, lowest first
 enum oraclelogonversion_t {
 	ORACLELOGONVERSION_8=0,
+	ORACLELOGONVERSION_9,
 	ORACLELOGONVERSION_10,
 	ORACLELOGONVERSION_11,
 	ORACLELOGONVERSION_12,
@@ -1773,7 +1777,7 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_oracle : public sqlrprotocol {
 						byte_t *capssize,
 						const byte_t **rpout);
 		uint16_t	countDataTypes(const byte_t *rp,
-						const byte_t *end,
+						const byte_t **end,
 						uint16_t *multirepcount);
 		uint16_t	countDataTypes9i(const byte_t *rp,
 						const byte_t *end,
@@ -1921,8 +1925,8 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_oracle : public sqlrprotocol {
 		// verifier, or the 10g verifier in a classic login
 		bool	isO3Logon();
 
-		// true if the "allowedlogonversion" listener attribute allows
-		// the session's verifier type
+		// true if the "allowedlogonversion" listener attribute lets the
+		// session's login have a challenge
 		bool	logonVersionAllowed();
 
 		bool	sendAuthenticationChallenge();
@@ -2810,6 +2814,11 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_oracle : public sqlrprotocol {
 		bool		gotauthpassword;
 		bool		fabricatedchallenge;
 
+		// whether allowedlogonversion fails the current login in phase
+		// two whatever password it answers with.  see
+		// logonVersionAllowed()
+		bool		barredlogon;
+
 		// whether the current login is the classic, pre-session-key
 		// TTI_LOGON_PRESENT_USER/TTI_LOGON_PRESENT_PWD exchange (0x52/
 		// 0x51) rather than O3LOGON's newer, tagged-field
@@ -3179,13 +3188,18 @@ sqlrprotocol_oracle::sqlrprotocol_oracle(sqlrservercontroller *cont,
 
 	// the oldest logon protocol a client may log in with, named and valued
 	// like oracle's SQLNET.ALLOWED_LOGON_VERSION_SERVER.  8 (the default,
-	// and anything unrecognized) allows every client, 10 refuses the
-	// pre-10g des exchange, 11 and 12 refuse both des verifiers, and 12a
-	// allows only the 12c verifier.  oracle treats 9 like 8, and so does
-	// this.  see logonVersionAllowed()
+	// and anything unrecognized) allows every client, 9 refuses a client
+	// whose logon types lack 0x01, 0x04 and 0x08, 10 and 11 refuse the
+	// pre-10g des exchange, 12 refuses a genuine 10g client and any tagged
+	// login that would use the 9i or 10g verifier, and 12a allows only the
+	// 12c verifier.  a classic login that passes the bits at 12 or 12a
+	// still gets the o3logon challenge, and then ORA-01017.  see
+	// logonVersionAllowed()
 	const char	*alv=parameters->getAttributeValue(
 						"allowedlogonversion");
-	if (!charstring::compare(alv,"10")) {
+	if (!charstring::compare(alv,"9")) {
+		allowedlogonversion=ORACLELOGONVERSION_9;
+	} else if (!charstring::compare(alv,"10")) {
 		allowedlogonversion=ORACLELOGONVERSION_10;
 	} else if (!charstring::compare(alv,"11")) {
 		allowedlogonversion=ORACLELOGONVERSION_11;
@@ -3240,19 +3254,19 @@ sqlrprotocol_oracle::sqlrprotocol_oracle(sqlrservercontroller *cont,
 		debugWrite("server version: %s",serverversionno);
 		debugWrite("server field version: %d",serverfieldversion);
 		static const char	*logonversions[]={
-			"8","10","11","12","12a"
+			"8","9","10","11","12","12a"
 		};
 		debugWrite("allowed logon version: %s",
 					logonversions[allowedlogonversion]);
-		// 10.2 offers nothing newer than o3logon, and 11.2 nothing
-		// newer than the 11g verifier
+		// 10.2 offers nothing newer than the 10g verifier, and 11.2
+		// nothing newer than the 11g verifier
 		if ((serverfieldversion==CCAP_FIELD_VERSION_10_2 &&
-			allowedlogonversion>=ORACLELOGONVERSION_11) ||
+			allowedlogonversion>=ORACLELOGONVERSION_12) ||
 			(serverfieldversion<CCAP_FIELD_VERSION_12_1 &&
 			allowedlogonversion==ORACLELOGONVERSION_12A)) {
 			debugWrite("allowed logon version is above anything "
 					"this server version offers, so every "
-					"login will be refused");
+					"login will fail");
 		}
 		debugWrite("sid: %s",(sids)?sids:"(any)");
 		debugWrite("max login attempts: %d",maxloginattempts);
@@ -3543,6 +3557,7 @@ void sqlrprotocol_oracle::init() {
 	authpassword=NULL;
 	gotauthpassword=false;
 	fabricatedchallenge=false;
+	barredlogon=false;
 	classiclogon=false;
 	loginrefused=false;
 	priorloginattemptrefused=false;
@@ -6329,7 +6344,8 @@ void sqlrprotocol_oracle::putTti6Response() {
 	// it 0x6f, and both work.  OCI 23.26 using the oci7 calls does read it:
 	// with CCAP_O7LOGON and CCAP_O5LOGON_NP both set, it encrypts its 10g
 	// password under the other half of the session key.  so the auth
-	// module is told what went out - see serverlogontypes.
+	// module is told what went out and what the client advertised - see
+	// serverlogontypes and clientlogontypes.
 	byte_t	compilecaps[sizeof(ttiservercompilecaps)];
 	bytestring::copy(compilecaps,servercompilecaps,servercompilecapssize);
 	if (serverfieldversion>=CCAP_FIELD_VERSION_12_1) {
@@ -6480,14 +6496,20 @@ bool sqlrprotocol_oracle::getCapabilities(const byte_t *rp,
 }
 
 uint16_t sqlrprotocol_oracle::countDataTypes(const byte_t *rp,
-						const byte_t *end,
+						const byte_t **end,
 						uint16_t *multirepcount) {
 
+	// a client on a small sdu splits this list across packets, mid list
+	// and short of the sdu - the genuine 10.2 client asks for 2048 and
+	// sends 2011 + 289 bytes.  nothing marks the split, so a list that has
+	// started and runs out ahead of its terminator pulls in the next
+	// packet.  an empty one doesn't: a native request has no list at all
 	uint16_t	count=0;
 	uint16_t	multireps=0;
+	bool		nonempty=(*end>rp);
 	for (;;) {
 
-		if (end-rp<2) {
+		if (!nonempty || !have(rp,2,end)) {
 			break;
 		}
 
@@ -6497,7 +6519,7 @@ uint16_t sqlrprotocol_oracle::countDataTypes(const byte_t *rp,
 			break;
 		}
 
-		if (end-rp<2) {
+		if (!have(rp,2,end)) {
 			break;
 		}
 
@@ -6510,7 +6532,7 @@ uint16_t sqlrprotocol_oracle::countDataTypes(const byte_t *rp,
 		if (convdatatype) {
 			uint16_t	reps=0;
 			for (;;) {
-				if (end-rp<2) {
+				if (!have(rp,2,end)) {
 					break;
 				}
 				uint16_t	rep;
@@ -6913,12 +6935,19 @@ bool sqlrprotocol_oracle::recvDataTypeRequest() {
 	// a pre-10g client writes every field of that list as a ub1 rather
 	// than a ub2, and is answered in that format from ttidatatypes9i -
 	// see countDataTypes9i() and sendDataTypeResponse()
+	//
+	// only the ub2 list is reassembled.  no pre-10g client has been
+	// measured splitting its ub1 one
 	datatypes=rp;
-	datatypessize=end-rp;
 	uint16_t	multirepcount=0;
-	datatypecount=(ub2datatypes)?
-			countDataTypes(rp,end,&multirepcount):
-			countDataTypes9i(rp,end,&multirepcount);
+	if (ub2datatypes) {
+		reassemble=true;
+		datatypecount=countDataTypes(rp,&end,&multirepcount);
+		reassemble=false;
+	} else {
+		datatypecount=countDataTypes9i(rp,end,&multirepcount);
+	}
+	datatypessize=end-rp;
 
 	clientmultireps=(multirepcount>0);
 
@@ -7777,6 +7806,7 @@ void sqlrprotocol_oracle::resetLoginAttempt() {
 	authpassword=NULL;
 	gotauthpassword=false;
 	fabricatedchallenge=false;
+	barredlogon=false;
 	classiclogon=false;
 }
 
@@ -8655,7 +8685,7 @@ void sqlrprotocol_oracle::putAuthExtra(stringbuffer *extra, bool secondphase) {
 	bool	o3logon=isO3Logon();
 
 	debugStart("auth extra (phase %d)",(secondphase)?2:1);
-	debugWrite("field count: %d",(o3logon)?((secondphase)?3:1):
+	debugWrite("field count: %d",(o3logon)?((secondphase)?4:1):
 			((secondphase)?((pbkdf2)?7:5):((pbkdf2)?3:2)));
 
 	// the verifier type is how the auth module is told which o3logon
@@ -8665,8 +8695,8 @@ void sqlrprotocol_oracle::putAuthExtra(stringbuffer *extra, bool secondphase) {
 
 	// o3logon has no verifier salt and no client session key.  all it
 	// needs back at verify time is the challenge the module sent, and the
-	// logon types it advertised, which decide which half of the 10g
-	// session key OCI 23.26 encrypts the password under
+	// logon types it advertised and the client's, which decide which half
+	// of the 10g session key the client encrypts the password under
 	if (o3logon) {
 		if (secondphase) {
 			extra->append(";serverauthsesskey=")->
@@ -8676,6 +8706,10 @@ void sqlrprotocol_oracle::putAuthExtra(stringbuffer *extra, bool secondphase) {
 					append((uint32_t)serverlogontypes);
 			debugWrite("serverlogontypes: 0x%02x",
 						serverlogontypes);
+			extra->append(";clientlogontypes=")->
+					append((uint32_t)clientlogontypes);
+			debugWrite("clientlogontypes: 0x%02x",
+						clientlogontypes);
 		}
 		debugEnd();
 		return;
@@ -9645,18 +9679,35 @@ bool sqlrprotocol_oracle::isO3Logon() {
 
 bool sqlrprotocol_oracle::logonVersionAllowed() {
 
-	// oracle's SQLNET.ALLOWED_LOGON_VERSION_SERVER lets the 10g verifier
-	// in at 10, so 10 only refuses the pre-10g one.  11 and 12 refuse the
-	// 10g verifier too, whether it runs as o3logon or as o5logon
+	// a real 12.2 server's SQLNET.ALLOWED_LOGON_VERSION_SERVER refuses a
+	// login ahead of the challenge, on the client's CCAP_LOGON_TYPES bits
+	// alone: 9 needs a legacy bit or o5logon (0x00 is refused, 0x05
+	// isn't), 10 and 11 alike need o5logon, 12 needs o5logon_np (0x0d and
+	// 0x09 are refused, 0x0f and 0x0a aren't) and 12a needs o7logon.  the
+	// floor never changes which verifier the server picks.  see the
+	// -allowed captures of a real server in test/protocol/oracle/samples/.
+	//
+	// a classic login that gets through at 12 or 12a still fails, in phase
+	// two, with the same ORA-01017 a wrong password gets, whatever the
+	// verifier and the password - see barredlogon.  a tagged login is also
+	// refused here when its verifier is one the floor bars, which no real
+	// server measured picks for a client that passes the bits
 	switch (allowedlogonversion) {
+		case ORACLELOGONVERSION_9:
+			return ((clientlogontypes&
+				(CCAP_LEGACY_LOGONS|CCAP_O5LOGON))!=0);
 		case ORACLELOGONVERSION_10:
-			return (verifiertype!=VERIFIER_TYPE_9I);
 		case ORACLELOGONVERSION_11:
+			return ((clientlogontypes&CCAP_O5LOGON)!=0);
 		case ORACLELOGONVERSION_12:
-			return (verifiertype!=VERIFIER_TYPE_9I &&
-					verifiertype!=VERIFIER_TYPE_10G);
+			return ((clientlogontypes&CCAP_O5LOGON_NP)!=0 &&
+				(classiclogon ||
+				(verifiertype!=VERIFIER_TYPE_9I &&
+				verifiertype!=VERIFIER_TYPE_10G)));
 		case ORACLELOGONVERSION_12A:
-			return (verifiertype==VERIFIER_TYPE_12C);
+			return ((classiclogon)?
+				((clientlogontypes&CCAP_O7LOGON)!=0):
+				(verifiertype==VERIFIER_TYPE_12C));
 		default:
 			return true;
 	}
@@ -9664,18 +9715,20 @@ bool sqlrprotocol_oracle::logonVersionAllowed() {
 
 bool sqlrprotocol_oracle::sendAuthenticationChallenge() {
 
-	// a login whose verifier is older than allowedlogonversion allows is
-	// refused in place of the challenge, with the error a real server
-	// refuses it with
+	// a login that allowedlogonversion refuses is refused in place of the
+	// challenge, with the error a real server refuses it with
 	if (!logonVersionAllowed()) {
-		debugWrite("verifier type 0x%04x is below allowedlogonversion, "
-						"refusing",verifiertype);
+		debugWrite("client logon types 0x%02x or verifier type 0x%04x "
+				"is below allowedlogonversion, refusing",
+				clientlogontypes,verifiertype);
 		return sendAuthenticationError(
 				ORA_NO_MATCHING_AUTH_PROTOCOL,
 				"ORA-28040: No matching authentication "
 				"protocol\n",
 				false);
 	}
+	barredlogon=(classiclogon &&
+			allowedlogonversion>=ORACLELOGONVERSION_12);
 
 	bool	pbkdf2=(verifiertype==VERIFIER_TYPE_12C);
 	bool	o3logon=isO3Logon();
@@ -9750,6 +9803,8 @@ bool sqlrprotocol_oracle::sendAuthenticationChallenge() {
 	debugWrite("serverauthsesskey: %s",serverauthsesskey);
 	debugWrite("fabricated challenge: %s",
 			(fabricatedchallenge)?"yes":"no");
+	debugWrite("barred by allowedlogonversion: %s",
+			(barredlogon)?"yes":"no");
 
 	// o3logon answers the session key challenge in one of two shapes,
 	// depending on which login format the client used in phase one: a
@@ -10390,8 +10445,13 @@ bool sqlrprotocol_oracle::sendAuthenticationResponse() {
 	// with an empty AUTH_PASSWORD gets ORA-01017 where a known one gets
 	// ORA-01005.  checking the other way round would hand back the
 	// distinction between an unknown user and a wrong password.
-	if (fabricatedchallenge) {
-		debugWrite("fabricated challenge, refusing");
+	//
+	// a login allowedlogonversion bars in phase two gets the same answer,
+	// which is what a real server sends it
+	if (fabricatedchallenge || barredlogon) {
+		debugWrite("%s, refusing",(fabricatedchallenge)?
+					"fabricated challenge":
+					"barred by allowedlogonversion");
 		return sendAuthenticationError(
 				ORA_INVALID_USERNAME_PASSWORD,
 				"ORA-01017: invalid username/password; "

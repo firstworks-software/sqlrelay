@@ -37,13 +37,15 @@
 			     big-chunk clr capability bit and always frames
 			     raw bytes, for the go-ora v1 case. -->
 			<listener protocol="oracle" port="@ORACLEPROTOCOLPORT6@" sid="ora1" bigchunks="off"/>
-			<!-- #10515 - a 10.2 ceiling and two logon version
-			     floors, for oracleverifiernegotiation, which
-			     sends phase one of a login by hand to each of
-			     these and to the 12.1 and 11.2 listeners. -->
+			<!-- #10515, #10545 - a 10.2 ceiling and four logon
+			     version floors, for oracleverifiernegotiation,
+			     which sends phase one of a login by hand to each
+			     of these and to the 12.1 and 11.2 listeners. -->
 			<listener protocol="oracle" port="@ORACLEPROTOCOLPORT12@" sid="ora1" serverversion="10.2"/>
 			<listener protocol="oracle" port="@ORACLEPROTOCOLPORT13@" sid="ora1" allowedlogonversion="11"/>
 			<listener protocol="oracle" port="@ORACLEPROTOCOLPORT14@" sid="ora1" allowedlogonversion="12a"/>
+			<listener protocol="oracle" port="@ORACLEPROTOCOLPORT15@" sid="ora1" allowedlogonversion="9"/>
+			<listener protocol="oracle" port="@ORACLEPROTOCOLPORT16@" sid="ora1" allowedlogonversion="12"/>
 		</listeners>
 		<auths>
 			<auth module="oracle_userlist">

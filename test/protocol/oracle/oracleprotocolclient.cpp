@@ -487,6 +487,16 @@ class oracleprotocolclient {
 		void	setDataTypeRequest(const unsigned char *request,
 							size_t size);
 
+		// the request set with setDataTypeRequest(), sent as several
+		// packets instead of one: the first is "firstpacketsize" bytes
+		// long, header and data flags included, and each one behind it
+		// is no longer than that.  a real client splits a request at
+		// the sdu it settled on or below it, and the genuine 10.2 client
+		// sends its 2300 byte one (2279 behind the ttc code) as 2011 +
+		// 289 bytes under an sdu of 2048, a split that is mid list and
+		// short of the sdu.  0, the default, sends it in one packet
+		void	setDataTypeRequestSplit(size_t firstpacketsize);
+
 		// the sequence numbers phase one and phase two of a login
 		// carry, 2 for both by default.  the module echoes each one
 		// as the call number in the trailer of its answer - see
@@ -567,6 +577,19 @@ class oracleprotocolclient {
 		bool	requestChallenge(const char *user);
 		bool	answerChallenge(const char *user, const char *password);
 		bool	gotBreak();
+
+		// a login call of a client this class doesn't build, sent as
+		// is and answered the way requestChallenge() is: the markers
+		// of a refusal are read and answered, gotBreak() says they
+		// came, and the error or the challenge is left in the
+		// response.  "request" is everything behind the two data flag
+		// bytes - the ttc code, the tti function and on - and "phase"
+		// names the call in an error message.  for a test that replays
+		// a classic 0x52 login call or the 0x51 that answers its
+		// challenge, neither of which this class builds
+		bool	sendRawRequest(const unsigned char *request,
+						size_t size,
+						const char *phase);
 
 		// the tns flags byte of the break marker and of the reset
 		// marker a refused login got, as the listener sent them.
@@ -852,6 +875,14 @@ class oracleprotocolclient {
 		bool	parseTtiResponse();
 		bool	sendDataTypeNegotiation();
 		bool	runAnoNegotiation();
+
+		// sendSplitPacket() with the size of the biggest packet given
+		// rather than taken from the negotiated sdu
+		bool	sendSplitPacketAt(size_t maxpacketsize);
+
+		// sends the login call built so far and reads the answer,
+		// markers included
+		bool	sendLoginCall(const char *phase);
 		void	sendAuthRequest(unsigned char ttifunction,
 					unsigned char seqnumber,
 					const char *user,
@@ -874,6 +905,7 @@ class oracleprotocolclient {
 		unsigned char		logontypes;
 		const unsigned char	*datatyperequest;
 		size_t			datatyperequestsize;
+		size_t			datatyperequestsplit;
 		unsigned char		authseqphaseone;
 		unsigned char		authseqphasetwo;
 		bool			gotbreak;
@@ -1104,6 +1136,7 @@ oracleprotocolclient::oracleprotocolclient() {
 	logontypes=ORA_CCAP_O5LOGON;
 	datatyperequest=NULL;
 	datatyperequestsize=0;
+	datatyperequestsplit=0;
 	authseqphaseone=2;
 	authseqphasetwo=2;
 	gotbreak=false;
@@ -1187,6 +1220,10 @@ void oracleprotocolclient::setDataTypeRequest(const unsigned char *request,
 								size_t size) {
 	datatyperequest=request;
 	datatyperequestsize=size;
+}
+
+void oracleprotocolclient::setDataTypeRequestSplit(size_t firstpacketsize) {
+	datatyperequestsplit=firstpacketsize;
 }
 
 void oracleprotocolclient::setAuthSequenceNumbers(unsigned char phaseone,
@@ -1505,9 +1542,11 @@ size_t oracleprotocolclient::getRequestSize() {
 // from the request buffer, so the buffer itself is left alone and the caller
 // can still read the bytes it built
 bool oracleprotocolclient::sendSplitPacket() {
+	return sendSplitPacketAt((negotiatedsdu)?
+				(size_t)negotiatedsdu:(size_t)ORA_MAX_SDU);
+}
 
-	size_t	maxpacketsize=(negotiatedsdu)?
-				(size_t)negotiatedsdu:(size_t)ORA_MAX_SDU;
+bool oracleprotocolclient::sendSplitPacketAt(size_t maxpacketsize) {
 
 	if (reqpacket.getSize()<=ORA_FRAGMENT_OVERHEAD ||
 				maxpacketsize<=ORA_FRAGMENT_OVERHEAD) {
@@ -1992,6 +2031,9 @@ bool oracleprotocolclient::sendDataTypeNegotiation() {
 	// a test's own negotiation, if it gave one
 	if (datatyperequest) {
 		appendBytes(datatyperequest,datatyperequestsize);
+		if (datatyperequestsplit) {
+			return sendSplitPacketAt(datatyperequestsplit);
+		}
 		return sendPacket();
 	}
 
@@ -2330,6 +2372,20 @@ bool oracleprotocolclient::requestChallenge(const char *user) {
 	// reads no field out of it, so it carries none
 	sendAuthRequest(ORA_TTI_LOGON_PRESENT_USER_REQ_AUTH_SESSKEY,
 					authseqphaseone,user,1,0);
+	return sendLoginCall("phase one");
+}
+
+bool oracleprotocolclient::sendRawRequest(const unsigned char *request,
+							size_t size,
+							const char *phase) {
+	gotbreak=false;
+	beginPacket(ORA_PACKET_DATA);
+	appendBE16(0);
+	appendBytes(request,size);
+	return sendLoginCall(phase);
+}
+
+bool oracleprotocolclient::sendLoginCall(const char *phase) {
 	if (!sendPacket() || !recvPacket()) {
 		return false;
 	}
@@ -2338,7 +2394,7 @@ bool oracleprotocolclient::requestChallenge(const char *user) {
 	}
 
 	// markers first for a refused login
-	return recvAfterBreak("phase one");
+	return recvAfterBreak(phase);
 }
 
 // a refused login: a break marker and a reset marker, which this client

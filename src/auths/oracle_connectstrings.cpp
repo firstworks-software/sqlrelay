@@ -135,6 +135,9 @@
 //		serverlogontypes	the CCAP_LOGON_TYPES byte the server
 //					advertised, read for 2361 only, and
 //					taken as 0 if absent
+//		clientlogontypes	the client's CCAP_LOGON_TYPES byte,
+//					read for 2361 only, and taken as
+//					0x22 if absent
 //
 // The client sends no AUTH_SESSKEY of its own for O3LOGON, so there is no
 // clientauthsesskey.  serverauthsesskey is needed for the same reason it is
@@ -916,8 +919,10 @@ static uint32_t o3logonVerifierType(parameterstring *p) {
 //	AUTH_SESSKEY	aes-128-cbc(kek, 32 random bytes), iv 0, sent as
 //			64 hex characters
 //	combo key	aes-128 key: 16 bytes of the decrypted session key,
-//			used raw - the first 16 if the server advertised
-//			both O7LOGON and O5LOGON_NP, the second 16 if not
+//			used raw - the first 16 if the server's and the
+//			client's logon types both set O7LOGON and
+//			O5LOGON_NP (the server's alone, if the client's are
+//			absent), the second 16 if not
 //	AUTH_PASSWORD	aes-128-cbc(combo key, 16 salt bytes || the
 //			password || pkcs#5 padding), iv 0
 //
@@ -1008,15 +1013,24 @@ static bool o3logonAesVerify(const char *authpassword,
 		return false;
 	}
 
-	// OCI 23.26 encrypts under the first half when the server advertised
-	// both bits, and under the second otherwise - measured with 0x0d,
-	// 0x0f, 0x2d, 0x2f, 0x4f and 0x6f.  real 12.2, which sends 0x6f,
-	// verifies the first half too
+	// OCI 23.26 (0xef) encrypts under the first half when the server
+	// advertised both bits, and under the second otherwise - measured with
+	// 0x0d, 0x0f, 0x2d, 0x2f, 0x4f and 0x6f.  a genuine 10.2 client (0x0d)
+	// encrypts under the second half whatever the server advertised, and
+	// real 12.2, which sends 0x6f, verifies both clients.  so the client
+	// has to set both bits too
 	uint32_t	logontypes=
 			(uint32_t)charstring::convertToUnsignedInteger(
 				p->getValue("serverlogontypes"),(int32_t)0);
+	const char	*clt=p->getValue("clientlogontypes");
+	uint32_t	clientlogontypes=(clt)?
+			(uint32_t)charstring::convertToUnsignedInteger(
+							clt,(int32_t)0):
+			(CCAP_O7LOGON|CCAP_O5LOGON_NP);
 	bool		firsthalf=((logontypes&CCAP_O7LOGON) &&
-					(logontypes&CCAP_O5LOGON_NP));
+					(logontypes&CCAP_O5LOGON_NP) &&
+					(clientlogontypes&CCAP_O7LOGON) &&
+					(clientlogontypes&CCAP_O5LOGON_NP));
 	byte_t	combokey[O3LOGON_AES_KEY_SIZE];
 	bytestring::copy(combokey,
 			sesskey+((firsthalf)?0:O3LOGON_AES_KEY_SIZE),
