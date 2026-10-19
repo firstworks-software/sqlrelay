@@ -80,12 +80,12 @@
 #define	MARKER_TYPE_RESET	2
 #define	MARKER_TYPE_INTERRUPT	3
 
-// the bit a marker packet may carry in the packet header's normally unused
-// reserved byte.  a real server sets it on its markers when the negotiated
-// version uses the large header (PROTOCOL_VERSION_12 and up) and clears it
-// below that.  oci and jdbc clients follow the same rule; python-oracledb
-// never sets it
-#define	PACKET_FLAG_MARKER	0x20
+// the bit a real server sets in the packet header's flags byte on its
+// markers, its ano response and its lob data packets when the negotiated
+// version uses the large header (PROTOCOL_VERSION_12 and up), and clears it
+// below that.  oci and jdbc clients follow the same rule on their markers;
+// python-oracledb never sets it
+#define	PACKET_FLAG_LARGE_HEADER	0x20
 
 // protocol versions
 #define PROTOCOL_VERSION_7		0x0134
@@ -954,11 +954,6 @@
 #define LOB_DATA_MORE			2
 #define LOB_DATA_LAST			3
 #define LOB_DATA_CONSTANT		1
-
-// the bit a lob data packet carries in the packet header's normally unused
-// reserved byte - the same one a marker packet sets.  a real 12.2 server
-// sets it on every lob data packet it sends
-#define LOB_DATA_PACKET_FLAGS		0x20
 
 // a clob's bytes go out two per character, utf-16 big endian, whatever
 // charset the session negotiated - a real 12.2 server answers a 400
@@ -4941,10 +4936,9 @@ bool sqlrprotocol_oracle::sendMarker(byte_t markertype) {
 	debugEnd();
 
 	// build packet - 1 (one data byte follows), 0 (reserved), then
-	// the marker type.  the marker flag goes in the header only with
-	// the large header, as a real server's does
+	// the marker type
 	resetSendPacketBuffer(PACKET_MARKER);
-	reqpacketflags=(largeheader)?PACKET_FLAG_MARKER:0;
+	reqpacketflags=(largeheader)?PACKET_FLAG_LARGE_HEADER:0;
 	write(&reqpacket,(byte_t)1);
 	write(&reqpacket,(byte_t)0);
 	write(&reqpacket,markertype);
@@ -5690,6 +5684,7 @@ bool sqlrprotocol_oracle::getAnoStatusField(const byte_t *rp,
 bool sqlrprotocol_oracle::sendAnoResponse() {
 
 	resetSendPacketBuffer(PACKET_DATA);
+	reqpacketflags=(largeheader)?PACKET_FLAG_LARGE_HEADER:0;
 
 	// ano response header...
 	uint16_t	dataflags=0;
@@ -19276,7 +19271,7 @@ bool sqlrprotocol_oracle::sendLobDataChunk(const byte_t *data,
 	// declared end, which is what a real 12.2 server does and what the
 	// client reads
 	resetSendPacketBuffer(PACKET_DATA_DESCRIPTOR);
-	reqpacketflags=LOB_DATA_PACKET_FLAGS;
+	reqpacketflags=(largeheader)?PACKET_FLAG_LARGE_HEADER:0;
 
 	// whether another chunk follows, this chunk's byte count, a constant,
 	// the byte count again as a ub2, then padding out to 64 bytes

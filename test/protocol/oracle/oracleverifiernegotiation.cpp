@@ -75,7 +75,15 @@
 // higher, which is also where the packet header grows to a 32-bit length,
 // and to 0 below it.  The markers a refused login or a wrong password gets
 // are checked against the version the client read off the accept, not against
-// anything the listener was configured with.
+// anything the listener was configured with.  The ano response data packet
+// follows the same rule.  Every case connects with the connect flags of a
+// real client and runs the ano exchange behind the accept, and the response
+// has to be a data packet that opens with the ano marker.
+// checkAnoResponseFlags() checks its flags byte.  So do the data descriptor
+// packets a zero copy lob read gets.  Wherever the portable run completes a
+// login below field version 12.1, the client offers zero copy, selects a
+// clob and reads it, and checkLobDataFlags() checks the flags byte of the
+// first of them.
 
 // the verifier types - the VERIFIER_TYPE_* defines in
 // src/protocols/oracle.cpp.  only the ones that run under o5logon go out on
@@ -109,9 +117,30 @@ static const unsigned char	LOGON_TYPES_12C=
 
 // PROTOCOL_VERSION_11 in src/protocols/oracle.cpp, the version a genuine 11.2
 // client offers, and the flags byte of a marker packet from a large header
-// session - PACKET_FLAG_MARKER there
+// session - PACKET_FLAG_LARGE_HEADER there
 static const uint16_t	ORA_CONNECT_VERSION_11=0x013a;
 static const unsigned char	ORA_MARKER_PACKET_FLAGS=0x20;
+
+// the flags byte of the ano response data packet from a large header
+// session, which sendAnoResponse() in src/protocols/oracle.cpp sends
+static const unsigned char	ORA_ANO_PACKET_FLAGS=0x20;
+
+// the flags byte of a lob data descriptor packet from a large header
+// session, which sendLobDataChunk() in src/protocols/oracle.cpp sends
+static const unsigned char	ORA_LOB_DATA_PACKET_FLAGS=0x20;
+
+// the start of the 114 byte clob locator buildLobLocator() in
+// src/protocols/oracle.cpp writes: its length, its version, the clob type
+// and its kind
+static const unsigned char	ORA_CLOB_LOCATOR_HEAD[]={
+	0x00, 0x70, 0x00, 0x02, 0x02, 0x0c
+};
+static const size_t		ORA_LOB_LOCATOR_SIZE=114;
+
+// the clob read back, and its length
+static const char		*ORA_CLOB_QUERY=
+				"select to_clob(rpad('C',400,'C')) from dual";
+static const uint32_t		ORA_CLOB_LENGTH=400;
 
 // ORA_NO_MATCHING_AUTH_PROTOCOL in src/protocols/oracle.cpp
 static const uint32_t	ORA_NO_MATCHING_AUTH_PROTOCOL=28040;
@@ -691,6 +720,108 @@ static void checkMarkerFlags(oracleprotocolclient *client,
 	}
 }
 
+// the ano response's flags byte against the one a real server sets: 0x20 when
+// the version the client read off the accept is 0x013b or higher, 0 below it
+static void checkAnoResponseFlags(oracleprotocolclient *client,
+					const char *label) {
+
+	unsigned char	expected=(client->getAcceptVersion()>=
+					ORA_PROTOCOL_VERSION_12)?
+					ORA_ANO_PACKET_FLAGS:0;
+
+	char	flags[16];
+	charstring::printf(flags,sizeof(flags),"0x%02x",expected);
+
+	stringbuffer	l;
+	l.append(label)->append(" ano response flags are ")->append(flags);
+	bool	ok=(client->getAnoResponseFlags()==expected);
+	report(l.getString(),ok);
+
+	if (!ok) {
+		stdoutput.printf("    accept version 0x%04x, ano response "
+					"flags 0x%02x\n",
+					client->getAcceptVersion(),
+					client->getAnoResponseFlags());
+	}
+}
+
+// a zero copy read of a clob, and the flags byte of its first lob data
+// descriptor packet against the one a real server sets: 0x20 when the
+// version the client read off the accept is 0x013b or higher, 0 below it.
+// the client has to have offered zero copy and logged in
+static void checkLobDataFlags(oracleprotocolclient *client,
+					const char *label) {
+
+	stringbuffer	l;
+
+	// select the clob
+	uint32_t	cursorid=0;
+	l.append(label)->append(" selects a clob");
+	bool	ok=(client->open(&cursorid) &&
+			client->query3(ORA_OPTION_PARSE|
+					ORA_OPTION_EXECUTE|
+					ORA_OPTION_NOPLSQL,
+					cursorid,0,ORA_CLOB_QUERY) &&
+			client->getResponseTtcCode()==ORA_TTC_DESCRIBE_INFO &&
+			client->fetch(cursorid,1));
+	report(l.getString(),ok);
+	if (!ok) {
+		stdoutput.printf("    %s\n",client->getError());
+		return;
+	}
+
+	// find its locator in the row
+	const unsigned char	*response=client->getResponse();
+	size_t			responsesize=client->getResponseSize();
+	const unsigned char	*locator=NULL;
+	for (size_t i=0; i+ORA_LOB_LOCATOR_SIZE<=responsesize; i++) {
+		if (!bytestring::compare(response+i,ORA_CLOB_LOCATOR_HEAD,
+					sizeof(ORA_CLOB_LOCATOR_HEAD))) {
+			locator=response+i;
+			break;
+		}
+	}
+	l.clear();
+	l.append(label)->append(" the row carries a locator");
+	report(l.getString(),locator!=NULL);
+	if (!locator) {
+		return;
+	}
+	unsigned char	copy[ORA_LOB_LOCATOR_SIZE];
+	bytestring::copy(copy,locator,sizeof(copy));
+
+	// read it
+	l.clear();
+	l.append(label)->append(" reads the clob in lob data packets");
+	ok=(client->lobRead(copy,sizeof(copy),1,ORA_CLOB_LENGTH) &&
+		client->getResponseTtcCode()==ORA_TTC_OK &&
+		client->getLobDataPacketCount()>0);
+	report(l.getString(),ok);
+	if (!ok) {
+		stdoutput.printf("    %s\n",client->getError());
+		return;
+	}
+
+	unsigned char	expected=(client->getAcceptVersion()>=
+					ORA_PROTOCOL_VERSION_12)?
+					ORA_LOB_DATA_PACKET_FLAGS:0;
+
+	char	flags[16];
+	charstring::printf(flags,sizeof(flags),"0x%02x",expected);
+
+	l.clear();
+	l.append(label)->append(" lob data packet flags are ")->append(flags);
+	ok=(client->getLobDataPacketFlags()==expected);
+	report(l.getString(),ok);
+
+	if (!ok) {
+		stdoutput.printf("    accept version 0x%04x, lob data packet "
+					"flags 0x%02x\n",
+					client->getAcceptVersion(),
+					client->getLobDataPacketFlags());
+	}
+}
+
 static void putByte(unsigned char *buffer, size_t *size,
 						unsigned char value) {
 	buffer[(*size)++]=value;
@@ -895,8 +1026,9 @@ static void checkRefusal(oracleprotocolclient *client,
 	}
 }
 
-// the rest of an 11g login, and the trailer of its answer
-static void checkLogin(oracleprotocolclient *client,
+// the rest of an 11g login, and the trailer of its answer.  returns whether
+// the login went through
+static bool checkLogin(oracleprotocolclient *client,
 				const char *label,
 				const listenerinfo *li,
 				unsigned char seqnumber) {
@@ -908,7 +1040,7 @@ static void checkLogin(oracleprotocolclient *client,
 	report(l.getString(),ok);
 	if (!ok) {
 		stdoutput.printf("    %s\n",client->getError());
-		return;
+		return false;
 	}
 
 	l.clear();
@@ -919,6 +1051,7 @@ static void checkLogin(oracleprotocolclient *client,
 	l.clear();
 	l.append(label)->append(" login answer trailer");
 	checkTrailer(client,l.getString(),ORA_AUTH_PHASE_ANSWER,seqnumber,false);
+	return true;
 }
 
 // the listeners a wrong password is tried against: 12.1, where a phase two
@@ -1043,8 +1176,16 @@ static void runCase(size_t index) {
 	client.setNativeEncoding(nativeencoding);
 	client.setFieldVersion(clientfieldversion);
 	client.setConnectVersion(clientconnectversion);
+	client.setAnoNegotiation(true);
 	client.setLogonTypes(tc->logontypes);
 	client.setAuthSequenceNumbers(seqnumber,seqnumber+1);
+
+	// lobRead() sends the portable request only, and query3() the one of
+	// field version 11.2, which lacks the fields getQuery3Request() reads
+	// at 12.1 and up
+	bool	lobread=(tc->fulllogin && !nativeencoding &&
+			negotiatedfieldversion<ORA_CCAP_FIELD_VERSION_12_1);
+	client.setLobZeroCopy(lobread);
 
 	stringbuffer	l;
 	l.append(label)->append(" connect");
@@ -1053,6 +1194,8 @@ static void runCase(size_t index) {
 		stdoutput.printf("    %s\n",client.getError());
 		return;
 	}
+
+	checkAnoResponseFlags(&client,label);
 
 	// what the listener advertised, which follows the ceiling and not
 	// the client
@@ -1093,8 +1236,10 @@ static void runCase(size_t index) {
 		checkRefusal(&client,label,li,tc->expected,seqnumber);
 	} else {
 		checkChallenge(&client,label,tc->expected,seqnumber);
-		if (tc->fulllogin) {
-			checkLogin(&client,label,li,seqnumber+1);
+		if (tc->fulllogin &&
+				checkLogin(&client,label,li,seqnumber+1) &&
+				lobread) {
+			checkLobDataFlags(&client,label);
 		}
 	}
 

@@ -55,6 +55,7 @@ static const unsigned char	ORA_PACKET_REFUSE=4;
 static const unsigned char	ORA_PACKET_DATA=6;
 static const unsigned char	ORA_PACKET_RESEND=11;
 static const unsigned char	ORA_PACKET_MARKER=12;
+static const unsigned char	ORA_PACKET_DATA_DESCRIPTOR=15;
 
 // marker types - the MARKER_TYPE_* defines in src/protocols/oracle.cpp
 static const unsigned char	ORA_MARKER_TYPE_BREAK=1;
@@ -68,6 +69,7 @@ static const unsigned char	ORA_TTC_ERROR=0x04;
 static const unsigned char	ORA_TTC_ROW_HEADER=0x06;
 static const unsigned char	ORA_TTC_ROW_DATA=0x07;
 static const unsigned char	ORA_TTC_OK=0x08;
+static const unsigned char	ORA_TTC_LOB_AND_BFILE_DATA=0x0e;
 static const unsigned char	ORA_TTC_DESCRIBE_INFO=0x10;
 
 // two task interface functions - the TTI_* defines in
@@ -113,9 +115,49 @@ static const uint16_t	ORA_PROTOCOL_VERSION_12=0x013b;
 
 // NSI_NA_NO_SERVICES in src/protocols/oracle.cpp, written into both flag
 // bytes.  anoNegotiation() only runs an ano exchange for a client that set
-// NSI_NA_WANTED (0x01), and this client has no use for one, so it says so
-// and the handshake goes straight from the accept to the tti negotiation
+// NSI_NA_WANTED (0x01), and this client has no use for one unless
+// setAnoNegotiation() asks for it, so it says so and the handshake goes
+// straight from the accept to the tti negotiation
 static const uint16_t	ORA_ANO_FLAGS_NO_SERVICES=0x0808;
+
+// the two flag bytes an OCI 23 client sends when it wants ano: NSI_NA_WANTED
+// and 0x40, in both bytes.  setAnoNegotiation() sends these instead
+static const uint16_t	ORA_ANO_FLAGS_WANTED=0x4141;
+
+// the ano request an OCI 23 client sends behind the accept, the data flags
+// and then the 0xdeadbeef marker, the overall size, the version, the service
+// count and the four services, with the encryption and data integrity
+// driver lists cut down to the "none" algorithm so the listener has
+// nothing to decline
+static const unsigned char	ORA_ANO_REQUEST[]={
+
+	// data flags, marker, overall size, version, service count
+	0x00,0x00,0xde,0xad,0xbe,0xef,0x00,0x85,0x00,0x00,0x00,0x00,0x00,
+	0x04,0x00,
+
+	// supervisor
+	0x00,0x04,0x00,0x03,0x00,0x00,0x00,0x00,
+	0x00,0x04,0x00,0x05,0x17,0x1a,0x20,0x00,
+	0x00,0x08,0x00,0x01,0x00,0x0c,0xd1,0x19,0xbb,0x51,0x95,0xe1,
+	0x00,0x12,0x00,0x01,0xde,0xad,0xbe,0xef,0x00,0x03,0x00,0x00,0x00,
+	0x04,0x00,0x04,0x00,0x01,0x00,0x01,0x00,0x02,
+
+	// authentication
+	0x00,0x01,0x00,0x03,0x00,0x00,0x00,0x00,
+	0x00,0x04,0x00,0x05,0x17,0x1a,0x20,0x00,
+	0x00,0x02,0x00,0x03,0xe0,0xe1,
+	0x00,0x02,0x00,0x06,0xfc,0xff,
+
+	// encryption
+	0x00,0x02,0x00,0x02,0x00,0x00,0x00,0x00,
+	0x00,0x04,0x00,0x05,0x17,0x1a,0x20,0x00,
+	0x00,0x01,0x00,0x01,0x00,
+
+	// data integrity
+	0x00,0x03,0x00,0x02,0x00,0x00,0x00,0x00,
+	0x00,0x04,0x00,0x05,0x17,0x1a,0x20,0x00,
+	0x00,0x01,0x00,0x01,0x00
+};
 
 // AL32UTF8, which is what the listener answers with whatever the client
 // asks for - see the charset parameter in src/protocols/oracle.cpp
@@ -132,6 +174,19 @@ static const size_t		ORA_CCAP_FIELD_VERSION=7;
 static const unsigned char	ORA_CCAP_FIELD_VERSION_11_2=6;
 static const size_t		ORA_CCAP_SIZE=42;
 static const size_t		ORA_RCAP_SIZE=7;
+
+// RCAP_TTC and RCAP_TTC_ZERO_COPY in src/protocols/oracle.cpp.  a client
+// that sets the bit, against a module that also sets it, gets a lob read's
+// data in data descriptor packets rather than inline - see
+// sendLobReadResponse() there
+static const size_t		ORA_RCAP_TTC=6;
+static const unsigned char	ORA_RCAP_TTC_ZERO_COPY=0x01;
+
+// LOB_OP_READ, LOB_DATA_DESCRIPTOR_SIZE and LOB_DATA_LAST in
+// src/protocols/oracle.cpp
+static const uint32_t		ORA_LOB_OP_READ=0x00002;
+static const size_t		ORA_LOB_DATA_DESCRIPTOR_SIZE=64;
+static const uint32_t		ORA_LOB_DATA_LAST=3;
 
 // CCAP_FIELD_VERSION_12_2 in src/protocols/oracle.cpp.  a bind descriptor
 // grows a thirteenth field at and above it - see getQuery3BindDescriptor()
@@ -471,6 +526,24 @@ class oracleprotocolclient {
 		// runs at.  0 until connect() has read the accept
 		uint16_t	getAcceptVersion();
 
+		// whether the connect packet carries the ano flags of a real
+		// client, and connect() runs the ano exchange behind the
+		// accept: that client's request, and the response, which has
+		// to be a data packet that opens with the ano marker.  off by
+		// default, which keeps the handshake going straight from the
+		// accept to the tti negotiation.  it has to be set before
+		// connect()
+		void		setAnoNegotiation(bool anonegotiation);
+
+		// the tns flags byte of the ano response, as the listener
+		// sent it.  meaningful once connect() has run an ano exchange
+		unsigned char	getAnoResponseFlags();
+
+		// whether the data type negotiation sets RCAP_TTC_ZERO_COPY,
+		// so that lobRead() gets the lob's data in data descriptor
+		// packets.  off by default.  it has to be set before connect()
+		void		setLobZeroCopy(bool lobzerocopy);
+
 		// the whole handshake through the accept: the connect
 		// packet (twice - the listener asks for a resend, the way a
 		// real database does), then the tti protocol and data type
@@ -626,6 +699,18 @@ class oracleprotocolclient {
 		// TTI_FETCH
 		bool	fetch(uint32_t cursorid, uint32_t rowstofetch);
 
+		// a TTI_LOB_OPERATIONS read of "amount" characters or bytes,
+		// from "offset" counted from 1, of the lob "locator" names,
+		// in the portable encoding.  the answer is the response once
+		// this returns.  with zero copy agreed, the data comes ahead
+		// of it, in data descriptor packets whose count and first
+		// tns flags byte are kept, and whose bytes are read past
+		bool	lobRead(const unsigned char *locator,
+					size_t locatorsize,
+					uint32_t offset, uint32_t amount);
+		uint32_t	getLobDataPacketCount();
+		unsigned char	getLobDataPacketFlags();
+
 		// TTI_DESCRIBE - an oci7 client's odescr().  "position" is
 		// the column the client is asking about, counted from 1;
 		// the answer carries the whole select list whatever it
@@ -766,6 +851,7 @@ class oracleprotocolclient {
 		bool	sendProtocolNegotiation();
 		bool	parseTtiResponse();
 		bool	sendDataTypeNegotiation();
+		bool	runAnoNegotiation();
 		void	sendAuthRequest(unsigned char ttifunction,
 					unsigned char seqnumber,
 					const char *user,
@@ -803,6 +889,17 @@ class oracleprotocolclient {
 		// and the one the accept answered with
 		uint16_t		connectversion;
 		uint16_t		acceptversion;
+
+		// whether to run an ano exchange, and the flags byte of the
+		// response
+		bool			anonegotiation;
+		unsigned char		anoresponseflags;
+
+		// whether to offer zero copy lob reads, and what the last
+		// lobRead() got in data descriptor packets
+		bool			lobzerocopy;
+		uint32_t		lobdatapacketcount;
+		unsigned char		lobdatapacketflags;
 
 		// setBigChunkClrFraming()'s answer, and whether it was ever
 		// given.  two members rather than one tri-state so the
@@ -1014,6 +1111,11 @@ oracleprotocolclient::oracleprotocolclient() {
 	resetflags=0;
 	connectversion=0;
 	acceptversion=0;
+	anonegotiation=false;
+	anoresponseflags=0;
+	lobzerocopy=false;
+	lobdatapacketcount=0;
+	lobdatapacketflags=0;
 	bigchunkclrframingset=false;
 	bigchunkclrframing=false;
 	offeredsdu=ORA_DEFAULT_SDU;
@@ -1107,6 +1209,26 @@ void oracleprotocolclient::setConnectVersion(uint16_t version) {
 
 uint16_t oracleprotocolclient::getAcceptVersion() {
 	return acceptversion;
+}
+
+void oracleprotocolclient::setAnoNegotiation(bool anonegotiation) {
+	this->anonegotiation=anonegotiation;
+}
+
+unsigned char oracleprotocolclient::getAnoResponseFlags() {
+	return anoresponseflags;
+}
+
+void oracleprotocolclient::setLobZeroCopy(bool lobzerocopy) {
+	this->lobzerocopy=lobzerocopy;
+}
+
+uint32_t oracleprotocolclient::getLobDataPacketCount() {
+	return lobdatapacketcount;
+}
+
+unsigned char oracleprotocolclient::getLobDataPacketFlags() {
+	return lobdatapacketflags;
 }
 
 // which framing this client has to read and write - which is not the same
@@ -1707,7 +1829,8 @@ bool oracleprotocolclient::sendConnect(const char *sid) {
 	appendBE16((uint16_t)connectdatasize);
 	appendBE16((large)?74:58);		// connect data offset
 	appendBE32(5120);			// max connect data receivable
-	appendBE16(ORA_ANO_FLAGS_NO_SERVICES);
+	appendBE16((anonegotiation)?ORA_ANO_FLAGS_WANTED:
+					ORA_ANO_FLAGS_NO_SERVICES);
 	appendBE32(0);				// trace cross facility item 1
 	appendBE32(0);				// trace cross facility item 2
 	appendBE32(0);				// trace unique connection id 1
@@ -1912,9 +2035,14 @@ bool oracleprotocolclient::sendDataTypeNegotiation() {
 	appendBytes(compilecaps,sizeof(compilecaps));
 
 	// the runtime capabilities.  RCAP_DB_TIMEZONE is 0, so the db time
-	// zone group that would otherwise follow the arrays is left out
+	// zone group that would otherwise follow the arrays is left out.
+	// RCAP_TTC_ZERO_COPY is the one bit a test can turn on, which the
+	// genuine 11.2 and OCI 23 clients set
 	unsigned char	runtimecaps[ORA_RCAP_SIZE];
 	bytestring::zero(runtimecaps,sizeof(runtimecaps));
+	if (lobzerocopy) {
+		runtimecaps[ORA_RCAP_TTC]|=ORA_RCAP_TTC_ZERO_COPY;
+	}
 	appendByte((unsigned char)sizeof(runtimecaps));
 	appendBytes(runtimecaps,sizeof(runtimecaps));
 
@@ -1939,6 +2067,27 @@ bool oracleprotocolclient::sendDataTypeNegotiation() {
 	appendBE16(0);
 
 	return sendPacket();
+}
+
+// the ano request, then the response.  the response keeps its header flags
+// for getAnoResponseFlags() and has to open with the data flags and the ano
+// marker
+bool oracleprotocolclient::runAnoNegotiation() {
+
+	beginPacket(ORA_PACKET_DATA);
+	appendBytes(ORA_ANO_REQUEST,sizeof(ORA_ANO_REQUEST));
+	if (!sendPacket() || !recvPacket()) {
+		return false;
+	}
+	if (resppackettype!=ORA_PACKET_DATA || respsize<6 ||
+			resppacket[0]!=0x00 || resppacket[1]!=0x00 ||
+			resppacket[2]!=0xde || resppacket[3]!=0xad ||
+			resppacket[4]!=0xbe || resppacket[5]!=0xef) {
+		setError("bad ano response");
+		return false;
+	}
+	anoresponseflags=resppacketflags;
+	return true;
 }
 
 bool oracleprotocolclient::connect(const char *host, uint16_t port,
@@ -1986,6 +2135,11 @@ bool oracleprotocolclient::connect(const char *host, uint16_t port,
 	// the 16-bit one carries it exactly either way.  every packet from
 	// here on is bounded by it, in both directions
 	negotiatedsdu=(uint16_t)(((uint16_t)resppacket[4]<<8)|resppacket[5]);
+
+	// ano exchange
+	if (anonegotiation && !runAnoNegotiation()) {
+		return false;
+	}
 
 	if (!sendProtocolNegotiation() || !recvPacket()) {
 		return false;
@@ -3353,6 +3507,94 @@ bool oracleprotocolclient::fetch(uint32_t cursorid, uint32_t rowstofetch) {
 	appendLenPreInt(rowstofetch);
 
 	return sendPacket() && recvPacket();
+}
+
+// TTI_LOB_OPERATIONS, as a read.  0x60 rather than a named constant:
+// oracle9ibootstrap.cpp already defines ORA_TTI_LOB_OPERATIONS, and it
+// includes this file.  the fields are the ones lobOperations() in
+// src/protocols/oracle.cpp reads, in the order OCI 23 sends them in the
+// portable encoding - [0027] of
+// samples/10713-dev-oci23-portable-lobops-sqlrelay121.oraproxy
+bool oracleprotocolclient::lobRead(const unsigned char *locator,
+					size_t locatorsize,
+					uint32_t offset, uint32_t amount) {
+
+	lobdatapacketcount=0;
+	lobdatapacketflags=0;
+
+	beginTtiCall(0x60);
+	appendByte(1);				// sequence number
+	appendByte(1);				// pointer
+	appendLenPreInt((uint32_t)locatorsize);
+	appendByte(0);				// pointer
+	appendLenPreInt(0);			// destination locator size
+	appendLenPreInt(0);			// short amount
+	appendBE32(0);				// flags
+	appendLenPreInt(ORA_LOB_OP_READ);
+	appendByte(0);				// pointer
+	appendLenPreInt(0);			// scn
+	appendLenPreInt(offset);
+	appendLenPreInt(4);			// amount kind
+	appendByte(1);				// pointer
+	appendBE16(0);
+	appendBE16(0);
+	appendBE16(0);
+	appendBytes(locator,locatorsize);
+	appendLenPreInt(amount);
+
+	if (!sendPacket() || !recvPacket()) {
+		return false;
+	}
+
+	// with zero copy, a packet with the ttc code alone says the data
+	// follows, in data descriptor packets, and the answer comes after
+	// the last of them.  a descriptor's second field is its byte count,
+	// and the bytes ride behind the packet's declared end
+	if (resppackettype!=ORA_PACKET_DATA || respsize!=3 ||
+			getResponseTtcCode()!=ORA_TTC_LOB_AND_BFILE_DATA) {
+		return true;
+	}
+	for (;;) {
+		if (!recvPacket()) {
+			return false;
+		}
+		if (resppackettype!=ORA_PACKET_DATA_DESCRIPTOR ||
+				respsize<ORA_LOB_DATA_DESCRIPTOR_SIZE) {
+			setError("bad lob data descriptor");
+			return false;
+		}
+		if (!lobdatapacketcount) {
+			lobdatapacketflags=resppacketflags;
+		}
+		lobdatapacketcount++;
+		uint32_t	more=((uint32_t)resppacket[0]<<24)|
+					((uint32_t)resppacket[1]<<16)|
+					((uint32_t)resppacket[2]<<8)|
+					(uint32_t)resppacket[3];
+		uint32_t	size=((uint32_t)resppacket[4]<<24)|
+					((uint32_t)resppacket[5]<<16)|
+					((uint32_t)resppacket[6]<<8)|
+					(uint32_t)resppacket[7];
+
+		// read past the bytes
+		unsigned char	discard[1024];
+		while (size) {
+			size_t	chunk=(size<sizeof(discard))?
+						size:sizeof(discard);
+			if (sock.read(discard,chunk,
+					ORA_RESPONSE_TIMEOUT_SEC,0)!=
+							(ssize_t)chunk) {
+				setError("failed to read lob data");
+				return false;
+			}
+			size=size-(uint32_t)chunk;
+		}
+
+		if (more==ORA_LOB_DATA_LAST) {
+			break;
+		}
+	}
+	return recvPacket();
 }
 
 // TTI_DESCRIBE.  the field order is describe()'s read order in

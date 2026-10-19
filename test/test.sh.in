@@ -1503,8 +1503,14 @@ run_protocol_test() {
 	# 12.2 servers send, for #10717.  both runs also check the flags
 	# byte of the break and reset markers, 0x20 at a negotiated TNS
 	# version of 0x013b and up and 0 below it, at connect offers of
-	# 0x0140 and 0x013a, for #10720.  it reads the ports straight from
-	# the environment, so it needs neither $server nor TNS_ADMIN.  then
+	# 0x0140 and 0x013a, for #10720.  every case also runs an ANO
+	# exchange behind the accept, with the connect flags and request of
+	# an OCI 23 client, and checks the flags byte of the ANO response
+	# the same way, for #10721.  wherever the portable run completes a
+	# login below field version 12.1, it also reads a clob with zero copy
+	# agreed and checks the flags byte of the first lob data packet the
+	# same way.  it reads the ports straight from the environment, so it
+	# needs neither $server nor TNS_ADMIN.  then
 	# oracle9ibootstrap, three times, for #10538 and #10702 - it plays
 	# 9.2.0.4 sqlplus over a raw socket against the 12.1
 	# (ORACLEPROTOCOLPORT1) and 10.2

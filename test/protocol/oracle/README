@@ -328,6 +328,23 @@ oracle122.oraproxy). The module used to take the flag from the logon shape
 instead of the negotiated version, so it sent 0x20 to an 11.2 client and 0
 to a 10g classic login at 0x013b.
 
+The ANO response data packet follows the same rule (#10721), and so does
+every lob data packet (type 15) of a zero copy lob read. Both carry 0x20 at
+0x013b and up and 0 below it, while the lob marker (TTC 0x0e) and every
+other data packet are 0 at both sizes. The module used to send 0 for the
+ANO response at 0x013b and 0x20 for every lob data packet. The portable and
+native runs check the ANO response flags at both connect offers
+(checkAnoResponseFlags() in oracleverifiernegotiation). The portable run
+also checks the first lob data packet (checkLobDataFlags()): after an 11g
+login below field version 12.1 the client offers zero copy, selects a clob
+and reads it, and the flags must be 0x20 at the first offer and 0 at the
+second. That check does not run at 12.1 (the raw client's query3 request
+lacks the 12.1 fields and the select hangs) or in the native run (lobRead()
+sends only the portable request). The 0x013a and 0x013c lob data cases are
+real captures (OCI 23 and a genuine 11.2 client against oracle122). No real
+type 15 packet exists at exactly 0x013b, so that threshold is inferred from
+the markers and the ANO response measured there.
+
 oci7.cpp, also in this directory, is oci8.cpp's counterpart written
 against the legacy pre-8.0 OCI7 call interface (olog/oopen/oparse/
 odefin/oexec/ofen/oexfet/oclose/ologof/odescr/obndrv) instead of the
@@ -5377,6 +5394,75 @@ that statement, except where noted.
                                       pointer login, a 64 bit challenge (509
                                       payload bytes), a reset and a hang
                                       (#10718)
+
+    10721-dev-oci23-native-ociselectlob-accept013a-realserver-oracle122.oraproxy
+                                     the real 12.2 server at the small
+                                      header, which it does not do for OCI 23
+                                      by itself. OCI 23.26 on dev, ociselectlob
+                                      through an oraproxy that rewrote the
+                                      offered connect version from 0x0140 to
+                                      0x013a in both CONNECT packets, so the
+                                      stock oracle122 listener negotiated
+                                      0x013a. 68 packets. The ANO response at
+                                      [0006] carries TNS flags 0, and so do
+                                      the 13 lob data packets (type 15) at
+                                      [0021] to [0064]. The lob marker and
+                                      every other server data packet are 0
+                                      too (#10721)
+
+    10721-dev-oci23-native-ociselectlob-realserver-oracle122.oraproxy
+                                     the control for the one above: the same
+                                      run without the rewrite, so the real
+                                      server accepts 0x013c (the large
+                                      header). 68 packets, the same sequence.
+                                      The ANO response at [0006] and the 13
+                                      lob data packets carry 0x20. The lob
+                                      marker is still 0 (#10721)
+
+    10721-dev-oci23-portable-ociselectlob-sqlrelay121-after.oraproxy
+                                     ociselectlob (OCI 23.26 on dev) against
+                                      sqlr-listener emulating 12.1, after the
+                                      fix. 70 packets, 0x013b. The ANO
+                                      response at [0006] and the 13 lob data
+                                      packets carry 0x20, as the real
+                                      server's do at 0x013c. Before the fix
+                                      the ANO response carried 0 (#10721)
+
+    10721-dev-ojdbc-lobread-sqlrelay121-after.oraproxy
+                                     ojdbc (Java_TTC-8.2.0, on dev) reading
+                                      lobs against sqlr-listener emulating
+                                      12.1, after the fix. 44 packets,
+                                      0x013b. The ANO response at [0006] and
+                                      the 10 lob data packets carry 0x20.
+                                      ojdbc copies the flags of the ANO
+                                      response into its protocol negotiation
+                                      request at [0007], so that request
+                                      carries 0x20 now (it carried 0 before
+                                      the fix, and 0x20 against a real server
+                                      at 0x013c) (#10721)
+
+    10721-fedora16x86-oci11-portable-lobread-realserver-oracle122.oraproxy
+                                     the genuine 32 bit Oracle 11.2 Instant
+                                      Client on fedora16x86 reading a clob
+                                      with zero copy against the real
+                                      oracle122 server. 48 packets. The
+                                      client offers and gets 0x013a (the
+                                      small header). The ANO response at
+                                      [0006] and the 10 lob data packets at
+                                      [0021] to [0044] carry 0, the real
+                                      server's flags at the small header
+                                      (#10721)
+
+    10721-fedora16x86-oci11-portable-lobread-sqlrelay121-after.oraproxy
+                                     the same run against sqlr-listener
+                                      emulating 12.1, after the fix. 48
+                                      packets, 0x013a. The ANO response and
+                                      the 10 lob data packets carry 0. Before
+                                      the fix the lob data packets carried
+                                      0x20, which a real server does not send
+                                      at the small header. The packet kinds
+                                      and flags match the real server's
+                                      capture one for one (#10721)
 
 The v11 time zone file for the oci8 run
 ---------------------------------------
