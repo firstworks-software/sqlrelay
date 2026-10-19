@@ -12,6 +12,7 @@
 
 #include <sqlrelay/sqlrserver.h>
 #include <rudiments/charstring.h>
+#include <rudiments/character.h>
 #include <rudiments/bytestring.h>
 #include <rudiments/bytebuffer.h>
 #include <rudiments/parameterstring.h>
@@ -51,6 +52,12 @@
 // 3des.  Unlike VERIFIER_TYPE_9I this one is a real oracle constant.  A
 // tagged login at 10.2 runs it as O5LOGON instead.
 #define VERIFIER_TYPE_10G	0x0939
+
+// O3LOGON's oldest form, which a real server runs for a tagged login from a
+// client that advertises no logon types.  Single des throughout.  Like
+// VERIFIER_TYPE_9I, this isn't an oracle constant.  It exists to select the
+// code path and must match the protocol module's.
+#define VERIFIER_TYPE_8I	0x0800
 
 // session key lengths, which the client tells the 11g and 12c verifier types
 // apart by
@@ -118,18 +125,23 @@
 // O3LOGON is the pre-O5LOGON verifier, the one an OCI7 era client speaks.  It
 // uses the same "extra" mechanism, with far fewer inputs, and has no server
 // response phase - a real server answers a successful O3LOGON login with a
-// bare success summary rather than an AUTH_SVR_RESPONSE.  It runs under two
-// verifier types: 2304, which is 3des throughout, and 2361, which a client
+// bare success summary rather than an AUTH_SVR_RESPONSE.  It runs under three
+// verifier types: 2304, which is 3des throughout, 2361, which a client
 // advertising O5LOGON gets instead - the same des password hash, but aes-128
-// on the wire.
+// on the wire - and 2048, which a client advertising no logon types gets -
+// the same des password hash, then single des.
 //
 //	challenge(), with method "O3LOGON":
-//		verifiertype		2304 or 2361
-//	  out:	the AUTH_SESSKEY to send, uppercase hex, 32 characters
-//		for 2304 and 64 for 2361
+//		verifiertype		2048, 2304 or 2361
+//	  out:	the AUTH_SESSKEY to send, uppercase hex, 16 characters
+//		for 2048, 32 for 2304 and 64 for 2361
 //
 //	auth(), with method "O3LOGON":
-//		password		AUTH_PASSWORD from the client, hex
+//		password		AUTH_PASSWORD from the client, hex.
+//					For 2048, a whole number of 8 byte
+//					blocks as hex, then one pad digit -
+//					17 characters for a password of up
+//					to 8 bytes, 33 for up to 16, etc.
 //		verifiertype		as above
 //		serverauthsesskey	what challenge() returned
 //		serverlogontypes	the CCAP_LOGON_TYPES byte the server
@@ -734,7 +746,7 @@ static const byte_t	o3logonpasswordentropy[]={
 };
 
 // the fixed key the oracle password hash's first pass runs under, and the
-// all-zero iv both of its passes run under
+// all-zero iv both of its passes, and every 8i des operation, run under
 static const byte_t	o3logonhashkey[]={
 	0x01, 0x23, 0x45, 0x67, 0x89, 0xab, 0xcd, 0xef
 };
@@ -746,6 +758,7 @@ static const byte_t	o3logonhashiv[]={
 #define O3LOGON_HASH_SIZE		8
 #define O3LOGON_KEY_SIZE		24
 #define O3LOGON_SESSION_KEY_SIZE	16
+#define O3LOGON_DES_SESSION_KEY_SIZE	8
 
 // how much of the obfuscated password buffer is not password: 4 bytes of salt
 // at the front, and 4 bytes at the back that the rotation duplicates
@@ -907,7 +920,8 @@ static uint32_t o3logonVerifierType(parameterstring *p) {
 			(uint32_t)charstring::convertToUnsignedInteger(
 				p->getValue("verifiertype"),(int32_t)0);
 	return (verifiertype==VERIFIER_TYPE_9I ||
-			verifiertype==VERIFIER_TYPE_10G)?verifiertype:0;
+			verifiertype==VERIFIER_TYPE_10G ||
+			verifiertype==VERIFIER_TYPE_8I)?verifiertype:0;
 }
 
 // The 10g/DES half of the O3LOGON login, for a client that advertises
@@ -1080,6 +1094,142 @@ static bool o3logonAesVerify(const char *authpassword,
 	return ok;
 }
 
+// The 8i half of the O3LOGON login, for a client that advertises no logon
+// types, such as the 10.2.0.5 thin jdbc driver (ojdbc14), which sends 0x00.
+// It runs the same des password hash as the other halves, then single des:
+//
+//	AUTH_SESSKEY	des(hash, 8 random bytes), one block under a zero
+//			iv, so des-ecb, sent as 16 hex characters
+//	AUTH_PASSWORD	des-cbc(session key, the password || zero bytes up
+//			to a block multiple), iv 0, as hex, then one digit
+//			giving the number of zero bytes - 0 and no extra
+//			block when the password fills its last block
+//
+// The password keeps the client's case; only the hash folds it.
+//
+// MEASURED, from real servers' captures under test/protocol/oracle/samples:
+// 10545-dev-ojdbc14-login-select1-realserver-oracle102 and -oracle122 (12
+// characters, digit 4), 10734-dev-ojdbc14-wrongpassword-realserver-oracle102
+// (13 characters, digit 3), 10734-dev-ojdbc14-unknownuser-realserver-oracle102
+// (8 characters, digit 0, 17 hex) and
+// 10734-dev-ojdbc14-unknownuser-pw16-realserver-oracle122 (16 characters,
+// digit 0, 33 hex).  The real servers' session keys aren't adjusted for des
+// parity, so this one isn't either.  INFERRED: digits 1, 2, 5, 6 and 7, which
+// no capture has, follow the same rule - ojdbc14's own code computes the
+// digit as the pad byte count.
+static bool o3logonDesChallenge(const char *user,
+				const char *password,
+				stringbuffer *challenge) {
+
+	byte_t	hash[O3LOGON_HASH_SIZE];
+	if (!o3logonPasswordHash(user,password,hash)) {
+		return false;
+	}
+
+	// AUTH_SESSKEY = des(hash, 8 random bytes)
+	byte_t	sesskey[O3LOGON_DES_SESSION_KEY_SIZE];
+	byte_t	encsesskey[O3LOGON_DES_SESSION_KEY_SIZE];
+	csprng	csr;
+	bool	retval=(csr.generateBytes(sesskey,sizeof(sesskey),
+						sizeof(sesskey)) &&
+			desCbc(true,hash,sizeof(hash),o3logonhashiv,
+					sesskey,sizeof(sesskey),encsesskey));
+	if (retval) {
+		char	*hex=hexEncodeUpper(encsesskey,sizeof(encsesskey));
+		challenge->append(hex);
+		delete[] hex;
+	}
+
+	bytestring::zero(hash,sizeof(hash));
+	bytestring::zero(sesskey,sizeof(sesskey));
+	bytestring::zero(encsesskey,sizeof(encsesskey));
+
+	return retval;
+}
+
+static bool o3logonDesVerify(const char *authpassword,
+				const char *user,
+				const char *password,
+				parameterstring *p,
+				stringbuffer *supplied) {
+
+	// AUTH_PASSWORD is a whole number of blocks as hex, then the pad
+	// digit.  hexDecode() reads junk as zeros, so check the digits here.
+	uint64_t	authpasswordlen=charstring::getLength(authpassword);
+	if (authpasswordlen<(uint64_t)O3LOGON_BLOCK_SIZE*2+1 ||
+		(authpasswordlen-1)%(O3LOGON_BLOCK_SIZE*2)) {
+		return false;
+	}
+	uint64_t	hexlen=authpasswordlen-1;
+	for (uint64_t i=0; i<hexlen; i++) {
+		if (!character::isHexDigit(authpassword[i])) {
+			return false;
+		}
+	}
+	char	paddigit=authpassword[hexlen];
+	if (paddigit<'0' || paddigit>='0'+O3LOGON_BLOCK_SIZE) {
+		return false;
+	}
+	uint64_t	pad=(uint64_t)(paddigit-'0');
+
+	byte_t	hash[O3LOGON_HASH_SIZE];
+	if (!o3logonPasswordHash(user,password,hash)) {
+		return false;
+	}
+
+	// recover the session key from the module's own challenge
+	byte_t	encsesskey[O3LOGON_DES_SESSION_KEY_SIZE];
+	byte_t	sesskey[O3LOGON_DES_SESSION_KEY_SIZE];
+	bool	ok=(hexDecodeExactly(p->getValue("serverauthsesskey"),
+					sizeof(encsesskey),encsesskey) &&
+		desCbc(false,hash,sizeof(hash),o3logonhashiv,
+				encsesskey,sizeof(encsesskey),sesskey));
+
+	bytestring::zero(hash,sizeof(hash));
+
+	if (!ok) {
+		bytestring::zero(sesskey,sizeof(sesskey));
+		return false;
+	}
+
+	// AUTH_PASSWORD = des-cbc(session key, the password || zero padding)
+	byte_t		*encpassword=NULL;
+	uint64_t	encpasswordsize=0;
+	charstring::hexDecode(authpassword,hexlen,
+				&encpassword,&encpasswordsize);
+	byte_t		*plaintext=new byte_t[encpasswordsize+1];
+	ok=(encpasswordsize==hexlen/2 &&
+		desCbc(false,sesskey,sizeof(sesskey),o3logonhashiv,
+				encpassword,encpasswordsize,plaintext));
+
+	bytestring::zero(sesskey,sizeof(sesskey));
+	delete[] encpassword;
+
+	if (ok) {
+
+		// strip the padding, which has to be zeros
+		uint64_t	suppliedsize=encpasswordsize-pad;
+		for (uint64_t i=suppliedsize; ok && i<encpasswordsize; i++) {
+			ok=!plaintext[i];
+		}
+		if (ok) {
+			if (supplied) {
+				supplied->append((const char *)plaintext,
+								suppliedsize);
+			}
+			ok=(suppliedsize==(uint64_t)charstring::getLength(
+								password) &&
+				!bytestring::compare(plaintext,password,
+								suppliedsize));
+		}
+	}
+
+	bytestring::zero(plaintext,encpasswordsize);
+	delete[] plaintext;
+
+	return ok;
+}
+
 static bool o3logonChallenge(const char *user,
 				const char *password,
 				const char *extra,
@@ -1092,9 +1242,12 @@ static bool o3logonChallenge(const char *user,
 		return false;
 	}
 
-	// the two verifier types share the password hash and nothing else
+	// the three verifier types share the password hash and nothing else
 	if (verifiertype==VERIFIER_TYPE_10G) {
 		return o3logonAesChallenge(user,password,challenge);
+	}
+	if (verifiertype==VERIFIER_TYPE_8I) {
+		return o3logonDesChallenge(user,password,challenge);
 	}
 
 	byte_t	hash[O3LOGON_HASH_SIZE];
@@ -1140,9 +1293,13 @@ static bool o3logonVerify(const char *authpassword,
 		return false;
 	}
 
-	// the two verifier types share the password hash and nothing else
+	// the three verifier types share the password hash and nothing else
 	if (verifiertype==VERIFIER_TYPE_10G) {
 		return o3logonAesVerify(authpassword,user,password,
+							&p,supplied);
+	}
+	if (verifiertype==VERIFIER_TYPE_8I) {
+		return o3logonDesVerify(authpassword,user,password,
 							&p,supplied);
 	}
 

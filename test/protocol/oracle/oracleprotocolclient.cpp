@@ -35,6 +35,12 @@
 // The 9i verifier's o3logon answer is implemented too, as the client side of
 // o3logonChallenge() and o3logonVerify() there - see
 // answerO3LogonChallenge().
+//
+// So is the 8i verifier's single des exchange, which ojdbc14 10.2.0.5 runs:
+// its version call ahead of the login, its two login calls, built around a
+// computed AUTH_PASSWORD from the fields it sent a real server, and its
+// logoff - see versionCall(), requestChallenge8i(), answerChallenge8i() and
+// logoff8i().
 
 #include <rudiments/inetsocketclient.h>
 #include <rudiments/bytebuffer.h>
@@ -84,6 +90,11 @@ static const unsigned char	ORA_TTI_DESCRIBE=0x2b;
 static const unsigned char	ORA_TTI_QUERY3=0x5e;
 static const unsigned char	ORA_TTI_LOGON_PRESENT_PWD_SEND_AUTH_PASSWORD=0x73;
 static const unsigned char	ORA_TTI_LOGON_PRESENT_USER_REQ_AUTH_SESSKEY=0x76;
+static const unsigned char	ORA_TTI_VERSION=0x3b;
+
+// DATA_FLAGS_EOF in src/protocols/oracle.cpp - the data flags of the packet
+// ojdbc14 sends, and nothing else, once its logoff is answered
+static const uint16_t	ORA_DATA_FLAGS_EOF=0x0040;
 
 // the tti protocol versions the module implements - TTI_VERSION_MIN and
 // TTI_VERSION_MAX in src/protocols/oracle.cpp.  sendProtocolNegotiation()
@@ -298,6 +309,87 @@ static const unsigned char	ORA_O3LOGON_HASH_KEY[]={
 };
 static const unsigned char	ORA_O3LOGON_HASH_IV[]={
 	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
+};
+
+// the 8i exchange's sizes: an 8 byte AUTH_SESSKEY, 16 hex characters, and the
+// buffer size of ojdbc14's pre-login version call
+static const size_t	ORA_8I_SESSION_KEY_SIZE=8;
+static const uint32_t	ORA_8I_VERSION_BUFFER_SIZE=256;
+
+// the auth modes of ojdbc14's two login calls
+static const uint32_t	ORA_8I_AUTH_MODE_PHASE_ONE=0x0001;
+static const uint32_t	ORA_8I_AUTH_MODE_PHASE_TWO=0x0101;
+
+// the AUTH_ pairs behind the raw user name in ojdbc14 10.2.0.5's phase one
+// call, as it sent them in packet [0013] of samples/10545-dev-ojdbc14-login-
+// select1-realserver-oracle122.oraproxy: AUTH_TERMINAL, AUTH_PROGRAM_NM,
+// AUTH_MACHINE, AUTH_PID and AUTH_SID
+static const uint32_t		ORA_OJDBC14_PHASE_ONE_FIELD_COUNT=5;
+static const unsigned char	ORA_OJDBC14_PHASE_ONE_FIELDS[]={
+	0x01, 0x0d, 0x0d, 0x41, 0x55, 0x54, 0x48, 0x5f, 0x54, 0x45, 0x52, 0x4d,
+	0x49, 0x4e, 0x41, 0x4c, 0x01, 0x07, 0x07, 0x75, 0x6e, 0x6b, 0x6e, 0x6f,
+	0x77, 0x6e, 0x00, 0x01, 0x0f, 0x0f, 0x41, 0x55, 0x54, 0x48, 0x5f, 0x50,
+	0x52, 0x4f, 0x47, 0x52, 0x41, 0x4d, 0x5f, 0x4e, 0x4d, 0x01, 0x10, 0x10,
+	0x4a, 0x44, 0x42, 0x43, 0x20, 0x54, 0x68, 0x69, 0x6e, 0x20, 0x43, 0x6c,
+	0x69, 0x65, 0x6e, 0x74, 0x00, 0x01, 0x0c, 0x0c, 0x41, 0x55, 0x54, 0x48,
+	0x5f, 0x4d, 0x41, 0x43, 0x48, 0x49, 0x4e, 0x45, 0x01, 0x12, 0x12, 0x64,
+	0x65, 0x76, 0x2e, 0x66, 0x69, 0x72, 0x73, 0x74, 0x77, 0x6f, 0x72, 0x6b,
+	0x73, 0x2e, 0x63, 0x6f, 0x6d, 0x00, 0x01, 0x08, 0x08, 0x41, 0x55, 0x54,
+	0x48, 0x5f, 0x50, 0x49, 0x44, 0x01, 0x04, 0x04, 0x31, 0x32, 0x33, 0x34,
+	0x00, 0x01, 0x08, 0x08, 0x41, 0x55, 0x54, 0x48, 0x5f, 0x53, 0x49, 0x44,
+	0x01, 0x05, 0x05, 0x64, 0x6d, 0x75, 0x73, 0x65, 0x00
+};
+
+// the AUTH_ pairs behind AUTH_PASSWORD in its phase two call, packet [0015]
+// of the same capture: AUTH_TERMINAL with no value, AUTH_PROGRAM_NM,
+// AUTH_MACHINE, AUTH_PID, AUTH_ACL, AUTH_ALTER_SESSION in 64 and 20 byte
+// chunks with flags 1, and AUTH_COPYRIGHT in chunks of 64, 64, 64 and 49
+// bytes, whose text holds five 0x0a bytes
+static const uint32_t		ORA_OJDBC14_PHASE_TWO_FIELD_COUNT=8;
+static const unsigned char	ORA_OJDBC14_PHASE_TWO_TAIL[]={
+	0x01, 0x0d, 0x0d, 0x41, 0x55, 0x54, 0x48, 0x5f, 0x54, 0x45, 0x52, 0x4d,
+	0x49, 0x4e, 0x41, 0x4c, 0x00, 0x00, 0x01, 0x0f, 0x0f, 0x41, 0x55, 0x54,
+	0x48, 0x5f, 0x50, 0x52, 0x4f, 0x47, 0x52, 0x41, 0x4d, 0x5f, 0x4e, 0x4d,
+	0x01, 0x10, 0x10, 0x4a, 0x44, 0x42, 0x43, 0x20, 0x54, 0x68, 0x69, 0x6e,
+	0x20, 0x43, 0x6c, 0x69, 0x65, 0x6e, 0x74, 0x00, 0x01, 0x0c, 0x0c, 0x41,
+	0x55, 0x54, 0x48, 0x5f, 0x4d, 0x41, 0x43, 0x48, 0x49, 0x4e, 0x45, 0x01,
+	0x12, 0x12, 0x64, 0x65, 0x76, 0x2e, 0x66, 0x69, 0x72, 0x73, 0x74, 0x77,
+	0x6f, 0x72, 0x6b, 0x73, 0x2e, 0x63, 0x6f, 0x6d, 0x00, 0x01, 0x08, 0x08,
+	0x41, 0x55, 0x54, 0x48, 0x5f, 0x50, 0x49, 0x44, 0x01, 0x04, 0x04, 0x31,
+	0x32, 0x33, 0x34, 0x00, 0x01, 0x08, 0x08, 0x41, 0x55, 0x54, 0x48, 0x5f,
+	0x41, 0x43, 0x4c, 0x01, 0x04, 0x04, 0x34, 0x34, 0x30, 0x30, 0x00, 0x01,
+	0x12, 0x12, 0x41, 0x55, 0x54, 0x48, 0x5f, 0x41, 0x4c, 0x54, 0x45, 0x52,
+	0x5f, 0x53, 0x45, 0x53, 0x53, 0x49, 0x4f, 0x4e, 0x01, 0x54, 0xfe, 0x40,
+	0x41, 0x4c, 0x54, 0x45, 0x52, 0x20, 0x53, 0x45, 0x53, 0x53, 0x49, 0x4f,
+	0x4e, 0x20, 0x53, 0x45, 0x54, 0x20, 0x54, 0x49, 0x4d, 0x45, 0x5f, 0x5a,
+	0x4f, 0x4e, 0x45, 0x3d, 0x27, 0x2d, 0x34, 0x3a, 0x30, 0x30, 0x27, 0x20,
+	0x4e, 0x4c, 0x53, 0x5f, 0x4c, 0x41, 0x4e, 0x47, 0x55, 0x41, 0x47, 0x45,
+	0x3d, 0x27, 0x41, 0x4d, 0x45, 0x52, 0x49, 0x43, 0x41, 0x4e, 0x27, 0x20,
+	0x4e, 0x4c, 0x53, 0x5f, 0x14, 0x54, 0x45, 0x52, 0x52, 0x49, 0x54, 0x4f,
+	0x52, 0x59, 0x3d, 0x27, 0x41, 0x4d, 0x45, 0x52, 0x49, 0x43, 0x41, 0x27,
+	0x00, 0x00, 0x01, 0x01, 0x01, 0x0e, 0x0e, 0x41, 0x55, 0x54, 0x48, 0x5f,
+	0x43, 0x4f, 0x50, 0x59, 0x52, 0x49, 0x47, 0x48, 0x54, 0x01, 0xf1, 0xfe,
+	0x40, 0x22, 0x4f, 0x72, 0x61, 0x63, 0x6c, 0x65, 0x0a, 0x45, 0x76, 0x65,
+	0x72, 0x79, 0x62, 0x6f, 0x64, 0x79, 0x20, 0x66, 0x6f, 0x6c, 0x6c, 0x6f,
+	0x77, 0x73, 0x0a, 0x53, 0x70, 0x65, 0x65, 0x64, 0x79, 0x20, 0x62, 0x69,
+	0x74, 0x73, 0x20, 0x65, 0x78, 0x63, 0x68, 0x61, 0x6e, 0x67, 0x65, 0x0a,
+	0x53, 0x74, 0x61, 0x72, 0x73, 0x20, 0x61, 0x77, 0x61, 0x69, 0x74, 0x20,
+	0x74, 0x6f, 0x20, 0x67, 0x6c, 0x40, 0x6f, 0x77, 0x22, 0x0a, 0x54, 0x68,
+	0x65, 0x20, 0x70, 0x72, 0x65, 0x63, 0x65, 0x64, 0x69, 0x6e, 0x67, 0x20,
+	0x6b, 0x65, 0x79, 0x20, 0x69, 0x73, 0x20, 0x63, 0x6f, 0x70, 0x79, 0x72,
+	0x69, 0x67, 0x68, 0x74, 0x65, 0x64, 0x20, 0x62, 0x79, 0x20, 0x4f, 0x72,
+	0x61, 0x63, 0x6c, 0x65, 0x20, 0x43, 0x6f, 0x72, 0x70, 0x6f, 0x72, 0x61,
+	0x74, 0x69, 0x6f, 0x6e, 0x2e, 0x0a, 0x44, 0x75, 0x70, 0x6c, 0x40, 0x69,
+	0x63, 0x61, 0x74, 0x69, 0x6f, 0x6e, 0x20, 0x6f, 0x66, 0x20, 0x74, 0x68,
+	0x69, 0x73, 0x20, 0x6b, 0x65, 0x79, 0x20, 0x69, 0x73, 0x20, 0x6e, 0x6f,
+	0x74, 0x20, 0x61, 0x6c, 0x6c, 0x6f, 0x77, 0x65, 0x64, 0x20, 0x77, 0x69,
+	0x74, 0x68, 0x6f, 0x75, 0x74, 0x20, 0x70, 0x65, 0x72, 0x6d, 0x69, 0x73,
+	0x73, 0x69, 0x6f, 0x6e, 0x0a, 0x66, 0x72, 0x6f, 0x6d, 0x20, 0x4f, 0x72,
+	0x61, 0x63, 0x6c, 0x31, 0x65, 0x20, 0x43, 0x6f, 0x72, 0x70, 0x6f, 0x72,
+	0x61, 0x74, 0x69, 0x6f, 0x6e, 0x2e, 0x20, 0x43, 0x6f, 0x70, 0x79, 0x72,
+	0x69, 0x67, 0x68, 0x74, 0x20, 0x32, 0x30, 0x30, 0x33, 0x20, 0x4f, 0x72,
+	0x61, 0x63, 0x6c, 0x65, 0x20, 0x43, 0x6f, 0x72, 0x70, 0x6f, 0x72, 0x61,
+	0x74, 0x69, 0x6f, 0x6e, 0x2e, 0x00, 0x00
 };
 
 // a response is expected within this long; used on every read, so a
@@ -634,6 +726,48 @@ class oracleprotocolclient {
 		bool	answerO3LogonChallenge(const char *user,
 						const char *password);
 
+		// ojdbc14 10.2.0.5's calls, for a session whose data type
+		// request is ojdbc14's own, given with setDataTypeRequest().
+		// every one carries the sequence number 0, as ojdbc14's do.
+		//
+		// versionCall() sends the bare TTI_VERSION ojdbc14 sends
+		// ahead of its login, and reads the answer into the
+		// response.  readVersionResponse() picks that answer apart:
+		// the banner, the packed version and the end to end field
+		// behind the status code.  it fails unless the answer is
+		// exactly that and ends there.  "banner" is the caller's to
+		// delete
+		bool	versionCall();
+		bool	readVersionResponse(char **banner, uint32_t *version,
+							uint32_t *endtoend);
+
+		// the 8i login: phase one carries the user name raw, with no
+		// length byte, and phase two an AUTH_PASSWORD computed from
+		// the 16 hex character AUTH_SESSKEY in the response, each
+		// followed by the rest of the pairs ojdbc14 sent.  each reads
+		// the answer and answers a refusal's markers the way
+		// requestChallenge() does, and leaves the answer in the
+		// response.  answerChallenge8i() returns false unless the
+		// login went through.  "authpassword", if given, is sent as
+		// the AUTH_PASSWORD in place of the computed one
+		bool	requestChallenge8i(const char *user);
+		bool	answerChallenge8i(const char *user,
+						const char *password,
+						const char *authpassword=NULL);
+
+		// the AUTH_PASSWORD answerChallenge8i() sends for "user" and
+		// "password" against "sesskeyhex", the listener's
+		// AUTH_SESSKEY.  "authpassword" is the caller's to delete
+		static bool	compute8iAuthPassword(const char *user,
+						const char *password,
+						const char *sesskeyhex,
+						char **authpassword);
+
+		// TTI_DISCONNECT with ojdbc14's sequence number, the answer
+		// read into the response, then the eof data packet ojdbc14
+		// sends behind it, and the socket closed
+		bool	logoff8i();
+
 		// the AUTH_ pairs in the answer to either phase, and the
 		// trailer behind them.  "flags" may be NULL
 		bool	getAuthFieldCount(uint32_t *count);
@@ -911,6 +1045,10 @@ class oracleprotocolclient {
 		bool	sendLoginCall(const char *phase);
 		void	sendAuthRequest(unsigned char ttifunction,
 					unsigned char seqnumber,
+					const char *user,
+					uint32_t authmode,
+					uint32_t fieldcount);
+		void	sendAuthRequest8i(unsigned char ttifunction,
 					const char *user,
 					uint32_t authmode,
 					uint32_t fieldcount);
@@ -2776,6 +2914,224 @@ bool oracleprotocolclient::answerO3LogonChallenge(const char *user,
 	}
 
 	return true;
+}
+
+// ojdbc14's version call, packet [0011] of samples/10545-dev-ojdbc14-login-
+// select1-realserver-oracle122.oraproxy: the sequence number, a pointer to
+// its banner buffer, the buffer's size and pointers to the returned length
+// and the version
+bool oracleprotocolclient::versionCall() {
+	beginTtiCall(ORA_TTI_VERSION);
+	appendByte(0);
+	appendByte(1);
+	appendLenPreInt(ORA_8I_VERSION_BUFFER_SIZE);
+	appendByte(1);
+	appendByte(1);
+	return (sendPacket() && recvPacket());
+}
+
+// the answer ojdbc14 reads: the ttc code, the banner's size as a count
+// prefixed int and the banner raw, the packed version as a count prefixed
+// int, then TTC_STATUS (0x09) and the end to end field, and nothing else
+bool oracleprotocolclient::readVersionResponse(char **banner,
+						uint32_t *version,
+						uint32_t *endtoend) {
+
+	*banner=NULL;
+	*version=0;
+	*endtoend=0;
+
+	rewindResponse();
+
+	unsigned char	dataflags[2];
+	unsigned char	ttccode=0;
+	uint32_t	bannersize=0;
+	if (resppackettype!=ORA_PACKET_DATA ||
+			!readBytes(dataflags,sizeof(dataflags)) ||
+			!readByte(&ttccode) || ttccode!=ORA_TTC_OK ||
+			!readLenPreInt(&bannersize) ||
+			(size_t)bannersize>respsize-respposition) {
+		setError("bad version response");
+		return false;
+	}
+	*banner=charstring::duplicate((const char *)resppacket+respposition,
+								bannersize);
+	respposition+=bannersize;
+
+	unsigned char	statusttccode=0;
+	if (!readLenPreInt(version) ||
+			!readByte(&statusttccode) || statusttccode!=0x09 ||
+			!readLenPreInt(endtoend) ||
+			respposition!=respsize) {
+		setError("bad version response tail");
+		return false;
+	}
+	return true;
+}
+
+// the start of either login call, as ojdbc14 sends it: the sequence number,
+// the portable pointers and counts, and the user name raw
+void oracleprotocolclient::sendAuthRequest8i(unsigned char ttifunction,
+							const char *user,
+							uint32_t authmode,
+							uint32_t fieldcount) {
+	size_t	usersize=charstring::getLength(user);
+	beginTtiCall(ttifunction);
+	appendByte(0);
+	appendByte(1);
+	appendLenPreInt((uint32_t)usersize);
+	appendLenPreInt(authmode);
+	appendByte(1);
+	appendLenPreInt(fieldcount);
+	appendByte(1);
+	appendByte(1);
+	appendBytes((const unsigned char *)user,usersize);
+}
+
+bool oracleprotocolclient::requestChallenge8i(const char *user) {
+	gotbreak=false;
+	sendAuthRequest8i(ORA_TTI_LOGON_PRESENT_USER_REQ_AUTH_SESSKEY,
+				user,ORA_8I_AUTH_MODE_PHASE_ONE,
+				ORA_OJDBC14_PHASE_ONE_FIELD_COUNT);
+	appendBytes(ORA_OJDBC14_PHASE_ONE_FIELDS,
+			sizeof(ORA_OJDBC14_PHASE_ONE_FIELDS));
+	return sendLoginCall("phase one");
+}
+
+// the 8i exchange, client side.  the math is what a real 10.2, 11.2 and 12.2
+// server accepted from ojdbc14 10.2.0.5:
+//
+//	hash		= the des password hash of user and password
+//	session key	= des-cbc-decrypt(hash, zero iv, the listener's
+//					AUTH_SESSKEY)
+//	AUTH_PASSWORD	= des-cbc-encrypt(session key, zero iv,
+//				the password || zero bytes to a multiple of 8),
+//			  in uppercase hex, then one hex digit, the number
+//			  of zero bytes
+//
+// the password is encrypted as given, in its own case.  only the hash folds
+// it to uppercase
+bool oracleprotocolclient::compute8iAuthPassword(const char *user,
+							const char *password,
+							const char *sesskeyhex,
+							char **authpassword) {
+
+	*authpassword=NULL;
+
+	size_t	passwordsize=charstring::getLength(password);
+	if (!passwordsize ||
+		charstring::getLength(sesskeyhex)!=2*ORA_8I_SESSION_KEY_SIZE) {
+		return false;
+	}
+
+	unsigned char	*encsesskey=NULL;
+	uint64_t	encsesskeysize=0;
+	charstring::hexDecode(sesskeyhex,charstring::getLength(sesskeyhex),
+						&encsesskey,&encsesskeysize);
+	if (encsesskeysize!=ORA_8I_SESSION_KEY_SIZE) {
+		delete[] encsesskey;
+		return false;
+	}
+
+	// the session key
+	unsigned char	hash[ORA_O3LOGON_HASH_SIZE];
+	unsigned char	sesskey[ORA_8I_SESSION_KEY_SIZE];
+	bool	ok=(oracleO3LogonPasswordHash(user,password,hash) &&
+			oracleDesCbc(false,hash,sizeof(hash),
+					ORA_O3LOGON_HASH_IV,
+					encsesskey,ORA_8I_SESSION_KEY_SIZE,
+					sesskey));
+	delete[] encsesskey;
+	if (!ok) {
+		return false;
+	}
+
+	// the password, zero padded
+	size_t		padsize=(passwordsize%ORA_O3LOGON_BLOCK_SIZE)?
+				ORA_O3LOGON_BLOCK_SIZE-
+				passwordsize%ORA_O3LOGON_BLOCK_SIZE:0;
+	size_t		plainsize=passwordsize+padsize;
+	unsigned char	*plainpassword=new unsigned char[plainsize];
+	unsigned char	*encpassword=new unsigned char[plainsize];
+	bytestring::zero(plainpassword,plainsize);
+	bytestring::copy(plainpassword,password,passwordsize);
+	ok=oracleDesCbc(true,sesskey,sizeof(sesskey),ORA_O3LOGON_HASH_IV,
+					plainpassword,plainsize,encpassword);
+	delete[] plainpassword;
+	if (!ok) {
+		delete[] encpassword;
+		return false;
+	}
+
+	// hex, then the pad digit
+	char	*hex=oracleHexEncodeUpper(encpassword,plainsize);
+	delete[] encpassword;
+	charstring::printf(authpassword,"%s%d",hex,(int)padsize);
+	delete[] hex;
+	return true;
+}
+
+bool oracleprotocolclient::answerChallenge8i(const char *user,
+							const char *password,
+							const char *authpassword) {
+
+	char	*computed=NULL;
+	if (!authpassword) {
+		char	*sesskeyhex=NULL;
+		if (!getAuthField("AUTH_SESSKEY",&sesskeyhex,NULL)) {
+			setError("no challenge in the phase one response");
+			return false;
+		}
+		bool	ok=compute8iAuthPassword(user,password,sesskeyhex,
+								&computed);
+		delete[] sesskeyhex;
+		if (!ok) {
+			setError("the challenge isn't an 8i session key");
+			return false;
+		}
+		authpassword=computed;
+	}
+
+	// phase two
+	sendAuthRequest8i(ORA_TTI_LOGON_PRESENT_PWD_SEND_AUTH_PASSWORD,
+				user,ORA_8I_AUTH_MODE_PHASE_TWO,
+				ORA_OJDBC14_PHASE_TWO_FIELD_COUNT);
+	appendAuthField("AUTH_PASSWORD",authpassword,0);
+	appendBytes(ORA_OJDBC14_PHASE_TWO_TAIL,
+			sizeof(ORA_OJDBC14_PHASE_TWO_TAIL));
+	delete[] computed;
+
+	gotbreak=false;
+	if (!sendPacket() || !recvPacket()) {
+		return false;
+	}
+	if (resppackettype==ORA_PACKET_MARKER &&
+			!recvAfterBreak("phase two")) {
+		return false;
+	}
+	if (getResponseTtcCode()!=ORA_TTC_OK) {
+		setError("the listener refused the login");
+		return false;
+	}
+	return true;
+}
+
+bool oracleprotocolclient::logoff8i() {
+	if (!connected) {
+		setError("not connected");
+		return false;
+	}
+	beginTtiCall(ORA_TTI_DISCONNECT);
+	appendByte(0);
+	bool	ok=(sendPacket() && recvPacket());
+	if (ok) {
+		beginPacket(ORA_PACKET_DATA);
+		appendBE16(ORA_DATA_FLAGS_EOF);
+		ok=sendPacket();
+	}
+	sock.close();
+	connected=false;
+	return ok;
 }
 
 void oracleprotocolclient::disconnect() {

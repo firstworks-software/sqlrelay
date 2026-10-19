@@ -4,6 +4,7 @@
 #include <rudiments/charstring.h>
 #include <rudiments/bytestring.h>
 #include <rudiments/environment.h>
+#include <rudiments/datetime.h>
 #include <rudiments/stringbuffer.h>
 #include <rudiments/stdio.h>
 
@@ -17,8 +18,13 @@
 // Which verifier a client actually gets is picked per client, in phase one
 // of each login, by chooseVerifierType() in src/protocols/oracle.cpp:
 //
-//	- the 9i verifier for a client whose CCAP_LOGON_TYPES byte lacks
-//	  O5LOGON (0x08), always under o3logon
+//	- the 8i verifier for a tagged 0x76 login whose CCAP_LOGON_TYPES byte
+//	  has none of the legacy bits (0x01 and 0x04) and O5LOGON (0x08),
+//	  whatever the ceiling: a 16 hex character AUTH_SESSKEY and a single
+//	  des AUTH_PASSWORD, as real 10.2, 11.2 and 12.2 servers run it with
+//	  ojdbc14 10.2.0.5, which advertises no logon types
+//	- the 9i verifier for any other client whose CCAP_LOGON_TYPES byte
+//	  lacks O5LOGON (0x08), always under o3logon
 //	- the 10g verifier for a client that sets O5LOGON, for a 0x52
 //	  classic login or at 10.2.  o3logon for a classic login, and
 //	  o5logon for a tagged 0x76 one, as a real 10.2 server does it
@@ -87,13 +93,15 @@
 //
 // The listeners are all on the oracleprotocol instance - see
 // test/sqlrelay.conf.d/oracleprotocol.conf.in - except the 11.2 one, which is
-// oracleprotocol11g's.
+// oracleprotocol11g's, and the one ojdbc14 also logs in to with the
+// oracle_connectstrings auth module, which is oracleprotocolconnectstrings'.
 //
 // -native runs the same cases in the native encoding, which is where the
 // trailer is a marshalled struct with the call number at offset 49.  The
 // module reads and answers a 0x76 o3logon login and a classic one in the
 // portable encoding only, so a native run checks what those cases advertise
-// and stops there.
+// and stops there.  It skips the 8i exchange too, which no client on file
+// runs in the native encoding.
 //
 // Both runs go through every case twice, once with the client advertising
 // field version 11.2 and once 12.1, since the native struct the trailer and
@@ -142,11 +150,9 @@
 // guessed at:
 //
 //	- the classic login of the 0x00 and 0x05 clients, and the ORA-28040
-//	  object of the 0x00 client, which no real server was measured sending
-//	- the verifier of the 0x00 client, which a real server gives a 16 hex
-//	  character DES exchange where the module sends the 9i one.  ojdbc14
-//	  does not log in to the module - measured with the real driver, see the
-//	  README - and nothing here tries it
+//	  object of the hand built 0x00 client, which advertises field version
+//	  11.2 or 12.1 where ojdbc14 advertises 3, and which no real server was
+//	  measured answering
 //	- the challenge of the 0x0f classic login, whose key a real server makes
 //	  96 hex characters and the module 64
 //	- the ORA-28040 and ORA-01017 objects of the classic login and of the
@@ -154,7 +160,37 @@
 //	  and the module in the count prefixed one that its clients read
 //	- which of the legacy bits, 0x01 or 0x04, floor 9 looks at.  The bytes
 //	  here have both or neither
-//	- the trailer of the 0x00 client's challenge, whose bit is set
+//
+// The hand built 0x00 client's challenge is the 8i one, with the module's
+// modern trailer, the end to end field set to the login phase.  No real
+// server was measured answering that client either, since its field version
+// is not ojdbc14's.
+//
+// Genuine ojdbc14 10.2.0.5 is played in sessions of its own, portable only:
+// its tns version 0x0134, its own data type request (logon types 0x00, field
+// version 3, CCAP_OCI1 0x90), the bare TTI_VERSION call it sends ahead of its
+// login, its 0x76 and 0x73 login calls with the AUTH_PASSWORD computed for
+// each session, and its logoff.  Real 10.2, 11.2 and 12.2 servers answer that
+// client in field version 3 objects, which have no end of call status and
+// fewer trailing fields than the module's other objects, and every byte of
+// those is checked against the real servers' (samples/10545-dev-ojdbc14-* and
+// samples/10734-dev-ojdbc14-*): the version answer, which ends in "09 00",
+// the 65 byte challenge with its 25 byte trailer, the login answer's trailer,
+// the 78 byte ORA-01017 a wrong password or an unknown user gets, the 74 byte
+// ORA-28040 floors 9, 11, 12 and 12a give it in phase one, and the "09 00"
+// that answers its logoff.  The banner in the version answer is the module's
+// own at each ceiling, where a real 11.2 and 12.2 server send an 11.1 one, and
+// the login answer carries the module's pairs, not the real servers' 34 or 36.
+// Before any of that, compute8iAuthPassword() has to reproduce the
+// AUTH_PASSWORD of five real logins from their AUTH_SESSKEY.
+//
+// Beyond what ojdbc14 sends, and so the module's choices rather than a real
+// server's: a malformed AUTH_PASSWORD - pad digit 8, a pad digit one short,
+// no pad digit, a non-hex character, two hex characters short - is denied
+// with the same 78 byte ORA-01017 at 12.1, and a second version call ahead of
+// the login drops the connection without a reply.  So does a first one from
+// the hand built 0x00, 0x05 and 0x0f clients, in both encodings, since none of
+// them is an 8i client.
 //
 // The verifier the 0x0d client gets at 12.1 is the module's choice too: a
 // real 12.2 server gives it the 10g one where the module gives it 11g, which
@@ -308,6 +344,7 @@ static const uint32_t	ORA_INVALID_USERNAME_PASSWORD=1017;
 
 // AUTH_SESSKEY and AUTH_VFR_DATA sizes in hex characters - twice the
 // SESSION_KEY_SIZE_* and VFR_DATA_SIZE_* defines in src/protocols/oracle.cpp
+static const size_t	SESSKEY_HEX_SIZE_8I=16;
 static const size_t	SESSKEY_HEX_SIZE_9I=32;
 static const size_t	SESSKEY_HEX_SIZE_10G=64;
 static const size_t	SESSKEY_HEX_SIZE_11G=96;
@@ -318,13 +355,14 @@ static const size_t	PBKDF2_CSK_SALT_HEX_SIZE=32;
 
 // which verifier the module picks for a case
 enum verifier {
+	VERIFIER_8I,
 	VERIFIER_9I,
 	VERIFIER_10G,
 	VERIFIER_11G,
 	VERIFIER_12C
 };
 
-static const char	*verifiernames[]={"9i","10g","11g","12c"};
+static const char	*verifiernames[]={"8i","9i","10g","11g","12c"};
 
 // the genuine 10.2.0.5 OCI client's calls, as it sent them
 //
@@ -590,6 +628,147 @@ static const unsigned char	ORA_10G_CLASSIC_PHASE_TWO[]={
 	0x31, 0x2d, 0x56, 0x33, 0x29
 };
 
+// genuine ojdbc14 10.2.0.5's session
+//
+// the tns version it offers, which keeps the small packet header and the
+// marker flags 0
+static const uint16_t	ORA_CONNECT_VERSION_OJDBC14=0x0134;
+
+// its data type request, behind the ttc code: the character sets (873, the
+// server's, echoed), the encoding flags 0x01, the 29 byte compile
+// capabilities - logon types 0x00 at 4, field version 3 at 7, CCAP_OCI1 0x90
+// at 16 - the one runtime capability byte and the ub1 data type list.  packet
+// [0009] of samples/10545-dev-ojdbc14-login-select1-realserver-
+// oracle122.oraproxy, from the driver to a real 12.2 server
+static const unsigned char	ORA_OJDBC14_DATA_TYPE_REQUEST[]={
+	0x69, 0x03, 0x69, 0x03, 0x01, 0x1d, 0x06, 0x01, 0x00, 0x00, 0x00, 0x01,
+	0x01, 0x03, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x00, 0x28, 0x90, 0x03,
+	0x07, 0x03, 0x00, 0x01, 0x00, 0x0f, 0x01, 0x00, 0x04, 0x00, 0x00, 0x01,
+	0x02, 0x01, 0x01, 0x01, 0x00, 0x02, 0x02, 0x0a, 0x00, 0x08, 0x08, 0x01,
+	0x00, 0x0c, 0x0c, 0x0a, 0x00, 0x64, 0x64, 0x01, 0x00, 0x15, 0x64, 0x01,
+	0x00, 0x65, 0x65, 0x01, 0x00, 0x16, 0x65, 0x01, 0x00, 0x17, 0x17, 0x01,
+	0x00, 0x18, 0x18, 0x01, 0x00, 0x19, 0x19, 0x01, 0x00, 0x1a, 0x1a, 0x01,
+	0x00, 0x1b, 0x1b, 0x01, 0x00, 0x1c, 0x1c, 0x01, 0x00, 0x1d, 0x1d, 0x01,
+	0x00, 0x1e, 0x1e, 0x01, 0x00, 0x1f, 0x1f, 0x01, 0x00, 0x20, 0x20, 0x01,
+	0x00, 0x21, 0x21, 0x01, 0x00, 0x0a, 0x0a, 0x01, 0x00, 0x0b, 0x0b, 0x01,
+	0x00, 0x22, 0x22, 0x01, 0x00, 0x23, 0x23, 0x01, 0x00, 0x24, 0x24, 0x01,
+	0x00, 0x25, 0x25, 0x01, 0x00, 0x26, 0x26, 0x01, 0x00, 0x28, 0x28, 0x01,
+	0x00, 0x29, 0x29, 0x01, 0x00, 0x2a, 0x2a, 0x01, 0x00, 0x2b, 0x2b, 0x01,
+	0x00, 0x2c, 0x2c, 0x01, 0x00, 0x2d, 0x2d, 0x01, 0x00, 0x2e, 0x2e, 0x01,
+	0x00, 0x2f, 0x2f, 0x01, 0x00, 0x30, 0x30, 0x01, 0x00, 0x31, 0x31, 0x01,
+	0x00, 0x32, 0x32, 0x01, 0x00, 0x33, 0x33, 0x01, 0x00, 0x34, 0x34, 0x01,
+	0x00, 0x35, 0x35, 0x01, 0x00, 0x36, 0x36, 0x01, 0x00, 0x37, 0x37, 0x01,
+	0x00, 0x38, 0x38, 0x01, 0x00, 0x39, 0x39, 0x01, 0x00, 0x3a, 0x3a, 0x01,
+	0x00, 0x3b, 0x3b, 0x01, 0x00, 0x3c, 0x3c, 0x01, 0x00, 0x3d, 0x3d, 0x01,
+	0x00, 0x3e, 0x3e, 0x01, 0x00, 0x3f, 0x3f, 0x01, 0x00, 0x40, 0x40, 0x01,
+	0x00, 0x41, 0x41, 0x01, 0x00, 0x42, 0x42, 0x01, 0x00, 0x43, 0x43, 0x01,
+	0x00, 0x47, 0x47, 0x01, 0x00, 0x48, 0x48, 0x01, 0x00, 0x49, 0x49, 0x01,
+	0x00, 0x4b, 0x4b, 0x01, 0x00, 0x4d, 0x4d, 0x01, 0x00, 0x4e, 0x4e, 0x01,
+	0x00, 0x4f, 0x4f, 0x01, 0x00, 0x50, 0x50, 0x01, 0x00, 0x51, 0x51, 0x01,
+	0x00, 0x52, 0x52, 0x01, 0x00, 0x53, 0x53, 0x01, 0x00, 0x54, 0x54, 0x01,
+	0x00, 0x55, 0x55, 0x01, 0x00, 0x56, 0x56, 0x01, 0x00, 0x57, 0x57, 0x01,
+	0x00, 0x59, 0x59, 0x01, 0x00, 0x5a, 0x5a, 0x01, 0x00, 0x5c, 0x5c, 0x01,
+	0x00, 0x5d, 0x5d, 0x01, 0x00, 0x62, 0x62, 0x01, 0x00, 0x63, 0x63, 0x01,
+	0x00, 0x67, 0x67, 0x01, 0x00, 0x6b, 0x6b, 0x01, 0x00, 0x75, 0x75, 0x01,
+	0x00, 0x78, 0x78, 0x01, 0x00, 0x7c, 0x7c, 0x01, 0x00, 0x7d, 0x7d, 0x01,
+	0x00, 0x7e, 0x7e, 0x01, 0x00, 0x7f, 0x7f, 0x01, 0x00, 0x80, 0x80, 0x01,
+	0x00, 0x81, 0x81, 0x01, 0x00, 0x82, 0x82, 0x01, 0x00, 0x83, 0x83, 0x01,
+	0x00, 0x84, 0x84, 0x01, 0x00, 0x85, 0x85, 0x01, 0x00, 0x86, 0x86, 0x01,
+	0x00, 0x87, 0x87, 0x01, 0x00, 0x88, 0x88, 0x01, 0x00, 0x89, 0x89, 0x01,
+	0x00, 0x8a, 0x8a, 0x01, 0x00, 0x8b, 0x8b, 0x01, 0x00, 0x8c, 0x8c, 0x01,
+	0x00, 0x8d, 0x8d, 0x01, 0x00, 0x8e, 0x8e, 0x01, 0x00, 0x8f, 0x8f, 0x01,
+	0x00, 0x90, 0x90, 0x01, 0x00, 0x91, 0x91, 0x01, 0x00, 0x94, 0x94, 0x01,
+	0x00, 0x95, 0x95, 0x01, 0x00, 0x96, 0x96, 0x01, 0x00, 0x97, 0x97, 0x01,
+	0x00, 0x99, 0x99, 0x01, 0x00, 0x9d, 0x9d, 0x01, 0x00, 0x9e, 0x9e, 0x01,
+	0x00, 0x9f, 0x9f, 0x01, 0x00, 0xa0, 0xa0, 0x01, 0x00, 0xa1, 0xa1, 0x01,
+	0x00, 0xa2, 0xa2, 0x01, 0x00, 0xa3, 0xa3, 0x01, 0x00, 0xa4, 0xa4, 0x01,
+	0x00, 0xa5, 0xa5, 0x01, 0x00, 0xa6, 0xa6, 0x01, 0x00, 0xa7, 0xa7, 0x01,
+	0x00, 0xa8, 0xa8, 0x01, 0x00, 0xa9, 0xa9, 0x01, 0x00, 0xaa, 0xaa, 0x01,
+	0x00, 0xab, 0xab, 0x01, 0x00, 0xad, 0xad, 0x01, 0x00, 0xae, 0xae, 0x01,
+	0x00, 0xaf, 0xaf, 0x01, 0x00, 0xb0, 0xb0, 0x01, 0x00, 0xb1, 0xb1, 0x01,
+	0x00, 0xb4, 0xb4, 0x01, 0x00, 0xb5, 0xb5, 0x01, 0x00, 0xb6, 0xb6, 0x01,
+	0x00, 0xb7, 0xb7, 0x01, 0x00, 0xd0, 0xd0, 0x01, 0x00, 0xe7, 0xe7, 0x01,
+	0x00, 0xe9, 0xe9, 0x01, 0x00, 0x03, 0x02, 0x0a, 0x00, 0x04, 0x02, 0x0a,
+	0x00, 0x05, 0x01, 0x01, 0x00, 0x06, 0x02, 0x0a, 0x00, 0x07, 0x02, 0x0a,
+	0x00, 0x09, 0x01, 0x01, 0x00, 0x0d, 0x00, 0x0e, 0x00, 0x0f, 0x17, 0x01,
+	0x00, 0x10, 0x00, 0x11, 0x00, 0x12, 0x00, 0x13, 0x00, 0x14, 0x00, 0x15,
+	0x00, 0x16, 0x00, 0x27, 0x78, 0x01, 0x5d, 0x01, 0x26, 0x01, 0x00, 0x3a,
+	0x00, 0x44, 0x02, 0x0a, 0x00, 0x45, 0x00, 0x46, 0x00, 0x4a, 0x00, 0x4c,
+	0x00, 0x58, 0x00, 0x5b, 0x02, 0x0a, 0x00, 0x5e, 0x01, 0x01, 0x00, 0x5f,
+	0x17, 0x01, 0x00, 0x60, 0x60, 0x01, 0x00, 0x61, 0x60, 0x01, 0x00, 0x66,
+	0x66, 0x01, 0x00, 0x68, 0x00, 0x69, 0x00, 0x6a, 0x6a, 0x01, 0x00, 0x6b,
+	0x00, 0x6c, 0x6d, 0x01, 0x00, 0x6d, 0x6d, 0x01, 0x00, 0x6e, 0x6f, 0x01,
+	0x00, 0x6f, 0x6f, 0x01, 0x00, 0x70, 0x70, 0x01, 0x00, 0x71, 0x71, 0x01,
+	0x00, 0x72, 0x72, 0x01, 0x00, 0x73, 0x73, 0x01, 0x00, 0x74, 0x66, 0x01,
+	0x00, 0x76, 0x00, 0x77, 0x00, 0x79, 0x00, 0x7a, 0x00, 0x7b, 0x00, 0x88,
+	0x00, 0x8c, 0x00, 0x92, 0x92, 0x01, 0x00, 0x93, 0x00, 0x98, 0x02, 0x0a,
+	0x00, 0x99, 0x02, 0x0a, 0x00, 0x9a, 0x02, 0x0a, 0x00, 0x9b, 0x01, 0x01,
+	0x00, 0x9c, 0x0c, 0x0a, 0x00, 0xac, 0x02, 0x0a, 0x00, 0xae, 0x00, 0xc2,
+	0xc2, 0x01, 0x00, 0xd3, 0xd3, 0x01, 0x00, 0xed, 0xed, 0x01, 0x00, 0x00
+};
+
+// the challenge a real server sends it, 65 bytes with the data flags: the
+// ttc code, a pair count of 1, AUTH_SESSKEY with a 16 hex character value
+// and flags 0, and then a 25 byte trailer - the ttc code, the end to end
+// field 2 and 22 zero bytes.  packet [0014] of the same capture, and of the
+// 10545 oracle102 one and the 10734 ones
+static const unsigned char	ORA_OJDBC14_CHALLENGE_HEAD[]={
+	0x00, 0x00, 0x08, 0x01, 0x01, 0x01, 0x0c, 0x0c, 0x41, 0x55, 0x54, 0x48,
+	0x5f, 0x53, 0x45, 0x53, 0x53, 0x4b, 0x45, 0x59, 0x01, 0x10, 0x10
+};
+static const size_t	ORA_OJDBC14_CHALLENGE_SIZE=65;
+
+// the field version 3 trailer and error object, counted from the ttc code.
+// the trailer is the ttc code, the end to end field (the login phase, as a
+// count prefixed int) and 22 zero bytes, the call number among them.  the
+// error object is the ttc code, the end to end field 0, the rows processed
+// 0, the ora number, four zero fields, the statement type as a raw byte, 12
+// zero bytes, the call number, 2 zero fields, then the message behind a one
+// byte length - no end of call status, and two zero fields behind the call
+// number where the module's other objects have six
+static const size_t	ORA_OJDBC14_TRAILER_ZEROS=22;
+static const size_t	ORA_OJDBC14_ERROR_ZEROS_AFTER_CALL_NUMBER=2;
+
+// what a real server answers its logoff with: the data flags, TTC_STATUS
+// and the end to end field 0.  packet [0022] of the 10545 captures
+static const unsigned char	ORA_OJDBC14_LOGOFF_ANSWER[]={
+	0x00, 0x00, 0x09, 0x00
+};
+
+// how many pairs the module's login answer carries for the 8i verifier: its
+// usual list without AUTH_SVR_RESPONSE
+static const uint32_t	ORA_OJDBC14_LOGIN_ANSWER_PAIRS=9;
+
+// the AUTH_PASSWORD of five real ojdbc14 logins, against the AUTH_SESSKEY the
+// server sent each one.  the unknown user's are the client's own math, which
+// is the same whether or not the user exists.  they cover a pad digit of 4,
+// 0 with one and two blocks and no extra block, and 3
+struct ojdbc14vector {
+	const char	*user;
+	const char	*password;
+	const char	*sesskey;
+	const char	*authpassword;
+	const char	*capture;
+};
+
+static const ojdbc14vector	ojdbc14vectors[]={
+	{"TESTUSER","testpassword","7F1C9166D3C75F94",
+		"420EAA8FD84DC53B31CF894F97928FC54",
+		"10545-dev-ojdbc14-login-select1-realserver-oracle102"},
+	{"TESTUSER","testpassword","6F378FABDED396C7",
+		"13B553AF3CD25E95FECFD5B88123E2DD4",
+		"10545-dev-ojdbc14-login-select1-realserver-oracle122"},
+	{"NOSUCHUSER","whatever","0142255CC841D42C",
+		"95C1B773956A9EAB0",
+		"10734-dev-ojdbc14-unknownuser-realserver-oracle102"},
+	{"NOSUCHUSER","abcdefghijklmnop","61577F68D99CA581",
+		"1A8A5328A6A01429B8663A6E8D0F134F0",
+		"10734-dev-ojdbc14-unknownuser-pw16-realserver-oracle122"},
+	{"DEV","wrongpassword","5F5CAB7B5DC54228",
+		"C8BD3126CDBE7A3A81CBF22B9636C8DC3",
+		"10734-dev-ojdbc14-wrongpassword-realserver-oracle102"}
+};
+
 struct listenerinfo {
 	const char	*name;
 	const char	*portvariable;
@@ -611,7 +790,7 @@ static const listenerinfo	listeners[]={
 		ORA_CCAP_SIZE,"186646784"},
 	{"10.2","ORACLEPROTOCOLPORT12",1532,
 		ORA_SERVER_LOGON_TYPES,ORA_CCAP_FIELD_VERSION_10_2,
-		ORA_CCAP_SIZE_10_2,NULL},
+		ORA_CCAP_SIZE_10_2,"169869568"},
 	{"12.1 allowedlogonversion=11","ORACLEPROTOCOLPORT13",1533,
 		ORA_SERVER_LOGON_TYPES_12_1,ORA_CCAP_FIELD_VERSION_12_1,
 		ORA_CCAP_SIZE,"202375680"},
@@ -623,6 +802,9 @@ static const listenerinfo	listeners[]={
 		ORA_CCAP_SIZE,"202375680"},
 	{"12.1 allowedlogonversion=12","ORACLEPROTOCOLPORT16",1536,
 		ORA_SERVER_LOGON_TYPES_12_1,ORA_CCAP_FIELD_VERSION_12_1,
+		ORA_CCAP_SIZE,"202375680"},
+	{"12.1 oracle_connectstrings","ORACLEPROTOCOLPORT4",1524,
+		ORA_SERVER_LOGON_TYPES_12_1,ORA_CCAP_FIELD_VERSION_12_1,
 		ORA_CCAP_SIZE,"202375680"}
 };
 
@@ -633,7 +815,8 @@ enum {
 	LISTENER_FLOOR_11,
 	LISTENER_FLOOR_12A,
 	LISTENER_FLOOR_9,
-	LISTENER_FLOOR_12
+	LISTENER_FLOOR_12,
+	LISTENER_CONNECTSTRINGS
 };
 
 // the login form a case sends: the tagged 0x76 call, which this builds, or
@@ -680,9 +863,9 @@ struct testcase {
 // the header says a case is left unchecked
 static const testcase	testcases[]={
 
-	// at 12.1, each client gets its own verifier.  the 0x00 client's is the
-	// module's, and its logon types don't ask for a challenge shape
-	{LISTENER_12_1,LOGON_TYPES_NONE,FORM_TAGGED,VERIFIER_9I,OUTCOME_ADMITTED},
+	// at 12.1, each client gets its own verifier.  the 0x00 client gets the
+	// 8i one at every ceiling, as ojdbc14 does from a real server
+	{LISTENER_12_1,LOGON_TYPES_NONE,FORM_TAGGED,VERIFIER_8I,OUTCOME_CHALLENGE},
 	{LISTENER_12_1,LOGON_TYPES_9I,FORM_TAGGED,VERIFIER_9I,OUTCOME_CHALLENGE},
 	{LISTENER_12_1,LOGON_TYPES_11G,FORM_TAGGED,VERIFIER_11G,OUTCOME_LOGIN},
 	{LISTENER_12_1,LOGON_TYPES_12C,FORM_TAGGED,VERIFIER_12C,OUTCOME_CHALLENGE},
@@ -690,7 +873,7 @@ static const testcase	testcases[]={
 	{LISTENER_12_1,LOGON_TYPES_12C,FORM_CLASSIC,VERIFIER_10G,OUTCOME_CHALLENGE},
 
 	// at 11.2, nothing newer than 11g
-	{LISTENER_11_2,LOGON_TYPES_NONE,FORM_TAGGED,VERIFIER_9I,OUTCOME_ADMITTED},
+	{LISTENER_11_2,LOGON_TYPES_NONE,FORM_TAGGED,VERIFIER_8I,OUTCOME_CHALLENGE},
 	{LISTENER_11_2,LOGON_TYPES_9I,FORM_TAGGED,VERIFIER_9I,OUTCOME_CHALLENGE},
 	{LISTENER_11_2,LOGON_TYPES_11G,FORM_TAGGED,VERIFIER_11G,OUTCOME_LOGIN},
 	{LISTENER_11_2,LOGON_TYPES_12C,FORM_TAGGED,VERIFIER_11G,OUTCOME_CHALLENGE},
@@ -698,7 +881,7 @@ static const testcase	testcases[]={
 	{LISTENER_11_2,LOGON_TYPES_12C,FORM_CLASSIC,VERIFIER_10G,OUTCOME_CHALLENGE},
 
 	// at 10.2, nothing newer than 10g
-	{LISTENER_10_2,LOGON_TYPES_NONE,FORM_TAGGED,VERIFIER_9I,OUTCOME_ADMITTED},
+	{LISTENER_10_2,LOGON_TYPES_NONE,FORM_TAGGED,VERIFIER_8I,OUTCOME_CHALLENGE},
 	{LISTENER_10_2,LOGON_TYPES_9I,FORM_TAGGED,VERIFIER_9I,OUTCOME_CHALLENGE},
 	{LISTENER_10_2,LOGON_TYPES_11G,FORM_TAGGED,VERIFIER_10G,OUTCOME_CHALLENGE},
 	{LISTENER_10_2,LOGON_TYPES_12C,FORM_TAGGED,VERIFIER_10G,OUTCOME_CHALLENGE},
@@ -709,7 +892,7 @@ static const testcase	testcases[]={
 	// real server did the same to genuine ojdbc14 and let a genuine 9i
 	// client and the 10.2 and OCI 23 clients in.  the 11.2 client has all
 	// the bits a floor of 9 could look at, so it is in whichever it is
-	{LISTENER_FLOOR_9,LOGON_TYPES_NONE,FORM_TAGGED,VERIFIER_9I,OUTCOME_REFUSED_BASIC},
+	{LISTENER_FLOOR_9,LOGON_TYPES_NONE,FORM_TAGGED,VERIFIER_8I,OUTCOME_REFUSED_BASIC},
 	{LISTENER_FLOOR_9,LOGON_TYPES_9I,FORM_TAGGED,VERIFIER_9I,OUTCOME_CHALLENGE},
 	{LISTENER_FLOOR_9,LOGON_TYPES_11G,FORM_TAGGED,VERIFIER_11G,OUTCOME_CHALLENGE},
 	{LISTENER_FLOOR_9,LOGON_TYPES_12C,FORM_TAGGED,VERIFIER_12C,OUTCOME_CHALLENGE},
@@ -718,7 +901,7 @@ static const testcase	testcases[]={
 
 	// a floor of 11 refuses a client without O5LOGON, which is the same
 	// as a floor of 10, and it admits the 10g verifier and a classic login
-	{LISTENER_FLOOR_11,LOGON_TYPES_NONE,FORM_TAGGED,VERIFIER_9I,OUTCOME_REFUSED_BASIC},
+	{LISTENER_FLOOR_11,LOGON_TYPES_NONE,FORM_TAGGED,VERIFIER_8I,OUTCOME_REFUSED_BASIC},
 	{LISTENER_FLOOR_11,LOGON_TYPES_9I,FORM_TAGGED,VERIFIER_9I,OUTCOME_REFUSED},
 	{LISTENER_FLOOR_11,LOGON_TYPES_11G,FORM_TAGGED,VERIFIER_11G,OUTCOME_LOGIN},
 	{LISTENER_FLOOR_11,LOGON_TYPES_12C,FORM_TAGGED,VERIFIER_12C,OUTCOME_CHALLENGE},
@@ -728,7 +911,7 @@ static const testcase	testcases[]={
 	// a floor of 12 refuses a client without O5LOGON_NP.  the 11.2 client
 	// and OCI 23 log in with a tagged call, and answer a classic one with
 	// a challenge and then ORA-01017
-	{LISTENER_FLOOR_12,LOGON_TYPES_NONE,FORM_TAGGED,VERIFIER_9I,OUTCOME_REFUSED_BASIC},
+	{LISTENER_FLOOR_12,LOGON_TYPES_NONE,FORM_TAGGED,VERIFIER_8I,OUTCOME_REFUSED_BASIC},
 	{LISTENER_FLOOR_12,LOGON_TYPES_9I,FORM_TAGGED,VERIFIER_9I,OUTCOME_REFUSED},
 	{LISTENER_FLOOR_12,LOGON_TYPES_11G,FORM_TAGGED,VERIFIER_11G,OUTCOME_LOGIN},
 	{LISTENER_FLOOR_12,LOGON_TYPES_12C,FORM_TAGGED,VERIFIER_12C,OUTCOME_CHALLENGE},
@@ -738,7 +921,7 @@ static const testcase	testcases[]={
 	// a floor of 12a refuses a client without O7LOGON, a tagged one that
 	// doesn't get the 12c verifier, and answers OCI 23's classic login the
 	// way a floor of 12 does
-	{LISTENER_FLOOR_12A,LOGON_TYPES_NONE,FORM_TAGGED,VERIFIER_9I,OUTCOME_REFUSED_BASIC},
+	{LISTENER_FLOOR_12A,LOGON_TYPES_NONE,FORM_TAGGED,VERIFIER_8I,OUTCOME_REFUSED_BASIC},
 	{LISTENER_FLOOR_12A,LOGON_TYPES_9I,FORM_TAGGED,VERIFIER_9I,OUTCOME_REFUSED},
 	{LISTENER_FLOOR_12A,LOGON_TYPES_11G,FORM_TAGGED,VERIFIER_11G,OUTCOME_REFUSED},
 	{LISTENER_FLOOR_12A,LOGON_TYPES_12C,FORM_TAGGED,VERIFIER_12C,OUTCOME_CHALLENGE},
@@ -799,6 +982,114 @@ static const testcase	rewritten10gcases[]={
 static const testcase	rewritten10gnofspcases[]={
 	{LISTENER_12_1,LOGON_TYPES_9I,FORM_TAGGED,VERIFIER_9I,OUTCOME_CHALLENGE},
 	{LISTENER_FLOOR_11,LOGON_TYPES_9I,FORM_TAGGED,VERIFIER_9I,OUTCOME_REFUSED}
+};
+
+// what an ojdbc14 case expects of the listener
+enum ojdbc14outcome {
+
+	// the 8i challenge, the login, and the logoff
+	OJDBC14_LOGIN,
+
+	// the 8i challenge, and then ORA-01017 for phase two
+	OJDBC14_DENIED,
+
+	// ORA-28040 behind a break and a reset, in place of the challenge
+	OJDBC14_REFUSED
+};
+
+// the AUTH_PASSWORD an ojdbc14 case sends: the one computed from the
+// password, or that one malformed.  ojdbc14 itself only ever sends the
+// computed one, so each malformed form is the module's choice to refuse
+enum ojdbc14authpassword {
+	AUTH_PASSWORD_COMPUTED,
+
+	// the pad digit replaced with 8, out of the 0-7 range
+	AUTH_PASSWORD_PAD_DIGIT_8,
+
+	// the pad digit one less than it should be, so the padding still
+	// decrypts to zeros and only the length is wrong
+	AUTH_PASSWORD_WRONG_PAD_DIGIT,
+
+	// the hex alone, with no pad digit behind it
+	AUTH_PASSWORD_NO_PAD_DIGIT,
+
+	// a hex character replaced with a G
+	AUTH_PASSWORD_NON_HEX,
+
+	// the hex two characters short, an odd length that isn't a whole
+	// number of blocks and a pad digit
+	AUTH_PASSWORD_SHORT
+};
+
+static const char	*ojdbc14authpasswordnames[]={
+	"computed",
+	"pad digit 8",
+	"pad digit one short",
+	"no pad digit",
+	"a non-hex character",
+	"two hex characters short"
+};
+
+struct ojdbc14case {
+	size_t			listener;
+	const char		*user;
+	const char		*password;
+	ojdbc14authpassword	authpassword;
+	ojdbc14outcome		result;
+};
+
+// genuine ojdbc14, in the session described at the top.  it logs in at every
+// ceiling, as it does to a real 10.2, 11.2 and 12.2 server.  a wrong password
+// of 13 characters, pad digit 3, is denied at each ceiling, and an unknown
+// user and a wrong password of 16 characters, pad digit 0 and two blocks, at
+// 12.1.  every floor of 9 and up refuses it in phase one, as a real 12.2
+// server did at 9.  the user name is ojdbc14's, uppercase, except against the
+// oracle_connectstrings auth module, whose connect string has it in lowercase.
+//
+// the malformed AUTH_PASSWORD cases send the right password, encrypted under
+// the right session key, and then spoil the value, so any of them that got
+// past the auth module's format checks would log in.  each is denied with the
+// same ORA-01017 a wrong password gets.  no real server was measured with
+// them, so that object is the module's choice
+static const ojdbc14case	ojdbc14cases[]={
+	{LISTENER_12_1,"TESTUSER","testpassword",
+		AUTH_PASSWORD_COMPUTED,OJDBC14_LOGIN},
+	{LISTENER_11_2,"TESTUSER","testpassword",
+		AUTH_PASSWORD_COMPUTED,OJDBC14_LOGIN},
+	{LISTENER_10_2,"TESTUSER","testpassword",
+		AUTH_PASSWORD_COMPUTED,OJDBC14_LOGIN},
+	{LISTENER_CONNECTSTRINGS,"testuser","testpassword",
+		AUTH_PASSWORD_COMPUTED,OJDBC14_LOGIN},
+	{LISTENER_12_1,"TESTUSER","wrongpassword",
+		AUTH_PASSWORD_COMPUTED,OJDBC14_DENIED},
+	{LISTENER_11_2,"TESTUSER","wrongpassword",
+		AUTH_PASSWORD_COMPUTED,OJDBC14_DENIED},
+	{LISTENER_10_2,"TESTUSER","wrongpassword",
+		AUTH_PASSWORD_COMPUTED,OJDBC14_DENIED},
+	{LISTENER_12_1,"NOSUCHUSER","whatever",
+		AUTH_PASSWORD_COMPUTED,OJDBC14_DENIED},
+	{LISTENER_12_1,"TESTUSER","abcdefghijklmnop",
+		AUTH_PASSWORD_COMPUTED,OJDBC14_DENIED},
+	{LISTENER_12_1,"TESTUSER","testpassword",
+		AUTH_PASSWORD_PAD_DIGIT_8,OJDBC14_DENIED},
+	{LISTENER_12_1,"TESTUSER","testpassword",
+		AUTH_PASSWORD_WRONG_PAD_DIGIT,OJDBC14_DENIED},
+	{LISTENER_12_1,"TESTUSER","testpassword",
+		AUTH_PASSWORD_NO_PAD_DIGIT,OJDBC14_DENIED},
+	{LISTENER_12_1,"TESTUSER","testpassword",
+		AUTH_PASSWORD_NON_HEX,OJDBC14_DENIED},
+	{LISTENER_12_1,"TESTUSER","testpassword",
+		AUTH_PASSWORD_SHORT,OJDBC14_DENIED},
+	{LISTENER_CONNECTSTRINGS,"testuser","testpassword",
+		AUTH_PASSWORD_WRONG_PAD_DIGIT,OJDBC14_DENIED},
+	{LISTENER_FLOOR_9,"TESTUSER","testpassword",
+		AUTH_PASSWORD_COMPUTED,OJDBC14_REFUSED},
+	{LISTENER_FLOOR_11,"TESTUSER","testpassword",
+		AUTH_PASSWORD_COMPUTED,OJDBC14_REFUSED},
+	{LISTENER_FLOOR_12,"TESTUSER","testpassword",
+		AUTH_PASSWORD_COMPUTED,OJDBC14_REFUSED},
+	{LISTENER_FLOOR_12A,"TESTUSER","testpassword",
+		AUTH_PASSWORD_COMPUTED,OJDBC14_REFUSED}
 };
 
 static const char	*host="127.0.0.1";
@@ -993,8 +1284,9 @@ static void checkChallenge(oracleprotocolclient *client,
 	}
 
 	bool		o3logon=(expected==VERIFIER_9I);
+	bool		des8i=(expected==VERIFIER_8I);
 	bool		des10g=(expected==VERIFIER_10G);
-	uint32_t	expectedcount=(o3logon)?1:((des10g)?2:
+	uint32_t	expectedcount=(o3logon || des8i)?1:((des10g)?2:
 				((expected==VERIFIER_12C)?6:3));
 	uint32_t	count=0;
 	l.clear();
@@ -1004,6 +1296,9 @@ static void checkChallenge(oracleprotocolclient *client,
 
 	size_t	sesskeysize=0;
 	switch (expected) {
+		case VERIFIER_8I:
+			sesskeysize=SESSKEY_HEX_SIZE_8I;
+			break;
 		case VERIFIER_9I:
 			sesskeysize=SESSKEY_HEX_SIZE_9I;
 			break;
@@ -1023,13 +1318,21 @@ static void checkChallenge(oracleprotocolclient *client,
 	report(l.getString(),
 		checkField(client,"AUTH_SESSKEY",sesskeysize,NULL,0));
 
-	if (o3logon) {
+	if (o3logon || des8i) {
 
-		// the tagged o3logon shape: AUTH_SESSKEY alone, and nothing
-		// that carries a verifier type
+		// the tagged o3logon and 8i shape: AUTH_SESSKEY alone, and
+		// nothing that carries a verifier type
 		l.clear();
 		l.append(label)->append(" has no AUTH_VFR_DATA");
 		report(l.getString(),!hasField(client,"AUTH_VFR_DATA"));
+
+		if (des8i) {
+			l.clear();
+			l.append(label)->append(
+				" has no AUTH_GLOBALLY_UNIQUE_DBID");
+			report(l.getString(),
+				!hasField(client,"AUTH_GLOBALLY_UNIQUE_DBID"));
+		}
 
 	} else if (des10g) {
 
@@ -1865,6 +2168,7 @@ static void runCase(const testcase *tc, size_t index, session sess) {
 	const listenerinfo	*li=&listeners[tc->listener];
 	bool			genuine10g=(sess!=SESSION_HAND_BUILT);
 	bool			o3logon=(tc->expected==VERIFIER_9I);
+	bool			des8i=(tc->expected==VERIFIER_8I);
 	bool			classic=(tc->form==FORM_CLASSIC);
 
 	// a sequence number per case, so an echo can't pass by accident.  the
@@ -1899,11 +2203,12 @@ static void runCase(const testcase *tc, size_t index, session sess) {
 	}
 	stdoutput.printf("\n%s - expect %s\n",label,expectation.getString());
 
-	// the classic call is replayed in portable form, and a 9i verifier
-	// login is portable only
-	if (nativeencoding && (o3logon || classic)) {
+	// the classic call is replayed in portable form, and a 9i or 8i
+	// verifier login is portable only
+	if (nativeencoding && (o3logon || des8i || classic)) {
 		stdoutput.printf("%s: skipped, %s is portable only\n",label,
-					(classic)?"a classic login":"o3logon");
+					(classic)?"a classic login":
+					((des8i)?"the 8i exchange":"o3logon"));
 		return;
 	}
 
@@ -2008,6 +2313,591 @@ static void runCase(const testcase *tc, size_t index, session sess) {
 	client.disconnect();
 }
 
+// compute8iAuthPassword() against real logins, before any connection: each
+// vector's AUTH_SESSKEY has to give exactly the AUTH_PASSWORD the real
+// client sent
+static void checkKnownAnswers() {
+
+	stdoutput.printf("\n8i AUTH_PASSWORD known answers - expect each "
+						"real client's value\n");
+
+	for (size_t i=0; i<sizeof(ojdbc14vectors)/sizeof(ojdbc14vectors[0]);
+									i++) {
+
+		const ojdbc14vector	*v=&ojdbc14vectors[i];
+
+		char	*authpassword=NULL;
+		bool	ok=(oracleprotocolclient::compute8iAuthPassword(
+						v->user,v->password,
+						v->sesskey,&authpassword) &&
+				!charstring::compare(authpassword,
+							v->authpassword));
+
+		char	label[256];
+		charstring::printf(label,sizeof(label),
+				"8i AUTH_PASSWORD of %s, password of %d "
+				"characters, is %s's",v->user,
+				(int)charstring::getLength(v->password),
+				v->capture);
+		report(label,ok);
+		if (!ok) {
+			stdoutput.printf("    got %s, expected %s\n",
+					(authpassword)?authpassword:"(null)",
+					v->authpassword);
+		}
+		delete[] authpassword;
+	}
+}
+
+// the banner the module sends at a ceiling, built from its AUTH_VERSION_NO
+// the way the module builds it: major, minor, third, patch and fifth
+// component in bits 31-24, 23-20, 15-12, 11-8 and 7-0
+static void buildBanner(char *banner, size_t size, uint32_t packed) {
+	int	major=(int)((packed>>24)&0xff);
+	charstring::printf(banner,size,
+			"Oracle Database %d%s Enterprise Edition "
+			"Release %d.%d.%d.%d.%d - 64bit Production",
+			major,(major>=12)?"c":"g",major,
+			(int)((packed>>20)&0x0f),(int)((packed>>12)&0x0f),
+			(int)((packed>>8)&0x0f),(int)(packed&0xff));
+}
+
+// ojdbc14's version call, and the answer byte for byte: the ttc code, the
+// banner's size and the banner raw, the packed version, then "09 00" and the
+// end of the packet, as packet [0012] of the 10545 ojdbc14 captures has it.
+// the banner and the packed version are the module's own at the ceiling.
+// returns whether it was answered at all
+static bool checkOjdbc14Version(oracleprotocolclient *client,
+					const char *label,
+					const listenerinfo *li) {
+
+	stringbuffer	l;
+	l.append(label)->append(" version call is answered");
+	bool	ok=client->versionCall();
+	report(l.getString(),ok);
+	if (!ok) {
+		stdoutput.printf("    %s\n",client->getError());
+		return false;
+	}
+
+	uint32_t	packed=(uint32_t)
+			charstring::convertToUnsignedInteger(li->versionno);
+	char		banner[256];
+	buildBanner(banner,sizeof(banner),packed);
+	size_t		bannersize=charstring::getLength(banner);
+
+	char		*actualbanner=NULL;
+	uint32_t	actualpacked=0;
+	uint32_t	endtoend=0;
+	l.clear();
+	l.append(label)->append(" version answer ends in its end to end field");
+	bool	shape=client->readVersionResponse(&actualbanner,
+						&actualpacked,&endtoend);
+	report(l.getString(),shape);
+
+	l.clear();
+	l.append(label)->append(" banner is \"")->append(banner)->append("\"");
+	report(l.getString(),
+		shape && !charstring::compare(actualbanner,banner));
+
+	l.clear();
+	l.append(label)->append(" packed version is ")->append(li->versionno);
+	report(l.getString(),shape && actualpacked==packed);
+
+	l.clear();
+	l.append(label)->append(" end to end field is 0");
+	report(l.getString(),shape && !endtoend);
+
+	unsigned char	expected[3+5+256+5+2];
+	size_t		expectedsize=0;
+	putZeros(expected,&expectedsize,2);
+	putByte(expected,&expectedsize,ORA_TTC_OK);
+	putLenPreInt(expected,&expectedsize,(uint32_t)bannersize);
+	bytestring::copy(expected+expectedsize,banner,bannersize);
+	expectedsize+=bannersize;
+	putLenPreInt(expected,&expectedsize,packed);
+	putByte(expected,&expectedsize,0x09);
+	putZeros(expected,&expectedsize,1);
+
+	l.clear();
+	l.append(label)->append(" version answer is exact");
+	bool	exact=(client->getResponseSize()==expectedsize &&
+			!bytestring::compare(client->getResponse(),
+						expected,expectedsize));
+	report(l.getString(),exact);
+	if (!shape || !exact) {
+		if (actualbanner) {
+			stdoutput.printf("    banner: %s\n",actualbanner);
+		}
+		dumpBytes("answer",client->getResponse(),
+					client->getResponseSize());
+		dumpBytes("expected",expected,expectedsize);
+	}
+
+	delete[] actualbanner;
+	return true;
+}
+
+// the challenge, byte for byte, as a real server sends it to ojdbc14: 65
+// bytes, AUTH_SESSKEY alone with 16 uppercase hex characters, and the 25
+// byte trailer with the end to end field 2.  returns whether it was one
+static bool checkOjdbc14Challenge(oracleprotocolclient *client,
+						const char *label) {
+
+	stringbuffer	l;
+	l.append(label)->append(" got a challenge");
+	bool	ok=(client->getResponseTtcCode()==ORA_TTC_OK &&
+						!client->gotBreak());
+	report(l.getString(),ok);
+	if (!ok) {
+		return false;
+	}
+
+	const unsigned char	*response=client->getResponse();
+	size_t			responsesize=client->getResponseSize();
+	size_t			keyoffset=sizeof(ORA_OJDBC14_CHALLENGE_HEAD);
+
+	bool	keyok=(responsesize>=keyoffset+SESSKEY_HEX_SIZE_8I);
+	for (size_t i=0; keyok && i<SESSKEY_HEX_SIZE_8I; i++) {
+		keyok=isHexCharacter(response[keyoffset+i]);
+	}
+	l.clear();
+	l.append(label)->append(" AUTH_SESSKEY is ");
+	l.append((uint64_t)SESSKEY_HEX_SIZE_8I);
+	l.append(" uppercase hex characters");
+	report(l.getString(),keyok);
+
+	// the head, the key as sent, its flags, then the trailer
+	unsigned char	expected[ORA_OJDBC14_CHALLENGE_SIZE];
+	size_t		expectedsize=0;
+	bytestring::copy(expected,ORA_OJDBC14_CHALLENGE_HEAD,keyoffset);
+	expectedsize=keyoffset;
+	if (keyok) {
+		bytestring::copy(expected+expectedsize,response+keyoffset,
+							SESSKEY_HEX_SIZE_8I);
+	} else {
+		bytestring::set(expected+expectedsize,'0',SESSKEY_HEX_SIZE_8I);
+	}
+	expectedsize+=SESSKEY_HEX_SIZE_8I;
+	putZeros(expected,&expectedsize,1);
+	putByte(expected,&expectedsize,ORA_TTC_ERROR);
+	putLenPreInt(expected,&expectedsize,ORA_AUTH_PHASE_CHALLENGE);
+	putZeros(expected,&expectedsize,ORA_OJDBC14_TRAILER_ZEROS);
+
+	l.clear();
+	l.append(label)->append(" challenge is exact, ");
+	l.append((uint64_t)ORA_OJDBC14_CHALLENGE_SIZE)->append(" bytes");
+	bool	exact=(responsesize==expectedsize &&
+			!bytestring::compare(response,expected,expectedsize));
+	report(l.getString(),exact);
+	if (!exact) {
+		dumpBytes("challenge",response,responsesize);
+		dumpBytes("expected",expected,expectedsize);
+	}
+	return true;
+}
+
+// a field version 3 error object, byte for byte, behind the ttc code.  the
+// call number is 0, ojdbc14's sequence number, and the statement type 2 in a
+// phase two error from an emulated 12.1 server and 0 in every other.  the
+// expected bytes are the real servers' objects:
+//
+//	- ORA-01017, 12.1 emulated: packet [0019] of samples/10734-dev-ojdbc14-
+//	  unknownuser-realserver-oracle122.oraproxy and of the -pw16 one beside
+//	  it, from a 12.2 server
+//	- ORA-01017, 11.2 and 10.2 emulated: packet [0019] of samples/10734-dev-
+//	  ojdbc14-unknownuser-realserver-oracle112.oraproxy and of samples/
+//	  10734-dev-ojdbc14-wrongpassword-realserver-oracle102.oraproxy
+//	- ORA-28040: packet [0017] of samples/10545-dev-ojdbc14-login-select1-
+//	  realserver-oracle122-allowed9.oraproxy, at a floor of 9.  that floors
+//	  11, 12 and 12a send the same object is inferred
+static void checkOjdbc14Error(oracleprotocolclient *client,
+					const char *label,
+					const listenerinfo *li,
+					uint32_t oranum,
+					const char *message,
+					bool secondphase) {
+
+	stringbuffer	l;
+	l.append(label)->append(" got a break and a reset first");
+	report(l.getString(),client->gotBreak());
+	if (client->gotBreak()) {
+		checkMarkerFlags(client,label);
+	}
+
+	bool		server121=(li->fieldversion>=
+					ORA_CCAP_FIELD_VERSION_12_1);
+	size_t		messagesize=charstring::getLength(message);
+	unsigned char	statementtype=(secondphase && server121)?
+				ORA_NATIVE_ERROR_STATEMENT_TYPE_PHASE_TWO:0;
+
+	unsigned char	expected[64+255];
+	size_t		expectedsize=0;
+	putZeros(expected,&expectedsize,2);
+	putLenPreInt(expected,&expectedsize,oranum);
+	putZeros(expected,&expectedsize,
+			ORA_PORTABLE_ERROR_ZEROS_BEFORE_STATEMENT_TYPE);
+	putByte(expected,&expectedsize,statementtype);
+	putZeros(expected,&expectedsize,
+			ORA_PORTABLE_ERROR_ZEROS_BEFORE_CALL_NUMBER);
+	putZeros(expected,&expectedsize,1);
+	putZeros(expected,&expectedsize,
+			ORA_OJDBC14_ERROR_ZEROS_AFTER_CALL_NUMBER);
+	putByte(expected,&expectedsize,(unsigned char)messagesize);
+	bytestring::copy(expected+expectedsize,message,messagesize);
+	expectedsize+=messagesize;
+
+	// behind the data flags and the ttc code
+	const size_t		prefix=3;
+	size_t			responsesize=client->getResponseSize();
+	const unsigned char	*object=client->getResponse()+prefix;
+	size_t			objectsize=(responsesize>prefix)?
+						responsesize-prefix:0;
+
+	char	oralabel[16];
+	charstring::printf(oralabel,sizeof(oralabel),"ORA-%05d",oranum);
+	l.clear();
+	l.append(label)->append(" got ")->append(oralabel);
+	report(l.getString(),
+		client->getResponseTtcCode()==ORA_TTC_ERROR &&
+		client->responseContains(message));
+
+	l.clear();
+	l.append(label)->append(" field version 3 error is exact, ");
+	l.append((uint64_t)(expectedsize+1))->append(" bytes");
+	bool	exact=(client->getResponseTtcCode()==ORA_TTC_ERROR &&
+			objectsize==expectedsize &&
+			!bytestring::compare(object,expected,expectedsize));
+	report(l.getString(),exact);
+	if (!exact) {
+		dumpBytes("error",object,objectsize);
+		dumpBytes("expected",expected,expectedsize);
+	}
+}
+
+// the login answer: the module's pairs, and the 25 byte trailer with the end
+// to end field 3 that a real server sends ojdbc14
+static void checkOjdbc14LoginAnswer(oracleprotocolclient *client,
+						const char *label,
+						const listenerinfo *li) {
+
+	stringbuffer	l;
+	uint32_t	count=0;
+	l.append(label)->append(" pair count is ");
+	l.append(ORA_OJDBC14_LOGIN_ANSWER_PAIRS);
+	report(l.getString(),client->getAuthFieldCount(&count) &&
+				count==ORA_OJDBC14_LOGIN_ANSWER_PAIRS);
+
+	l.clear();
+	l.append(label)->append(" has AUTH_SESSION_ID");
+	report(l.getString(),hasField(client,"AUTH_SESSION_ID"));
+
+	l.clear();
+	l.append(label)->append(" has no AUTH_SVR_RESPONSE");
+	report(l.getString(),!hasField(client,"AUTH_SVR_RESPONSE"));
+
+	l.clear();
+	l.append(label)->append(" AUTH_VERSION_NO is ")->append(li->versionno);
+	report(l.getString(),
+		checkField(client,"AUTH_VERSION_NO",0,li->versionno,0));
+
+	unsigned char	expected[1+2+ORA_OJDBC14_TRAILER_ZEROS];
+	size_t		expectedsize=0;
+	putByte(expected,&expectedsize,ORA_TTC_ERROR);
+	putLenPreInt(expected,&expectedsize,ORA_AUTH_PHASE_ANSWER);
+	putZeros(expected,&expectedsize,ORA_OJDBC14_TRAILER_ZEROS);
+
+	const unsigned char	*trailer=NULL;
+	size_t			size=0;
+	l.clear();
+	l.append(label)->append(" login answer trailer is exact, ");
+	l.append((uint64_t)expectedsize)->append(" bytes");
+	bool	exact=(client->getAuthTrailer(&trailer,&size) &&
+			size==expectedsize &&
+			!bytestring::compare(trailer,expected,expectedsize));
+	report(l.getString(),exact);
+	if (!exact && trailer) {
+		dumpBytes("trailer",trailer,size);
+		dumpBytes("expected",expected,expectedsize);
+	}
+}
+
+// the AUTH_PASSWORD computed against the challenge in the client's response,
+// then spoiled the way the case says.  "authpassword" is the caller's to
+// delete
+static bool malform8iAuthPassword(oracleprotocolclient *client,
+						const ojdbc14case *oc,
+						char **authpassword) {
+
+	*authpassword=NULL;
+
+	char	*sesskeyhex=NULL;
+	if (!client->getAuthField("AUTH_SESSKEY",&sesskeyhex,NULL)) {
+		return false;
+	}
+	char	*computed=NULL;
+	bool	ok=oracleprotocolclient::compute8iAuthPassword(
+						oc->user,oc->password,
+						sesskeyhex,&computed);
+	delete[] sesskeyhex;
+	if (!ok) {
+		return false;
+	}
+
+	size_t	size=charstring::getLength(computed);
+	char	*paddigit=computed+size-1;
+	char	*nonhex=NULL;
+	switch (oc->authpassword) {
+		case AUTH_PASSWORD_PAD_DIGIT_8:
+			*paddigit='8';
+			break;
+		case AUTH_PASSWORD_WRONG_PAD_DIGIT:
+			if (*paddigit=='0') {
+				delete[] computed;
+				return false;
+			}
+			(*paddigit)--;
+			break;
+		case AUTH_PASSWORD_NO_PAD_DIGIT:
+			*paddigit='\0';
+			break;
+		case AUTH_PASSWORD_NON_HEX:
+			// a 0 where there is one, since a hex decoder that
+			// reads junk as 0 would then get the right key
+			nonhex=charstring::findFirst(computed,'0');
+			if (!nonhex || nonhex==paddigit) {
+				nonhex=computed;
+			}
+			*nonhex='G';
+			break;
+		case AUTH_PASSWORD_SHORT:
+			bytestring::copy(paddigit-2,paddigit,2);
+			break;
+		default:
+			break;
+	}
+	*authpassword=computed;
+	return true;
+}
+
+static void runOjdbc14Case(const ojdbc14case *oc) {
+
+	const listenerinfo	*li=&listeners[oc->listener];
+
+	char	label[256];
+	charstring::printf(label,sizeof(label),
+			"%s, ojdbc14, user %s, password of %d characters, "
+			"tns version 0x%04x%s%s",li->name,oc->user,
+			(int)charstring::getLength(oc->password),
+			negotiatedconnectversion,
+			(oc->authpassword!=AUTH_PASSWORD_COMPUTED)?
+					", AUTH_PASSWORD with ":"",
+			(oc->authpassword!=AUTH_PASSWORD_COMPUTED)?
+				ojdbc14authpasswordnames[oc->authpassword]:"");
+	const char	*expectation="the 8i challenge, then a login";
+	if (oc->result==OJDBC14_DENIED) {
+		expectation="the 8i challenge, then ORA-01017";
+	} else if (oc->result==OJDBC14_REFUSED) {
+		expectation="ORA-28040";
+	}
+	stdoutput.printf("\n%s - expect %s\n",label,expectation);
+
+	oracleprotocolclient	client;
+	client.setConnectVersion(clientconnectversion);
+	client.setDataTypeRequest(ORA_OJDBC14_DATA_TYPE_REQUEST,
+					sizeof(ORA_OJDBC14_DATA_TYPE_REQUEST));
+	client.setAnoNegotiation(true);
+
+	stringbuffer	l;
+	l.append(label)->append(" connect");
+	if (!client.connect(host,getPort(li),sid)) {
+		report(l.getString(),false);
+		stdoutput.printf("    %s\n",client.getError());
+		return;
+	}
+	checkAnoResponseFlags(&client,label);
+
+	// the version call, ahead of the login at every floor
+	if (!checkOjdbc14Version(&client,label,li)) {
+		return;
+	}
+
+	l.clear();
+	l.append(label)->append(" phase one");
+	if (!client.requestChallenge8i(oc->user)) {
+		report(l.getString(),false);
+		stdoutput.printf("    %s\n",client.getError());
+		return;
+	}
+
+	if (oc->result==OJDBC14_REFUSED) {
+		checkOjdbc14Error(&client,label,li,
+				ORA_NO_MATCHING_AUTH_PROTOCOL,
+				"ORA-28040: No matching authentication "
+				"protocol\n",false);
+		client.disconnect();
+		return;
+	}
+
+	if (!checkOjdbc14Challenge(&client,label)) {
+		client.disconnect();
+		return;
+	}
+
+	char	*authpassword=NULL;
+	if (oc->authpassword!=AUTH_PASSWORD_COMPUTED &&
+		!malform8iAuthPassword(&client,oc,&authpassword)) {
+		l.clear();
+		l.append(label)->append(" AUTH_PASSWORD is computed");
+		report(l.getString(),false);
+		client.disconnect();
+		return;
+	}
+	bool	loggedin=client.answerChallenge8i(oc->user,oc->password,
+								authpassword);
+	delete[] authpassword;
+	if (oc->result==OJDBC14_DENIED) {
+		l.clear();
+		l.append(label)->append(" phase two is refused");
+		report(l.getString(),!loggedin);
+		if (!loggedin) {
+			checkOjdbc14Error(&client,label,li,
+					ORA_INVALID_USERNAME_PASSWORD,
+					"ORA-01017: invalid username/password; "
+					"logon denied\n",true);
+		}
+		client.disconnect();
+		return;
+	}
+
+	l.clear();
+	l.append(label)->append(" logs in");
+	report(l.getString(),loggedin);
+	if (!loggedin) {
+		stdoutput.printf("    %s\n",client.getError());
+		client.disconnect();
+		return;
+	}
+	checkOjdbc14LoginAnswer(&client,label,li);
+
+	// the logoff, and the "09 00" that answers it
+	l.clear();
+	l.append(label)->append(" logoff is answered with \"09 00\"");
+	bool	ok=(client.logoff8i() &&
+			client.getResponseSize()==
+					sizeof(ORA_OJDBC14_LOGOFF_ANSWER) &&
+			!bytestring::compare(client.getResponse(),
+					ORA_OJDBC14_LOGOFF_ANSWER,
+					sizeof(ORA_OJDBC14_LOGOFF_ANSWER)));
+	report(l.getString(),ok);
+	if (!ok) {
+		stdoutput.printf("    %s\n",client.getError());
+		dumpBytes("answer",client.getResponse(),
+					client.getResponseSize());
+	}
+}
+
+// how long a dropped connection may take to show, well under the client's
+// own read timeout, so a listener that holds the connection open without
+// answering doesn't pass for one that dropped it
+static const time_t	DROP_SECONDS=10;
+
+// a version call that the listener should drop the connection over, without
+// a reply.  the socket is left for the client's destructor, since a
+// disconnect call would write to a closed connection
+static void checkVersionCallDropped(oracleprotocolclient *client,
+							const char *label) {
+	datetime	dt;
+	dt.initFromSystemDateTime();
+	time_t		start=dt.getEpoch();
+	bool		answered=client->versionCall();
+	dt.initFromSystemDateTime();
+	time_t		elapsed=dt.getEpoch()-start;
+
+	stringbuffer	l;
+	l.append(label)->append(" connection is dropped without a reply");
+	report(l.getString(),!answered && elapsed<DROP_SECONDS);
+	if (answered) {
+		dumpBytes("answer",client->getResponse(),
+					client->getResponseSize());
+	} else if (elapsed>=DROP_SECONDS) {
+		stdoutput.printf("    no reply, but no drop for %d seconds\n",
+								(int)elapsed);
+	}
+}
+
+// a version call ahead of the login from a client that isn't an 8i one: the
+// hand built client, at 12.1, advertising "logontypes" and the pass's field
+// version.  only an 8i client's version call is answered there, so this one
+// ends the login.  a module without the 8i exchange dropped ojdbc14's the
+// same way (MEASURED, samples/10734-dev-ojdbc14-*-sqlrelay121*-before), but
+// no client on file other than ojdbc14 sends one, so what a real server does
+// with it is unmeasured - the drop is the module's choice.  the 0x00 client
+// is here because it gets the 8i verifier but isn't an 8i client, its field
+// version being 11.2 or 12.1
+static void runPreLoginVersionCall(unsigned char logontypes) {
+
+	const listenerinfo	*li=&listeners[LISTENER_12_1];
+
+	char	label[256];
+	charstring::printf(label,sizeof(label),
+			"%s, logon types 0x%02x, field version %d, "
+			"tns version 0x%04x, version call ahead of the login",
+			li->name,logontypes,clientfieldversion,
+			negotiatedconnectversion);
+	stdoutput.printf("\n%s - expect the connection dropped\n",label);
+
+	oracleprotocolclient	client;
+	client.setNativeEncoding(nativeencoding);
+	client.setConnectVersion(clientconnectversion);
+	setDataTypeRequest(&client,SESSION_HAND_BUILT,logontypes);
+	client.setAnoNegotiation(true);
+
+	stringbuffer	l;
+	l.append(label)->append(" connect");
+	if (!client.connect(host,getPort(li),sid)) {
+		report(l.getString(),false);
+		stdoutput.printf("    %s\n",client.getError());
+		return;
+	}
+	checkVersionCallDropped(&client,label);
+}
+
+// ojdbc14 sends one version call ahead of its login (MEASURED, packet [0011]
+// of samples/10545-dev-ojdbc14-* and samples/10734-dev-ojdbc14-*), and the
+// module answers only the first.  what a real server does with a second is
+// unmeasured - the drop is the module's choice
+static void runSecondPreLoginVersionCall() {
+
+	const listenerinfo	*li=&listeners[LISTENER_12_1];
+
+	char	label[256];
+	charstring::printf(label,sizeof(label),
+			"%s, ojdbc14, tns version 0x%04x, second version call "
+			"ahead of the login",li->name,
+			negotiatedconnectversion);
+	stdoutput.printf("\n%s - expect the first answered and the "
+				"connection dropped at the second\n",label);
+
+	oracleprotocolclient	client;
+	client.setConnectVersion(clientconnectversion);
+	client.setDataTypeRequest(ORA_OJDBC14_DATA_TYPE_REQUEST,
+					sizeof(ORA_OJDBC14_DATA_TYPE_REQUEST));
+	client.setAnoNegotiation(true);
+
+	stringbuffer	l;
+	l.append(label)->append(" connect");
+	if (!client.connect(host,getPort(li),sid)) {
+		report(l.getString(),false);
+		stdoutput.printf("    %s\n",client.getError());
+		return;
+	}
+	if (!checkOjdbc14Version(&client,label,li)) {
+		return;
+	}
+	checkVersionCallDropped(&client,label);
+}
+
 int main(int argc, char **argv) {
 
 	nativeencoding=(argc>1 && !charstring::compare(argv[1],"-native"));
@@ -2055,6 +2945,10 @@ int main(int argc, char **argv) {
 							SESSION_HAND_BUILT);
 				}
 			}
+
+			runPreLoginVersionCall(LOGON_TYPES_NONE);
+			runPreLoginVersionCall(LOGON_TYPES_9I);
+			runPreLoginVersionCall(LOGON_TYPES_11G);
 		}
 	}
 
@@ -2063,6 +2957,7 @@ int main(int argc, char **argv) {
 	if (nativeencoding) {
 		stdoutput.printf("\ngenuine 10.2 client: skipped, it is "
 					"portable only\n");
+		stdoutput.printf("\nojdbc14: skipped, it is portable only\n");
 	} else {
 		clientfieldversion=ORA_CCAP_FIELD_VERSION_10_2;
 		clientconnectversion=ORA_CONNECT_VERSION_10;
@@ -2098,6 +2993,20 @@ int main(int argc, char **argv) {
 			runCase(&rewritten10gnofspcases[i],base+i,
 					SESSION_REWRITTEN_10G_BIT_CLEAR);
 		}
+
+		// genuine ojdbc14's own session, which offers tns version
+		// 0x0134, after its math is checked against real logins
+		clientconnectversion=ORA_CONNECT_VERSION_OJDBC14;
+		negotiatedconnectversion=ORA_CONNECT_VERSION_OJDBC14;
+		stdoutput.printf("\n====== ojdbc14 10.2.0.5, tns version "
+					"0x%04x ======\n",
+					negotiatedconnectversion);
+		checkKnownAnswers();
+		for (size_t i=0; i<sizeof(ojdbc14cases)/
+					sizeof(ojdbc14cases[0]); i++) {
+			runOjdbc14Case(&ojdbc14cases[i]);
+		}
+		runSecondPreLoginVersionCall();
 	}
 
 	if (status==0) {

@@ -211,6 +211,14 @@
 #define VERIFIER_TYPE_10G	0x0939
 #define SESSION_KEY_SIZE_10G	32
 
+// o3logon's oldest form, single des, for a tagged login from a client that
+// advertises no logon types (ojdbc14 10.2 sends 0x00): an 8 byte session key
+// under the account's des password hash, and a des-cbc AUTH_PASSWORD.  like
+// VERIFIER_TYPE_9I this value isn't an oracle constant, it just selects the
+// code path, and it has to match the auth module's
+#define VERIFIER_TYPE_8I	0x0800
+#define SESSION_KEY_SIZE_8I	8
+
 // how many hex characters one des block takes, which is the unit an o3logon
 // AUTH_PASSWORD comes in, and the most strings an o3logon login can name (a
 // real one sends 5 in phase one and 6 in phase two)
@@ -1936,6 +1944,15 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_oracle : public sqlrprotocol {
 		// verifier, or the 10g verifier in a classic login
 		bool	isO3Logon();
 
+		// true if the auth module runs the session's login as O3LOGON:
+		// an o3logon login, or the 8i verifier, which is o3logon to the
+		// auth module but not on the wire
+		bool	usesO3LogonMethod();
+
+		// true if the session's login objects take the 8i client's
+		// shapes - the 8i verifier, for a client8i client
+		bool	use8iObjects();
+
 		// true if the "allowedlogonversion" listener attribute lets the
 		// session's login have a challenge
 		bool	logonVersionAllowed();
@@ -2744,14 +2761,25 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_oracle : public sqlrprotocol {
 		uint32_t	verifiertype;
 
 		// the client's CCAP_LOGON_TYPES byte, 0 if its compile caps
-		// array is too short to carry one, whether it sets
-		// CCAP_FAST_SESSION_PROPAGATE, and whether its data type list
-		// offers any type in more than one representation.  read in
-		// recvDataTypeRequest() and reset by init(), for
-		// chooseVerifierType()
+		// array is too short to carry one, whether the array carried
+		// one, whether it sets CCAP_FAST_SESSION_PROPAGATE, and
+		// whether its data type list offers any type in more than one
+		// representation.  read in recvDataTypeRequest() and reset by
+		// init(), for chooseVerifierType()
 		byte_t		clientlogontypes;
+		bool		clientsentlogontypes;
 		bool		clientfastsessionpropagate;
 		bool		clientmultireps;
+
+		// whether the client is an 8i one - logon types without 0x01,
+		// 0x04 or 0x08, and a field version below 10.2's, which of the
+		// clients on file only ojdbc14 10.2 sends - so it gets the
+		// version call answered before its login, and the 8i verifier's
+		// object shapes.  set in recvDataTypeRequest() and reset by
+		// init(), along with whether the one version call it may send
+		// ahead of its login has been answered
+		bool		client8i;
+		bool		preloginversionanswered;
 
 		// the CCAP_LOGON_TYPES byte putTti6Response() advertised, 0 if
 		// it sent no capability arrays.  the auth module needs it to
@@ -3539,7 +3567,10 @@ void sqlrprotocol_oracle::init() {
 	verifiertype=(serverfieldversion==CCAP_FIELD_VERSION_10_2)?
 				VERIFIER_TYPE_9I:VERIFIER_TYPE_11G_2;
 	clientlogontypes=0;
+	clientsentlogontypes=false;
 	clientfastsessionpropagate=false;
+	client8i=false;
+	preloginversionanswered=false;
 	serverlogontypes=0;
 	clientmultireps=false;
 	oci7endtoendseqnumber=false;
@@ -6777,7 +6808,8 @@ bool sqlrprotocol_oracle::recvDataTypeRequest() {
 
 	// the logon types the client supports, which chooseVerifierType()
 	// picks the session's verifier type from
-	clientlogontypes=(compilecapssize>CCAP_LOGON_TYPES)?
+	clientsentlogontypes=(compilecapssize>CCAP_LOGON_TYPES);
+	clientlogontypes=(clientsentlogontypes)?
 				compilecaps[CCAP_LOGON_TYPES]:0;
 
 	// whether an o3logon session's oci7 objects carry the end to end
@@ -6785,6 +6817,19 @@ bool sqlrprotocol_oracle::recvDataTypeRequest() {
 	clientfastsessionpropagate=(compilecapssize>CCAP_OCI1 &&
 				(compilecaps[CCAP_OCI1]&
 					CCAP_FAST_SESSION_PROPAGATE)!=0);
+
+	// whether the client gets the 8i client's wire shapes.  ojdbc14 10.2
+	// sends logon types 0x00 and field version 3 in a 29 byte compile caps
+	// array (MEASURED, packet [0009] of test/protocol/oracle/samples/
+	// 10545-dev-ojdbc14-login-select1-realserver-oracle102 and -oracle122).
+	// the rule itself is INFERRED: it is the narrowest test that takes in
+	// ojdbc14 and no other client on file - 9i and OCI7 clients send 0x05,
+	// 10.2 and later OCI 0x0d and up, ojdbc8 and the thin drivers field
+	// version 6 and up.  an array long enough to carry the field version
+	// carries the logon types too, so a 0 here was really sent
+	client8i=(compilecapssize>CCAP_FIELD_VERSION &&
+			!(clientlogontypes&(CCAP_LEGACY_LOGONS|CCAP_O5LOGON)) &&
+			clientfieldversion<CCAP_FIELD_VERSION_10_2);
 
 	// the db time zone group, there only if the client asked for it
 	clientwantsdbtimezone=(runtimecapssize>RCAP_DB_TIMEZONE &&
@@ -6991,6 +7036,7 @@ bool sqlrprotocol_oracle::recvDataTypeRequest() {
 		debugHexDump(runtimecaps,runtimecapssize);
 		debugWrite("client field version: %d",clientfieldversion);
 		debugWrite("negotiated field version: %d",fieldversion);
+		debugWrite("8i client: %s",(client8i)?"true":"false");
 		debugWrite("big chunks: %s",(bigchunks)?"true":"false");
 		debugWrite("local datetimes: %s",
 					(localdatetimes)?"true":"false");
@@ -8704,21 +8750,22 @@ void sqlrprotocol_oracle::putAuthExtra(stringbuffer *extra, bool secondphase) {
 	// sqlroraclecredentials has 5 fields and o5logon needs 8.  the
 	// contract is documented at the top of src/auths/oracle_userlist.cpp.
 	bool	pbkdf2=(verifiertype==VERIFIER_TYPE_12C);
-	bool	o3logon=isO3Logon();
+	bool	o3logon=usesO3LogonMethod();
 
 	debugStart("auth extra (phase %d)",(secondphase)?2:1);
 	debugWrite("field count: %d",(o3logon)?((secondphase)?4:1):
 			((secondphase)?((pbkdf2)?7:5):((pbkdf2)?3:2)));
 
 	// the verifier type is how the auth module is told which o3logon
-	// verifier to run, 9i or 10g
+	// verifier to run, 8i, 9i or 10g
 	extra->append("verifiertype=")->append(verifiertype);
 	debugWrite("verifiertype: %d",verifiertype);
 
-	// o3logon has no verifier salt and no client session key.  all it
-	// needs back at verify time is the challenge the module sent, and the
-	// logon types it advertised and the client's, which decide which half
-	// of the 10g session key the client encrypts the password under
+	// o3logon, the 8i verifier's included, has no verifier salt and no
+	// client session key.  all it needs back at verify time is the
+	// challenge the module sent, and the logon types it advertised and the
+	// client's, which decide which half of the 10g session key the client
+	// encrypts the password under
 	if (o3logon) {
 		if (secondphase) {
 			extra->append(";serverauthsesskey=")->
@@ -9413,6 +9460,26 @@ bool sqlrprotocol_oracle::recvAuthenticationRequest(bool secondphase) {
 		return false;
 	}
 
+	// ojdbc14 10.2 sends a version call between the data type negotiation
+	// and its login, and drops the connection if it isn't answered.  a real
+	// server answers it ahead of any allowedlogonversion refusal (MEASURED,
+	// packets [0011] and [0012] of test/protocol/oracle/samples/
+	// 10545-dev-ojdbc14-login-select1-realserver-oracle102, -oracle122 and
+	// -oracle122-allowed9).  only an 8i client's first one is answered, in
+	// phase one - for any other client a version call here still ends the
+	// login
+	if (!secondphase && client8i &&
+			!preloginversionanswered && *rp==TTI_VERSION) {
+		read(rp,&ttifunction,&rp);
+		debugWrite("pre-login version call");
+		debugTtiFunction(ttifunction);
+		preloginversionanswered=true;
+		if (!version(rp,true)) {
+			return false;
+		}
+		return recvAuthenticationRequest(false);
+	}
+
 	if (!secondphase) {
 		if (!read(rp,&ttifunction,"ttifunction",
 				TTI_LOGON_PRESENT_USER_REQ_AUTH_SESSKEY,&rp) &&
@@ -9443,7 +9510,12 @@ bool sqlrprotocol_oracle::recvAuthenticationRequest(bool secondphase) {
 	callnumber=seqnumber;
 
 	// an o3logon login's argument block is positional, so it gets its own
-	// parse
+	// parse.  an 8i verifier login is laid out like any tagged one, and
+	// takes the parse below: ojdbc14's 0x76 and 0x73 send the user name raw
+	// and the usual pairs (MEASURED, packets [0013] and [0015] of
+	// test/protocol/oracle/samples/
+	// 10545-dev-ojdbc14-login-select1-realserver-oracle122), and its
+	// AUTH_COPYRIGHT's newlines are what the positional parse can't read
 	if (isO3Logon()) {
 
 		debugStart("o3logon request (phase %d)",(secondphase)?2:1);
@@ -9625,8 +9697,23 @@ void sqlrprotocol_oracle::chooseVerifierType() {
 	// CCAP_O7LOGON, if the server version is new enough to have one, and
 	// the 11g verifier for any other.  see putTti6Response() for why the
 	// logon types the module advertises agree with this
+	//
+	// ahead of all of that, a tagged login whose logon types lack 0x01,
+	// 0x04 and 0x08 - the set allowedlogonversion 9 refuses - gets the 8i
+	// verifier, at every server version.  real 10.2, 11.2 and 12.2 servers
+	// all give ojdbc14, which sends 0x00, a 16 hex AUTH_SESSKEY (MEASURED,
+	// test/protocol/oracle/samples/10734-dev-ojdbc14-unknownuser-
+	// realserver-oracle102, -oracle112 and -oracle122).  that a byte with
+	// only 0x02 or 0x20 set gets it too is INFERRED - no such client
+	// exists.  a classic login with such a byte keeps the 9i verifier, and
+	// so does a client whose compile caps array is too short to carry the
+	// byte at all, since its 0 is a default, not an advertisement - what
+	// a real server gives that client is unmeasured
 	bool	o5logonclient=((clientlogontypes&CCAP_O5LOGON)!=0);
-	if (classiclogon || !o5logonclient ||
+	if (!classiclogon && clientsentlogontypes &&
+		!(clientlogontypes&(CCAP_LEGACY_LOGONS|CCAP_O5LOGON))) {
+		verifiertype=VERIFIER_TYPE_8I;
+	} else if (classiclogon || !o5logonclient ||
 			serverfieldversion==CCAP_FIELD_VERSION_10_2) {
 		verifiertype=(o5logonclient)?VERIFIER_TYPE_10G:
 						VERIFIER_TYPE_9I;
@@ -9650,6 +9737,11 @@ void sqlrprotocol_oracle::chooseVerifierType() {
 	// ENCODING_MULTI_BYTE alone but still sends and reads this text as
 	// clrs.  the version banner is the exception, and follows the flag for
 	// every client - see sendVersionResponse().
+	//
+	// the 8i verifier isn't o3logon on the wire, so it gets the modern
+	// values of this and the three settings below, the same as any other
+	// ojdbc.  that they suit ojdbc14's calls after its login is INFERRED -
+	// only its login and logoff are covered
 	rawtextargs=(isO3Logon() && !(encodingflags&ENCODING_CONV_LENGTH));
 
 	// whether the oci7 status and summary objects carry the end to end
@@ -9681,6 +9773,7 @@ void sqlrprotocol_oracle::chooseVerifierType() {
 	debugWrite("client logon types: 0x%02x",clientlogontypes);
 	debugWrite("client fast session propagate: %s",
 			(clientfastsessionpropagate)?"true":"false");
+	debugWrite("8i client: %s",(client8i)?"true":"false");
 	debugWrite("verifier type: 0x%04x",verifiertype);
 	debugWrite("allowed by allowedlogonversion: %s",
 				(logonVersionAllowed())?"yes":"no");
@@ -9700,6 +9793,14 @@ bool sqlrprotocol_oracle::isO3Logon() {
 			(verifiertype==VERIFIER_TYPE_10G && classiclogon));
 }
 
+bool sqlrprotocol_oracle::usesO3LogonMethod() {
+	return (isO3Logon() || verifiertype==VERIFIER_TYPE_8I);
+}
+
+bool sqlrprotocol_oracle::use8iObjects() {
+	return (client8i && verifiertype==VERIFIER_TYPE_8I);
+}
+
 bool sqlrprotocol_oracle::logonVersionAllowed() {
 
 	// a real 12.2 server's SQLNET.ALLOWED_LOGON_VERSION_SERVER refuses a
@@ -9713,8 +9814,9 @@ bool sqlrprotocol_oracle::logonVersionAllowed() {
 	// a classic login that gets through at 12 or 12a still fails, in phase
 	// two, with the same ORA-01017 a wrong password gets, whatever the
 	// verifier and the password - see barredlogon.  a tagged login is also
-	// refused here when its verifier is one the floor bars, which no real
-	// server measured picks for a client that passes the bits
+	// refused here when its verifier is one the floor bars - any of the
+	// des ones at 12 - which no real server measured picks for a client
+	// that passes the bits
 	switch (allowedlogonversion) {
 		case ORACLELOGONVERSION_9:
 			return ((clientlogontypes&
@@ -9725,7 +9827,8 @@ bool sqlrprotocol_oracle::logonVersionAllowed() {
 		case ORACLELOGONVERSION_12:
 			return ((clientlogontypes&CCAP_O5LOGON_NP)!=0 &&
 				(classiclogon ||
-				(verifiertype!=VERIFIER_TYPE_9I &&
+				(verifiertype!=VERIFIER_TYPE_8I &&
+				verifiertype!=VERIFIER_TYPE_9I &&
 				verifiertype!=VERIFIER_TYPE_10G)));
 		case ORACLELOGONVERSION_12A:
 			return ((classiclogon)?
@@ -9756,15 +9859,16 @@ bool sqlrprotocol_oracle::sendAuthenticationChallenge() {
 	bool	pbkdf2=(verifiertype==VERIFIER_TYPE_12C);
 	bool	o3logon=isO3Logon();
 	bool	des10g=(verifiertype==VERIFIER_TYPE_10G);
+	bool	des8i=(verifiertype==VERIFIER_TYPE_8I);
 
 	// a real server's AUTH_VFR_DATA is the user's stored verifier salt.
 	// SQL Relay has none, so it generates a fresh one per login.
-	// the 9i and 10g verifiers have no verifier salt at all - the session
-	// key is encrypted under the account's des password hash, which is its
-	// own salt.  so o3logon sends no AUTH_VFR_DATA, and a tagged 10g login
-	// sends an empty one.
+	// the 8i, 9i and 10g verifiers have no verifier salt at all - the
+	// session key is encrypted under the account's des password hash,
+	// which is its own salt.  so o3logon and the 8i verifier send no
+	// AUTH_VFR_DATA, and a tagged 10g login sends an empty one.
 	delete[] authvfrdata;
-	authvfrdata=(o3logon)?NULL:
+	authvfrdata=(o3logon || des8i)?NULL:
 			((des10g)?charstring::duplicate(""):
 			generateHex((pbkdf2)?VFR_DATA_SIZE_12C:
 						VFR_DATA_SIZE_11G));
@@ -9777,7 +9881,7 @@ bool sqlrprotocol_oracle::sendAuthenticationChallenge() {
 
 	sqlroraclecredentials	cred;
 	cred.setUser(username);
-	cred.setMethod((o3logon)?"O3LOGON":"O5LOGON");
+	cred.setMethod((usesO3LogonMethod())?"O3LOGON":"O5LOGON");
 	cred.setExtra(extra.getString());
 
 	// a false return means no auth module knows the user, or has its
@@ -9791,11 +9895,15 @@ bool sqlrprotocol_oracle::sendAuthenticationChallenge() {
 	if (fabricatedchallenge) {
 		debugWrite("challenge failed, fabricating one");
 		// the size the real one would have been, or an unknown user
-		// looks different from a wrong password
-		char	*fake=generateHex((des10g)?SESSION_KEY_SIZE_10G:
+		// looks different from a wrong password.  real servers give an
+		// unknown 8i user a 16 hex key and the same 65 byte challenge
+		// (MEASURED, test/protocol/oracle/samples/10734-dev-ojdbc14-
+		// unknownuser-realserver-oracle102, -oracle112 and -oracle122)
+		char	*fake=generateHex((des8i)?SESSION_KEY_SIZE_8I:
+					((des10g)?SESSION_KEY_SIZE_10G:
 					((o3logon)?SESSION_KEY_SIZE_9I:
 					((pbkdf2)?SESSION_KEY_SIZE_12C:
-					SESSION_KEY_SIZE_11G)));
+					SESSION_KEY_SIZE_11G))));
 		challenge.append(fake);
 		delete[] fake;
 	}
@@ -9815,9 +9923,9 @@ bool sqlrprotocol_oracle::sendAuthenticationChallenge() {
 	debugWrite("data flags: 0x%04x",dataflags);
 	debugTtcCode(ttccode);
 	debugWrite("verifier type: %d (%s)",verifiertype,
-			(des10g)?"10g":((o3logon)?"9i":
-			((pbkdf2)?"12c":"11g")));
-	if (!o3logon) {
+			(des8i)?"8i":((des10g)?"10g":((o3logon)?"9i":
+			((pbkdf2)?"12c":"11g"))));
+	if (!o3logon && !des8i) {
 		debugWrite("authvfrdata: %s",authvfrdata);
 	}
 	if (pbkdf2) {
@@ -9828,6 +9936,19 @@ bool sqlrprotocol_oracle::sendAuthenticationChallenge() {
 			(fabricatedchallenge)?"yes":"no");
 	debugWrite("barred by allowedlogonversion: %s",
 			(barredlogon)?"yes":"no");
+
+	// the 8i verifier's challenge is the AUTH_SESSKEY pair alone, then the
+	// trailer.  ojdbc14 requires the key to be exactly 16 hex and gets
+	// 65 bytes from real servers, the trailer being 04 01 02 and 22 zeros
+	// (MEASURED, packet [0014] of test/protocol/oracle/samples/
+	// 10545-dev-ojdbc14-login-select1-realserver-oracle102 and -oracle122)
+	if (des8i) {
+		putAuthCount(1,2);
+		putAuthField("AUTH_SESSKEY",serverauthsesskey);
+		putAuthTrailer(false);
+		debugEnd();
+		return sendPacket(true);
+	}
 
 	// o3logon answers the session key challenge in one of two shapes,
 	// depending on which login format the client used in phase one: a
@@ -9927,6 +10048,29 @@ void sqlrprotocol_oracle::putAuthTrailer(bool secondphase) {
 	debugWrite("encoding: %s",(nativeencoding)?"native":"portable");
 	debugWrite("end to end: %d",phase);
 	debugWrite("call number: %d",callnumber);
+
+	// an 8i client's trailer has no end of call status and stops at the
+	// success iterations: the end to end field, 19 zero fields, the call
+	// number, a pad and the success iterations - 25 bytes, 04 01 02 and 22
+	// zeros in the challenge and 04 01 03 and 22 zeros in the login answer
+	// (MEASURED, packets [0014] and [0016] of test/protocol/oracle/samples/
+	// 10545-dev-ojdbc14-login-select1-realserver-oracle102 and -oracle122,
+	// whose call number is 0 because ojdbc14 sends sequence 0 on every
+	// call).  ojdbc14 at field version 3 gets no summary extension, but it
+	// is owed as for any portable object
+	if (use8iObjects() && !nativeencoding) {
+		static const byte_t	beforecallnumber8i[19]={0};
+		static const byte_t	aftercallnumber8i[2]={0};
+		debugWrite("8i client");
+		write(&reqpacket,(byte_t)TTC_ERROR);
+		writeLenPreInt(&reqpacket,(uint32_t)phase);
+		reqpacket.append(beforecallnumber8i,sizeof(beforecallnumber8i));
+		write(&reqpacket,callnumber);
+		reqpacket.append(aftercallnumber8i,sizeof(aftercallnumber8i));
+		putSummaryExtension(0,0);
+		debugEnd();
+		return;
+	}
 
 	// the portable trailer is a summary object, the fields putSummary()
 	// writes.  everything but the end of call status, the end to end field
@@ -10496,6 +10640,7 @@ bool sqlrprotocol_oracle::sendAuthenticationResponse() {
 	}
 
 	bool	o3logon=isO3Logon();
+	bool	des8i=(verifiertype==VERIFIER_TYPE_8I);
 
 	stringbuffer	extra;
 	putAuthExtra(&extra,true);
@@ -10504,7 +10649,7 @@ bool sqlrprotocol_oracle::sendAuthenticationResponse() {
 	cred.setUser(username);
 	cred.setPassword(authpassword);
 	cred.setPasswordSize(charstring::getLength(authpassword));
-	cred.setMethod((o3logon)?"O3LOGON":"O5LOGON");
+	cred.setMethod((usesO3LogonMethod())?"O3LOGON":"O5LOGON");
 	cred.setExtra(extra.getString());
 
 	if (!cont->auth(&cred)) {
@@ -10528,16 +10673,19 @@ bool sqlrprotocol_oracle::sendAuthenticationResponse() {
 	// AUTH_SVR_RESPONSE proves to the client that the server knew the
 	// password too, and a real client refuses the login without it.  the
 	// combo key it's built from lives in the auth module, so it comes back
-	// through challenge() under a second method name.
-	cred.setMethod("O5LOGON-SERVER-RESPONSE");
+	// through challenge() under a second method name.  the 8i verifier has
+	// none - see below
 	stringbuffer	svrresponse;
-	if (!cont->challenge(&cred,&svrresponse)) {
-		debugWrite("server response failed");
-		return sendAuthenticationError(
-				ORA_INVALID_USERNAME_PASSWORD,
-				"ORA-01017: invalid username/password; "
-				"logon denied\n",
-				true);
+	if (!des8i) {
+		cred.setMethod("O5LOGON-SERVER-RESPONSE");
+		if (!cont->challenge(&cred,&svrresponse)) {
+			debugWrite("server response failed");
+			return sendAuthenticationError(
+					ORA_INVALID_USERNAME_PASSWORD,
+					"ORA-01017: invalid username/password; "
+					"logon denied\n",
+					true);
+		}
 	}
 
 	resetSendPacketBuffer(PACKET_DATA);
@@ -10557,7 +10705,14 @@ bool sqlrprotocol_oracle::sendAuthenticationResponse() {
 
 	// a real server sends 39 to 44 pairs here, mostly nls settings.  only
 	// AUTH_SVR_RESPONSE is known to be required.
-	putAuthCount(10,2);
+	//
+	// an 8i client gets no AUTH_SVR_RESPONSE: real servers answer ojdbc14
+	// with 34 or 36 pairs and none of them is that one (MEASURED, packet
+	// [0016] of test/protocol/oracle/samples/
+	// 10545-dev-ojdbc14-login-select1-realserver-oracle102 and
+	// -oracle122).  that the remaining 9 are enough is INFERRED - ojdbc14
+	// stores whatever pairs it gets and requires none of them
+	putAuthCount((des8i)?9:10,2);
 
 	// what both live servers send here
 	putAuthField("AUTH_VERSION_STRING","- 64bit Production");
@@ -10576,7 +10731,9 @@ bool sqlrprotocol_oracle::sendAuthenticationResponse() {
 	putAuthField("AUTH_CAPABILITY_TABLE","");
 	putAuthField("AUTH_SESSION_ID","9");
 	putAuthField("AUTH_SERIAL_NUM","1981");
-	putAuthField("AUTH_SVR_RESPONSE",svrresponse.getString());
+	if (!des8i) {
+		putAuthField("AUTH_SVR_RESPONSE",svrresponse.getString());
+	}
 
 	// python-oracledb thin sizes its cursor-close array from this value,
 	// so it has to match what this connection can actually serve, not
@@ -10687,8 +10844,9 @@ bool sqlrprotocol_oracle::sendErrorPacket(const char *what,
 	//
 	// what goes out instead is a summary object with a login's field
 	// values in it.  an o3logon client without the end to end field (see
-	// oci7endtoendseqnumber) gets putOci7Summary()'s, everybody else gets
-	// putSummary()'s.  the two differ by one field - putSummary() has a
+	// oci7endtoendseqnumber) gets putOci7Summary()'s, an 8i client gets a
+	// shorter one of its own, everybody else gets putSummary()'s.  the
+	// first and the last differ by one field - putSummary() has a
 	// zero between the end of call status and the rows processed count,
 	// so the ora number lands one field later - and a client told the
 	// wrong one reads the ora number's length prefix as a field of its
@@ -10752,6 +10910,36 @@ bool sqlrprotocol_oracle::sendErrorPacket(const char *what,
 
 		// the end to end field is 0 in every real login error
 		putNativeSummary(0,oranum,statementtype);
+	} else if (use8iObjects()) {
+
+		// an 8i client's object has no end of call status and stops at
+		// the success iterations: the end to end field, the rows
+		// processed count, the ora number, then 20 bytes with the
+		// statement type and the call number partway through.
+		// MEASURED byte for byte, 74 bytes with the ttc code for
+		// ORA-28040 (packet [0017] of test/protocol/oracle/samples/
+		// 10545-dev-ojdbc14-login-select1-realserver-oracle122-
+		// allowed9) and 78 for ORA-01017, with statement type 0 from
+		// 10.2 and 11.2 servers (10734-dev-ojdbc14-unknownuser-
+		// realserver-oracle102 and -oracle112, 10734-dev-ojdbc14-
+		// wrongpassword-realserver-oracle102) and 2 from a 12c one
+		// (10734-dev-ojdbc14-unknownuser-realserver-oracle122).
+		// ORA-01005 in this shape is INFERRED - ojdbc14 never sent an
+		// empty password on file
+		static const byte_t	aftercallnumber8i[]={
+			0x00, 0x00
+		};
+		debugWrite("8i client");
+		writeLenPreInt(&reqpacket,(uint32_t)0);
+		writeLenPreInt(&reqpacket,(uint32_t)0);
+		writeLenPreInt(&reqpacket,oranum);
+		reqpacket.append(beforestatementtype,
+					sizeof(beforestatementtype));
+		write(&reqpacket,statementtype);
+		reqpacket.append(beforecallnumber,sizeof(beforecallnumber));
+		write(&reqpacket,callnumber);
+		reqpacket.append(aftercallnumber8i,sizeof(aftercallnumber8i));
+		putSummaryExtension(oranum,0);
 	} else if (isO3Logon() && !oci7endtoendseqnumber) {
 
 		// the modern branch below is this one plus the end to end
@@ -25233,14 +25421,32 @@ bool sqlrprotocol_oracle::sendDisconnectResponse() {
 	// a client that expects the field takes the branch that sends it
 	bool	oci7=(isO3Logon() && !oci7endtoendseqnumber);
 
+	// the 8i shape is portable only, like the 8i login trailer.  ojdbc14
+	// never goes native, and a native 8i client is hypothetical
+	bool	logoff8i=(use8iObjects() && !nativeencoding);
+
 	debugStart("disconnect response");
 	debugWrite("data flags: 0x%04x",dataflags);
 	debugTtcCode(ttccode);
-	debugWrite("call status: %d",logoffcallstatus);
+	if (!logoff8i) {
+		debugWrite("call status: %d",logoffcallstatus);
+	}
 
 	writeBE(&reqpacket,dataflags);
 	write(&reqpacket,ttccode);
-	if (oci7) {
+	if (logoff8i) {
+
+		// an 8i client gets the end-to-end sequence number alone, with
+		// no call status in front of it: "00 00 09 00" after a bare
+		// logoff and after a cursor close plus logoff alike (MEASURED,
+		// packet [0018] of test/protocol/oracle/samples/
+		// 10734-dev-ojdbc14-login-version-realserver-oracle102 and
+		// -oracle122, packet [0022] of 10545-dev-ojdbc14-login-
+		// select1-realserver-oracle102 and -oracle122)
+		debugWrite("8i client");
+		writeLenPreInt(&reqpacket,endtoendseqnumber);
+		debugWrite("end to end seq number: %d",endtoendseqnumber);
+	} else if (oci7) {
 		putAuthCount(logoffcallstatus,4);
 	} else {
 		writeLenPreInt(&reqpacket,logoffcallstatus);
@@ -25966,6 +26172,31 @@ bool sqlrprotocol_oracle::sendVersionResponse(uint32_t bufferlength) {
 	bool		sendendtoendseqnumber=(!isO3Logon() ||
 							oci7endtoendseqnumber);
 
+	// an 8i client gets the end-to-end sequence number alone, 0, with no
+	// call status in front of it: "09 00" from real 10.2, 11.2 and 12.2
+	// servers alike (MEASURED, packet [0012] of test/protocol/oracle/
+	// samples/10545-dev-ojdbc14-login-select1-realserver-oracle102 and
+	// -oracle122, 10734-dev-ojdbc14-unknownuser-realserver-oracle112).
+	// that is its version call ahead of the login, where no verifier has
+	// been picked yet but no classic login has started either, so this
+	// takes in that call and any after a tagged login.  ojdbc14 makes none
+	// after its login, so the answer to one is INFERRED.
+	//
+	// the banner stays the module's own.  real 11.2 and 12.2 servers tell
+	// ojdbc14 "11.1.0.0.0" here instead, but ojdbc14 only compares the
+	// version with thresholds of 10.2 and below, which every server version
+	// the module runs at meets, so it should take the same code paths
+	// either way - INFERRED
+	//
+	// the 8i shape is portable only, like the 8i login trailer.  the
+	// encoding isn't known yet ahead of a login, so that call always gets
+	// it, and ojdbc14 never goes native after one either
+	bool		status8i=(client8i && !classiclogon && !nativeencoding);
+	if (status8i) {
+		sendendtoendseqnumber=true;
+		endtoendseqnumber=0;
+	}
+
 	// don't overrun the buffer the client passed in
 	uint32_t	bannerlength=
 			(uint32_t)charstring::getLength(serverversionbanner);
@@ -26001,7 +26232,9 @@ bool sqlrprotocol_oracle::sendVersionResponse(uint32_t bufferlength) {
 	}
 	writeLenPreInt(&reqpacket,serverversionpacked);
 	write(&reqpacket,statusttccode);
-	writeLenPreInt(&reqpacket,versioncallstatus);
+	if (!status8i) {
+		writeLenPreInt(&reqpacket,versioncallstatus);
+	}
 	if (sendendtoendseqnumber) {
 		writeLenPreInt(&reqpacket,endtoendseqnumber);
 	}
@@ -26013,7 +26246,11 @@ bool sqlrprotocol_oracle::sendVersionResponse(uint32_t bufferlength) {
 	debugWrite("%s",serverversionbanner);
 	debugWrite("packed version: 0x%08x",serverversionpacked);
 	debugTtcCode(statusttccode);
-	debugWrite("call status: %d",versioncallstatus);
+	if (status8i) {
+		debugWrite("8i client");
+	} else {
+		debugWrite("call status: %d",versioncallstatus);
+	}
 	if (sendendtoendseqnumber) {
 		debugWrite("end to end seq number: %d",endtoendseqnumber);
 	}

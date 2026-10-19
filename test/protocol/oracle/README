@@ -273,16 +273,15 @@ classic login is the 0x52 call and the 0x51 that answers the challenge, as
 the client sent them ([0011] and [0013] of 10545-fedora9x86-oci10-olog-
 sdu8192-correctpassword-sqlrelay121-before). Nothing is asserted for what
 no real server was measured doing: the classic login of the 0x00 and 0x05
-clients, the 0x00 client's verifier (a real server gives it a 16 hex
-character DES exchange where the module sends the 9i one) and its ORA-28040
-object, the 0x0f classic challenge (a real server makes its key 96 hex
+clients, the 0x0f classic challenge (a real server makes its key 96 hex
 characters and the module 64), the fixed width error objects of the
 classic login, and which legacy bit, 0x01 or 0x04, floor 9 looks at. The
-test cannot complete an ojdbc14 login, since ojdbc14 cannot log in to the
-module at all: it sends a bare TTI 0x3b version call ahead of its login that
-the module drops, at every ceiling and floor (#10734, 10545-dev-ojdbc14-
-correctpassword-sqlrelay121-allowed8). The module's answers to the genuine
-11.2 client are in the 10545-fedora10x86-oci11 captures, not in the test.
+0x00 client's verifier (the 8i one, a 16 hex AUTH_SESSKEY and a single DES
+AUTH_PASSWORD) and its ORA-28040 object are asserted since #10734, and the
+hand-built 0x00 rows expect them. Genuine ojdbc14 logs in to the module, so
+the rows are backed by sessions that play it whole (below). The module's
+answers to the genuine 11.2 client are in the 10545-fedora10x86-oci11
+captures, not in the test.
 The 0x0d client's tagged verifier at 12.1 is the module's too: a real 12.2
 server gives it the 10g one where the module gives it 11g, which the client
 completes.
@@ -311,6 +310,66 @@ oracleprotocolclient reads the field in the challenge and the refusal when
 its setOci1() byte has the bit, since a refusal with the field used to parse
 as a success. The sessions run once, at tns version 0x0139 and field
 version 4, and the -native run skips them.
+
+The portable run also plays genuine ojdbc14 10.2.0.5 whole (#10734), in 20
+sessions of their own, all portable, none in the -native run. Each sends
+ojdbc14's TNS version 0x0134, its 768 byte data type request (counted after
+the TTC type byte, as in the wiki; 771 body bytes with the data flags and the
+type byte, 779 in the TNS packet) (logon types 0x00, field version 3, CCAP_OCI1 0x90), the bare TTI 0x3b version call it
+sends ahead of its login, the 0x76 and 0x73 calls (the 141 byte phase one
+fields and 511 byte phase two tail copied from packets [0013] and [0015] of
+10545-dev-ojdbc14-login-select1-realserver-oracle122) and its logoff. The
+AUTH_PASSWORD is computed for each session from the AUTH_SESSKEY the
+listener sent (compute8iAuthPassword()), which first has to reproduce the
+AUTH_PASSWORD of five real logins from their AUTH_SESSKEY: the two
+10545-dev-ojdbc14-login-select1-realserver captures and three 10734 ones
+(unknownuser at oracle102, unknownuser-pw16 at oracle122 and wrongpassword
+at oracle102). The sessions are:
+* TESTUSER and testpassword at 12.1, 11.2 and 10.2, and testuser at the
+  connectstrings listener: the login completes
+* a wrong password at 12.1, 11.2 and 10.2, an unknown user at 12.1 and a 16
+  character wrong password at 12.1: the ORA-01017
+* floors 9, 11, 12 and 12a: the ORA-28040 refusal
+* six malformed AUTH_PASSWORD values, each sent with the right password
+  encrypted under the right session key and then spoiled, each expecting the
+  exact 78 byte ORA-01017: the pad digit replaced with 8, the pad digit one
+  short, no pad digit, a non-hex character, the hex two characters short (all
+  five at 12.1), and the pad digit one short again at the connectstrings
+  listener
+* a second pre-login 0x3b after the first is answered: the first answer is
+  checked and the connection must then be dropped without a reply
+Each login session checks, byte for byte against the real servers' packets
+(10545 and 10734 captures): the version answer, which ends in 09 00; the 65
+byte challenge, a 16 hex AUTH_SESSKEY and the 25 byte trailer 04 01 02 and 22
+zeros; the login answer, 9 pairs and the trailer 04 01 03 and 22 zeros; the
+78 byte ORA-01017 (statement type 2 from a 12.1 listener, 0 elsewhere); the
+74 byte ORA-28040; and the 09 00 that answers the logoff. The hand-built
+0x00 rows of the main table became 8i rows with those same answers, 8I and
+the challenge where they were 9I and admitted, and keep their floor
+refusals. The portable run and the -native run also send a pre-login 0x3b
+version call from the hand-built 0x00, 0x05 and 0x0f clients at 12.1 (none
+is an 8i client), each expecting the connection dropped without a reply
+within 10 seconds. Against the module before #10734 (a scratch build of
+HEAD's oracle.cpp) 44 checks fail, the 20 ojdbc14 sessions at the version
+call and 24 in the hand-built 0x00 rows, and the rest pass; against the new
+modules the portable run passes 2610 checks and the -native run 812, with 0
+failures in both. What is measured
+and what is inferred: the version answer, challenge, login trailer and both
+error objects are measured against real servers; the banner is the module's
+own at each ceiling, where real 11.2 and 12.2 servers send an 11.1 one, and
+the test cannot say whether ojdbc14 accepts it (it does, measured live: the
+10734-dev-ojdbc14-*-sqlrelay captures); the login answer carries the module's
+9 pairs, not the 34 or 36 a real server sends; and the refusal bytes at
+floors 11, 12 and 12a are the floor 9 capture's, inferred equal (only floor 9
+was captured on a real server). Only the module's own choice, with no real
+server measured: the ORA-01017 for each malformed AUTH_PASSWORD (ojdbc14 only
+ever sends the computed value), the drop of a second version call, and the
+drop of a version call from a client that is not an 8i one (HEAD's module
+dropped ojdbc14's the same way, which is measured, but no other client on
+file sends one).
+A successful login with an 8 or 16 character password needs users the test
+config lacks, so the 16 character case proves the refusal only; the live
+runs below cover the pad digits.
 
 Its -native run does the same in the native encoding for the tagged logins
 with the 10g and later verifiers, and runs twice: once with the client
@@ -6151,31 +6210,42 @@ that statement, except where noted.
     10545-dev-ojdbc14-correctpassword-sqlrelay121-allowed8.oraproxy
                                      the genuine ojdbc14 10.2.0.5 thin driver
                                       against sqlr-listener emulating 12.1 at
-                                      floor 8, after the fix. 12 packets, TNS
-                                      0x0134. After the data type negotiation
-                                      ([0009] and [0010]) the driver sends a
-                                      bare TTI 0x3b version call ([0011], 11
-                                      body bytes) ahead of its login, where
-                                      real oracle102 and oracle122 answer it
-                                      with their banner. The module's login
-                                      loop accepts only a login call, so it
-                                      sends nothing and the connection closes
-                                      ([0012] is the client's EOF). The driver
-                                      reports "No more data to read from
-                                      socket". No verifier is chosen and no
-                                      floor is tested: the run is the same at
-                                      every ceiling and floor measured (12.1
-                                      at floors 8 to 12a, 11.2 and 10.2 at
-                                      floor 8). ojdbc14 cannot log in to the
-                                      module at all (#10734)
+                                      floor 8, run against the module before
+                                      #10734. 12 packets, TNS 0x0134. After
+                                      the data type negotiation ([0009] and
+                                      [0010]) the driver sends a bare TTI 0x3b
+                                      version call ([0011], 11 body bytes)
+                                      ahead of its login, where real oracle102
+                                      and oracle122 answer it with their
+                                      banner. The module before #10734
+                                      accepted only a login call in its login
+                                      loop, so it sent nothing and the
+                                      connection closed ([0012] is the
+                                      client's EOF). The driver reported "No
+                                      more data to read from socket". No
+                                      verifier was chosen and no floor was
+                                      tested: the run was the same at every
+                                      ceiling and floor measured (12.1 at
+                                      floors 8 to 12a, 11.2 and 10.2 at floor
+                                      8). So before #10734 ojdbc14 could not
+                                      log in to the module at all. The module
+                                      now answers the 0x3b call and the driver
+                                      logs in at floor 8 (see 10734-dev-ojdbc14-
+                                      login-version-sqlrelay121 and its
+                                      -before, which is this run again)
+                                      (#10545, #10734)
 
     10545-dev-ojdbc14-correctpassword-sqlrelay121-allowed9.oraproxy
-                                     the same run at floor 9. Byte for byte
-                                      the same as the floor 8 capture: the
-                                      module never reaches its floor check, so
-                                      it sends no ORA-28040, where real
-                                      oracle122 at floor 9 refuses this client
-                                      with a readable one (#10734)
+                                     the same run at floor 9, against the
+                                      module before #10734. Byte for byte the
+                                      same as the floor 8 capture: that module
+                                      never reached its floor check, so it
+                                      sent no ORA-28040, where real oracle122
+                                      at floor 9 refuses this client with a
+                                      readable one. The module now sends that
+                                      refusal (see 10734-dev-ojdbc14-
+                                      correctpassword-sqlrelay121-allowed9 and
+                                      its -before) (#10545, #10734)
 
     10545-fedora9x86-oci10-oci8-sdu8192-ccap05-correctpassword-sqlrelay121.oraproxy
                                      the oci8 run with the logon types byte
@@ -6672,6 +6742,426 @@ that statement, except where noted.
                                       login and a select complete. The challenge
                                       is 85 body bytes with no field (#10735)
 
+    10734-dev-ojdbc14-login-version-realserver-oracle102.oraproxy
+                                     the genuine ojdbc14 10.2.0.5 thin driver
+                                      (the 10545 setup, a Conn14 program run on
+                                      OpenJDK 21) logging in as TESTUSER to the
+                                      real oracle102 server through oraproxy,
+                                      reading getDatabaseProductVersion() and
+                                      closing, with no query. 19 packets, TNS
+                                      0x0134. After the data type negotiation
+                                      the driver sends the bare TTI 0x3b
+                                      version call ([0011], 11 body bytes) and
+                                      the server answers it with its own
+                                      banner, 'Oracle Database 10g Enterprise
+                                      Edition Release 10.2.0.1.0' with the
+                                      options line (134 body bytes: TTC_OK, a 2
+                                      byte length, the raw banner, version
+                                      0x0a200100, then 09 00). Phase one is the
+                                      164 byte 0x76 and the challenge is one 16
+                                      hex AUTH_SESSKEY with the 25 byte trailer
+                                      04 01 02 and 22 zeros (65 body bytes).
+                                      The 0x73 carries a 33 hex AUTH_PASSWORD
+                                      with pad digit 4 (testpassword, 12
+                                      characters), the login answer has 34
+                                      pairs and no AUTH_SVR_RESPONSE and ends
+                                      in 04 01 03 and 22 zeros (1188 body
+                                      bytes), and the driver logs off with 09
+                                      00 and gets 09 00 back. Measured: the
+                                      pre-login 0x3b is answered, and the
+                                      exchange needs no 0x3b after the login
+                                      (#10734)
+
+    10734-dev-ojdbc14-login-version-realserver-oracle122.oraproxy
+                                     the same against the real oracle122 server
+                                      (floor 8). 19 packets. The 0x3b body is
+                                      the same bytes, and the answer is the 11g
+                                      compatibility banner 'Oracle Database 11g
+                                      Release 11.1.0.0.0 - Production' with
+                                      version 0x0b100000 (63 body bytes), not
+                                      the server's own 12.2, which only the
+                                      login answer's AUTH_VERSION_NO
+                                      (203424000, 12.2.0.1.0) shows. The
+                                      challenge, 0x73 and logoff have the same
+                                      shapes, and the login answer has 36 pairs
+                                      (#10734)
+
+    10734-dev-ojdbc14-login-select1-version-realserver-oracle102.oraproxy
+                                     the login-version run with select 1 from
+                                      dual before the version call, against
+                                      oracle102. 23 packets: after the login
+                                      answer [0016] the 66 byte 0x5e call, the
+                                      describe and row, the fetch with
+                                      ORA-01403 at the end, and the logoff in
+                                      one packet with the cursor close ahead of
+                                      it (the 0x11 call, then 03 09 00). No
+                                      0x3b follows the login, so
+                                      getDatabaseProductVersion() uses the
+                                      banner from before it. Measured; kept for
+                                      the 0x3b result and the cursor close,
+                                      which the login-version captures do not
+                                      show (#10734)
+
+    10734-dev-ojdbc14-login-select1-version-realserver-oracle122.oraproxy
+                                     the same against oracle122. 23 packets,
+                                      the 11.1 banner (63 body bytes), a 36
+                                      pair login answer, and the same logoff
+                                      shape. The row header flags byte is 0x22
+                                      where oracle102's is 0x02 (#10734)
+
+    10734-dev-ojdbc14-unknownuser-realserver-oracle102.oraproxy
+                                     the same driver with an unknown user,
+                                      NOSUCHUSER and the password whatever,
+                                      against oracle102. 20 packets. The server
+                                      issues a key and sends the challenge as
+                                      for a real user ([0014], 65 body bytes),
+                                      and the driver sends its 0x73 with a 17
+                                      hex AUTH_PASSWORD, pad digit 0 (8
+                                      characters, one block, no pad). The
+                                      server then sends BREAK and RESET in one
+                                      22 byte chunk ([0016] and [0017]), takes
+                                      the client's RESET ([0018]) and sends the
+                                      ORA-01017 as a TTC 0x04 error object of
+                                      78 bytes counting the 0x04 ([0019], 80
+                                      body bytes with the data flags), and the
+                                      client's EOF closes the run. The object
+                                      has statement type 0 (#10734)
+
+    10734-dev-ojdbc14-unknownuser-realserver-oracle112.oraproxy
+                                     the same against oracle112. 20 packets,
+                                      the 11.1 banner (63 body bytes) in place
+                                      of oracle102's own, and the ORA-01017
+                                      object byte for byte the same as
+                                      oracle102's (#10734)
+
+    10734-dev-ojdbc14-unknownuser-realserver-oracle122.oraproxy
+                                     the same against oracle122. 20 packets,
+                                      the 11.1 banner, and the ORA-01017 object
+                                      differs from the other two in one byte:
+                                      byte 9 of the object, the statement type,
+                                      is 0x02 where oracle102 and oracle112
+                                      send 0x00. The module's 12.1 object is
+                                      this one byte for byte (#10734)
+
+    10734-dev-ojdbc14-unknownuser-pw16-realserver-oracle122.oraproxy
+                                     an unknown user with a 16 character
+                                      password (abcdefghijklmnop) against
+                                      oracle122. 20 packets. AUTH_PASSWORD is
+                                      33 hex with pad digit 0: two full blocks
+                                      and no pad block. Together with the 8
+                                      character case this pins the digit as the
+                                      pad byte count, 0 when the length is a
+                                      multiple of 8 (#10734)
+
+    10734-dev-ojdbc14-wrongpassword-realserver-oracle102.oraproxy
+                                     the account dev with a wrong 13 character
+                                      password (wrongpassword) against
+                                      oracle102, the real server's refusal of a
+                                      user that exists. 20 packets, a 33 hex
+                                      AUTH_PASSWORD with pad digit 3 (13
+                                      characters) and the same ORA-01017 object
+                                      and BREAK, RESET and RESET sequence as
+                                      for an unknown user (#10734)
+
+    10734-dev-ojdbc14-login-version-sqlrelay121-before.oraproxy
+                                     the login-version run against the module
+                                      before #10734, at the 12.1 ceiling and
+                                      floor 8. 12 packets, the same as
+                                      10545-dev-ojdbc14-correctpassword-sqlrelay121-allowed8:
+                                      the driver sends the 0x3b call ([0011])
+                                      and the module sends nothing, so [0012]
+                                      is the client's EOF (#10734)
+
+    10734-dev-ojdbc14-login-version-sqlrelay121.oraproxy
+                                     the same run after #10734. 19 packets. The
+                                      module answers the 0x3b call with its own
+                                      12.1 banner (88 body bytes, ending 09
+                                      00), the challenge is one 16 hex
+                                      AUTH_SESSKEY and the 25 byte trailer (65
+                                      body bytes, as the real servers send),
+                                      the 0x73 is accepted, the login answer
+                                      has 9 pairs and no AUTH_SVR_RESPONSE (288
+                                      body bytes, ending in 04 01 03 and 22
+                                      zeros), and the logoff gets 09 00. The
+                                      driver logs in and closes cleanly
+                                      (#10734)
+
+    10734-dev-ojdbc14-login-version-sqlrelay112.oraproxy
+                                     the same against the 11.2 listener. 19
+                                      packets, 88 byte version answer with the
+                                      11.2 banner, the same challenge and login
+                                      answer (#10734)
+
+    10734-dev-ojdbc14-login-version-sqlrelay102.oraproxy
+                                     the same against the 10.2 listener. 19
+                                      packets, the 10.2 banner (#10734)
+
+    10734-dev-ojdbc14-login-version-metadata-sqlrelay121.oraproxy
+                                     the same with the Conn14 program's
+                                      metadata action. 19 packets, the same
+                                      sequence as login-version: it adds no
+                                      packet after the login (#10734)
+
+    10734-dev-ojdbc14-login-select1-sqlrelay121.oraproxy
+                                     login, then select 1 from dual, against
+                                      the 12.1 listener. 18 packets: the login
+                                      is as above and the driver sends its 66
+                                      byte 0x5e call ([0017]), which the
+                                      module's query parser does not read, so
+                                      it closes ([0018] is the client's EOF)
+                                      and the driver reports a dropped
+                                      connection. Not fixed by #10734;
+                                      follow-up #10745 (#10734)
+
+    10734-dev-ojdbc14-login-select1-sqlrelay112.oraproxy
+                                     the same against the 11.2 listener, 18
+                                      packets, the same drop (#10734)
+
+    10734-dev-ojdbc14-login-select1-sqlrelay102.oraproxy
+                                     the same against the 10.2 listener, 18
+                                      packets, the same drop (#10734)
+
+    10734-dev-ojdbc14-login-pw8-sqlrelay121.oraproxy
+                                     login and close (the login-version run) as
+                                      USER8, a scratch account whose password
+                                      has 8 characters, against the 12.1
+                                      listener. 19 packets, a 17 hex
+                                      AUTH_PASSWORD with pad digit 0, and the
+                                      login completes. The module checks one
+                                      block with no pad. The account is in the
+                                      scratch config of the live run, not in
+                                      the test config (#10734)
+
+    10734-dev-ojdbc14-login-pw8-sqlrelay112.oraproxy
+                                     the same against the 11.2 listener, 19
+                                      packets (#10734)
+
+    10734-dev-ojdbc14-login-pw8-sqlrelay102.oraproxy
+                                     the same against the 10.2 listener, 19
+                                      packets (#10734)
+
+    10734-dev-ojdbc14-login-pw7-sqlrelay121.oraproxy
+                                     the same as USER7 with a 7 character
+                                      password, 12.1 listener. 19 packets, 17
+                                      hex AUTH_PASSWORD, pad digit 1, and the
+                                      login completes (#10734)
+
+    10734-dev-ojdbc14-login-pw9-sqlrelay121.oraproxy
+                                     the same as USER9 with a 9 character
+                                      password, 12.1 listener. 19 packets, 33
+                                      hex, pad digit 7, and the login completes
+                                      (#10734)
+
+    10734-dev-ojdbc14-login-pw10-sqlrelay121.oraproxy
+                                     the same as USER10 with a 10 character
+                                      password, 12.1 listener. 19 packets, 33
+                                      hex, pad digit 6, and the login completes
+                                      (#10734)
+
+    10734-dev-ojdbc14-login-pw11-sqlrelay121.oraproxy
+                                     the same as USER11 with a 11 character
+                                      password, 12.1 listener. 19 packets, 33
+                                      hex, pad digit 5, and the login completes
+                                      (#10734)
+
+    10734-dev-ojdbc14-login-pw13-sqlrelay121.oraproxy
+                                     the same as USER13 with a 13 character
+                                      password, 12.1 listener. 19 packets, 33
+                                      hex, pad digit 3, and the login completes
+                                      (#10734)
+
+    10734-dev-ojdbc14-login-pw14-sqlrelay121.oraproxy
+                                     the same as USER14 with a 14 character
+                                      password, 12.1 listener. 19 packets, 33
+                                      hex, pad digit 2, and the login completes
+                                      (#10734)
+
+    10734-dev-ojdbc14-login-pw16-sqlrelay121.oraproxy
+                                     USER16, a 16 character password, 12.1
+                                      listener. 19 packets, a 33 hex
+                                      AUTH_PASSWORD with pad digit 0 (two
+                                      blocks, no pad block), and the login
+                                      completes (#10734)
+
+    10734-dev-ojdbc14-login-pw16-sqlrelay112.oraproxy
+                                     the same against the 11.2 listener, 19
+                                      packets (#10734)
+
+    10734-dev-ojdbc14-login-pw16-sqlrelay102.oraproxy
+                                     the same against the 10.2 listener, 19
+                                      packets (#10734)
+
+    10734-dev-ojdbc14-login-pw17-sqlrelay121.oraproxy
+                                     USER17, a 17 character password, 12.1
+                                      listener. 19 packets, a 49 hex
+                                      AUTH_PASSWORD (three blocks) with pad
+                                      digit 7, and the login completes. With
+                                      the 7 to 14 and 16 character runs these
+                                      show the driver's digit for every length
+                                      from 7 to 17 (7 to 14 give 1, 0, 7, 6, 5,
+                                      4, 3, 2; 16 gives 0; 17 gives 7): the pad
+                                      byte count. Real servers were captured
+                                      with 0, 3 and 4 only; that they take 1,
+                                      2, 5, 6 and 7 is inferred (#10734)
+
+    10734-dev-ojdbc14-unknownuser-sqlrelay121.oraproxy
+                                     NOSUCHUSER with the password whatever
+                                      against the 12.1 listener. 20 packets.
+                                      The module issues a fabricated 16 hex key
+                                      and the same challenge as for a real
+                                      user, takes the 17 hex 0x73, and answers
+                                      as the real servers do: BREAK and RESET
+                                      ([0016] and [0017]), the client's RESET,
+                                      and the ORA-01017 as a 78 byte object (80
+                                      body bytes) with statement type 2 at the
+                                      12.1 ceiling. The result is byte for byte
+                                      oracle122's [0019]. ORA-01005 is not
+                                      reached: the driver refuses an empty
+                                      password locally (#10734)
+
+    10734-dev-ojdbc14-unknownuser-sqlrelay112.oraproxy
+                                     the same against the 11.2 listener, 20
+                                      packets, statement type 0, [0019] byte
+                                      for byte oracle112's (#10734)
+
+    10734-dev-ojdbc14-unknownuser-sqlrelay102.oraproxy
+                                     the same against the 10.2 listener, 20
+                                      packets (#10734)
+
+    10734-dev-ojdbc14-wrongpassword-sqlrelay121.oraproxy
+                                     TESTUSER with a wrong 13 character
+                                      password against the 12.1 listener. 20
+                                      packets, a 33 hex AUTH_PASSWORD with pad
+                                      digit 3, and the same ORA-01017 as an
+                                      unknown user (#10734)
+
+    10734-dev-ojdbc14-wrongpassword-sqlrelay112.oraproxy
+                                     the same against the 11.2 listener, 20
+                                      packets (#10734)
+
+    10734-dev-ojdbc14-wrongpassword-sqlrelay102.oraproxy
+                                     the same against the 10.2 listener, 20
+                                      packets (#10734)
+
+    10734-dev-ojdbc14-connectstrings-login-version-sqlrelay121.oraproxy
+                                     login and close as DEV against a listener
+                                      that uses the oracle_connectstrings auth
+                                      module. 19 packets, the same exchange as
+                                      login-version-sqlrelay121: the module has
+                                      the same 8i challenge and check (#10734)
+
+    10734-dev-ojdbc14-connectstrings-wrongpassword-sqlrelay121.oraproxy
+                                     a wrong password for the same user against
+                                      the connectstrings listener. 20 packets,
+                                      the ORA-01017 as above (#10734)
+
+    10734-dev-ojdbc14-correctpassword-sqlrelay121-allowed9-before.oraproxy
+                                     the correct password at
+                                      allowedlogonversion 9, 12.1 ceiling,
+                                      against the module before #10734. 12
+                                      packets, byte for byte the floor 8 run:
+                                      the module never reaches its floor check
+                                      and the client's EOF is [0012] (#10734)
+
+    10734-dev-ojdbc14-correctpassword-sqlrelay121-allowed9.oraproxy
+                                     the same after #10734. 18 packets. The
+                                      0x3b call is answered (88 body bytes) and
+                                      the 0x76 is refused in phase one: BREAK
+                                      and RESET ([0014] and [0015]), the
+                                      client's RESET ([0016]) and ORA-28040 as
+                                      a 74 byte object (76 body bytes, [0017]),
+                                      as
+                                      10545-dev-ojdbc14-login-select1-realserver-oracle122-allowed9
+                                      has it. The driver reports a readable
+                                      ORA-28040, where the scratch proxy
+                                      experiment of #10545 had it throw a
+                                      NullPointerException on the old object.
+                                      [0017] is byte for byte the real server's
+                                      (#10734)
+
+    10734-dev-ojdbc14-correctpassword-sqlrelay121-allowed11.oraproxy
+                                     the same at floor 11. 18 packets, the same
+                                      refusal byte for byte as at floor 9,
+                                      which is the real floor 9 object: that
+                                      real servers send the same bytes at 11 is
+                                      inferred, since only floor 9 was captured
+                                      (#10734)
+
+    10734-dev-ojdbc14-correctpassword-sqlrelay121-allowed12.oraproxy
+                                     the same at floor 12. 18 packets, the same
+                                      refusal byte for byte as at floor 9,
+                                      which is the real floor 9 object: that
+                                      real servers send the same bytes at 12 is
+                                      inferred, since only floor 9 was captured
+                                      (#10734)
+
+    10734-dev-ojdbc14-correctpassword-sqlrelay121-allowed12a.oraproxy
+                                     the same at floor 12a. 18 packets, the
+                                      same refusal byte for byte as at floor 9,
+                                      which is the real floor 9 object: that
+                                      real servers send the same bytes at 12a
+                                      is inferred, since only floor 9 was
+                                      captured (#10734)
+
+    10734-dev-ojdbc23-login-select1-sqlrelay121.oraproxy
+                                     regression run: ojdbc8 23.26 (the file
+                                      name says ojdbc23), a later driver than
+                                      ojdbc14, logging in and running select 1
+                                      from dual against the 12.1 listener. 21
+                                      packets, the 12c verifier (0x4815, 64 hex
+                                      key) and the login and query complete.
+                                      Unchanged by #10734: the 8i verifier is
+                                      not chosen (#10734)
+
+    10734-dev-oci23-oci8-select-sqlrelay121.oraproxy
+                                     regression run: OCI 23 (logon types 0xef)
+                                      oci8 login and select against the 12.1
+                                      listener. 21 packets, the 12c verifier,
+                                      the login and query complete (#10734)
+
+    10734-dev-oci23-olog-select-sqlrelay121.oraproxy
+                                     regression run: OCI 23's olog form. 37
+                                      packets, the classic login and query
+                                      complete (#10734)
+
+    10734-fedora9x86-oci10-oci8-select-sqlrelay121.oraproxy
+                                     regression run: the genuine 10.2.0.5 OCI
+                                      client (logon types 0x0d, field version
+                                      4) on fedora9x86, oci8 form, login and
+                                      select against the 12.1 listener. 21
+                                      packets, the 11g verifier (0x1b25, 96 hex
+                                      key), the login and query complete.
+                                      Unchanged: the 8i gate (logon types
+                                      without the bits 0x01, 0x04 and 0x08 and
+                                      field version below 4) does not take it
+                                      (#10734)
+
+    10734-fedora9x86-oci10-olog-select-sqlrelay121.oraproxy
+                                     regression run: the 10.2.0.5 client's olog
+                                      form, classic login. 37 packets, the
+                                      login and query complete. oradecode
+                                      cannot read this challenge (it prints
+                                      'O3LOGON challenge decode failed ...
+                                      falling back to hex dump', as for the
+                                      other 10.2 olog captures) (#10734)
+
+    10734-redhat9x86-oci9-oci7-select-sqlrelay121.oraproxy
+                                     regression run: the genuine 9.2.0.4 OCI7
+                                      client (logon types 0x05, field version
+                                      2) on redhat9x86, login and select
+                                      against the 12.1 listener. 31 packets,
+                                      the 9i verifier (32 hex key), the 67 byte
+                                      challenge with no end to end field, the
+                                      login and query complete. Unchanged: the
+                                      9i client is not an 8i client (#10734)
+
+    10734-redhat9x86-oci9-sqlplus-select-sqlrelay121.oraproxy
+                                     regression run: the genuine 9.2.0.4
+                                      sqlplus, tagged login and select. 55
+                                      packets, a 32 hex key and the 85 byte
+                                      challenge, the login and query complete
+                                      (#10734)
+
 The genuine 10g OCI client and the logon version floors (#10545)
 ----------------------------------------------------------------
 
@@ -6729,8 +7219,8 @@ it: the tagged client gives up locally with ORA-28041 and never sends its
 0x73, and the classic client answers with a 64 hex password and gets
 ORA-01017. ojdbc14 (0x00) gets a 16 hex AUTH_SESSKEY, no AUTH_VFR_DATA and
 a 33 hex AUTH_PASSWORD from oracle102 and oracle122, an exchange older than
-the 9i one, and logs in. The module has no verifier for it, and ojdbc14
-cannot log in to the module at all (below).
+the 9i one, and logs in. The module had no verifier for it and ojdbc14 could
+not log in to it at all; since #10734 it has the 8i verifier (below).
 
 Real Oracle's floor, measured on oracle122 with a scratch listener at port
 1621 for each value of SQLNET.ALLOWED_LOGON_VERSION_SERVER. adm is a login
@@ -6806,30 +7296,30 @@ password):
     The differences that remain are the classic key (64 hex from the
     module, 96 from a real 12.2 server) and the error objects (82 and 86
     bytes from the module, 124 and 128 from the real server).
-* ojdbc14 10.2.0.5 (0x00, field version 3) fails at every ceiling and floor
-  with "No more data to read from socket" (12.1 at floors 8 to 12a, 11.2
-  and 10.2 at floor 8). After the data type negotiation it sends a bare TTI
-  0x3b version call, ahead of its 0x76 login, that both real servers
-  answer with their banner. The module's login loop accepts only a login
-  call ("bad ttifunction 0x3b, expected 0x76"), so it closes the
-  connection. No verifier is chosen and no floor is reached, so the floor 8
-  and floor 9 captures are byte for byte the same, where real Oracle logs
-  ojdbc14 in at floor 8 and refuses it at 9 and up (#10734).
-  Experiments through a scratch proxy that answered the 0x3b call itself
-  with real oracle102's reply, not checked in because the proxy changed
-  bytes, found the rest of the gap:
-  - the module sends a 32 hex key, and ojdbc14 rejects it ("Internal -
+* ojdbc14 10.2.0.5 (0x00, field version 3) failed at every ceiling and floor
+  with "No more data to read from socket" until #10734 (12.1 at floors 8 to
+  12a, 11.2 and 10.2 at floor 8). After the data type negotiation it sends a
+  bare TTI 0x3b version call, ahead of its 0x76 login, that both real
+  servers answer with their banner. The module's login loop accepted only a
+  login call ("bad ttifunction 0x3b, expected 0x76"), so it closed the
+  connection. No verifier was chosen and no floor was reached, so the floor
+  8 and floor 9 captures are byte for byte the same (10545-dev-ojdbc14-
+  correctpassword-sqlrelay121-allowed8 and -allowed9, and the -before
+  captures of #10734), where real Oracle logs ojdbc14 in at floor 8 and
+  refuses it at 9 and up. #10734 fixed it, as the next section describes:
+  it logs in and closes cleanly at floor 8 at all three ceilings and gets a
+  readable ORA-28040 at floors 9, 11, 12 and 12a. The first query still
+  fails (follow-up #10745).
+  Experiments through a scratch proxy before #10734 that answered the 0x3b
+  call itself with real oracle102's reply, not checked in because the proxy
+  changed bytes, found the rest of the gap, which #10734 closed:
+  - the module sent a 32 hex key, and ojdbc14 rejects it ("Internal -
     Unexpected value"); real servers send 16 hex
-  - with the key cut to 16 hex by the proxy, ojdbc14 sends its 0x73 and the
-    module cannot read it ("no string list found")
-  - at floor 9 the module's ORA-28040 makes ojdbc14 throw a
+  - with the key cut to 16 hex by the proxy, ojdbc14 sent its 0x73 and the
+    module could not read it ("no string list found")
+  - at floor 9 the module's ORA-28040 made ojdbc14 throw a
     NullPointerException: it cannot parse the error object of a field
     version 3 client
-  A fix needs a reply to the early 0x3b call, a pre-9i exchange with a
-  16 hex key and a check of the 33 hex password in both auth modules (the
-  algorithm is in no capture), a reader for the 0x73 call, and an error
-  object ojdbc14 can parse. Real Oracle refuses this client at floor 9
-  and up, so only floor 8 has to work.
 
 Two module bugs the 10.2 client found, both fixed:
 * The client asks for an SDU of 2048, so its 2300 byte data type request
@@ -6939,6 +7429,146 @@ and OCI 23 logins are unchanged (regression captures above). Not covered,
 and no genuine client is affected: for the modern 0x0d trailer real
 oracle102 also drops the field when the bit is clear (-ccap0d-cap16xef),
 where the module always sends it.
+
+ojdbc14 and the 8i verifier (#10734)
+------------------------------------
+
+The genuine ojdbc14 10.2.0.5 thin driver (logon types 0x00, field version 3)
+could not log in to the module at any ceiling or floor (#10545 step 10b).
+Since #10734 it logs in at floor 8 at 12.1, 11.2 and 10.2 and is refused
+with a readable ORA-28040 at floors 9, 11, 12 and 12a, as real oracle102 and
+oracle122 do. The first query still fails: the module's TTI_QUERY3 parser
+rejects ojdbc14's 66 byte 0x5e call and the connection drops (#10745, the
+10734-dev-ojdbc14-login-select1-sqlrelay* captures).
+
+The exchange, read off the 10545 and 10734 real server captures (oracle102,
+oracle112 and oracle122; every byte of each is accounted for). The values
+are the same at all three servers except where noted:
+* Pre-login. After the data type negotiation the driver sends a bare TTI
+  0x3b version call, 11 body bytes, before any login. A real server answers
+  it with TTC_OK, a 2 byte banner length, the raw banner, the packed version
+  and 09 00. oracle102 sends its own 10.2.0.1.0 banner (version 0x0a200100)
+  and oracle112 and oracle122 both send an 11.1.0.0.0 compatibility banner
+  (0x0b100000). The floor does not touch it: the refusal comes after the
+  0x76. No 0x3b follows the login.
+* Phase one. The 0x76 is the generic tagged layout with the user name raw
+  (no length byte) and five fields. ojdbc14 sends the name upper case when
+  it is unquoted, and every call carries sequence number 0.
+* The challenge is one AUTH_SESSKEY pair, 16 hex characters, and a 25 byte
+  trailer: 04 01 02 and 22 zeros. No AUTH_VFR_DATA. An unknown user gets
+  one too, and the driver sends its 0x73 as for a real user.
+* Phase two. The 0x73 carries AUTH_PASSWORD, AUTH_TERMINAL with no value
+  bytes, AUTH_PROGRAM_NM, AUTH_MACHINE, AUTH_PID, AUTH_ACL, AUTH_ALTER_SESSION
+  and AUTH_COPYRIGHT, the last two in chunks of up to 64 bytes. The copyright
+  text holds five 0x0a bytes, which is what made findO3LogonStrings() report
+  "no string list found" when it was fed this packet.
+* The login answer has 34 pairs from oracle102 and 36 from oracle122 (no
+  login is on file for oracle112, whose testuser is expired), no
+  AUTH_SVR_RESPONSE, and the trailer 04 01 03 and 22 zeros.
+  The driver needs none of the pairs.
+* Logoff. The 0x09 call is answered by 09 00. After a query the driver
+  sends the cursor close and the logoff in one packet, and with no cursor
+  just 03 09 00.
+* The error objects. ojdbc14's reader takes 23 fields with no end of call
+  status field, so the object is shorter than the module's other shapes. The
+  floor 9 ORA-28040 is a break, a reset, the client's reset and a 74 byte
+  object (76 body bytes), and the ORA-01017 for a wrong password or an
+  unknown user the same sequence with a 78 byte object (80 body bytes). The
+  ORA-01017 from oracle102 and oracle112 are byte for byte the same, and
+  oracle122's differs in one byte: the statement type is 2, not 0.
+
+The password exchange, reproduced exactly from the captures. H is the Oracle
+DES password hash of the upper cased user name and password, the value
+o3logonPasswordHash() already computes. The AUTH_SESSKEY is the 8 byte key K
+encrypted under H with DES in ECB mode (16 hex). AUTH_PASSWORD is the
+password, case kept and padded with zero bytes to a multiple of 8, DES-CBC
+encrypted under K with a zero IV, in hex, followed by one hex digit: the
+number of pad bytes. So it is 17, 33 or 49 hex characters for a password of
+up to 8, 16 or 24 characters. The digit is measured against ojdbc14 itself
+for every length from 7 to 14, 16 and 17: 7 gives 1, 8 gives 0, 9 gives 7,
+10 gives 6, 11 gives 5, 12 gives 4, 13 gives 3, 14 gives 2, 16 gives 0 and 17
+gives 7 (the 10734-dev-ojdbc14-login-pwN captures). A first reading of the
+captures could not tell the pad count from the length modulo 8 for a 12
+character password, where both are 4; the 13 character wrongpassword capture
+settled it (pad count 3, modulo 5). The real servers' captures cover 0 (8
+and 16 characters), 3 (13) and 4 (12). That a real server accepts digits 1,
+2, 5, 6 and 7 is inferred.
+
+What the module does. The module-internal verifier type VERIFIER_TYPE_8I
+(0x0800, passed to the auth modules as method O3LOGON with verifiertype=2048
+in src/auths/oracle_userlist.cpp and oracle_connectstrings.cpp, which hold
+o3logonDesChallenge() and o3logonDesVerify()) is chosen at every ceiling for
+a tagged 0x76 login whose logon types have none of 0x01, 0x04 and 0x08 and
+whose field version is below 4 (the client8i flag, set in
+recvDataTypeRequest()). That is the set of logon types that floor 9
+refuses, so floor 8, the default, is the only floor that serves it. A
+classic 0x52 login with logon types 0x00 keeps the 9i verifier. So does a client whose
+compile caps array is too short to carry the logon types byte (the byte is
+read as 0, which is also what ojdbc14 sends; unmeasured against a real
+server). The pre-login
+0x3b is answered once, in phase one, only for a client8i client, at every
+floor; any other client's 0x3b is still dropped. The version answer ends in
+09 00 and carries the module's own banner at each ceiling (12.1.0.2.0,
+11.2.0.1.0, 10.2.0.1.0: 88 body bytes), not the real servers' 11.1 one. The 8i
+version and logoff replies are portable encoding only. The
+challenge is the 65 byte one (a 16 hex key, also for an unknown user), the
+login answer is the module's 9 pairs without AUTH_SVR_RESPONSE and the
+25 byte trailer, and the refusal and wrong password objects are the 74 and
+78 byte ones (statement type 2 at the 12.1 ceiling, as oracle122). Floors
+9, 11, 12 and 12a refuse the client in phase one (logonVersionAllowed()
+already did; floor 12 also refuses the 8i verifier). The auth modules
+compare the password case sensitively with the stored one, so the upper case
+user name an unquoted ojdbc14 sends matches only an upper case entry, as for
+every client.
+
+Measured against the module with genuine ojdbc14 (private build tree
+instances, oracle122 as the backend; the 10734-dev-ojdbc14-*-sqlrelay
+captures): login with version and metadata and a clean close at 12.1, 11.2
+and 10.2 at floor 8, which shows the driver accepts the module's own banners
+and the 9 pair login answer; passwords of 7 to 14, 16 and 17 characters; a
+wrong password and an unknown user giving a readable ORA-01017 at all three
+ceilings; ORA-28040 at floors 9, 11, 12 and 12a with no NullPointerException,
+byte for byte the real oracle122 floor 9 object; and the connectstrings auth
+module doing the login and the wrong password. Regression runs
+(10734-*-select-sqlrelay121 and the ojdbc8 one): ojdbc8, OCI 23, the genuine
+10.2.0.5 OCI client (both forms) and the genuine 9.2.0.4 clients (oci7 and
+sqlplus) log in and select as before, and none is taken by the 8i gate.
+
+The tests. oracleverifiernegotiation plays ojdbc14 whole in 20 sessions
+(see its description above), and its hand-built 0x00 rows now expect the 8i
+verifier. It also checks that a pre-login version call from the hand-built
+0x00, 0x05 and 0x0f clients at 12.1 is dropped, in both encodings.
+
+Inferred, not measured:
+* the client8i gate as the rule (a field version below 4 with none of the
+  logon bits); the narrowest rule that covers ojdbc14 and no other client on
+  file. Keying on CCAP_END_OF_CALL_STATUS, the likely real rule, was not
+  tested
+* that a logon types byte with only 0x02 or 0x20 set gets the 8i verifier
+  (no such client exists)
+* the refusal bytes at floors 11, 12 and 12a being the floor 9 capture's
+* the pad digits 1, 2, 5, 6 and 7 being accepted by a real server
+* the classic 0x52 login with logon types 0x00 (no real server capture)
+* ORA-01005 for an empty password: ojdbc14 refuses an empty password
+  itself, so it cannot be reached
+* anything after the login: the post-login objects (23 fields, field
+  version 3) differ from the module's summary objects, and the first query
+  fails (#10745)
+
+Differences from a real server that remain, cosmetic: the break and the
+reset markers go out as two TCP segments (a real server sends one 22 byte
+chunk); the login answer has 9 pairs where real servers send 34 to 36; and
+the banner is the module's own. Security note: floor 8, the default, now
+serves single DES to a client that advertises no logon types, as real
+Oracle does; allowedlogonversion 9 or higher refuses it.
+
+oradecode prints "legacy call decode failed ... falling back to hex dump"
+for several of these captures. Its legacy call decode does not read the
+post-login messages and the 04 error objects of a field version 3 client,
+so the fallback is expected there, out of scope for #10734, and the run
+still ends cleanly; the
+10734-fedora9x86-oci10-olog-select-sqlrelay121 capture prints the same
+O3LOGON challenge decode failure as the other 10.2 olog captures.
 
 The v11 time zone file for the oci8 run
 ---------------------------------------

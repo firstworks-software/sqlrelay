@@ -3003,8 +3003,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   built itself with ORA-22275
 - fixed is open on a lob in a row, and a bfile locator built by the client,
   for Oracle 9i clients of the oracle protocol module
-- fixed genuine Oracle 10g OCI clients failing to log in to the oracle
-  protocol module
+- fixed genuine Oracle 10g OCI clients and the 10.2 thin JDBC driver
+  failing to log in to the oracle protocol module
 
 ### Security
 - fixed an authentication hole in the des password encryption module

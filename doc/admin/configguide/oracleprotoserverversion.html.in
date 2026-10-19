@@ -78,6 +78,16 @@ http://www.gnu.org/software/src-highlite -->
 </td>
   </tr>
   <tr>
+    <td>A tagged login that advertises no logon types at all, such as the one the genuine ojdbc14 10.2.0.5 driver sends
+</td>
+    <td>O3LOGON, single DES exchange
+</td>
+    <td>O3LOGON, single DES exchange
+</td>
+    <td>O3LOGON, single DES exchange
+</td>
+  </tr>
+  <tr>
     <td>An OCI7 interface call from a modern OCI client
 </td>
     <td>O3LOGON, 10g verifier
@@ -122,12 +132,12 @@ http://www.gnu.org/software/src-highlite -->
 <br/><p>Notes on the table:</p>
 
 <ul>
-  <li>A client older than Oracle 10g doesn't say that it supports O5LOGON, so it gets the 9i verifier.  So does any other client that doesn't say it.</li>
+  <li>A client older than Oracle 10g doesn't say that it supports O5LOGON, so it gets the 9i verifier.  So does any other client that doesn't say it, unless it sends a tagged login that advertises no logon types at all.  That login gets the single DES exchange, below.  A classic login that advertises no logon types keeps the 9i verifier.  No client is known to send one, so that case is untested.</li>
   <li>A modern OCI client can also use the old OCI7 call interface.  Its login call is a "classic" one, which has no O5LOGON form, so it gets O3LOGON, with the 10g verifier.</li>
   <li>A modern client gets 12c when the ceiling is 12.1 and the client says it supports 12c.  ojdbc copies the logon types the module advertises, so it asks for 12c at 12.1 and for 11g at 11.2.  OCI 23.26 always sends the same logon types, and gets the same result.  A client that doesn't support 12c gets 11g at both.</li>
   <li>A genuine Oracle 10g client says that it supports O5LOGON, but not the newer O5LOGON_NP or O7LOGON.  It gets the 11g verifier at 11.2 and 12.1, and completes it.  A real Oracle 11.2 server does the same for it, and a real 12.2 server gives it the 10g verifier instead.  The 10g client does not accept the 9i verifier.</li>
   <li>A genuine Oracle 11.2 client (11.2.0.3) also says that it supports O5LOGON and O5LOGON_NP, but not O7LOGON.  Its OCI8 calls get the 11g verifier at 11.2 and 12.1, and the 10g verifier at 10.2.  Its OCI7 calls get O3LOGON with the 10g verifier.  A real Oracle 12.2 server gives its OCI7 calls a longer session key than the module does.</li>
-  <li>The genuine ojdbc14 10.2 driver advertises no logon types at all, so it gets the 9i verifier.  A real Oracle server gives it a different exchange, with a shorter session key, and it logs in.  It does not log in to the module: it fails at every ceiling and floor with "No more data to read from socket".  See <a href="#oracleserverversionclients">Which Clients Work</a>.</li>
+  <li>The genuine ojdbc14 10.2.0.5 driver sends a tagged login that advertises no logon types at all, so it gets the single DES exchange, the oldest one the module offers.  The session key is 16 hex digits (8 bytes).  The client picks a random session key and sends the password DES encrypted under it.  The DES based password hash only protects that session key in AUTH_SESSKEY.  A real Oracle server gives it the same exchange.  The module logs it in at every ceiling, as long as <i>allowedlogonversion</i> is 8, the default.  At 9 and up the module refuses it.  That was tested with the genuine driver at 9, 11, 12 and 12a with the 12.1 ceiling, and a real Oracle server was seen to refuse it at 9.  A real server is expected to do the same at higher values, but that was not tested.  See <a href="#oracleserverversionclients">Which Clients Work</a> and <a href="#oracleallowedlogonversion">Allowed Logon Version</a>.</li>
   <li>Oracle 10.2 has no 11g or 12c verifier.  So at 10.2 a modern client gets O5LOGON with the 10g verifier, as it does from a real Oracle 10.2 server.</li>
   <li>The logon types the module advertises follow the ceiling: O7LOGON, the 12c bit, is in the list only at 12.1.</li>
 </ul>
@@ -210,13 +220,13 @@ http://www.gnu.org/software/src-highlite -->
 </td>
   </tr>
   <tr>
-    <td>ojdbc14 10.2 (the old thin driver)
+    <td>ojdbc14 10.2.0.5 (the old thin driver)
 </td>
-    <td>No
+    <td>Login only
 </td>
-    <td>No
+    <td>Login only
 </td>
-    <td>No
+    <td>Login only
 </td>
   </tr>
   <tr>
@@ -238,7 +248,7 @@ http://www.gnu.org/software/src-highlite -->
   <li>Modern clients that use the OCI7 call interface work at any ceiling.</li>
   <li>Genuine Oracle 10g OCI clients, 10.2.0.5, work at any ceiling, with both OCI8 and OCI7 calls.  Such a client asks for a session data unit of 2048, so it sends its data type request in two packets, and the module puts them back together.</li>
   <li>Genuine Oracle 11g OCI clients, 11.2.0.3, work at any ceiling, with both OCI8 and OCI7 calls.</li>
-  <li>ojdbc14 10.2.0.5, the old thin driver, does not work at any ceiling or with any <i>allowedlogonversion</i>.  It sends a version call ahead of its login that the module doesn't answer, so it fails with "No more data to read from socket".  A real Oracle server logs it in at the default floor of 8, and refuses it at 9 and up.  Newer ojdbc drivers, such as ojdbc8, work.</li>
+  <li>ojdbc14 10.2.0.5, the old thin driver, logs in at every ceiling (10.2, 11.2 and 12.1) when <i>allowedlogonversion</i> is 8, the default.  It is verified with the genuine ojdbc14 10.2.0.5.0 driver against all three ceilings: it logs in, reads the database version and metadata, and closes cleanly.  A wrong password or an unknown user gets a readable ORA-01017.  At <i>allowedlogonversion</i> 9 and up it gets a readable ORA-28040.  That was tested at 9, 11, 12 and 12a, and a real Oracle server gives it at 9.  Queries are not yet supported: its first query drops the connection.  Its user names are case sensitive here, as for every client, and ojdbc14 sends an unquoted user name in upper case, so the user in the configuration must be in upper case too.  Newer ojdbc drivers, such as ojdbc8, work, queries included.</li>
   <li>Genuine Oracle 9i OCI7 clients, 9.0.1 and 9.2, work at any ceiling.  The Oracle 9i sqlplus (9.0.1 and 9.2) works at any ceiling too, from login through queries to exit.  Oracle 9i OCI8 clients can run selects, and read CLOBs, BLOBs and BFILEs, at any ceiling.</li>
 </ul>
 
@@ -292,7 +302,7 @@ http://www.gnu.org/software/src-highlite -->
 </td>
     <td>every client whose logon types include O5LOGON (0x08) or a pre-10g logon type (0x01 or 0x04)
 </td>
-    <td>a client whose logon types include none of those, such as the genuine ojdbc14 10.2 driver, which advertises none at all
+    <td>a client whose logon types include none of those, such as the genuine ojdbc14 10.2.0.5 driver, which advertises none at all
 </td>
   </tr>
   <tr>
@@ -329,7 +339,7 @@ http://www.gnu.org/software/src-highlite -->
   </tr>
 </table>
 
-<br/><p>8 is the default, and so is any other value.  A client below the floor is refused with ORA-28040, "No matching authentication protocol", before the module sends it a challenge.  A refused attempt counts toward <a href="oracleprotologinattempts.html">Login Attempts</a>.</p>
+<br/><p>8 is the default, and so is any other value.  A client below the floor is refused with ORA-28040, "No matching authentication protocol", before the module sends it a challenge.  A tagged login that advertises no logon types, such as the one from ojdbc14 10.2.0.5, is below the floor at 9 and up.  A real Oracle server refuses it the same way at 9, and ojdbc14 shows the error.  A refused attempt counts toward <a href="oracleprotologinattempts.html">Login Attempts</a>.</p>
 
 <p>At 12 and 12a, a classic (OCI7 call) login from a client that passes the floor's checks is not refused up front.  It still runs the classic O3LOGON exchange: it gets the challenge, and then ORA-01017 whatever password it sends, as it does from a real Oracle 12.2 server.  A classic login whose logon types fall short of the floor is refused with ORA-28040 before any challenge, like any other.</p>
 
@@ -355,6 +365,7 @@ http://www.gnu.org/software/src-highlite -->
 <p>Because the module negotiates down, any client can ask for an older verifier.  O3LOGON is built on a DES based password hash, and is the weakest one the module offers.  A client gets it by leaving O5LOGON out of the logon types in its login request, or by using the classic login call, and an attacker who can change that byte on the network can do the same to a client.  Setting <i>allowedlogonversion</i> refuses most of those logins, but not all of them:</p>
 
 <ul>
+  <li>8, the default, admits the single DES exchange, which is weaker than the 9i verifier.  A client gets it by sending a tagged login that advertises no logon types at all, as the genuine ojdbc14 10.2.0.5 driver does.  The password is encrypted with single DES under a random 8 byte session key.  The DES based password hash protects only that key, which goes out in AUTH_SESSKEY, so an eavesdropper could try to crack the password offline.  Set <i>allowedlogonversion</i> to 9 or higher to keep the single DES exchange off the wire.  A real Oracle server behaves the same way.  A site that has no ojdbc14 clients should set it.</li>
   <li>12 refuses a client that does not advertise O5LOGON_NP, which includes genuine pre-10g and 10g clients, and a tagged login that would use the 9i or 10g verifier.  It does not keep O3LOGON off the wire for a classic login.  A classic login from a client that advertises O5LOGON_NP still gets an O3LOGON challenge, as it does from a real Oracle server, and only fails afterward with ORA-01017.  A legitimate classic client that answers the challenge sends an AUTH_PASSWORD encrypted from its DES based password hash, which an eavesdropper could try to crack offline.</li>
   <li>12a is the same for O7LOGON.  A classic login from a client that advertises O7LOGON still gets the challenge and then ORA-01017.  A tagged login is refused unless it uses the 12c verifier.  It needs a ceiling of 12.1.  At 11.2, every login fails.</li>
   <li>No floor refuses a classic login ahead of the challenge when its logon types meet the floor.  Only a client whose logon types fall short of the floor, or a tagged login that cannot be served, is refused before any challenge, with ORA-28040.</li>
