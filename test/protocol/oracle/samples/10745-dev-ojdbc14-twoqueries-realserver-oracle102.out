@@ -1,0 +1,8 @@
+== twoqueries
+cols 1/NUMBER/0/0
+row 1: [BigDecimal:1]
+rows 1
+cols A/NUMBER/0/0 B/CHAR/3/0
+row 1: [BigDecimal:2] [String:two]
+rows 1
+exit 0

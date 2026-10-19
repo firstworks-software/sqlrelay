@@ -1,0 +1,9 @@
+== rollbackauto
+create 0
+insert 1
+rolled back
+cols C/NUMBER/0/0
+row 1: [BigDecimal:1]
+rows 1
+drop 0
+exit 0

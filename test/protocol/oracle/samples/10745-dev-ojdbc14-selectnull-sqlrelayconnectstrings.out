@@ -1,0 +1,8 @@
+== selectnull
+cols NULL/VARCHAR2/4000/0
+row 1: [NULL]
+rows 1
+cols A/VARCHAR2/4000/0 B/NUMBER/0/-127 C/VARCHAR2/4000/0 D/CHAR/1/0
+row 1: [NULL] [BigDecimal:1] [NULL] [String:x]
+rows 1
+exit 0

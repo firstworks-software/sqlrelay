@@ -1953,6 +1953,10 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_oracle : public sqlrprotocol {
 		// shapes - the 8i verifier, for a client8i client
 		bool	use8iObjects();
 
+		// true if the session's post-login calls and answers take the
+		// 8i client's shapes - use8iObjects(), in the portable encoding
+		bool	use8iQueryObjects();
+
 		// true if the "allowedlogonversion" listener attribute lets the
 		// session's login have a challenge
 		bool	logonVersionAllowed();
@@ -3048,6 +3052,14 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_oracle : public sqlrprotocol {
 
 		bool		query3session;
 
+		// an 8i client's end-to-end sequence number: a count of the
+		// session's calls, one per tti function read, piggybacked or
+		// not, that the summary and status objects of the answers after
+		// the login echo (the logoff, version answer and login errors
+		// carry 0).  a ub2 to ojdbc14, which drops the connection on a
+		// wider field, so it wraps rather than grows
+		uint16_t	endtoend8i;
+
 		// the bind section of the query3 request being handled: one
 		// descriptor per placeholder in the statement, and one value
 		// per placeholder per execution iteration
@@ -3582,6 +3594,7 @@ void sqlrprotocol_oracle::init() {
 	bytestring::zero(clientdatatypereps,sizeof(clientdatatypereps));
 
 	query3session=false;
+	endtoend8i=0;
 	callnumber=0;
 	justpiggybacked=false;
 	oci7executed=false;
@@ -3679,6 +3692,21 @@ clientsessionexitstatus_t sqlrprotocol_oracle::clientSession(
 		// authenticated
 		cont->beginSession();
 
+		// An 8i client's every statement is a query3 call, and it reads
+		// only the summary object, never an oci7 error object, even
+		// ahead of its first query (MEASURED: a commit as the first
+		// call is answered with a 09 01 04 status by real oracle102
+		// and oracle122, 10745-dev-ojdbc14-commitfirst-realserver-*).  Its
+		// end-to-end count starts at 3: the version call, then both
+		// login phases (MEASURED, 10745-dev-ojdbc14-*-realserver-
+		// oracle102 and -oracle122: login answers 2 and 3, first query
+		// 4).
+		bool	query8i=use8iQueryObjects();
+		if (query8i) {
+			query3session=true;
+			endtoend8i=3;
+		}
+
 		// loop, getting and executing commands
 		bool		loop=true;
 		const byte_t	*rp=NULL;
@@ -3688,6 +3716,13 @@ clientsessionexitstatus_t sqlrprotocol_oracle::clientSession(
 			byte_t		ttifunction;
 			if (!getTtiFunction(rp,&ttifunction,&rp)) {
 				break;
+			}
+
+			// Every function counts, a piggybacked close and the
+			// call behind it one each, markers none (MEASURED, all
+			// 32 10745-dev-ojdbc14-*-realserver captures).
+			if (query8i) {
+				endtoend8i++;
 			}
 
 			// do the appropriate thing...
@@ -9740,8 +9775,9 @@ void sqlrprotocol_oracle::chooseVerifierType() {
 	//
 	// the 8i verifier isn't o3logon on the wire, so it gets the modern
 	// values of this and the three settings below, the same as any other
-	// ojdbc.  that they suit ojdbc14's calls after its login is INFERRED -
-	// only its login and logoff are covered
+	// ojdbc.  that they suit ojdbc14's calls after its login is MEASURED
+	// against its queries (10745-dev-ojdbc14-*-realserver-oracle102 and
+	// -oracle122)
 	rawtextargs=(isO3Logon() && !(encodingflags&ENCODING_CONV_LENGTH));
 
 	// whether the oci7 status and summary objects carry the end to end
@@ -9756,13 +9792,15 @@ void sqlrprotocol_oracle::chooseVerifierType() {
 	// objects.  an o5logon session gets the modern objects instead
 	oci7endtoendseqnumber=(isO3Logon() && clientfastsessionpropagate);
 
-	// an oci client is the only client measured that offers more than one
-	// representation for a type - it offers its platform's and then the
-	// universal one for the integer types 25-33, where a real server,
-	// ojdbc and the thin drivers all offer exactly one.  it is also the
-	// one client that reads a describe's lengths and a negative column
-	// scale differently from the rest, so this is what those two
-	// decisions are made on.  see putDescribeInfo() and
+	// an oci client offers more than one representation for a type - its
+	// platform's and then the universal one for the integer types 25-33 -
+	// where a real server, ojdbc and the other thin drivers offer exactly
+	// one.  ojdbc14 counts as one too: its type entry 27 78 01 5d 01 26
+	// 01 00 is read as five representations (MEASURED, module debug log),
+	// so clientmultireps is true for it.  an oci client is also the one
+	// that reads a describe's lengths and a negative column scale
+	// differently from the rest, so this is what those two decisions are
+	// made on.  see putDescribeInfo() and
 	// putColumnPrecisionScale().
 	ociclient=(clientmultireps || isO3Logon());
 
@@ -9799,6 +9837,10 @@ bool sqlrprotocol_oracle::usesO3LogonMethod() {
 
 bool sqlrprotocol_oracle::use8iObjects() {
 	return (client8i && verifiertype==VERIFIER_TYPE_8I);
+}
+
+bool sqlrprotocol_oracle::use8iQueryObjects() {
+	return (use8iObjects() && !nativeencoding);
 }
 
 bool sqlrprotocol_oracle::logonVersionAllowed() {
@@ -15063,7 +15105,13 @@ bool sqlrprotocol_oracle::getQuery3Request(const byte_t *rp,
 	// real 10.2 server, in the universal encoding.  the module only ever
 	// gets OCI 23.26 in that encoding (see nativeencoding), so the short
 	// form is only read there
-	if (pointersize==POINTER_SIZE_UNIVERSAL &&
+	//
+	// an 8i client sends none of them: its text follows the define count
+	// directly (MEASURED, every 0x5e in the 10745-dev-ojdbc14-*-realserver
+	// captures)
+	bool	query8i=use8iQueryObjects();
+	if (!query8i &&
+		pointersize==POINTER_SIZE_UNIVERSAL &&
 		fieldversion<CCAP_FIELD_VERSION_11_2 &&
 		(!getLenPreInt(rp,&end,&unused,&rp) ||
 		!getPointer(rp,end,&pointer,&rp) ||
@@ -15132,7 +15180,12 @@ bool sqlrprotocol_oracle::getQuery3Request(const byte_t *rp,
 			return false;
 		}
 
-		if (*rp==CLR_LONG_FORM_MARKER) {
+		// An 8i client sends the declared size of raw text, with no
+		// length byte and no long form, though it counts as an oci
+		// client: 115 bytes starting with 's' (0x73) and 340 bytes
+		// unchunked (MEASURED, 10745-dev-ojdbc14-longtext- and
+		// -types-realserver-oracle102 and -oracle122).
+		if (!query8i && *rp==CLR_LONG_FORM_MARKER) {
 
 			// chunked (long form) query text - the same shape a
 			// value over 252 bytes takes, so the marker is
@@ -15186,7 +15239,10 @@ bool sqlrprotocol_oracle::getQuery3Request(const byte_t *rp,
 			// either: for OCI those bytes never come, so the
 			// session would wait out the continuation timeout on an
 			// ordinary request.
-			if (*rp && (uint32_t)(*rp)<*querysize && ociclient) {
+			if (query8i) {
+				debugWrite("8i client, raw query text");
+			} else if (*rp && (uint32_t)(*rp)<*querysize &&
+								ociclient) {
 				*querysize=*rp;
 				rp++;
 			} else if (!jdbcclient &&
@@ -15278,6 +15334,13 @@ bool sqlrprotocol_oracle::getQuery3Binds(const byte_t *rp,
 	// descriptors and a row data block per iteration behind the vector -
 	// the values for the descriptors the statement was parsed with, the
 	// same as reexecute() reads.  see #10705
+	//
+	// An 8i client's execute that also fetches puts the row count in
+	// al8i4[1] and sends one row data block, not one per row: 0x8068
+	// sends [0,10,...] and one block, and a real server answers with up
+	// to 10 rows (MEASURED, 10745-dev-ojdbc14-prepared-realserver-
+	// oracle102 and -oracle122).
+	bool	fetch8i=(use8iQueryObjects() && (options&OPTION_FETCH));
 	sqlrservercursor	*reusecursor=NULL;
 	if (!bindcount && !definecount) {
 		if ((options&OPTION_PARSE) || !cursorid) {
@@ -15312,6 +15375,27 @@ bool sqlrprotocol_oracle::getQuery3Binds(const byte_t *rp,
 		reusecursor=wireIdToCursor(cursorid);
 		if (!reusecursor ||
 			!cursorbindcounts[cont->getId(reusecursor)]) {
+
+			// an 8i re-execute of a statement with no binds still
+			// carries its row count (INFERRED, not captured)
+			if (fetch8i) {
+				if (vectorsize>(uint32_t)
+						(resppacket+maxrequestsize-rp)) {
+					debugWrite("al8i4 vector past the request");
+					return false;
+				}
+				for (uint32_t i=0; i<vectorsize; i++) {
+					uint32_t	value=0;
+					if (!getLenPreInt(rp,&end,&value,&rp)) {
+						debugWrite("truncated al8i4 vector");
+						return false;
+					}
+					if (i==1) {
+						query3iterations=value;
+					}
+				}
+				debugWrite("8i fetch rows: %d",query3iterations);
+			}
 			return true;
 		}
 	}
@@ -15345,6 +15429,9 @@ bool sqlrprotocol_oracle::getQuery3Binds(const byte_t *rp,
 	debugWrite("iterations: %d",iterations);
 	query3iterations=iterations;
 
+	// an 8i fetch's al8i4[1] is its row count - see above
+	uint32_t	blockcount=(fetch8i)?1:iterations;
+
 	// a descriptor is at least twelve bytes - four raw and eight one-byte
 	// counts - so a count that couldn't fit in the room left for the
 	// request is a bad read rather than a real list.  this bounds the
@@ -15376,7 +15463,7 @@ bool sqlrprotocol_oracle::getQuery3Binds(const byte_t *rp,
 		restoreQuery3Binds(reusecursor);
 		debugWrite("re-execute with new values for %d saved binds",
 							query3binddescs);
-		if (!getQuery3BindValues(rp,end,query3binddescs,iterations)) {
+		if (!getQuery3BindValues(rp,end,query3binddescs,blockcount)) {
 			debugEnd();
 			return false;
 		}
@@ -15458,7 +15545,7 @@ bool sqlrprotocol_oracle::getQuery3Binds(const byte_t *rp,
 		return true;
 	}
 
-	if (!getQuery3BindValues(rp,end,bindcount,iterations)) {
+	if (!getQuery3BindValues(rp,end,bindcount,blockcount)) {
 		debugEnd();
 		return false;
 	}
@@ -15635,9 +15722,12 @@ bool sqlrprotocol_oracle::getQuery3BindDescriptor(const byte_t *rp,
 	// it sets ENCODING_CONV_LENGTH, ojdbc sends 01 09 without the flag,
 	// and python-oracledb sends a raw 00 with it.  9.2.0.4 OCI sets the
 	// flag and sends a timestamp's scale as a raw 09, the same as it reads
-	// a describe's
-	if ((encodingflags&ENCODING_CONV_LENGTH) &&
-			(!ociclient || fieldversion<CCAP_FIELD_VERSION_10_2)) {
+	// a describe's.  ojdbc14 always writes a raw byte (INFERRED from its
+	// oac marshaller; only scale 0, the same either way, is MEASURED,
+	// 10745-dev-ojdbc14-prepared-realserver-oracle122)
+	if (((encodingflags&ENCODING_CONV_LENGTH) &&
+			(!ociclient || fieldversion<CCAP_FIELD_VERSION_10_2)) ||
+			use8iQueryObjects()) {
 		if (!have(rp,1,&end)) {
 			debugWrite("truncated bind descriptor");
 			return false;
@@ -16463,6 +16553,16 @@ bool sqlrprotocol_oracle::sendQuery3Response(sqlrservercursor *cursor,
 		if (!rowstofetch && (options&OPTION_FETCH)) {
 			rowstofetch=1;
 
+			// an 8i client's execute and fetch asks for its rows
+			// through al8i4[1], and a real server sends up to that
+			// many - see getQuery3Binds()
+			if (use8iQueryObjects() && query3iterations) {
+				rowstofetch=query3iterations;
+				if (rowstofetch>MAX_FETCH_ROW_COUNT) {
+					rowstofetch=MAX_FETCH_ROW_COUNT;
+				}
+			}
+
 			// a pre-10g client's call that only fetches names the
 			// rows it wants in the al8i4 vector, and a real server
 			// sends them all rather than one at a time.  see
@@ -17128,6 +17228,16 @@ void sqlrprotocol_oracle::putDescribeInfoBody(sqlrservercursor *cursor,
 	putDalc((const char *)date,sizeof(date));
 
 	if (pre10g) {
+
+		// An 8i client reads two more fields here, and a real server
+		// sends a flag and the max data block size, then stops - no
+		// prefetch sizes (MEASURED, 10745-dev-ojdbc14-select1-
+		// realserver-oracle102 and -oracle122: 01 or 00, then 02 1f
+		// e8).
+		if (use8iQueryObjects()) {
+			writeLenPreInt(&reqpacket,0);
+			writeLenPreInt(&reqpacket,DCB_MAX_DATA_BLOCK_SIZE);
+		}
 		return;
 	}
 
@@ -17214,7 +17324,42 @@ void sqlrprotocol_oracle::putColumnMetadata(sqlrservercursor *cursor,
 	write(&reqpacket,(byte_t)wiretype);
 	write(&reqpacket,(byte_t)((fullencoding)?0x80:0x00));
 
-	putColumnPrecisionScale((int8_t)precision,wirescale);
+	// An 8i client reads the scale by type: a number's, timestamp's or
+	// day-second interval's as a ub2 with the sign in the length byte's
+	// high bit, any other as a raw byte.  It drops the connection on the
+	// 4-byte form putColumnPrecisionScale() sends a negative scale in.
+	// MEASURED: number 81 7f and 00, timestamp 01 09, the others a raw 00
+	// (10745-dev-ojdbc14-types-realserver-oracle102 and -oracle122).
+	// INFERRED: the ub2 for the timestamp with time zone, local time zone
+	// and day-second interval types (dty 181, 231, 183), read from the
+	// driver's bytecode and not seen on the wire.
+	if (use8iQueryObjects()) {
+		write(&reqpacket,(byte_t)precision);
+		if (wiretype==ORACLE_TYPE_NUMBER ||
+				wiretype==ORACLE_TYPE_TIMESTAMP ||
+				wiretype==ORACLE_TYPE_TIMESTAMPTZ ||
+				wiretype==ORACLE_TYPE_TIMESTAMPLTZ ||
+				wiretype==ORACLE_TYPE_INTERVALDS) {
+			if (!wirescale) {
+				write(&reqpacket,(byte_t)0);
+			} else if (wirescale>0) {
+				write(&reqpacket,(byte_t)1);
+				write(&reqpacket,(byte_t)wirescale);
+			} else {
+				write(&reqpacket,(byte_t)0x81);
+				write(&reqpacket,(byte_t)(0-(int32_t)wirescale));
+			}
+		} else {
+			write(&reqpacket,(byte_t)wirescale);
+		}
+		debugStart("precision/scale");
+		debugWrite("8i client");
+		debugWrite("precision: %d",(int32_t)precision);
+		debugWrite("scale: %d",(int32_t)wirescale);
+		debugEnd();
+	} else {
+		putColumnPrecisionScale((int8_t)precision,wirescale);
+	}
 
 	// a buffer size of 0 means "this column is null by describe", so it
 	// can never be sent as 0 for a column that has values
@@ -17234,8 +17379,10 @@ void sqlrprotocol_oracle::putColumnMetadata(sqlrservercursor *cursor,
 	writeLenPreInt(&reqpacket,0);
 
 	// the column position, which a real 10.2 server doesn't send below
-	// field version 4 - see putDescribeInfoBody()
-	if (fieldversion>=CCAP_FIELD_VERSION_10_2) {
+	// field version 4 - see putDescribeInfoBody() - except to an 8i
+	// client (MEASURED, 00 and 01 01 in 10745-dev-ojdbc14-twoqueries-
+	// realserver-oracle102 and -oracle122)
+	if (fieldversion>=CCAP_FIELD_VERSION_10_2 || use8iQueryObjects()) {
 		writeLenPreInt(&reqpacket,column);
 	}
 
@@ -17563,8 +17710,14 @@ bool sqlrprotocol_oracle::isNullByDescribe(sqlrservercursor *cursor,
 	// oracle backend reports the same 0, which no real character column
 	// has.  the size another backend reports isn't dependable enough to
 	// go by, and a client at field version 4 or later gets the column 4000
-	// bytes wide
+	// bytes wide.  so does an 8i client, though a real server describes
+	// the untyped null to ojdbc14 as a varchar2 with dty 1, mxl 0 and
+	// character set 1 and sends no value byte, which it reads correctly
+	// (MEASURED, 10745-dev-ojdbc14-selectnull-realserver-oracle102 and
+	// -oracle122).  the 4000 bytes and a 00 value byte are the module's own
+	// choice, and cosmetic: getPrecision is 4000 rather than 0
 	if (fieldversion>=CCAP_FIELD_VERSION_10_2 ||
+		use8iQueryObjects() ||
 		charstring::compare(cont->getNativeDbType(),"oracle")) {
 		return false;
 	}
@@ -20771,7 +20924,16 @@ void sqlrprotocol_oracle::putSummary(uint32_t cursorid,
 	// is the session's - see callstatus
 	write(&reqpacket,(byte_t)TTC_ERROR);
 
-	writeLenPreInt(&reqpacket,callstatus);
+	// An 8i client's object has no end of call status - its first field
+	// is the end-to-end count - and stops at the success iterations, or
+	// at the message behind them (MEASURED, every object in the 10745-dev-
+	// ojdbc14-*-realserver-oracle102 and -oracle122 captures).
+	bool	summary8i=use8iQueryObjects();
+	if (summary8i) {
+		writeLenPreInt(&reqpacket,(uint32_t)endtoend8i);
+	} else {
+		writeLenPreInt(&reqpacket,callstatus);
+	}
 
 	// the end to end sequence number, hardcoded to 0 here until #10321.
 	// a real server tracks it the same way sendTransactionResponse()'s
@@ -20782,8 +20944,10 @@ void sqlrprotocol_oracle::putSummary(uint32_t cursorid,
 	// a real 10.2 server leaves it out below field version 4, as it does
 	// from every status message it sends a pre-10g client - [0032] of
 	// samples/10538-solaris8sparc-sqlplus-select-realserver-oracle102.
-	// oraproxy
-	uint32_t	endtoendseqnumber=(byte_t)(callnumber+1);
+	// oraproxy.  an 8i client is below field version 4, so its count
+	// only reaches the debug line below
+	uint32_t	endtoendseqnumber=(summary8i)?
+					endtoend8i:(byte_t)(callnumber+1);
 	if (fieldversion>=CCAP_FIELD_VERSION_10_2) {
 		writeLenPreInt(&reqpacket,endtoendseqnumber);
 	}
@@ -20833,10 +20997,12 @@ void sqlrprotocol_oracle::putSummary(uint32_t cursorid,
 	// live server sends 1 for a fetch of 10 rows and for a fetch of none
 	writeLenPreInt(&reqpacket,1);
 
-	writeLenPreInt(&reqpacket,0);
-	writeLenPreInt(&reqpacket,0);
-	writeLenPreInt(&reqpacket,0);
-	writeLenPreInt(&reqpacket,0);
+	if (!summary8i) {
+		writeLenPreInt(&reqpacket,0);
+		writeLenPreInt(&reqpacket,0);
+		writeLenPreInt(&reqpacket,0);
+		writeLenPreInt(&reqpacket,0);
+	}
 
 	putSummaryExtension(oranum,rowcount);
 
@@ -20845,7 +21011,11 @@ void sqlrprotocol_oracle::putSummary(uint32_t cursorid,
 	}
 
 	debugStart("summary");
-	debugWrite("call status: %d",callstatus);
+	if (summary8i) {
+		debugWrite("8i client");
+	} else {
+		debugWrite("call status: %d",callstatus);
+	}
 	debugWrite("end to end seq number: %d",endtoendseqnumber);
 	debugWrite("cursor id: %d",cursorid);
 	debugWrite("command type: %d",commandtype);
@@ -25679,6 +25849,26 @@ bool sqlrprotocol_oracle::sendTransactionResponse() {
 	// sequence number one past the request's own seq byte, not the whole
 	// summary object.  confirmed against eight more commit/rollback
 	// exchanges in the same capture - every one answered with seq+1
+	//
+	// An 8i client gets the end-to-end count alone, no call status
+	// (MEASURED, 09 01 0d, 09 01 10 and 09 01 16 in 10745-dev-ojdbc14-
+	// dml-realserver-oracle102 and -oracle122).
+	if (use8iQueryObjects()) {
+		resetSendPacketBuffer(PACKET_DATA);
+		uint16_t	dataflags=0;
+		byte_t		ttccode=TTC_STATUS;
+		debugStart("transaction response");
+		debugWrite("data flags: 0x%04x",dataflags);
+		debugTtcCode(ttccode);
+		debugWrite("8i client");
+		debugWrite("end to end seq number: %d",endtoend8i);
+		debugEnd();
+		writeBE(&reqpacket,dataflags);
+		write(&reqpacket,ttccode);
+		writeLenPreInt(&reqpacket,(uint32_t)endtoend8i);
+		return sendPacket(true);
+	}
+
 	if (!query3session) {
 		return sendOci7StatusResponse();
 	}

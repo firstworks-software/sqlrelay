@@ -222,11 +222,11 @@ http://www.gnu.org/software/src-highlite -->
   <tr>
     <td>ojdbc14 10.2.0.5 (the old thin driver)
 </td>
-    <td>Login only
+    <td>Login and queries
 </td>
-    <td>Login only
+    <td>Login and queries
 </td>
-    <td>Login only
+    <td>Login and queries
 </td>
   </tr>
   <tr>
@@ -248,7 +248,7 @@ http://www.gnu.org/software/src-highlite -->
   <li>Modern clients that use the OCI7 call interface work at any ceiling.</li>
   <li>Genuine Oracle 10g OCI clients, 10.2.0.5, work at any ceiling, with both OCI8 and OCI7 calls.  Such a client asks for a session data unit of 2048, so it sends its data type request in two packets, and the module puts them back together.</li>
   <li>Genuine Oracle 11g OCI clients, 11.2.0.3, work at any ceiling, with both OCI8 and OCI7 calls.</li>
-  <li>ojdbc14 10.2.0.5, the old thin driver, logs in at every ceiling (10.2, 11.2 and 12.1) when <i>allowedlogonversion</i> is 8, the default.  It is verified with the genuine ojdbc14 10.2.0.5.0 driver against all three ceilings: it logs in, reads the database version and metadata, and closes cleanly.  A wrong password or an unknown user gets a readable ORA-01017.  At <i>allowedlogonversion</i> 9 and up it gets a readable ORA-28040.  That was tested at 9, 11, 12 and 12a, and a real Oracle server gives it at 9.  Queries are not yet supported: its first query drops the connection.  Its user names are case sensitive here, as for every client, and ojdbc14 sends an unquoted user name in upper case, so the user in the configuration must be in upper case too.  Newer ojdbc drivers, such as ojdbc8, work, queries included.</li>
+  <li>ojdbc14 10.2.0.5, the old thin driver, logs in at every ceiling (10.2, 11.2 and 12.1) when <i>allowedlogonversion</i> is 8, the default.  It is verified with the genuine ojdbc14 10.2.0.5.0 driver against all three ceilings: it logs in, reads the database version and metadata, and closes cleanly.  A wrong password or an unknown user gets a readable ORA-01017.  At <i>allowedlogonversion</i> 9 and up it gets a readable ORA-28040.  That was tested at 9, 11, 12 and 12a, and a real Oracle server gives it at 9.  It also runs queries.  That was tested with the genuine driver at all three ceilings: Statement queries, DDL and DML with autocommit on or off, fetches, statement reuse, commit and rollback, and PreparedStatement setInt and setString binds in queries and DML.  It reads NUMBER, VARCHAR2, CHAR, DATE, TIMESTAMP and RAW columns, and nulls, and sends long statement text.  A parse error, such as ORA-00942, is readable and the connection stays usable.  No real Oracle 11.2 server was available to compare, so the 11.2 behavior is inferred from the real 10.2 and 12.1 servers.  These are not supported, and were not tested: LOB columns and binds, CallableStatement and PL/SQL, batches, RETURNING and getGeneratedKeys, NCHAR, BINARY_FLOAT, BINARY_DOUBLE, INTERVAL and time zone types, ROWID, LONG, date, timestamp, bytes and null binds, bind values over 64 bytes, and Statement.cancel.  Two small differences from a real server: a select of an untyped null reports precision 4000 instead of 0, and a value bound with setInt and selected back is described as VARCHAR2 and comes back as a String, because the module binds it to the back end as text.  Its user names are case sensitive here, as for every client, and ojdbc14 sends an unquoted user name in upper case, so the user in the configuration must be in upper case too.  Newer ojdbc drivers, such as ojdbc8, work, queries included.</li>
   <li>Genuine Oracle 9i OCI7 clients, 9.0.1 and 9.2, work at any ceiling.  The Oracle 9i sqlplus (9.0.1 and 9.2) works at any ceiling too, from login through queries to exit.  Oracle 9i OCI8 clients can run selects, and read CLOBs, BLOBs and BFILEs, at any ceiling.</li>
 </ul>
 

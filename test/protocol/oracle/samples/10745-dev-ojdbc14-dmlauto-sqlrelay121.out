@@ -1,0 +1,12 @@
+== dmlauto
+create 0
+insert 1
+insert 1
+insert 1
+cols ID/NUMBER/0/-127 V/VARCHAR2/20/0
+row 1: [BigDecimal:1] [String:one]
+row 2: [BigDecimal:2] [String:bound2]
+row 3: [BigDecimal:3] [String:bound3]
+rows 3
+drop 0
+exit 0

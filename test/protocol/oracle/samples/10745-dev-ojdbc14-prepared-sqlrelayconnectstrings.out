@@ -1,0 +1,8 @@
+== prepared
+cols N/VARCHAR2/32/0 V/VARCHAR2/32/0
+row 1: [String:10] [String:bind0]
+rows 1
+cols N/VARCHAR2/32/0 V/VARCHAR2/32/0
+row 1: [String:11] [String:bind1]
+rows 1
+exit 0

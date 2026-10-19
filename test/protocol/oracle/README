@@ -352,9 +352,9 @@ is an 8i client), each expecting the connection dropped without a reply
 within 10 seconds. Against the module before #10734 (a scratch build of
 HEAD's oracle.cpp) 44 checks fail, the 20 ojdbc14 sessions at the version
 call and 24 in the hand-built 0x00 rows, and the rest pass; against the new
-modules the portable run passes 2610 checks and the -native run 812, with 0
-failures in both. What is measured
-and what is inferred: the version answer, challenge, login trailer and both
+modules the portable run passed 2610 checks and the -native run 812, with 0
+failures in both (the portable run has 4692 checks since #10745, below). What
+is measured and what is inferred: the version answer, challenge, login trailer and both
 error objects are measured against real servers; the banner is the module's
 own at each ceiling, where real 11.2 and 12.2 servers send an 11.1 one, and
 the test cannot say whether ojdbc14 accepts it (it does, measured live: the
@@ -370,6 +370,49 @@ file sends one).
 A successful login with an 8 or 16 character password needs users the test
 config lacks, so the 16 character case proves the refusal only; the live
 runs below cover the pad digits.
+
+Once logged in, ojdbc14 is played through query sessions (#10745), in the
+portable run only. 13 scripts run at the 12.1, 11.2 and 10.2 listeners and at
+the connectstrings one, 52 sessions: select1, rows25, twoqueries, reuse,
+prepared, error, longtext, newline, types, null, dml, dmlauto and
+commitfirst. Each logs in as above and then sends the calls ojdbc14 sent real
+10.2 and 12.2 servers in the 10745-dev-ojdbc14-*-realserver captures: its 0x5e
+with the text raw behind 9 fixed fields, its fetch of 10 rows, its commit and
+rollback, and its cursor closes riding in front of the next call, all with
+sequence number 0. oracleprotocolclient builds them (buildOjdbc14Query(),
+buildOjdbc14Fetch() and buildOjdbc14Call()), and checkOjdbc14CallBuilders()
+first has to reproduce ten of the captured calls byte for byte, before any
+connection. Each answer is read the way ojdbc14 reads it
+(readOjdbc14Answer()), which fails wherever the driver would close the
+connection: a length byte too long for its field (the old 4 byte scale of
+-127 is ORA-17412 there), a ttc code the driver does not take in an answer
+to a 0x5e or a fetch (a 09 status among them), or a byte left over. Then
+each object is compared byte for byte with the real servers': the describe's
+columns with their position and the scale in ojdbc14's form, the return
+parameters, the row header, the rows, the 23 field error object, and the 09
+that answers a commit or a rollback. The end to end field in each counts every
+call and every close from 4 at the first 0x5e, as a real server's does. The
+cursor ids, the dates, the describe's skipped block and its max row size are
+the module's and aren't compared. The logoff at the end of each session
+closes every cursor the script left open, and is answered 09 00.
+
+Some of what a query session checks is the module's choice rather than a real
+server's: no key/value pairs in the return parameters, no break and reset
+markers ahead of an error, a NUMBER's size 22, success iterations 1 in every
+error object, and the 0x8068 re-execute with fetch's row number counted over
+the cursor (2 where a real server says 1). So are two scripts and one step:
+newline, a text whose first byte is a newline; null, select null, which the
+module describes as a VARCHAR2 of 4000; and the rollback in dmlauto, which
+finds nothing to undo. The commitfirst script, a commit before any 0x5e
+answered 09 01 04, is measured on real oracle102 and oracle122
+(10745-dev-ojdbc14-commitfirst-realserver-*). The prepared script's int
+comes back as the text "10" in a VARCHAR2, since the module binds it to the
+backend as text. Against a scratch module
+built from HEAD's oracle.cpp 56 checks fail (52 sessions, which drop at
+their first 0x5e, and the 4 commitfirst ones, which get 09 01 05 where 09 01
+04 is expected) and the rest pass, since a session stops at its first failed
+call; against the new module the portable run passes 4692 checks and the
+-native run 812 (it skips the query sessions), with 0 failures in both.
 
 Its -native run does the same in the native encoding for the tagged logins
 with the 10g and later verifiers, and runs twice: once with the client
@@ -6910,8 +6953,10 @@ that statement, except where noted.
                                       module's query parser does not read, so
                                       it closes ([0018] is the client's EOF)
                                       and the driver reports a dropped
-                                      connection. Not fixed by #10734;
-                                      follow-up #10745 (#10734)
+                                      connection. Not fixed by #10734; fixed by
+                                      #10745, whose 10745-dev-ojdbc14-select1-
+                                      sqlrelay121 is the same run after the
+                                      fix (#10734, #10745)
 
     10734-dev-ojdbc14-login-select1-sqlrelay112.oraproxy
                                      the same against the 11.2 listener, 18
@@ -7162,6 +7207,463 @@ that statement, except where noted.
                                       challenge, the login and query complete
                                       (#10734)
 
+The 10745 captures below are the genuine ojdbc14 10.2.0.5 thin driver running
+the actions of its Conn14 program (see "ojdbc14 queries (#10745)" below), 114
+of them: 32 against the real oracle102 and oracle122 servers and 82 against
+the module. Each .oraproxy has a .out beside it with what Conn14 printed.
+
+    10745-dev-ojdbc14-version-realserver-oracle102.oraproxy
+    10745-dev-ojdbc14-version-realserver-oracle122.oraproxy
+    (each with a matching .out - Conn14's own stdout for that run)
+                                     the genuine ojdbc14 10.2.0.5 thin driver's
+                                      Conn14 version action through oraproxy to
+                                      the real oracle102 and oracle122 servers
+                                      (floor 8, TESTUSER and testpassword):
+                                      login and getDatabaseProductVersion(), no
+                                      query. 19 packets, the same as
+                                      10734-dev-ojdbc14-login-version-realserver.
+                                      The banner comes from the 0x3b answer:
+                                      oracle102 sends its own 10.2.0.1.0 one
+                                      with the options line, oracle122 the
+                                      11.1.0.0.0 compatibility one. The 10745
+                                      -realserver captures that follow are all
+                                      taken this way, one Conn14 action each,
+                                      and none has an oracle112 twin, whose
+                                      testuser is expired (#10745)
+
+    10745-dev-ojdbc14-version-sqlrelay121.oraproxy
+    10745-dev-ojdbc14-version-sqlrelay112.oraproxy
+    10745-dev-ojdbc14-version-sqlrelay102.oraproxy
+    10745-dev-ojdbc14-version-sqlrelayconnectstrings.oraproxy
+    (each with a matching .out - Conn14's own stdout for that run)
+                                     the same action against the module's 12.1,
+                                      11.2 and 10.2 listeners and the
+                                      oracle_connectstrings one (a 12.1
+                                      listener), taken after #10745. 19
+                                      packets. The banner is the module's own
+                                      at each ceiling, 12.1.0.2.0, 11.2.0.1.0
+                                      and 10.2.0.1.0 (64bit Production), where
+                                      real 11.2 and 12.2 servers send
+                                      11.1.0.0.0. The driver takes them all.
+                                      The -sqlrelay captures that follow are
+                                      all taken this way. A real server sends
+                                      the break and reset markers and takes the
+                                      client's reset (3 packets) before every
+                                      post-login error object, and the module
+                                      sends the 04 object alone, so an action
+                                      with an error
+                                      has 3 packets fewer against the module
+                                      for each one. Otherwise the packet counts
+                                      are the same (#10745)
+
+    10745-dev-ojdbc14-metadata-realserver-oracle102.oraproxy
+    10745-dev-ojdbc14-metadata-realserver-oracle122.oraproxy
+    (each with a matching .out - Conn14's own stdout for that run)
+                                     login, then getDatabaseProductName(), the
+                                      major and minor version and
+                                      getDriverVersion(), no query. 19 packets,
+                                      the same sequence as version: oracle102
+                                      gives Oracle 10.2, oracle122 Oracle 11.1,
+                                      the driver 10.2.0.5.0 (#10745)
+
+    10745-dev-ojdbc14-metadata-sqlrelay121.oraproxy
+    10745-dev-ojdbc14-metadata-sqlrelay112.oraproxy
+    10745-dev-ojdbc14-metadata-sqlrelay102.oraproxy
+    10745-dev-ojdbc14-metadata-sqlrelayconnectstrings.oraproxy
+    (each with a matching .out - Conn14's own stdout for that run)
+                                     the same against the module. 19 packets,
+                                      Oracle 12.1, 11.2, 10.2 and 12.1
+                                      (connectstrings) from the module's
+                                      banners (#10745)
+
+    10745-dev-ojdbc14-select1-realserver-oracle102.oraproxy
+    10745-dev-ojdbc14-select1-realserver-oracle122.oraproxy
+    (each with a matching .out - Conn14's own stdout for that run)
+                                     select 1 from dual with a Statement. 23
+                                      packets, the same as
+                                      10734-dev-ojdbc14-login-select1-version-realserver:
+                                      the 66 byte 0x5e at [0017], the describe,
+                                      return parameters and error object in one
+                                      answer ([0018]), the fetch of 10 rows
+                                      [0019], the row and ORA-01403 [0020], the
+                                      cursor close with the logoff [0021], 09
+                                      00 [0022] and the client's EOF [0023].
+                                      The NUMBER scale the driver prints is 0
+                                      from oracle102 and -127 from oracle122.
+                                      The byte for byte checks of
+                                      oracleverifiernegotiation cite [0017],
+                                      [0019] and [0021] of the oracle122 one
+                                      (#10745)
+
+    10745-dev-ojdbc14-select1-sqlrelay121.oraproxy
+    10745-dev-ojdbc14-select1-sqlrelay112.oraproxy
+    10745-dev-ojdbc14-select1-sqlrelay102.oraproxy
+    10745-dev-ojdbc14-select1-sqlrelayconnectstrings.oraproxy
+    (each with a matching .out - Conn14's own stdout for that run)
+                                     the same against the module, which used to
+                                      drop the connection at [0017]
+                                      (10734-dev-ojdbc14-login-select1-sqlrelay).
+                                      23 packets, the same sequence as the real
+                                      server's, and the driver prints the row.
+                                      The scale is -127, the oracle122
+                                      backend's (#10745)
+
+    10745-dev-ojdbc14-select1-pw8-sqlrelay121.oraproxy
+    10745-dev-ojdbc14-select1-pw8-sqlrelay112.oraproxy
+    10745-dev-ojdbc14-select1-pw8-sqlrelay102.oraproxy
+    (each with a matching .out - Conn14's own stdout for that run)
+                                     login as P8USER, a scratch user whose
+                                      password has 8 characters (an
+                                      AUTH_PASSWORD of 17 hex, pad digit 0),
+                                      then select 1 from dual, at the 12.1,
+                                      11.2 and 10.2 listeners. 23 packets each.
+                                      The user is in the scratch config of the
+                                      live run, not in the test config (#10745)
+
+    10745-dev-ojdbc14-select1-pw16-sqlrelay121.oraproxy
+    10745-dev-ojdbc14-select1-pw16-sqlrelay112.oraproxy
+    10745-dev-ojdbc14-select1-pw16-sqlrelay102.oraproxy
+    (each with a matching .out - Conn14's own stdout for that run)
+                                     the same as P16USER, a 16 character
+                                      password (33 hex, pad digit 0). 23
+                                      packets each (#10745)
+
+    10745-dev-ojdbc14-select1-sqlrelay121-allowed9.oraproxy
+    10745-dev-ojdbc14-select1-sqlrelay121-allowed11.oraproxy
+    10745-dev-ojdbc14-select1-sqlrelay121-allowed12.oraproxy
+    10745-dev-ojdbc14-select1-sqlrelay121-allowed12a.oraproxy
+    (each with a matching .out - Conn14's own stdout for that run)
+                                     select 1 against the 12.1 listener at
+                                      allowedlogonversion floors 9, 11, 12 and
+                                      12a. 18 packets each: ojdbc14 sends its
+                                      version call and its 0x76, and the module
+                                      refuses it in phase one with the 74 byte
+                                      ORA-28040 object, the floor 9 capture's
+                                      bytes. The driver reports ORA-28040 and
+                                      sends no query, with no
+                                      NullPointerException. Run after #10745 to
+                                      show the query path does not change the
+                                      refusal (#10745)
+
+    10745-dev-ojdbc14-rows25-realserver-oracle102.oraproxy
+    10745-dev-ojdbc14-rows25-realserver-oracle122.oraproxy
+    (each with a matching .out - Conn14's own stdout for that run)
+                                     25 rows (select level from dual connect by
+                                      level <= 25). 27 packets. Three fetches
+                                      of 10 rows get 10, 10 and 5 back: the
+                                      error object says retcode 0 with 10 rows,
+                                      0 with 20 and 1403 with 25. Each fetch
+                                      answer is the row header, the rows and
+                                      the 04. The real servers send 0x15 bit
+                                      vectors in the rows (oracle122 from the
+                                      third row of the first answer, oracle102
+                                      from the second) and the 19 NLS pairs in
+                                      the first return parameters only (#10745)
+
+    10745-dev-ojdbc14-rows25-sqlrelay121.oraproxy
+    10745-dev-ojdbc14-rows25-sqlrelay112.oraproxy
+    10745-dev-ojdbc14-rows25-sqlrelay102.oraproxy
+    10745-dev-ojdbc14-rows25-sqlrelayconnectstrings.oraproxy
+    (each with a matching .out - Conn14's own stdout for that run)
+                                     the same against the module. 27 packets.
+                                      No bit vectors and no NLS pairs (zero
+                                      pairs in the return parameters); the
+                                      driver reads all 25 rows (#10745)
+
+    10745-dev-ojdbc14-twoqueries-realserver-oracle102.oraproxy
+    10745-dev-ojdbc14-twoqueries-realserver-oracle122.oraproxy
+    (each with a matching .out - Conn14's own stdout for that run)
+                                     select 1, then select 2 a, 'two' b, on two
+                                      Statements. 27 packets. The second 0x5e
+                                      carries the first cursor's close (11 69)
+                                      in the same packet. The error objects
+                                      count the calls: the first 0x5e is
+                                      answered with 4, its fetch 5, the close 6
+                                      and the second 0x5e 7 (#10745)
+
+    10745-dev-ojdbc14-twoqueries-sqlrelay121.oraproxy
+    10745-dev-ojdbc14-twoqueries-sqlrelay112.oraproxy
+    10745-dev-ojdbc14-twoqueries-sqlrelay102.oraproxy
+    10745-dev-ojdbc14-twoqueries-sqlrelayconnectstrings.oraproxy
+    (each with a matching .out - Conn14's own stdout for that run)
+                                     the same against the module, 27 packets,
+                                      with the same counter (#10745)
+
+    10745-dev-ojdbc14-reuse-realserver-oracle102.oraproxy
+    10745-dev-ojdbc14-reuse-realserver-oracle122.oraproxy
+    (each with a matching .out - Conn14's own stdout for that run)
+                                     one Statement running select 7 from dual
+                                      twice. 27 packets. The second
+                                      executeQuery() sends the 0x5e again on
+                                      the open cursor id from the first answer,
+                                      with the full text and the options
+                                      0x8021, with no close in front (#10745)
+
+    10745-dev-ojdbc14-reuse-sqlrelay121.oraproxy
+    10745-dev-ojdbc14-reuse-sqlrelay112.oraproxy
+    10745-dev-ojdbc14-reuse-sqlrelay102.oraproxy
+    10745-dev-ojdbc14-reuse-sqlrelayconnectstrings.oraproxy
+    (each with a matching .out - Conn14's own stdout for that run)
+                                     the same against the module. 27 packets.
+                                      The module parses again on the open
+                                      cursor and the driver accepts the cursor
+                                      ids it hands out (#10745)
+
+    10745-dev-ojdbc14-prepared-realserver-oracle102.oraproxy
+    10745-dev-ojdbc14-prepared-realserver-oracle122.oraproxy
+    (each with a matching .out - Conn14's own stdout for that run)
+                                     select ? n, ? v from dual, a
+                                      PreparedStatement with setInt() and
+                                      setString(), executed twice (10 with
+                                      bind0, 11 with bind1). 25 packets. The
+                                      first execute is options 0x8029 with the
+                                      two bind descriptors (06 03 00 00 01 16
+                                      ... for the VARNUM, 01 03 00 00 01 14 ...
+                                      for the string) and a 07 bind row, the
+                                      answer is the describe with no rows, and
+                                      the rows come by a fetch. The re-execute
+                                      is 0x8068, execute and fetch in one call:
+                                      the descriptors are sent again, and the
+                                      answer is the row header, the row, the
+                                      return parameters and a 04 with
+                                      ORA-01403, with no describe.
+                                      oracleverifiernegotiation cites [0017]
+                                      and [0021] of the oracle122 one (#10745)
+
+    10745-dev-ojdbc14-prepared-sqlrelay121.oraproxy
+    10745-dev-ojdbc14-prepared-sqlrelay112.oraproxy
+    10745-dev-ojdbc14-prepared-sqlrelay102.oraproxy
+    10745-dev-ojdbc14-prepared-sqlrelayconnectstrings.oraproxy
+    (each with a matching .out - Conn14's own stdout for that run)
+                                     the same against the module. 25 packets. N
+                                      comes back as a VARCHAR2 of 32 with the
+                                      String 10, where the real servers
+                                      describe a NUMBER and give a BigDecimal,
+                                      because the module binds the int to the
+                                      backend as text (#10745)
+
+    10745-dev-ojdbc14-error-realserver-oracle102.oraproxy
+    10745-dev-ojdbc14-error-realserver-oracle122.oraproxy
+    (each with a matching .out - Conn14's own stdout for that run)
+                                     select * from a missing table (ORA-00942
+                                      at parse), then select 1 on the same
+                                      connection. 28 packets. After the failed
+                                      0x5e the server sends the break and the
+                                      reset markers (one TCP write), takes the
+                                      client's reset, and sends the 04 error
+                                      object, with the end to end counter 4,
+                                      the error number 942 and a new cursor id;
+                                      the next 0x5e is answered 5. The client
+                                      closes the error's cursor with the
+                                      logoff. oracleverifiernegotiation cites
+                                      [0026] of the oracle122 one (#10745)
+
+    10745-dev-ojdbc14-error-sqlrelay121.oraproxy
+    10745-dev-ojdbc14-error-sqlrelay112.oraproxy
+    10745-dev-ojdbc14-error-sqlrelay102.oraproxy
+    10745-dev-ojdbc14-error-sqlrelayconnectstrings.oraproxy
+    (each with a matching .out - Conn14's own stdout for that run)
+                                     the same against the module. 25 packets:
+                                      the module sends the 04 object alone,
+                                      with no markers, and the driver prints
+                                      the error and runs the next statement
+                                      (#10745)
+
+    10745-dev-ojdbc14-dml-realserver-oracle102.oraproxy
+    10745-dev-ojdbc14-dml-realserver-oracle122.oraproxy
+    (each with a matching .out - Conn14's own stdout for that run)
+                                     autocommit off: drop (ORA-00942, no such
+                                      table), create, two inserts, an update,
+                                      commit, delete, rollback, select, delete,
+                                      commit, select, drop. 52 packets. DDL and
+                                      DML answers are the return parameters and
+                                      a 04 with the rows affected as the row
+                                      number; commit is 03 0e 00 and rollback
+                                      03 0f 00, answered 09 and the counter (09
+                                      01 0d, 09 01 10 and 09 01 16). The
+                                      scratch table is protocoltest10745.
+                                      oracleverifiernegotiation cites [0030]
+                                      and [0034] of the oracle122 one (#10745)
+
+    10745-dev-ojdbc14-dml-sqlrelay121.oraproxy
+    10745-dev-ojdbc14-dml-sqlrelay112.oraproxy
+    10745-dev-ojdbc14-dml-sqlrelay102.oraproxy
+    10745-dev-ojdbc14-dml-sqlrelayconnectstrings.oraproxy
+    (each with a matching .out - Conn14's own stdout for that run)
+                                     the same against the module. 49 packets:
+                                      no markers for the first drop's
+                                      ORA-00942. The same output (#10745)
+
+    10745-dev-ojdbc14-dmlauto-realserver-oracle102.oraproxy
+    10745-dev-ojdbc14-dmlauto-realserver-oracle122.oraproxy
+    (each with a matching .out - Conn14's own stdout for that run)
+                                     autocommit on, the JDBC default: drop,
+                                      create, a literal insert, a
+                                      PreparedStatement insert executed twice
+                                      (setInt, setString), select, drop. 38
+                                      packets. There are no commit calls: the
+                                      options 0x8121 for DDL and DML and 0x8129
+                                      for the prepared insert carry the COM bit
+                                      (0x100), and the prepared re-execute is
+                                      0x8120 with no descriptors but the 07
+                                      bind row. oracleverifiernegotiation cites
+                                      [0026] and [0028] of the oracle122 one
+                                      (#10745)
+
+    10745-dev-ojdbc14-dmlauto-sqlrelay121.oraproxy
+    10745-dev-ojdbc14-dmlauto-sqlrelay112.oraproxy
+    10745-dev-ojdbc14-dmlauto-sqlrelay102.oraproxy
+    10745-dev-ojdbc14-dmlauto-sqlrelayconnectstrings.oraproxy
+    (each with a matching .out - Conn14's own stdout for that run)
+                                     the same against the module. 35 packets:
+                                      no markers for the first drop's ORA-00942
+                                      (#10745)
+
+    10745-dev-ojdbc14-longtext-realserver-oracle102.oraproxy
+    10745-dev-ojdbc14-longtext-realserver-oracle122.oraproxy
+    (each with a matching .out - Conn14's own stdout for that run)
+                                     a 115 byte statement starting with s
+                                      (select 1 from dual and a comment padding
+                                      it). 23 packets. The 0x5e carries the
+                                      length 01 73 and the text raw, so the
+                                      first byte of a text is never a length
+                                      (#10745)
+
+    10745-dev-ojdbc14-longtext-sqlrelay121.oraproxy
+    10745-dev-ojdbc14-longtext-sqlrelay112.oraproxy
+    10745-dev-ojdbc14-longtext-sqlrelay102.oraproxy
+    10745-dev-ojdbc14-longtext-sqlrelayconnectstrings.oraproxy
+    (each with a matching .out - Conn14's own stdout for that run)
+                                     the same against the module. 23 packets.
+                                      The old length byte rules (a first byte
+                                      no larger than the text size; s is 115)
+                                      would read the s as a length and cut the
+                                      text (inferred by trace, not captured);
+                                      the 8i gate skips them (#10745)
+
+    10745-dev-ojdbc14-types-realserver-oracle102.oraproxy
+    10745-dev-ojdbc14-types-realserver-oracle122.oraproxy
+    (each with a matching .out - Conn14's own stdout for that run)
+                                     one row of 12 columns: NUMBERs (42,
+                                      3.14159, -7, -0.5), a VARCHAR2, a
+                                      CHAR(5), a DATE, a TIMESTAMP, a RAW and
+                                      three typed nulls, then a 300 character
+                                      VARCHAR2 (a CLR in chunks of 255 and 45
+                                      bytes). 27 packets. The describe's scale
+                                      is 0 from oracle102 and -127 from
+                                      oracle122 for the literals (#10745)
+
+    10745-dev-ojdbc14-types-sqlrelay121.oraproxy
+    10745-dev-ojdbc14-types-sqlrelay112.oraproxy
+    10745-dev-ojdbc14-types-sqlrelay102.oraproxy
+    10745-dev-ojdbc14-types-sqlrelayconnectstrings.oraproxy
+    (each with a matching .out - Conn14's own stdout for that run)
+                                     the same against the module. 27 packets,
+                                      the same values (#10745)
+
+    10745-dev-ojdbc14-selectnull-realserver-oracle102.oraproxy
+    10745-dev-ojdbc14-selectnull-realserver-oracle122.oraproxy
+    (each with a matching .out - Conn14's own stdout for that run)
+                                     select null from dual, then select null a,
+                                      1 b, null c, 'x' d from dual. 27 packets.
+                                      Both servers describe an untyped null as
+                                      datatype 1 with width 0 and charset id 1
+                                      and send no value byte for it in the row;
+                                      the driver reports precision 0 and NULL
+                                      (#10745)
+
+    10745-dev-ojdbc14-selectnull-sqlrelay121.oraproxy
+    10745-dev-ojdbc14-selectnull-sqlrelay112.oraproxy
+    10745-dev-ojdbc14-selectnull-sqlrelay102.oraproxy
+    10745-dev-ojdbc14-selectnull-sqlrelayconnectstrings.oraproxy
+    (each with a matching .out - Conn14's own stdout for that run)
+                                     the same against the module. 27 packets.
+                                      The module describes the null as a
+                                      VARCHAR2 of 4000 and sends a 00 value
+                                      byte, so getPrecision() says 4000. The
+                                      driver reads NULL, 1, NULL and x (#10745)
+
+    10745-dev-ojdbc14-commitfirst-realserver-oracle102.oraproxy
+    10745-dev-ojdbc14-commitfirst-realserver-oracle122.oraproxy
+    (each with a matching .out - Conn14's own stdout for that run)
+                                     autocommit off, a commit before any query,
+                                      select 1, a second commit. 27 packets.
+                                      The first 03 0e 00 is answered 09 01 04
+                                      on both servers (the counter after the
+                                      version call, the two login calls and the
+                                      commit) (#10745)
+
+    10745-dev-ojdbc14-commitfirst-sqlrelay121.oraproxy
+    10745-dev-ojdbc14-commitfirst-sqlrelay112.oraproxy
+    10745-dev-ojdbc14-commitfirst-sqlrelay102.oraproxy
+    10745-dev-ojdbc14-commitfirst-sqlrelayconnectstrings.oraproxy
+    (each with a matching .out - Conn14's own stdout for that run)
+                                     the same against the module. 27 packets,
+                                      09 01 04. The module before #10745
+                                      answered 09 01 05 (#10745)
+
+    10745-dev-ojdbc14-rollbackauto-realserver-oracle102.oraproxy
+    10745-dev-ojdbc14-rollbackauto-realserver-oracle122.oraproxy
+    (each with a matching .out - Conn14's own stdout for that run)
+                                     autocommit on: drop, create, an insert,
+                                      rollback(), select count(*), drop. 36
+                                      packets. The driver sends 03 0f 00 though
+                                      autocommit is on, the answer is 09 01 09,
+                                      and the count is 1 afterwards, the COM
+                                      bit having committed the insert (#10745)
+
+    10745-dev-ojdbc14-rollbackauto-sqlrelay121.oraproxy
+    10745-dev-ojdbc14-rollbackauto-sqlrelay112.oraproxy
+    10745-dev-ojdbc14-rollbackauto-sqlrelay102.oraproxy
+    10745-dev-ojdbc14-rollbackauto-sqlrelayconnectstrings.oraproxy
+    (each with a matching .out - Conn14's own stdout for that run)
+                                     the same against the module. 33 packets:
+                                      no markers for the first drop's
+                                      ORA-00942. The count is 1 (#10745)
+
+    10745-dev-ojdbc14-preptime-realserver-oracle102.oraproxy
+    10745-dev-ojdbc14-preptime-realserver-oracle122.oraproxy
+    (each with a matching .out - Conn14's own stdout for that run)
+                                     a PreparedStatement select ? n, ? v from
+                                      dual executed four times, each timed,
+                                      then three executeQuery() calls on one
+                                      Statement (select 0, 1 and 2 as x). 41
+                                      packets. The 0x8068 re-executes are
+                                      answered in about 1 ms (#10745)
+
+    10745-dev-ojdbc14-preptime-sqlrelay121.oraproxy
+    10745-dev-ojdbc14-preptime-sqlrelay112.oraproxy
+    10745-dev-ojdbc14-preptime-sqlrelay102.oraproxy
+    10745-dev-ojdbc14-preptime-sqlrelayconnectstrings.oraproxy
+    (each with a matching .out - Conn14's own stdout for that run)
+                                     the same against the module. 41 packets.
+                                      The three 0x8068 re-executes are answered
+                                      in 1 to 2 ms, the first execute in 6 to 7
+                                      ms, with no stall; the re-execute answers
+                                      say row 2, 3 and 4 where the real server
+                                      says 1 (#10745)
+
+    10745-dev-ojdbc14-version-wrongpassword-sqlrelay121.oraproxy
+    10745-dev-ojdbc14-version-wrongpassword-sqlrelay112.oraproxy
+    10745-dev-ojdbc14-version-wrongpassword-sqlrelay102.oraproxy
+    10745-dev-ojdbc14-version-wrongpassword-sqlrelayconnectstrings.oraproxy
+    (each with a matching .out - Conn14's own stdout for that run)
+                                     login as testuser with the password
+                                      wrongpassword (the version action). 20
+                                      packets: the challenge, the 0x73, the
+                                      break and reset, the client's reset and
+                                      the 78 byte ORA-01017 object. The driver
+                                      reports ORA-01017. Run after #10745 to
+                                      show the login is not regressed (#10745)
+
+    10745-dev-ojdbc14-version-unknownuser-sqlrelay121.oraproxy
+    10745-dev-ojdbc14-version-unknownuser-sqlrelay112.oraproxy
+    10745-dev-ojdbc14-version-unknownuser-sqlrelay102.oraproxy
+    10745-dev-ojdbc14-version-unknownuser-sqlrelayconnectstrings.oraproxy
+    (each with a matching .out - Conn14's own stdout for that run)
+                                     login as NOSUCHUSER. 20 packets, the same
+                                      ORA-01017 as a wrong password (#10745)
+
 The genuine 10g OCI client and the logon version floors (#10545)
 ----------------------------------------------------------------
 
@@ -7308,8 +7810,8 @@ password):
   captures of #10734), where real Oracle logs ojdbc14 in at floor 8 and
   refuses it at 9 and up. #10734 fixed it, as the next section describes:
   it logs in and closes cleanly at floor 8 at all three ceilings and gets a
-  readable ORA-28040 at floors 9, 11, 12 and 12a. The first query still
-  fails (follow-up #10745).
+  readable ORA-28040 at floors 9, 11, 12 and 12a. Its first query dropped
+  the connection until #10745, which made queries work (below).
   Experiments through a scratch proxy before #10734 that answered the 0x3b
   call itself with real oracle102's reply, not checked in because the proxy
   changed bytes, found the rest of the gap, which #10734 closed:
@@ -7437,9 +7939,10 @@ The genuine ojdbc14 10.2.0.5 thin driver (logon types 0x00, field version 3)
 could not log in to the module at any ceiling or floor (#10545 step 10b).
 Since #10734 it logs in at floor 8 at 12.1, 11.2 and 10.2 and is refused
 with a readable ORA-28040 at floors 9, 11, 12 and 12a, as real oracle102 and
-oracle122 do. The first query still fails: the module's TTI_QUERY3 parser
-rejects ojdbc14's 66 byte 0x5e call and the connection drops (#10745, the
-10734-dev-ojdbc14-login-select1-sqlrelay* captures).
+oracle122 do. Its first query still failed after #10734: the module's
+TTI_QUERY3 parser rejected ojdbc14's 66 byte 0x5e call and the connection
+dropped (the 10734-dev-ojdbc14-login-select1-sqlrelay* captures). #10745
+fixed that, see "ojdbc14 queries (#10745)" below.
 
 The exchange, read off the 10545 and 10734 real server captures (oracle102,
 oracle112 and oracle122; every byte of each is accounted for). The values
@@ -7552,8 +8055,8 @@ Inferred, not measured:
 * ORA-01005 for an empty password: ojdbc14 refuses an empty password
   itself, so it cannot be reached
 * anything after the login: the post-login objects (23 fields, field
-  version 3) differ from the module's summary objects, and the first query
-  fails (#10745)
+  version 3) differed from the module's summary objects, and the first query
+  failed. Done in #10745, below
 
 Differences from a real server that remain, cosmetic: the break and the
 reset markers go out as two TCP segments (a real server sends one 22 byte
@@ -7569,6 +8072,256 @@ so the fallback is expected there, out of scope for #10734, and the run
 still ends cleanly; the
 10734-fedora9x86-oci10-olog-select-sqlrelay121 capture prints the same
 O3LOGON challenge decode failure as the other 10.2 olog captures.
+
+ojdbc14 queries (#10745)
+------------------------
+
+The genuine ojdbc14 10.2.0.5 thin driver logged in to the module since
+#10734, but its first query dropped the connection: the module's TTI_QUERY3
+parser rejected the 66 byte 0x5e call. Since #10745 the module answers
+ojdbc14's calls the way real oracle102 and oracle122 servers do, and the
+driver runs against the 12.1, 11.2 and 10.2 listeners and the
+oracle_connectstrings one at floor 8.
+
+What works, measured with the genuine driver at all four listeners (the
+10745-dev-ojdbc14-*-sqlrelay captures, each with the client's output in the
+matching .out), with the same output as real oracle122 apart from the
+differences listed below:
+* Statement queries: select 1, 25 rows in three fetches of 10, 10 and 5,
+  several statements in a session, statement reuse (a second executeQuery()
+  on the same Statement re-sends the 0x5e on the open cursor), statements
+  of 115 and 340 bytes (115 starting with s, which the old length byte
+  rules read as a length)
+* column types NUMBER, VARCHAR2, CHAR, DATE, TIMESTAMP and RAW, typed nulls,
+  a 300 character VARCHAR2 (chunked), and untyped select null
+* DDL and DML with Statement, autocommit on (the COM bit, 0x8121, commits)
+  and off (commit and rollback are the 03 0e 00 and 03 0f 00 calls),
+  update counts, a rollback after autocommit DML, and a commit before the
+  first query
+* parse errors: ORA-00942 at parse and at the drop of a missing table, and
+  the next statement on the same connection works
+* PreparedStatement with setInt() and setString(), in queries (the first
+  execute, 0x8029, and the re-execute, 0x8068, which executes and fetches in
+  one call) and in DML (0x8129 and the re-execute 0x8120)
+* the cursor closes that ride in front of the next call, including one for
+  the cursor an error reported
+
+The gate. use8iQueryObjects() is use8iObjects() and not native encoding:
+the 8i verifier for a client8i client (logon types without the bits 0x01,
+0x04 and 0x08 and field version below 4), in the portable encoding. On file
+it is true for genuine ojdbc14 sessions only; the hand-built 0x00 client of
+oracleverifiernegotiation has field version 6, so client8i is false for it.
+It is not "field version below 4": the 9.0.1 and 9.2.0.4 sqlplus and OCI8
+clients (field versions 1 and 2) get the call status first and four trailing
+LPIs in their summary objects, no column position and no dcbflag in their
+describes (10538-solaris8sparc-sqlplus-select-realserver-oracle102,
+[0032] and [0036]), and they keep those. Everything below is gated on
+use8iQueryObjects(), so nothing changes for any other client.
+
+The session counter. A real server numbers the calls of a session, and
+ojdbc14 reads that number as the first field of every summary object and
+after the 09 of a commit or a rollback. The module counts in endtoend8i: 3
+once the login is done (the 0x3b version call is 1, the 0x76 is 2, the 0x73
+is 3, the numbers the login answers carry), and 1 more for every TTI
+function it reads. A piggybacked cursor close counts one and the call
+behind it one, a call that fails counts, markers count none, and the logoff
+is answered 09 00. The first 0x5e is answered 4. Measured: all 24 real
+server captures, oracle102 and oracle122 identical, including the twoqueries
+close (6) and 0x5e (7), the error (4, then 5 for the next statement) and the
+dml commit (13), rollback (16) and commit (22). The counter is a uint16_t,
+since ojdbc14 reads the field as a UB2 and closes the connection with
+ORA-17412 on a longer length byte, so it wraps; what a real server does at
+65535 is not measured. That a close of two cursors followed by a call other
+than the logoff counts one is inferred; no capture has it. The login
+answers keep their constants 2 and 3.
+
+The shapes. Read from the 24 real server captures and checked against the
+driver's own readers (javap of T4C8Oall, T4CTTIdcb, T4C8TTIuds, T4CTTIoac,
+T4CTTIoer and T4C7Ocommoncall; what a reader takes never says what a server
+sends, so those are cross-checks):
+* The 0x5e call has the text raw behind 9 fixed fields (the bind pointer
+  and count, five pointers, the define pointer and count), no length byte
+  and no universal encoding tail. Its al8i4 vector has 13 entries, [1] the
+  rows to fetch of a 0x8068. The call carries sequence number 0, like every
+  call ojdbc14 makes. Bind descriptors follow the vector, then the bind
+  values behind a 07, one CLR each: setInt() is dty 6 (VARNUM) with the
+  Oracle number bytes, setString() dty 1 with the width in bytes.
+* A query answer is the describe (0x10), the return parameters (0x08) and
+  one 04 error object; a fetch answer is the row header (0x06), the rows
+  (0x07) and a 04; a 0x8068 answer is the row header, the row, the return
+  parameters and a 04 with no describe; DDL and DML get the return
+  parameters and a 04. A 09 status inside an answer to a 0x5e or a fetch
+  makes the driver close the connection (ORA-17401), so every one ends in
+  a 04.
+* The describe has the prologue 0x17 and 23 bytes, the column position
+  after each column's type name, and the dcbflag and the max data block
+  size 8168 after the date, where a 9i client gets neither. The scale is
+  ojdbc14's form: a UB2 for NUMBER, the TIMESTAMP types and INTERVAL DAY TO
+  SECOND (dty 2, 180, 181, 231, 183; -127 is 81 7f), a raw byte for any
+  other (only NUMBER and TIMESTAMP measured on the wire; the rest is read
+  from the driver's disassembly).
+* The error object has the 23 fields and no end of call status, the end to
+  end counter as the first field, and the message when the error number is
+  not 0. The return parameters are 08 01 06 with the cursor id as the third
+  value.
+* A commit or a rollback is answered 09 and one LPI, the counter (09 01 0d).
+
+Measured with the genuine driver against the module (the 10745 -sqlrelay
+captures), where the module's answer differs from a real server's:
+* Zero NLS key/value pairs in the return parameters. A real server sends 19
+  in the first answer of a session and none after. Every return parameters
+  object of the module has 0 (108 of them), and the driver, which reads and
+  discards the pairs, runs every script.
+* No 0x15 bit vectors in front of the rows. Real servers send them from the
+  second or third row of the first fetch answer. The driver reads every
+  column of a row when there is none (rows25, types and the dml selects).
+* Errors without the break and reset markers. A real server sends two
+  markers, takes the client's reset and then sends the 04; the module sends
+  the 04 alone. The driver reports the error ("error 942 ORA-00942 ...")
+  and runs the next statement on the same connection (the error, dml,
+  dmlauto and rollbackauto scripts). That is why the module captures of
+  those scripts have 3 packets fewer than the real server ones.
+* A commit before the first query: real oracle102 and oracle122 and the
+  module all answer 09 01 04, the counter after the 0x3b, the two logins and
+  the commit itself, and the call sequence is the same.
+* A rollback after autocommit DML: the driver sends 03 0f 00 with autocommit
+  on, real servers and the module answer 09 01 09, and the insert is still
+  there afterwards (the COM bit committed it); select count(*) gives 1.
+* The 0x8068 re-execute does not stall. The module answers the three
+  re-executes of the preptime script in 1 to 2 ms, the first execute in 6 to
+  7 ms, and real oracle122 answers in 1 ms. The driver gets one row plus
+  ORA-01403 in each answer, with al8i4 [0,10,0,...].
+* The module's cursor ids, recycled after a close, are accepted by the
+  client.
+
+What is the module's choice, with no real server measured doing it, or
+measured doing it differently:
+* The 11.2 ceiling. oracle112's testuser is expired, so no 11.2 real server
+  has a reference capture, and the module's 11.2 answers are the 10.2 and
+  12.2 ones. Measured live: every script works at 11.2 as at 12.1 and 10.2,
+  and the objects are the same on oracle102 and oracle122, which is why
+  this is inferred only for what a real 11.2 server would send.
+* Success iterations 1 in every error object, where real servers send 0 or
+  1 (oracle122 sends 0 in fetch answers). The driver never reads it.
+* The 0x8068 answer's cumulative row count: the module counts rows over the
+  cursor and says 2, 3 and 4 in the preptime script where a real server
+  says 1. The driver counts rows from the rows it reads.
+* The prepared script's int. The module binds it to the backend as text and
+  describes N as a VARCHAR2 of 32, so the driver reads the String "10"
+  where a real server describes a NUMBER and gives a BigDecimal.
+* Select null. The module describes an untyped null as a VARCHAR2 of 4000
+  and sends a 00 value byte; real oracle102 and oracle122 describe it as
+  dty 1 with width 0 and charset id 1 and send no value byte at all for it.
+  The driver reads both (NULL, and 1 and x beside it), and getPrecision()
+  says 4000 against the real servers' 0, which is cosmetic. Measured in
+  10745-dev-ojdbc14-selectnull-realserver-oracle102 and -oracle122 against
+  the -sqlrelay ones. The module's choice was made before the real
+  servers' shape was seen, on the guess that the driver could not read a
+  column with no bytes; it can.
+* The describe's hash (zero bytes), its max row size (22 for a NUMBER, 2 on
+  real servers), its constant byte (0x39) and the dcbflag (0) are the
+  module's, and none is read.
+
+Not covered, follow-ups:
+* LOB columns and LOB binds (ojdbc14 uses the 0x60 LOB calls and the
+  locator shapes of field version 3, unmeasured)
+* CallableStatement and PL/SQL blocks: out binds, the 0x0b IO vector and
+  ref cursors
+* batches (addBatch() and executeBatch(), with al8i4[1] above 1) and
+  RETURNING or getGeneratedKeys()
+* column and bind types not measured: NCHAR and NVARCHAR2, BINARY_FLOAT and
+  BINARY_DOUBLE, INTERVAL, the time zone types, ROWID, LONG and LONG RAW,
+  setDate(), setTimestamp(), setBytes(), setBigDecimal() and setNull(), bind
+  values over 64 bytes (chunked), and charsets other than 31 and 873
+* the break and reset markers before an error as a real server sends them,
+  errors at execute time and in the middle of a fetch (ORA-01476),
+  Statement.cancel() and setFetchSize() above 65535 (the row header's
+  rows this time is a UB2 to the driver)
+
+Running the genuine driver. ojdbc14.jar is not redistributable and is not
+checked in. It is in the 10.2.0.5 basic zip (vmi9:/u04/software/Oracle/10g/
+linux/x64/basic-10.2.0.5.0-linux-x64.zip; the jdbc zip does not hold it),
+as for #10545. Unzip it into a directory of its own and use the jar from
+there. The captures were taken with a small scratch program, Conn14 (also
+not checked in), compiled with javac --release 8 against the jar and run on
+OpenJDK 21; it needs Class.forName("oracle.jdbc.OracleDriver"), since the
+driver does not register itself there. It takes HOST:PORT:SID and a list of
+actions, reads the user from ORA14_USER (default testuser) and the password
+from ORA14_PASSWORD, set from the test config for the run and never written
+to a file, and prints the result sets as "cols NAME/TYPE/PRECISION/SCALE",
+"row N: [Class:value]..." and "rows N", then "exit 0" (the .out files). An
+action that throws a SQLException prints it and stops the run. The actions
+are the scripts of the table below, which also tells which captures they
+produced:
+
+    action        what it runs
+    select1       select 1 from dual
+    version       getDatabaseProductVersion(), no query
+    metadata      getDatabaseProductName(), the major and minor version and
+                  getDriverVersion(), no query
+    types         one row of NUMBER, VARCHAR2, CHAR, DATE, TIMESTAMP, RAW
+                  and typed nulls, then a 300 character VARCHAR2
+    rows25        25 rows (select level ... connect by), three fetches
+    twoqueries    select 1, then a second statement with a number and text
+    reuse         one Statement, executeQuery() twice
+    prepared      select ? n, ? v from dual, setInt() and setString(), twice
+    error         a select from a missing table (ORA-00942), then select 1
+    dml           autocommit off: drop, create, insert x2, update, commit,
+                  delete, rollback, select, delete, commit, select, drop
+    dmlauto       autocommit on: drop, create, a literal insert, a prepared
+                  insert twice, select, drop
+    longtext      select 1 from dual /* ... */ padded to 115 bytes
+    selectnull    select null from dual, then null a, 1 b, null c, 'x' d
+    commitfirst   autocommit off, commit, select 1, commit
+    rollbackauto  autocommit on: drop, create, insert, rollback(), count(*),
+                  drop
+    preptime      4 executions of one PreparedStatement with their times,
+                  then 3 queries on one Statement
+
+dml, dmlauto and rollbackauto use the scratch table protocoltest10745,
+dropped first if it is present and at the end. Run direct, at a real server
+(10.0.2.1 for oracle122 and 10.0.2.3 for oracle102, SID ora1):
+
+    java -cp .:ojdbc14.jar Conn14 10.0.2.1:1521:ora1 select1 types rows25
+
+or through oraproxy, which handles one connection and then exits, and
+decode the capture with oradecode:
+
+    ./oraproxy 1523 10.0.2.1 1521 capture.oraproxy &
+    java -cp .:ojdbc14.jar Conn14 localhost:1523:ora1 select1
+    ./oradecode capture.oraproxy
+
+or against a sqlr-listener with the oracle protocol (a listener at floor 8,
+the default), HOST:PORT:SID being localhost:LISTENPORT:ora1. An unquoted
+user name goes out upper case, so the oracle_userlist and connectstrings
+entries need TESTUSER (see #10734).
+
+Live runs for regressions, with the same module (the module staged with
+make stagemodules into a scratch directory and the test instances started
+from the build tree, not the installed one): ojdbc8 23.26 running the
+Conn14 scripts select1, types, rows25, twoqueries, prepared, error, dml and
+dmlauto at 12.1, 11.2, 10.2, floor 12a and connectstrings, with the same
+output at 12.1 and floor 12a; OCI 23 ociselect (OCISessionBegin and a
+select) at 12.1, 11.2, 10.2 and connectstrings and its olog oci7 suite at
+12.1, 11.2 and 10.2 (110 checks, none failed); the genuine 10.2.0.5 OCI client on fedora9x86 (both
+forms) and the genuine 9.2.0.4 clients on redhat9x86 (oci7describe and
+sqlplus) at 12.1, 11.2 and 10.2. None is taken by the gate, and all behave
+as before. The login is not regressed either: 8 and 16 character passwords
+(the select1-pw8 and -pw16 captures, as the scratch users P8USER and
+P16USER, which are in the scratch config of the live run only, with an
+AUTH_PASSWORD of 17 and 33 hex), a wrong password and an unknown user (ORA-01017, the
+version-wrongpassword and version-unknownuser captures), and floors 9, 11,
+12 and 12a (ORA-28040 with no NullPointerException, the select1-sqlrelay121
+-allowedN captures).
+
+oradecode prints "legacy call decode failed ... falling back to hex dump"
+for 102 of the 114 10745 captures, every one with a post-login message or a
+field version 3 error object (the 12 refusal captures): its
+legacy call decode does not read ojdbc14's field version 3 calls and 04
+objects, as for the 10734 captures. The 12 that decode without it are the
+version and metadata ones (login, banner and logoff only). The run still
+ends cleanly in all of them, and oratoolstest.py passes over all the
+samples.
 
 The v11 time zone file for the oci8 run
 ---------------------------------------

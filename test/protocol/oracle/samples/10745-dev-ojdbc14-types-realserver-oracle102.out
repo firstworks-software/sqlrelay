@@ -1,0 +1,8 @@
+== types
+cols N1/NUMBER/0/0 N2/NUMBER/0/0 N3/NUMBER/0/0 N4/NUMBER/0/0 V/VARCHAR2/10/0 C/CHAR/5/0 D/DATE/0/0 TS/TIMESTAMP/0/9 R/RAW/0/0 NN/NUMBER/0/-127 NV/VARCHAR2/5/0 ND/DATE/0/0
+row 1: [BigDecimal:42] [BigDecimal:3.14159] [BigDecimal:-7] [BigDecimal:-0.5] [String:abc] [String:xy   ] [Date:2024-03-05] [TIMESTAMP:2024-03-05 13:14:15.123456] [raw:deadbeef] [NULL] [NULL] [NULL]
+rows 1
+cols BIG/VARCHAR2/300/0
+row 1: [String:abbbbbbbbbbbbbbbbbbbbbb...(307)]
+rows 1
+exit 0
