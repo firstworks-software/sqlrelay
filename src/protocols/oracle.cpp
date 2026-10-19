@@ -315,6 +315,10 @@
 #define ORA_USER_REQUESTED_CANCEL_MESSAGE \
 	"ORA-01013: user requested cancel of current operation\n"
 
+// the back end error a statement naming a missing table or view fails with -
+// see putSummary()
+#define ORA_TABLE_DOES_NOT_EXIST	942
+
 // what sendUnimplementedFunctionError() sends for a tti function this
 // module doesn't implement, or doesn't recognize at all - a real ora
 // number, unlike ORA_QUERY_FAILED below
@@ -600,6 +604,12 @@
 // see sendAuthenticationSuccess().
 #define SERVER_VERSION_NO_10_2		"169869568"
 #define SERVER_VERSION_SQL_10_2		"20"
+
+// what real 11.2 and 12.2 servers answer an 8i client's version call with,
+// in place of their own version - see sendVersionResponse()
+#define VERSION_BANNER_8I \
+	"Oracle Database 11g Release 11.1.0.0.0 - Production"
+#define VERSION_PACKED_8I	0x0b100000
 
 // datatype request encoding flags
 #define ENCODING_MULTI_BYTE		0x01
@@ -3083,9 +3093,11 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_oracle : public sqlrprotocol {
 		uint16_t	endtoend8i;
 
 		// whether the tti function being answered is an 8i execute
-		// that also fetches, and whether its answer has run the error
-		// break - both decide an 8i error object's success iterations
+		// that also fetches, whether it is an 8i fetch, and whether its
+		// answer has run the error break - they decide an 8i object's
+		// success iterations
 		bool		executefetch8i;
+		bool		fetchcall8i;
 		bool		errorbreak8i;
 
 		// the bind section of the query3 request being handled: one
@@ -3624,6 +3636,7 @@ void sqlrprotocol_oracle::init() {
 	query3session=false;
 	endtoend8i=0;
 	executefetch8i=false;
+	fetchcall8i=false;
 	errorbreak8i=false;
 	callnumber=0;
 	justpiggybacked=false;
@@ -3754,6 +3767,7 @@ clientsessionexitstatus_t sqlrprotocol_oracle::clientSession(
 			if (query8i) {
 				endtoend8i++;
 				executefetch8i=false;
+				fetchcall8i=false;
 				errorbreak8i=false;
 			}
 
@@ -21070,8 +21084,25 @@ void sqlrprotocol_oracle::putSummary(uint32_t cursorid,
 	// blocks 9i sqlplus runs at [0034] and [0048] of test/protocol/oracle/
 	// samples/10538-solaris8sparc-sqlplus-select-realserver-oracle102.
 	// oraproxy
+	sqlrservercursor	*summarycursor=wireIdToCursor(cursorid);
 	byte_t	commandtype=(fieldversion<CCAP_FIELD_VERSION_10_2)?
-				oci7CommandType(wireIdToCursor(cursorid)):3;
+				oci7CommandType(summarycursor):3;
+
+	// Real 10.2 and 11.2 servers send an 8i client 0 for a
+	// "select ... from" a missing table (ORA-00942), and 12.2 sends 3
+	// (MEASURED, [0021] of 10745-dev-ojdbc14-error-realserver-oracle102
+	// and -oracle122 and 10750-dev-ojdbc14-error-realserver-oracle112).
+	// The test is on the cursor's own query type, because
+	// oci7CommandType() also answers select for no cursor and for
+	// statements it can't classify.  A select's other parse errors, and
+	// an ORA-00942 of any other statement that oci7CommandType() calls a
+	// select, keep 3, since none of them was measured (INFERRED).
+	if (summary8i && oranum==ORA_TABLE_DOES_NOT_EXIST &&
+			summarycursor &&
+			summarycursor->getQueryType()==SQLRQUERYTYPE_SELECT &&
+			serverfieldversion<CCAP_FIELD_VERSION_12_1) {
+		commandtype=0;
+	}
 	write(&reqpacket,commandtype);
 	write(&reqpacket,(byte_t)0);
 	write(&reqpacket,(byte_t)0);
@@ -21099,13 +21130,25 @@ void sqlrprotocol_oracle::putSummary(uint32_t cursorid,
 	// live server sends 1 for a fetch of 10 rows and for a fetch of none
 	//
 	// An 8i error object behind the error break gets 0, or 1 answering an
-	// execute that also fetches (MEASURED, 10750-dev-ojdbc14-execerr-
-	// realserver-oracle122 [0030] and -prepfetcherr-realserver-oracle122
-	// [0029]; 0 for a fetch error follows oracle122, oracle102 sends 1).
-	// A commit or rollback error gets the same 0 (INFERRED, no real
-	// server capture of one).
+	// execute that also fetches (MEASURED, [0030] of 10750-dev-ojdbc14-
+	// execerr-realserver-oracle102, -oracle112 and -oracle122, and [0029]
+	// of -prepfetcherr-realserver-*).  A commit or rollback error gets the
+	// same 0 (INFERRED, no real server capture of one).
+	//
+	// An 8i fetch answer, rows or error, gets 1 from real 10.2 and 11.2
+	// servers and 0 from 12.2 (MEASURED, every 0x05 answer of 10745-dev-
+	// ojdbc14-rows25-realserver-oracle102 and -oracle122, 10750-dev-
+	// ojdbc14-rows25-realserver-oracle112 and 10750-dev-ojdbc14-fetcherr-
+	// realserver-*), so the 12.1 ceiling sends 0 (INFERRED from 12.2).
+	// Fetch errors the module raises itself, such as ORA-20004 for more
+	// than 100000 rows, follow the same rule (INFERRED, no real server
+	// raises them).
 	uint32_t	successiterations=1;
-	if (summary8i && errorbreak8i && !executefetch8i) {
+	if (summary8i && fetchcall8i) {
+		if (serverfieldversion>=CCAP_FIELD_VERSION_12_1) {
+			successiterations=0;
+		}
+	} else if (summary8i && errorbreak8i && !executefetch8i) {
 		successiterations=0;
 	}
 	writeLenPreInt(&reqpacket,successiterations);
@@ -23545,6 +23588,9 @@ bool sqlrprotocol_oracle::fetch3(const byte_t *rp) {
 
 	// the summary object has to echo this back
 	callnumber=sequence;
+
+	// an 8i fetch answer's success iterations follow the ceiling
+	fetchcall8i=use8iQueryObjects();
 
 	if (getDebug()) {
 		debugStart("fetch request");
@@ -26515,12 +26561,6 @@ bool sqlrprotocol_oracle::sendVersionResponse(uint32_t bufferlength) {
 	// takes in that call and any after a tagged login.  ojdbc14 makes none
 	// after its login, so the answer to one is INFERRED.
 	//
-	// the banner stays the module's own.  real 11.2 and 12.2 servers tell
-	// ojdbc14 "11.1.0.0.0" here instead, but ojdbc14 only compares the
-	// version with thresholds of 10.2 and below, which every server version
-	// the module runs at meets, so it should take the same code paths
-	// either way - INFERRED
-	//
 	// the 8i shape is portable only, like the 8i login trailer.  the
 	// encoding isn't known yet ahead of a login, so that call always gets
 	// it, and ojdbc14 never goes native after one either
@@ -26530,9 +26570,24 @@ bool sqlrprotocol_oracle::sendVersionResponse(uint32_t bufferlength) {
 		endtoendseqnumber=0;
 	}
 
+	// Real 11.2 and 12.2 servers tell an 8i client 11.1.0.0.0 here, not
+	// their own version (MEASURED, packet [0012] of 10750-dev-ojdbc14-
+	// select1-realserver-oracle112 and 10545-dev-ojdbc14-login-select1-
+	// realserver-oracle122), so the 11.2 and 12.1 ceilings do too (12.1
+	// INFERRED from 12.2).  Real 10.2 sends its own banner and 0x0a200100
+	// (MEASURED, the same packet of 10545-dev-ojdbc14-login-select1-
+	// realserver-oracle102), and so does the 10.2 ceiling.  Only the
+	// banner text differs there: the module sends its own, where real 10.2
+	// sends every client its full banner and options line.
+	const char	*banner=serverversionbanner;
+	uint32_t	packedversion=serverversionpacked;
+	if (status8i && serverfieldversion>=CCAP_FIELD_VERSION_11_2) {
+		banner=VERSION_BANNER_8I;
+		packedversion=VERSION_PACKED_8I;
+	}
+
 	// don't overrun the buffer the client passed in
-	uint32_t	bannerlength=
-			(uint32_t)charstring::getLength(serverversionbanner);
+	uint32_t	bannerlength=(uint32_t)charstring::getLength(banner);
 	if (bufferlength && bufferlength<bannerlength) {
 		bannerlength=bufferlength;
 	}
@@ -26557,13 +26612,13 @@ bool sqlrprotocol_oracle::sendVersionResponse(uint32_t bufferlength) {
 	// dalc with an ArrayIndexOutOfBoundsException
 	if (!(encodingflags&ENCODING_CONV_LENGTH)) {
 		debugWrite("banner: %d",bannerlength);
-		debugHexDump((const byte_t *)serverversionbanner,bannerlength);
+		debugHexDump((const byte_t *)banner,bannerlength);
 		writeLenPreInt(&reqpacket,bannerlength);
-		write(&reqpacket,serverversionbanner,(size_t)bannerlength);
+		write(&reqpacket,banner,(size_t)bannerlength);
 	} else {
-		putDalc(serverversionbanner,bannerlength);
+		putDalc(banner,bannerlength);
 	}
-	writeLenPreInt(&reqpacket,serverversionpacked);
+	writeLenPreInt(&reqpacket,packedversion);
 	write(&reqpacket,statusttccode);
 	if (!status8i) {
 		writeLenPreInt(&reqpacket,versioncallstatus);
@@ -26576,8 +26631,8 @@ bool sqlrprotocol_oracle::sendVersionResponse(uint32_t bufferlength) {
 	debugWrite("data flags: 0x%04x",dataflags);
 	debugTtcCode(ttccode);
 	debugWrite("server version:");
-	debugWrite("%s",serverversionbanner);
-	debugWrite("packed version: 0x%08x",serverversionpacked);
+	debugWrite("%s",banner);
+	debugWrite("packed version: 0x%08x",packedversion);
 	debugTtcCode(statusttccode);
 	if (status8i) {
 		debugWrite("8i client");

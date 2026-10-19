@@ -1,0 +1,14 @@
+== prepfetchsizes
+exec 0 fetchsize 65535 rows 3 first 1 last 3 under30s true
+exec 1 fetchsize 65535 rows 3 first 1 last 3 under30s true
+select1 1
+exec 0 fetchsize 65536 rows 3 first 1 last 3 under30s true
+exec 1 fetchsize 65536 rows 3 first 1 last 3 under30s true
+select1 1
+exec 0 fetchsize 70000 rows 3 first 1 last 3 under30s true
+exec 1 fetchsize 70000 rows 3 first 1 last 3 under30s true
+select1 1
+exec 0 fetchsize 100001 rows 3 first 1 last 3 under30s true
+exec 1 fetchsize 100001 rows 3 first 1 last 3 under30s true
+select1 1
+exit 0

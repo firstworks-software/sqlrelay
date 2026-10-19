@@ -353,13 +353,15 @@ within 10 seconds. Against the module before #10734 (a scratch build of
 HEAD's oracle.cpp) 44 checks fail, the 20 ojdbc14 sessions at the version
 call and 24 in the hand-built 0x00 rows, and the rest pass; against the new
 modules the portable run passed 2610 checks and the -native run 812, with 0
-failures in both (the portable run has 4692 checks since #10745 and 7565
-since #10750, below). What
+failures in both (the portable run had 4692 checks after #10745 and 7565
+after #10750, and has 7578 since the 11.2 follow-up of #10750, below). What
 is measured and what is inferred: the version answer, challenge, login trailer and both
-error objects are measured against real servers; the banner is the module's
-own at each ceiling, where real 11.2 and 12.2 servers send an 11.1 one, and
-the test cannot say whether ojdbc14 accepts it (it does, measured live: the
-10734-dev-ojdbc14-*-sqlrelay captures); the login answer carries the module's
+error objects are measured against real servers; the banner was the module's
+own at each ceiling in #10734, where real 11.2 and 12.2 servers send an 11.1
+one, and the test cannot say whether ojdbc14 accepts it (it does, measured
+live: the 10734-dev-ojdbc14-*-sqlrelay captures; since the 11.2 follow-up of
+#10750 the 12.1 and 11.2 ceilings send the real 11.1 one and only 10.2 keeps
+its own); the login answer carries the module's
 9 pairs, not the 34 or 36 a real server sends; and the refusal bytes at
 floors 11, 12 and 12a are the floor 9 capture's, inferred equal (only floor 9
 was captured on a real server). Only the module's own choice, with no real
@@ -373,9 +375,10 @@ config lacks, so the 16 character case proves the refusal only; the live
 runs below cover the pad digits.
 
 Once logged in, ojdbc14 is played through query sessions (#10745), in the
-portable run only. 13 scripts run at the 12.1, 11.2 and 10.2 listeners and at
-the connectstrings one, 52 sessions (#10750 added 11 scripts and 36 sessions,
-below): select1, rows25, twoqueries, reuse,
+portable run only. #10745 ran 13 scripts at the 12.1, 11.2 and 10.2 listeners
+and at the connectstrings one, 52 sessions (#10750 added 11 scripts and 36
+sessions, below, for 24 scripts and 88 sessions now): select1, rows25,
+twoqueries, reuse,
 prepared, error, longtext, newline, types, null, dml, dmlauto and
 commitfirst. Each logs in as above and then sends the calls ojdbc14 sent real
 10.2 and 12.2 servers in the 10745-dev-ojdbc14-*-realserver captures: its 0x5e
@@ -416,7 +419,8 @@ their first 0x5e, and the 4 commitfirst ones, which get 09 01 05 where 09 01
 04 is expected) and the rest pass, since a session stops at its first failed
 call; against the new module the portable run passed 4692 checks and the
 -native run 812 (it skips the query sessions), with 0 failures in both. With
-#10750 the portable run has 7565 checks, below.
+#10750 the portable run had 7565 checks, and it has 7578 since the 11.2
+follow-up, below.
 
 Its -native run does the same in the native encoding for the tagged logins
 with the 10g and later verifiers, and runs twice: once with the client
@@ -5448,9 +5452,11 @@ that statement, except where noted.
                                       0x01. The ORA-01017 at [0017] and [0024]
                                       is 117 bytes after the 0x04: a 65 byte
                                       fixed width object, the length byte and
-                                      the 51 byte message. testuser is expired
-                                      here, so the correct password ends in
-                                      ORA-28001 at [0031] (#10718)
+                                      the 51 byte message. testuser was
+                                      expired here when this was captured
+                                      (until 2026-10-19), so the correct
+                                      password ends in ORA-28001 at [0031]
+                                      (#10718)
 
     10718-fedora16x86-oci11-portable-loginretry-unknownuser-wrongpassword-correctpassword-realserver-oracle122.oraproxy
                                      the same against the real 12.2 server,
@@ -5667,9 +5673,11 @@ that statement, except where noted.
                                       AUTH_VFR_DATA flags 0x1b25, the 11g
                                       verifier, and the 10.2 client completes
                                       that exchange: the run ends in ORA-28001
-                                      (the testuser account is expired there),
-                                      not ORA-01017. The data type request is
-                                      2300 bytes sent as two packets, 2011 and
+                                      (the testuser account was expired there
+                                      when this was captured, until
+                                      2026-10-19), not ORA-01017. The data
+                                      type request is 2300 bytes sent as two
+                                      packets, 2011 and
                                       289 bytes ([0009] and [0010]), because
                                       the client asks for an SDU of 2048; the
                                       real server reassembles it (#10545)
@@ -5706,7 +5714,8 @@ that statement, except where noted.
                                       O3LOGON key, not the 96 hex key the same
                                       server gives the tagged login. The run
                                       ends in ORA-28001, as the oci8 one does
-                                      (the account is expired). The client's
+                                      (the account was expired then). The
+                                      client's
                                       0x51 password is 64 hex here, as in
                                       every run of this client; a genuine 9i
                                       client sends 48 (#10545)
@@ -7232,8 +7241,10 @@ the module. Each .oraproxy has a .out beside it with what Conn14 printed.
                                       11.1.0.0.0 compatibility one. The 10745
                                       -realserver captures that follow are all
                                       taken this way, one Conn14 action each,
-                                      and none has an oracle112 twin, whose
-                                      testuser is expired (#10745)
+                                      and none had an oracle112 twin then,
+                                      because its testuser was expired. The
+                                      10750-dev-ojdbc14-*-realserver-oracle112
+                                      captures below are the twins (#10745)
 
     10745-dev-ojdbc14-version-sqlrelay121.oraproxy
     10745-dev-ojdbc14-version-sqlrelay112.oraproxy
@@ -7249,16 +7260,23 @@ the module. Each .oraproxy has a .out beside it with what Conn14 printed.
                                       and 10.2.0.1.0 (64bit Production), where
                                       real 11.2 and 12.2 servers send
                                       11.1.0.0.0. The driver takes them all.
+                                      That is the module of #10745: since the
+                                      11.2 follow-up of #10750 the 12.1 and
+                                      11.2 listeners send the real 11.1.0.0.0
+                                      banner (10750-dev-ojdbc14-version-
+                                      sqlrelay121 and -sqlrelay112) and only
+                                      10.2 keeps its own.
                                       The -sqlrelay captures that follow are
                                       all taken this way. A real server sends
                                       the break and reset markers and takes the
                                       client's reset (3 packets) before every
                                       post-login error object, and the module
-                                      sends the 04 object alone, so an action
-                                      with an error
-                                      has 3 packets fewer against the module
-                                      for each one. Otherwise the packet counts
-                                      are the same (#10745)
+                                      of #10745 sent the 04 object alone (the
+                                      module of #10750 sends the markers too),
+                                      so an action with an error has 3 packets
+                                      fewer in these captures than against a
+                                      real server, for each one. Otherwise the
+                                      packet counts are the same (#10745)
 
     10745-dev-ojdbc14-metadata-realserver-oracle102.oraproxy
     10745-dev-ojdbc14-metadata-realserver-oracle122.oraproxy
@@ -7278,7 +7296,10 @@ the module. Each .oraproxy has a .out beside it with what Conn14 printed.
                                      the same against the module. 19 packets,
                                       Oracle 12.1, 11.2, 10.2 and 12.1
                                       (connectstrings) from the module's
-                                      banners (#10745)
+                                      banners. Since the 11.2 follow-up of
+                                      #10750 the 12.1, 11.2 and connectstrings
+                                      listeners say Oracle 11.1, as real
+                                      oracle112 and oracle122 do (#10745)
 
     10745-dev-ojdbc14-select1-realserver-oracle102.oraproxy
     10745-dev-ojdbc14-select1-realserver-oracle122.oraproxy
@@ -7675,7 +7696,10 @@ and fetch sizes (#10750)" below). There are 134 files: 57 .oraproxy captures,
 the fetchbig and prepfetchbig runs of the real servers, of the module before
 and of the module after) and 12 .oraproxy.times files. 30 of the captures are
 of the real oracle102 and oracle122 servers, 7 of HEAD's module before the
-change (the -before ones) and 20 of the module after it.
+change (the -before ones) and 20 of the module after it. The 11.2 follow-up
+added 83 more files, listed after the module after captures: 27 captures
+of the real oracle112 and 13 of the module, each with a .out file, and 3
+.oraproxy.times files.
 
 Table names. The runs used scratch tables, and Oracle puts the name in its
 error messages, so the .out files of one action differ by name: the real
@@ -8224,6 +8248,257 @@ except where the section below lists a difference.
                                       100001 gets ORA-20004 and the connection
                                       stays open (#10750)
 
+The 11.2 captures of the #10750 follow-up. oracle112's testuser was unlocked
+on 2026-10-19 (see "The three real Oracle test servers on this network" at the
+end), and the same driver was run against the real oracle112 (Oracle
+11.2.0.1.0 64 bit, WE8MSWIN1252) for the 27 actions below. There are 83 files:
+57 for the real server (27 .oraproxy captures, 27 .out files and 3
+.oraproxy.times files) and 26 for the module (13 captures with their .out
+files), plus 114 fresh oracle102 and oracle122 references for the same 27
+actions (the -fresh- files below). They were taken with the Conn14 of the
+follow-up, whose dml, dmlauto and rollbackauto end with one more drop (one
+more 0x5e and an ORA-00942 with markers), whose error() closes the failed
+Statement (so its cursor close rides in front of the next call) and whose
+fetchsizes and prepfetchsizes have no catch per size (a module listener's
+ORA-20004 at 100001 ends the run with "SQLException 20004 ..." and "exit 1",
+where the older sqlrelay121 fetchsizes .out shows "after 0 rows ... error
+20004" and "exit 0"). So the packet counts of these dml, dmlauto and
+rollbackauto captures differ from the older real server ones (the output does
+not). Compare an oracle112 capture with an oracle102 or oracle122 one taken
+the same way, not with the older files: the
+10750-dev-ojdbc14-*-fresh-realserver-oracle102 and -oracle122 references
+below. Table names: PROTOCOLTEST10750E (execerr), P (prepexecerr), C (cancel)
+and T (timeout), as in the other real server files.
+
+    10750-dev-ojdbc14-select1-realserver-oracle112.oraproxy
+    10750-dev-ojdbc14-version-realserver-oracle112.oraproxy
+    10750-dev-ojdbc14-metadata-realserver-oracle112.oraproxy
+    10750-dev-ojdbc14-types-realserver-oracle112.oraproxy
+    10750-dev-ojdbc14-rows25-realserver-oracle112.oraproxy
+    10750-dev-ojdbc14-twoqueries-realserver-oracle112.oraproxy
+    10750-dev-ojdbc14-reuse-realserver-oracle112.oraproxy
+    10750-dev-ojdbc14-prepared-realserver-oracle112.oraproxy
+    10750-dev-ojdbc14-error-realserver-oracle112.oraproxy
+    10750-dev-ojdbc14-dml-realserver-oracle112.oraproxy
+    10750-dev-ojdbc14-dmlauto-realserver-oracle112.oraproxy
+    10750-dev-ojdbc14-longtext-realserver-oracle112.oraproxy
+    10750-dev-ojdbc14-selectnull-realserver-oracle112.oraproxy
+    10750-dev-ojdbc14-commitfirst-realserver-oracle112.oraproxy
+    10750-dev-ojdbc14-rollbackauto-realserver-oracle112.oraproxy
+    10750-dev-ojdbc14-preptime-realserver-oracle112.oraproxy
+    (each with a matching .out - Conn14's own stdout for that run)
+                                     the #10745 actions against the real
+                                      oracle112, one action per connection,
+                                      19 to 57 packets (select1 23, version
+                                      and metadata 19, rows25 27, error 28,
+                                      dml 57). The packet order, the markers
+                                      and the end to end counter are the same
+                                      as oracle102's and oracle122's in every
+                                      action (2 in the challenge, 3 in the
+                                      login answer, 4 for the first 0x5e), and
+                                      what Conn14 prints is oracle122's in
+                                      every one. [0012] is the version call
+                                      answer: 63 body bytes, "Oracle Database
+                                      11g Release 11.1.0.0.0 - Production" and
+                                      0x0b100000, byte for byte oracle122's
+                                      ([0012] of 10745-dev-ojdbc14-version-
+                                      realserver-oracle122); oracle102 sends
+                                      its own 10.2.0.1.0 banner and an options
+                                      line (134 body bytes). The login is the
+                                      single DES exchange of oracle102 and
+                                      oracle122: a 16 hex AUTH_SESSKEY in the
+                                      challenge [0014] and a 33 hex
+                                      AUTH_PASSWORD, pad digit 4, for the 12
+                                      character password; the login answer
+                                      [0016] has 35 pairs in oracle102's order
+                                      with 11.2's values (AUTH_VERSION_NO
+                                      186646784 = 0x0b200100, AUTH_VERSION_SQL
+                                      22, AUTH_VERSION_STRING "- 64bit
+                                      Production", AUTH_SERVER_PID, no
+                                      AUTH_LAST_LOGIN, AUTH_SC_SVC_FLAGS 0).
+                                      The data type negotiation answer is 834
+                                      bytes, oracle102's byte for byte
+                                      (oracle122's is 838). The describes are
+                                      oracle122's (byte 0x51, NUMBER scale 81
+                                      7f, dcbflag 0, row header flags 0x22,
+                                      0x15 bit vectors), and so is metadata:
+                                      Oracle 11.1. The success iterations of
+                                      the fetch answers are oracle102's, 1:
+                                      [0020], [0022] and [0024] of rows25
+                                      (oracle122 sends 0 there). The statement
+                                      type of the ORA-00942 at the parse of a
+                                      select ([0021] of error) is 0, as
+                                      oracle102's (oracle122 sends 3)
+                                      (#10750 follow-up)
+
+    10750-dev-ojdbc14-execerr-realserver-oracle112.oraproxy
+    10750-dev-ojdbc14-prepexecerr-realserver-oracle112.oraproxy
+    10750-dev-ojdbc14-execselerr-realserver-oracle112.oraproxy
+    10750-dev-ojdbc14-fetcherr-realserver-oracle112.oraproxy
+    10750-dev-ojdbc14-prepfetcherr-realserver-oracle112.oraproxy
+    10750-dev-ojdbc14-reexecrows-realserver-oracle112.oraproxy
+    10750-dev-ojdbc14-fetchsizes-realserver-oracle112.oraproxy
+    10750-dev-ojdbc14-prepfetchsizes-realserver-oracle112.oraproxy
+    (each with a matching .out - Conn14's own stdout for that run)
+                                     the #10750 error and fetch size actions
+                                      against the real oracle112. 122, 104,
+                                      41, 58, 157, 43, 51 and 59 packets.
+                                      Everything the real oracle102 and
+                                      oracle122 files above show is the same
+                                      here: the break, the reset marker, the
+                                      client's reset and the 04 alone before
+                                      every error except ORA-01403, success
+                                      iterations 0 in an execute-time error
+                                      and 1 in a failing 0x8068, the
+                                      counter, the messages, the row header
+                                      and summary bytes of the fetch sizes,
+                                      and the row counts 10, 20 and 25 of
+                                      reexecrows. The one difference from
+                                      oracle122 is in the answers to 0x05
+                                      fetches, where oracle102 and oracle112
+                                      send success iterations 1 (ORA-01476 and
+                                      ORA-01403 answers too: 138 objects in
+                                      the 27 actions) and oracle122 sends 0
+                                      (#10750 follow-up)
+
+    10750-dev-ojdbc14-cancel-realserver-oracle112.oraproxy
+    10750-dev-ojdbc14-timeout-realserver-oracle112.oraproxy
+    10750-dev-ojdbc14-cancelidle-realserver-oracle112.oraproxy
+    10750-dev-ojdbc14-cancel-realserver-oracle112.oraproxy.times
+    10750-dev-ojdbc14-timeout-realserver-oracle112.oraproxy.times
+    10750-dev-ojdbc14-cancelidle-realserver-oracle112.oraproxy.times
+    (each with a matching .out - Conn14's own stdout for that run;
+    .times files: each chunk with its time, and the urgent bytes)
+                                     cancel, timeout and cancelidle against
+                                      the real oracle112, taken with the
+                                      scratch proxy that relays urgent data
+                                      (see below). 84, 84 and 31 packets. An
+                                      urgent byte during a call is answered
+                                      with one reset marker within about 2 to
+                                      22 ms, then the client's reset and the
+                                      04 with ORA-01013, as oracle102 and
+                                      oracle122 do. The ORA-01013 of the
+                                      update carries error position 7, and
+                                      that of the select for update 0 ([0045]
+                                      and [0071]), the same as in the -fresh-
+                                      oracle102 and oracle122 references
+                                      below. The older cancel and timeout
+                                      captures above show 14 for the same
+                                      statement text, so it is a difference
+                                      between the two Conn14 runs (probably
+                                      the cursor state), not between the
+                                      servers (#10750 follow-up)
+
+    10750-dev-ojdbc14-*-fresh-realserver-oracle102.oraproxy
+    10750-dev-ojdbc14-*-fresh-realserver-oracle122.oraproxy
+    (27 actions for each server: select1, version, metadata, types,
+    rows25, twoqueries, reuse, prepared, error, dml, dmlauto, longtext,
+    selectnull, commitfirst, rollbackauto, preptime, execerr, prepexecerr,
+    execselerr, fetcherr, prepfetcherr, reexecrows, fetchsizes,
+    prepfetchsizes, cancel, timeout and cancelidle; each with a matching
+    .out - Conn14's own stdout for that run - and cancel, timeout and
+    cancelidle with .oraproxy.times files)
+                                     the references for the oracle112
+                                      captures: the same 27 actions against
+                                      the real oracle102 and oracle122, taken
+                                      in the 11.2 follow-up with the same
+                                      Conn14 and the same proxies as the
+                                      oracle112 ones (cancel, timeout and
+                                      cancelidle through the scratch proxy
+                                      that relays urgent data). 114 files,
+                                      752 KB. The packet count of each action
+                                      is the same on both servers and on
+                                      oracle112 (select1 23, error 28, dml
+                                      57, dmlauto 43, rollbackauto 41,
+                                      execerr 122, prepfetcherr 157, cancel
+                                      and timeout 84). That Conn14 differs a
+                                      little from the one behind the 10745
+                                      and 10750 captures above: dml, dmlauto
+                                      and rollbackauto end with one more drop
+                                      (57, 43 and 41 packets where the 10745
+                                      oracle102 ones have 52, 38 and 36), and
+                                      error() closes the failed Statement,
+                                      so the counters of later calls are one
+                                      higher. The .out files are the same.
+                                      In the cancel and timeout ones the
+                                      ORA-01013 of the select for update
+                                      carries error position 0 where the
+                                      older captures show 14. These are what
+                                      the "the same on all three servers"
+                                      claims of the 11.2 section below rest
+                                      on: 383 04 objects per server, 138 of
+                                      them answers to a 0x05 fetch, with the
+                                      same counter in every object
+                                      (#10750 follow-up)
+
+    10750-dev-ojdbc14-select1-sqlrelay112.oraproxy
+    10750-dev-ojdbc14-version-sqlrelay121.oraproxy
+    10750-dev-ojdbc14-version-sqlrelay112.oraproxy
+    10750-dev-ojdbc14-version-sqlrelay102.oraproxy
+    10750-dev-ojdbc14-error-sqlrelay121.oraproxy
+    10750-dev-ojdbc14-error-sqlrelay112.oraproxy
+    10750-dev-ojdbc14-error-sqlrelay102.oraproxy
+    (each with a matching .out - Conn14's own stdout for that run)
+                                     the module after the follow-up at the
+                                      12.1, 11.2 and 10.2 listeners: select1
+                                      at 11.2 (23 packets, the real
+                                      oracle112's), version (19) and error
+                                      (28) at all three. [0012] of version
+                                      at 12.1 and 11.2 is the real server's
+                                      63 body bytes, "Oracle Database 11g
+                                      Release 11.1.0.0.0 - Production" and
+                                      0x0b100000 (measured at 11.2, inferred
+                                      at 12.1 from oracle122), byte for byte
+                                      [0012] of the oracle112 and oracle122
+                                      captures; the .out is the real
+                                      oracle112's. At 10.2 it is the 88 body
+                                      byte answer of 10745-dev-ojdbc14-
+                                      version-sqlrelay102 (the real 10.2
+                                      version number 0x0a200100 and the
+                                      module's own banner, below). [0021] of
+                                      error, the ORA-00942 at the parse of a
+                                      select, has statement type 3 at 12.1
+                                      (oracle122's) and 0 at 11.2 and 10.2
+                                      (oracle112's and oracle102's)
+                                      (#10750 follow-up)
+
+    10750-dev-ojdbc14-execerr-sqlrelay112.oraproxy
+    10750-dev-ojdbc14-fetcherr-sqlrelay112.oraproxy
+    (each with a matching .out - Conn14's own stdout for that run)
+                                     execerr (122 packets) and fetcherr (46)
+                                      at the 11.2 listener, for the real
+                                      oracle112 comparison: execerr is the
+                                      real oracle112's packet for packet, and
+                                      fetcherr has the module's known shape
+                                      (the select error lands at the 0x5e)
+                                      (#10750 follow-up)
+
+    10750-dev-ojdbc14-fetcherr-sqlrelay121fetchatonce-after112.oraproxy
+    10750-dev-ojdbc14-fetcherr-sqlrelay112fetchatonce.oraproxy
+    10750-dev-ojdbc14-fetcherr-sqlrelay102fetchatonce.oraproxy
+    10750-dev-ojdbc14-fetcherr-sqlrelay121-after112.oraproxy
+    (each with a matching .out - Conn14's own stdout for that run)
+                                     fetcherr at the fetchatonce=1 listeners
+                                      (54 packets), where the error comes at
+                                      a 0x05 fetch and shows the success
+                                      iterations of a fetch answer: [0023],
+                                      [0034] and [0047] hold ORA-01476, and
+                                      [0027], [0038] and [0051] ORA-01403.
+                                      Both are 0 at 12.1, as oracle122 sends,
+                                      and 1 at 11.2 and 10.2, as oracle112
+                                      and oracle102 send. The fourth is
+                                      fetcherr at the default 12.1 listener
+                                      (46 packets), where
+                                      ORA-01403 [0025], [0034] and [0043] carry
+                                      0 too. The older
+                                      10750-dev-ojdbc14-fetcherr-sqlrelay121
+                                      and ...121fetchatonce captures above
+                                      were taken before the change and still
+                                      have 1 in the ORA-01403 answers at 12.1
+                                      (the same .out). The -after112 ones are
+                                      what the module sends now
+                                      (#10750 follow-up)
+
 The genuine 10g OCI client and the logon version floors (#10545)
 ----------------------------------------------------------------
 
@@ -8525,9 +8800,10 @@ are the same at all three servers except where noted:
   and AUTH_COPYRIGHT, the last two in chunks of up to 64 bytes. The copyright
   text holds five 0x0a bytes, which is what made findO3LogonStrings() report
   "no string list found" when it was fed this packet.
-* The login answer has 34 pairs from oracle102 and 36 from oracle122 (no
-  login is on file for oracle112, whose testuser is expired), no
-  AUTH_SVR_RESPONSE, and the trailer 04 01 03 and 22 zeros.
+* The login answer has 34 pairs from oracle102, 35 from oracle112 and 36 from
+  oracle122 (the oracle112 one is from the 11.2 follow-up of #10750, after
+  its testuser was unlocked; none was on file before), no AUTH_SVR_RESPONSE,
+  and the trailer 04 01 03 and 22 zeros.
   The driver needs none of the pairs.
 * Logoff. The 0x09 call is answered by 09 00. After a query the driver
   sends the cursor close and the logoff in one packet, and with no cursor
@@ -8571,8 +8847,11 @@ read as 0, which is also what ojdbc14 sends; unmeasured against a real
 server). The pre-login
 0x3b is answered once, in phase one, only for a client8i client, at every
 floor; any other client's 0x3b is still dropped. The version answer ends in
-09 00 and carries the module's own banner at each ceiling (12.1.0.2.0,
-11.2.0.1.0, 10.2.0.1.0: 88 body bytes), not the real servers' 11.1 one. The 8i
+09 00 and carried the module's own banner at each ceiling in #10734 (12.1.0.2.0,
+11.2.0.1.0, 10.2.0.1.0: 88 body bytes), not the real servers' 11.1 one. Since
+the 11.2 follow-up of #10750 the 12.1 and 11.2 ceilings send the real
+11.1.0.0.0 banner and 0x0b100000 (63 body bytes) and only 10.2 keeps its own,
+see "ojdbc14 at the 11.2 ceiling" below. The 8i
 version and logoff replies are portable encoding only. The
 challenge is the 65 byte one (a 16 hex key, also for an unknown user), the
 login answer is the module's 9 pairs without AUTH_SVR_RESPONSE and the
@@ -8588,7 +8867,8 @@ Measured against the module with genuine ojdbc14 (private build tree
 instances, oracle122 as the backend; the 10734-dev-ojdbc14-*-sqlrelay
 captures): login with version and metadata and a clean close at 12.1, 11.2
 and 10.2 at floor 8, which shows the driver accepts the module's own banners
-and the 9 pair login answer; passwords of 7 to 14, 16 and 17 characters; a
+(at the time) and the 9 pair login answer; passwords of 7 to 14, 16 and 17
+characters; a
 wrong password and an unknown user giving a readable ORA-01017 at all three
 ceilings; ORA-28040 at floors 9, 11, 12 and 12a with no NullPointerException,
 byte for byte the real oracle122 floor 9 object; and the connectstrings auth
@@ -8621,9 +8901,10 @@ Inferred, not measured:
 Differences from a real server that remain, cosmetic: the break and the
 reset markers go out as two TCP segments (a real server sends one 22 byte
 chunk); the login answer has 9 pairs where real servers send 34 to 36; and
-the banner is the module's own. Security note: floor 8, the default, now
-serves single DES to a client that advertises no logon types, as real
-Oracle does; allowedlogonversion 9 or higher refuses it.
+the banner is the module's own at 10.2 (the 12.1 and 11.2 ceilings send the
+real 11.1 one since the 11.2 follow-up of #10750). Security note: floor 8,
+the default, now serves single DES to a client that advertises no logon
+types, as real Oracle does; allowedlogonversion 9 or higher refuses it.
 
 oradecode prints "legacy call decode failed ... falling back to hex dump"
 for several of these captures. Its legacy call decode does not read the
@@ -8758,11 +9039,13 @@ captures), where the module's answer differs from a real server's:
 
 What is the module's choice, with no real server measured doing it, or
 measured doing it differently:
-* The 11.2 ceiling. oracle112's testuser is expired, so no 11.2 real server
-  has a reference capture, and the module's 11.2 answers are the 10.2 and
-  12.2 ones. Measured live: every script works at 11.2 as at 12.1 and 10.2,
-  and the objects are the same on oracle102 and oracle122, which is why
-  this is inferred only for what a real 11.2 server would send.
+* The 11.2 ceiling, at the time of #10745. oracle112's testuser was expired,
+  so no 11.2 real server had a reference capture, and the module's 11.2
+  answers were the 10.2 and 12.2 ones. Measured live: every script worked at
+  11.2 as at 12.1 and 10.2, and the objects are the same on oracle102 and
+  oracle122, which is why this was inferred only for what a real 11.2 server
+  would send. The 11.2 follow-up of #10750 measured it against the real
+  oracle112 (below, "ojdbc14 at the 11.2 ceiling").
 * Success iterations 1 in every error object of the module of #10745, where
   real servers send 0 or 1 (oracle122 sends 0 in fetch answers). The driver
   never reads it. Since #10750 it is 0 for an error at the execute and 1 for
@@ -8975,7 +9258,10 @@ Measured on the real servers, oracle102 and oracle122 alike:
   within 1 ms with one reset marker (no break marker), waits for the
   client's reset (proved by holding it back 1.5 s), then sends the 04 with
   ORA-01013: the cancelled call's counter, row count 0, error position 7 for
-  the update and 14 for the select for update, success iterations 0.
+  the update and 14 for the select for update, success iterations 0. (In
+  the 11.2 follow-up's runs, oracle112 and the -fresh- oracle102 and
+  oracle122 references, the select for update's is 0, with the same
+  statement text: a difference between the Conn14 runs, not the servers.)
   Autocommit on or off gives the same packets; only the cancelled statement
   is rolled back. An urgent byte that arrives with no call running gets no
   answer until the client's next call, which the server discards (reset,
@@ -9058,7 +9344,8 @@ exit 0, every proxied .out the same as the direct one):
   and array error fields, curRowNumber (0 where a real server says 2 for a
   select error), and, when a select error lands at the 0x5e or the 0x8068
   instead of a fetch, the counter and success iterations of that call.
-  Success iterations for a fetch error are 0, oracle122's; oracle102 sends 1.
+  Success iterations for a fetch error were 0, oracle122's, where oracle102
+  sends 1; since the 11.2 follow-up they follow the ceiling (below).
 
 What the module can not do, on purpose, and says so:
 * Statement.cancel() and setQueryTimeout() have no effect. The urgent byte
@@ -9084,10 +9371,8 @@ What the module can not do, on purpose, and says so:
   (the 32 MB response limit is what bounds the module's memory).
 * The cursor id an error names can be one the same packet's piggybacked close
   just closed (the module recycles ids). The driver does not mind.
-* The 11.2 ceiling is inferred. oracle112's testuser is expired, so there is
-  no real 11.2 reference; every script works at 11.2 as at 12.1 and 10.2,
-  and the objects are the same on oracle102 and oracle122. Unlocking it is a
-  change to a shared server and was not made; whether to is an open question.
+* The 11.2 ceiling was inferred when #10750 closed (oracle112's testuser was
+  expired). It is measured now, for ojdbc14, in the follow-up below.
 
 Inferred, not measured: that the module's own errors (not the backend's) get
 markers as the backend's do; that a re-execute with 0x8060, 0x8020 or 0x8120
@@ -9096,7 +9381,8 @@ the history effect on the error position is the cursor cache; that no
 sequence other than a 0x05 fetch and a 0x8029 re-parse reaches a 0x8068 over
 100000 rows with the genuine driver. Not measured: 0x8060, an empty last
 fetch, fetch sizes over 100001 beyond the run itself, a break while the
-driver is still sending a call or during a fetch, and any 11.2 server.
+driver is still sending a call or during a fetch. The 11.2 ceiling was
+inferred here and is measured since the follow-up (below).
 
 Left for follow-up tickets:
 * #10756: the oracle connection: deliver the rows before a failing row and
@@ -9119,7 +9405,8 @@ Left for follow-up tickets:
   the response size limit
 * #10765: read the client's reset after a break with the continuation timeout
   instead of waiting for it without one
-* a real 11.2 reference for ojdbc14, if wanted (the open question; no ticket)
+* a real 11.2 reference for ojdbc14: done, see "ojdbc14 at the 11.2 ceiling"
+  below
 
 The tests.
 * oracleprotocolclient: recvOjdbc14Answer() takes the break and the reset
@@ -9128,7 +9415,8 @@ The tests.
   (appendOjdbc14Number(), 65536 as 03 01 00 00); sendUrgentByte() sends a
   MSG_OOB byte; the reassembly buffer is 4 MB; readOjdbc14Answer() counts rows
   and objects past the ones it keeps, so a 65536 row answer can be checked.
-* oracleverifiernegotiation: 11 new scripts and 36 sessions. execerr,
+* oracleverifiernegotiation: 11 new scripts and 36 sessions (88 query
+  sessions in all). execerr,
   prepexecerr, execselerr, fetcherr, prepfetcherr, fetchsizes, prepfetchsizes
   and reexecrows run at the 12.1, 11.2 and 10.2 listeners and at the
   connectstrings one; fetcherr also at the fetchatonce=1 listener; bigfetch
@@ -9142,22 +9430,27 @@ The tests.
   100000 and the refusal at 100001 (the cursor untouched), the row counts of
   reexecrows and the counters are asserted. checkOjdbc14CallBuilders() has 13
   more captured calls (23), checkOjdbc14ErrorObjectBuilder() reproduces 4
-  real error objects, and the #10745 check that expected a data packet after
+  real error objects (14 since the 11.2 follow-up, below), and the #10745
+  check that expected a data packet after
   an error now expects the markers. Fields the module chooses and the driver
   ignores (error position, array error fields, rba, a select error's row
   number) are not compared. Cancel is a guard only. The lost rows before a
   mid-fetch error are pinned as the module's shape, so that a fix shows up
   as a change to the test.
-* Counts. The portable run has 7565 checks (4692 since #10745) and the
-  -native run 812, with 0 failures in both. The portable count varies a
-  little between runs (7530 in another run): a select error lands at the
-  0x5e or at the first fetch depending on the backend session, and the test
-  accepts either. Against a scratch module built from HEAD's oracle.cpp
-  before #10750, 410 portable checks fail and the rest pass (the 93 errors
-  times 4 checks for the markers, the message and the success iterations,
-  9 for ORA-17412 on the 4 byte row header, 28 for the carried row counts
-  and 1 for noreset); the -native run is unchanged (812, 0 failed); the
-  urgent session passes on HEAD by design.
+* Counts. With #10750 the portable run had 7565 checks (4692 after
+  #10745) and the -native run 812, with 0 failures in both. The portable
+  count varies a little between runs (7530 in another run): a select error
+  lands at the 0x5e or at the first fetch depending on the backend session,
+  and the test accepts either. Against a scratch module built from
+  279015ef5's oracle.cpp (before #10750), 410 portable checks fail and the
+  rest pass (the 93 errors times 4 checks for the markers, the message and
+  the success iterations, 9 for ORA-17412 on the 4 byte row header, 28 for
+  the carried row counts and 1 for noreset); the -native run is unchanged
+  (812, 0 failed); the urgent session passes there by design. Since the
+  11.2 follow-up the portable run has 7578 checks and the -native run 812,
+  with 0 failures in both, and against a scratch module built from
+  3fe79aad2's oracle.cpp (#10750, before the follow-up) 345 portable checks
+  fail, see "ojdbc14 at the 11.2 ceiling" below.
 * The fetch size vectors are the real servers' bytes: the four fetch calls
   are packets [0019], [0027], [0035] and [0043] of the fetchsizes
   captures, and the 70000 re-execute is packet [0041] of
@@ -9233,6 +9526,184 @@ oradecode prints "legacy call decode failed ... falling back to hex dump"
 for all 57 of the 10750 captures, for the post-login messages and 04 objects
 of a field version 3 client, as for #10745 and #10734. The run still ends
 cleanly in all of them, and oratoolstest.py passes over all the samples.
+
+ojdbc14 at the 11.2 ceiling (#10750 follow-up)
+----------------------------------------------
+
+#10750 left the 11.2 ceiling inferred, because oracle112's testuser was
+expired. It was unlocked on 2026-10-19 with the user's approval (see "The
+three real Oracle test servers on this network" at the end), and the genuine
+ojdbc14 10.2.0.5 driver was run against the real oracle112 (Oracle
+11.2.0.1.0 64 bit, WE8MSWIN1252, sec_case_sensitive_logon TRUE) through
+oraproxy: 27 actions, one connection each, the
+10750-dev-ojdbc14-*-realserver-oracle112 captures. The module at its 11.2
+ceiling was then compared with them, and the three differences that showed
+up were fixed. All of it is ojdbc14 only, behind use8iQueryObjects() or the
+8i version answer, in src/protocols/oracle.cpp.
+
+Measured on the real oracle112 (compared with fresh oracle102 and oracle122
+runs of the same Conn14, the 10750-dev-ojdbc14-*-fresh-realserver-oracle102
+and -oracle122 references, and field by field in the 04 objects):
+* It follows oracle102 and oracle122 in packet order, markers and counter in
+  all 27 actions (direction, TNS type, TTC code and TTI function of every
+  packet match; the counter is 2 in the challenge, 3 in the login answer and
+  4 for the first 0x5e, and every 04 object of every action carries the same
+  counter on all three servers). What Conn14 prints is oracle122's in all 27
+  actions. Against oracle102 only the version banner, the metadata ("Oracle
+  11.1") and the scale of computed NUMBER columns differ (-127 on oracle112
+  and oracle122, 0 on oracle102).
+* The version call answer ([0012]) is byte for byte oracle122's: 63 body
+  bytes, "Oracle Database 11g Release 11.1.0.0.0 - Production" and
+  0x0b100000. So a real 11.2 tells ojdbc14 11.1 as 12.2 does, and only 10.2
+  sends its own banner.
+* The login is the old single DES exchange of 10.2 and 12.2 (testuser has
+  the 10G and 11G verifiers, and sec_case_sensitive_logon TRUE does not stop
+  it): the challenge is one pair, a 16 hex AUTH_SESSKEY, with the 25 byte
+  trailer, and ojdbc14 sent a 33 hex AUTH_PASSWORD with the pad digit 4 for
+  the 12 character password. The login answer has 35 pairs in oracle102's
+  order with 11.2's values: AUTH_VERSION_STRING "- 64bit Production",
+  AUTH_VERSION_SQL "22", AUTH_VERSION_NO 186646784 (0x0b200100),
+  AUTH_SC_SVC_FLAGS "0", AUTH_SERVER_PID present and no AUTH_LAST_LOGIN.
+  oracle102 has 34 pairs and oracle122 36 (AUTH_LAST_LOGIN, the service name
+  moved, SVC_FLAGS "8", SQL "24"). The trailer 04 01 03 and 22 zeros is the
+  same on all three.
+* The other pre-login answers: the data type negotiation answer is 834 bytes,
+  oracle102's byte for byte (oracle122's is 838). The TTIPRO answer is 188
+  bytes with oracle122's banner ("x86_64/Linux 2.4.xx") and fdo part 2,
+  the database character set (178, WE8MSWIN1252) and its own 39
+  byte compile caps. The ANO answer carries 0x0b200100.
+* After the login the shapes are oracle122's: describe byte 0x51, NUMBER
+  scale 81 7f, dcbflag 0 and 8168, row header flags 0x22, the 0x15 bit
+  vectors from the second row, the 19 NLS pairs in the first return
+  parameters, the fetch size header and summary row count bytes, the row
+  counts 10, 20 and 25 of reexecrows, and the markers. oracle102 has flags
+  0x02, byte 0x39, scale 0 and dcbflag 1. The flags field of the 04 objects
+  follows oracle122 too: of the 138 answers to a 0x05 fetch, oracle112 and
+  oracle122 send 0x20 in the same 17 and oracle102 in 107 (94 of those get
+  0 from oracle112).
+* Three 04 object fields where it follows oracle102 and not oracle122:
+  - the success iterations of every answer to a 0x05 fetch (138 objects
+    per server in the oracle112 captures and the -fresh- references: rows,
+    ORA-01403, ORA-01476 and ORA-01722 alike): 1 on oracle102 and
+    oracle112, 0 on oracle122 ([0020], [0022] and [0024] of rows25). The
+    answers to 0x5e calls (1 for success, 0 for an execute-time error) and
+    the failing 0x8068 (1) are the same on all three
+  - the statement type of ORA-00942 at the parse of a select ([0021] of
+    error): 0 on oracle102 and oracle112, 3 on oracle122. ORA-00942 of a
+    drop is 12 on all three (no ORA-00942 of an insert was captured), DML
+    errors are 2; select evaluation errors (ORA-01476, ORA-01722) are 3 and
+    ORA-01013 is 6 for the update and 3 for the select for update on all
+    three
+  - the ORA-01017 object's statement type 0 (the checked-in
+    10734-dev-ojdbc14-unknownuser-realserver-oracle112, not run again)
+* Equal on all three (the oracle112 captures against the -fresh-
+  references, 383 objects per server): the counter, error numbers,
+  messages, the error positions of errors, row counts and array error
+  fields. The rowid fields and cursor ids are per server, and in successful
+  answers the position depends on the server's cursor cache history (26
+  success objects differ).
+
+Not measured on a real 11.2:
+* ORA-28040 at floors 9 and up. It needs SQLNET.ALLOWED_LOGON_VERSION changed
+  on oracle112, a change to a shared server that was not made.
+* A wrong password for an existing account (not allowed). The unknown user
+  was not run again either: the 10734 capture is the 11.2 reference.
+* Results of 65535 rows and more (fetchbig and prepfetchbig). The fetch
+  sizes themselves are measured: the small fetchsizes and prepfetchsizes
+  runs ask for 65535, 65536, 70000 and 100001 rows of a 3 row result and
+  show the same header and summary bytes as oracle102 and oracle122.
+
+What the module does now, by ceiling (all three are ojdbc14 only):
+* The version call answer (sendVersionResponse()). At the 11.2 and 12.1
+  ceilings it is the real 63 body byte answer above: "Oracle Database 11g
+  Release 11.1.0.0.0 - Production" and 0x0b100000. MEASURED at 11.2, INFERRED
+  at 12.1 (from oracle122). Before, the module sent its own 12.1.0.2.0 or
+  11.2.0.1.0 banner and version, so getDatabaseProductVersion() and
+  getDatabaseMajorVersion() differed. At the 10.2 ceiling the answer is
+  unchanged: its version number 0x0a200100 is the real one, but the banner
+  text is the module's ("Oracle Database 10g Enterprise Edition Release
+  10.2.0.1.0 - 64bit Production", 88 body bytes) where real oracle102 sends
+  "... - Production" and a line "With the Partitioning, OLAP and Data Mining
+  options" (134 body bytes). That text is a module wide choice: real
+  oracle102 sends the same full banner to every client (also in
+  10538-solaris8sparc-sqlplus-select-realserver-oracle102), the module's one
+  banner also serves the OCI and 9i clients and is mirrored by the login
+  answer's AUTH_VERSION_STRING "- 64bit Production", so changing it for
+  ojdbc14 alone would be inconsistent and changing it for all clients was
+  out of scope. Whether to is an open question.
+* The success iterations of a 0x05 fetch answer (putSummary(), with a new
+  per-call flag, fetchcall8i): 1 at the 10.2 and 11.2 ceilings and 0 at 12.1,
+  for rows, ORA-01403 and errors alike (MEASURED on oracle102, oracle112 and
+  oracle122; the 12.1 value is INFERRED from oracle122, and fetch errors the
+  module raises itself, ORA-20004 and ORA-01001, follow the same rule,
+  INFERRED). Before, it was 1 for rows and ORA-01403 and 0 for a failing
+  fetch at every ceiling. The 0x5e and 0x8068 answers did not change.
+* The statement type of ORA-00942 at the parse of a select: 0 at the 10.2 and
+  11.2 ceilings and 3 at 12.1. The rule tests the cursor's own query type,
+  so it only takes a statement that begins with select, the measured select
+  ... from a missing table. It does not test the statement type the module
+  reports, because that is also 3 when there is no cursor and for statements
+  the module can not classify (create view, alter, truncate, lock table and
+  the like). Those, and the other parse errors of a select, keep 3
+  (INFERRED, unmeasured).
+
+The module against the real oracle112 (the 10750-dev-ojdbc14-*-sqlrelay112
+captures). Every action that works on the real server works at the 11.2
+listener, apart from the limits already listed (#10756, #10759, #10764). Byte
+for byte the real oracle112's: the ANO answer, the unknown user ORA-01017
+refusal, the counter, the markers, the messages, the success iterations of
+execute-time errors and of a failing 0x8068, the summary row counts, the fetch
+size header bytes, and now the version call answer, the fetch answers' success
+iterations and the statement type of the ORA-00942. The challenge is the real
+one in shape (one pair, a 16 hex AUTH_SESSKEY and the 25 byte trailer); the
+session key itself is random for each login, so its bytes differ. Still
+different, all of them known: the prepared N described as a VARCHAR2 and the
+select null precision (#10745); 0 rows before ORA-01476 (#10756); cancel and
+timeout ignored (#10759); the 100001 row refusal (#10764). The driver ignores
+the rest: the login answer's 9 pairs where the real one has 35; the TTIPRO
+answer (banner "SQLRelay/PortableTTC", character set 873, the compile caps at
+42 bytes where the real one has 39); the data type answer (940 bytes at every
+ceiling, 834 on oracle102 and oracle112); the ACCEPT (32 bytes, flags 0x01,
+where real servers send 24 bytes and 0x41); the describes' zero hash and byte
+0x39; no NLS pairs and no bit vectors; the error position 0, the rowid and
+array error fields, and the cursor id numbering.
+
+Checked with the genuine driver on a private build tree instance (oracle122
+as the back end) at the 12.1, 11.2 and 10.2 listeners and at fetchatonce=1
+ones: select1, version, metadata, error, fetcherr and execerr all exit 0. The
+version and metadata output at 12.1 and 11.2 is the real oracle112's and
+oracle122's ("Oracle Database 11g Release 11.1.0.0.0 - Production", "Oracle
+11.1"); [0012] is byte for byte the real server's in all 12 captures of the 12.1
+and 11.2 listeners and the 10.2 one is the checked-in
+10745-dev-ojdbc14-version-sqlrelay102's; the return code, statement type and
+success iterations of every 04 object of select1, error and execerr match the
+real server of the ceiling (oracle122 at 12.1, oracle112 at 11.2, oracle102 at
+10.2). At the fetchatonce=1 listeners the 0x05 fetch error carries 0 at 12.1
+and 1 at 11.2 and 10.2, as the real servers' do. The captures that show it are
+named in the sample list above; the others were not kept.
+
+oracleverifiernegotiation expects the three fields per ceiling since the same
+follow-up: each session knows its listener's ceiling. Before any connection,
+a new checkOjdbc14VersionAnswerBuilder() rebuilds the version answer byte for
+byte from [0012] of 10750-dev-ojdbc14-select1-realserver-oracle112 and of
+10545-dev-ojdbc14-login-select1-realserver-oracle122 (the 11.1 banner and
+0x0b100000, for the 11.2 and 12.1 ceilings) and -oracle102 (the 10.2 version
+number), and checkOjdbc14ErrorObjectBuilder() has 10 more real objects (14):
+the ORA-00942 select object of each server ([0021] of the error captures:
+statement type 0 from oracle102 and oracle112, 3 from oracle122) and the
+fetcherr fetch answers ([0023] of all three, [0027] and [0031] of oracle112
+and oracle122: success iterations 1 from oracle102 and oracle112, 0 from
+oracle122). Counts on the current tree: the portable run
+passed 7578 checks and the -native run 812, with 0 failures in both (private
+build tree copies of the oracleprotocol test instances, the loaded module
+the build tree's). Against a scratch module built from 3fe79aad2's
+oracle.cpp, before the follow-up, 345 portable checks fail and the rest pass
+(255 version answer checks in 85 ojdbc14 sessions at the 12.1 and 11.2
+listeners, 80 fetch answers at 12.1, 8 fetch errors at 10.2 and 11.2, and 2
+ORA-00942 statement types); the -native run is unchanged. The older
+-sqlrelay121 captures of fetcherr and
+fetcherr at fetchatonce=1 still show 1 in the ORA-01403 answers at 12.1; the
+-after112 ones show what the module sends now.
 
 The v11 time zone file for the oci8 run
 ---------------------------------------
@@ -9315,11 +9786,42 @@ Not discoverable anywhere else in this tree:
     oracle102centos4x86 (10.0.2.3)        10.0.2.3:1521   Oracle 10.2
 
 The first two take user testuser / password testpassword against SID
-ora1 (see oracle.java). As of this writing, the 11.2 server's testuser
-account has an expired password (ORA-28001) - that needs a DBA to reset
-it before a full login can be captured there again; it is unrelated to
-oraproxy or oradecode, both of which handle the error path correctly
-regardless.
+ora1 (see oracle.java). The 11.2 server's testuser account had an expired
+password (ORA-28001) until 2026-10-19, which is why the oracle112 captures
+of ORA-28001 (oracle112-login-expiredpwd, 10717 and 10718) exist and why
+#10745 had no oracle112 captures. It was unlocked that day for the #10750
+11.2 measurement, with the user's approval, and what was done is:
+* Before: EXPIRED (not locked), expiry date 2026-08-13, profile DEFAULT
+  (PASSWORD_LIFE_TIME 180 days, PASSWORD_GRACE_TIME 7), failed login count 2.
+  It already had CREATE SESSION, RESOURCE and UNLIMITED TABLESPACE and an
+  online TESTTABLESPACE, so nothing was granted.
+* One statement as sysdba: alter user testuser identified by values, with
+  the account's own existing 10G and 11G password hashes, which a PL/SQL
+  block read from sys.user$ and applied on the server without printing them.
+  The hashes were read back and compared: unchanged, so the password is
+  still the password in the test config. Re-applying a password resets the
+  expiry clock. No account unlock was needed, and the DEFAULT profile, the
+  other accounts and every other object were left alone.
+* After: OPEN, expiry date 2027-04-17 17:43:55, one test login as testuser
+  (select 1 from dual) worked and the failed login count is 0.
+* It expires again on 2027-04-17 (180 days on the DEFAULT profile), and the
+  7 day grace period starts at the first login after that. When it does, run
+  the same statement again. To stop it expiring without changing DEFAULT,
+  create a profile with password_life_time unlimited and assign it to
+  testuser (not done). To put the account back as it was, run alter user
+  testuser password expire as sysdba (EXPIRED again with the same password;
+  the old expiry date and failed login count can not be set back exactly).
+* The DBA path: ssh as dmuse with a key through the build host (oracle112's
+  sshd only offers SHA-1 key exchange), where dmuse has passwordless sudo to
+  the oracle OS user, then sqlplus / as sysdba with ORACLE_HOME
+  /u01/app/oracle/product/11.2.0 and ORACLE_SID ora1. One side effect: the
+  first try was an ssh login through the build host as the OS user oracle,
+  with no terminal, which made 2 empty password attempts that oracle112
+  refused. Every later connection used key-only batch mode.
+Nothing else was changed on oracle112. Its login policy is untouched, so
+ORA-28040 at floors 9 and up is still unmeasured on a real 11.2 (it needs
+SQLNET.ALLOWED_LOGON_VERSION changed). The error path of oraproxy and
+oradecode is unrelated to the account's state.
 
 The third, oracle102, is the only one of the three old enough to speak
 OCI7/O3LOGON - it's the backend the oracleprotocoloci7 test instance

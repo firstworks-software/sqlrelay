@@ -1,0 +1,28 @@
+== prepexecerr
+create 0
+seed 1
+autocommit false
+exec 0 error 1 ORA-00001: unique constraint (TESTUSER.PROTOCOLTEST10750P_PK) violated
+select1 1
+exec 1 update 1
+select1 1
+exec 2 error 1 ORA-00001: unique constraint (TESTUSER.PROTOCOLTEST10750P_PK) violated
+select1 1
+exec 3 error 12899 ORA-12899: value too large for column "TESTUSER"."PROTOCOLTEST10750P"."V" (actual: 12, maximum: 5)
+select1 1
+cols C/NUMBER/0/0
+row 1: [BigDecimal:2]
+rows 1
+autocommit true
+exec 0 error 1 ORA-00001: unique constraint (TESTUSER.PROTOCOLTEST10750P_PK) violated
+select1 1
+exec 1 update 1
+select1 1
+exec 2 error 1 ORA-00001: unique constraint (TESTUSER.PROTOCOLTEST10750P_PK) violated
+select1 1
+exec 3 error 12899 ORA-12899: value too large for column "TESTUSER"."PROTOCOLTEST10750P"."V" (actual: 12, maximum: 5)
+select1 1
+cols C/NUMBER/0/0
+row 1: [BigDecimal:3]
+rows 1
+exit 0

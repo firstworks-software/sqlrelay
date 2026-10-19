@@ -1,0 +1,32 @@
+== timeout
+autocommit false
+update error 1013 ORA-01013: user requested cancel of current operation
+update returned after 2 s (cancelled around 2 s, holder commits at 6 s)
+select1 1
+cols ID/NUMBER/0/-127 V/VARCHAR2/10/0
+row 1: [BigDecimal:1] [String:a]
+row 2: [BigDecimal:2] [String:b]
+rows 2
+forupdate error 1013 ORA-01013: user requested cancel of current operation
+forupdate returned after 3 s (cancelled around 2 s, holder commits at 6 s)
+select1 1
+cols ID/NUMBER/0/-127 V/VARCHAR2/10/0
+row 1: [BigDecimal:1] [String:a]
+row 2: [BigDecimal:2] [String:b]
+rows 2
+autocommit true
+update error 1013 ORA-01013: user requested cancel of current operation
+update returned after 3 s (cancelled around 2 s, holder commits at 6 s)
+select1 1
+cols ID/NUMBER/0/-127 V/VARCHAR2/10/0
+row 1: [BigDecimal:1] [String:a]
+row 2: [BigDecimal:2] [String:b]
+rows 2
+forupdate error 1013 ORA-01013: user requested cancel of current operation
+forupdate returned after 3 s (cancelled around 2 s, holder commits at 6 s)
+select1 1
+cols ID/NUMBER/0/-127 V/VARCHAR2/10/0
+row 1: [BigDecimal:1] [String:a]
+row 2: [BigDecimal:2] [String:b]
+rows 2
+exit 0

@@ -1,0 +1,6 @@
+== error
+error 942 ORA-00942: table or view does not exist
+cols 1/NUMBER/0/-127
+row 1: [BigDecimal:1]
+rows 1
+exit 0

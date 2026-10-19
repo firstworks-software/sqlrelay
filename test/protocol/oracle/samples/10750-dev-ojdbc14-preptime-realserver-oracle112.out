@@ -1,0 +1,15 @@
+== preptime
+exec 0 bind0 under1s true
+exec 1 bind1 under1s true
+exec 2 bind2 under1s true
+exec 3 bind3 under1s true
+cols X/NUMBER/0/-127
+row 1: [BigDecimal:0]
+rows 1
+cols X/NUMBER/0/-127
+row 1: [BigDecimal:1]
+rows 1
+cols X/NUMBER/0/-127
+row 1: [BigDecimal:2]
+rows 1
+exit 0

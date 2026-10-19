@@ -1,0 +1,16 @@
+== dml
+create 0
+insert 1
+insert 1
+update 1
+delete 2
+cols ID/NUMBER/0/-127 V/VARCHAR2/20/0
+row 1: [BigDecimal:1] [String:uno]
+row 2: [BigDecimal:2] [String:two]
+rows 2
+delete 1
+cols ID/NUMBER/0/-127 V/VARCHAR2/20/0
+row 1: [BigDecimal:1] [String:uno]
+rows 1
+drop 0
+exit 0

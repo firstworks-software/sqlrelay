@@ -1,0 +1,6 @@
+== execselerr
+select 1/0 from dual error 1476 ORA-01476: divisor is equal to zero
+select1 1
+select to_number('x') from dual error 1722 ORA-01722: invalid number
+select1 1
+exit 0

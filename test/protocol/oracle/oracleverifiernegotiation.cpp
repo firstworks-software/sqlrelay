@@ -178,9 +178,13 @@
 // the 65 byte challenge with its 25 byte trailer, the login answer's trailer,
 // the 78 byte ORA-01017 a wrong password or an unknown user gets, the 74 byte
 // ORA-28040 floors 9, 11, 12 and 12a give it in phase one, and the "09 00"
-// that answers its logoff.  The banner in the version answer is the module's
-// own at each ceiling, where a real 11.2 and 12.2 server send an 11.1 one, and
-// the login answer carries the module's pairs, not the real servers' 34 or 36.
+// that answers its logoff.  The version answer at 12.1 and 11.2 is the one a
+// real 11.2 and 12.2 server send ojdbc14, which names 11.1.0.0.0 in place of
+// their own version, byte for byte (packet [0012] of 10750-dev-ojdbc14-
+// select1-realserver-oracle112 and 10545-dev-ojdbc14-login-select1-
+// realserver-oracle122).  At 10.2 it has real 10.2's packed version and the
+// module's own banner, where real 10.2 sends its full banner and options line.
+// The login answer carries the module's pairs, not the real servers' 34 to 36.
 // Before any of that, compute8iAuthPassword() has to reproduce the
 // AUTH_PASSWORD of five real logins from their AUTH_SESSKEY.
 //
@@ -213,8 +217,8 @@
 //
 // Some of what a query session checks is the module's choice rather than a
 // real server's, since no real server answers the module's way or no capture
-// covers it: no key/value pairs in the return parameters, a NUMBER's size 22,
-// and success iterations 1 in an answer with no error.  So are two scripts:
+// covers it: no key/value pairs in the return parameters and a NUMBER's size
+// 22.  So are two scripts:
 // newline, a text whose first byte is a newline; and null, select null, which
 // the module describes as a VARCHAR2 of 4000 with a null value where a real
 // server describes it 0 bytes wide and sends no value byte (selectnull
@@ -229,9 +233,14 @@
 // realserver captures): a break marker and a reset marker, the client's one
 // reset marker back, then the error object alone, with success iterations 0,
 // or 1 answering a re-execute with fetch (0x8068), and the message one line
-// ending in a line feed.  An answer with no error has no markers.  The error
-// object's layout is checked against four real objects first (see
-// checkOjdbc14ErrorObjectBuilder()), and differs from a real one only in what
+// ending in a line feed.  An answer with no error has no markers.  Two fields
+// follow the ceiling, as they follow the real server (10750-dev-ojdbc14-*-
+// realserver-oracle112 against the oracle102 and oracle122 captures): success
+// iterations in every answer to a fetch, rows or error, are 1 at 10.2 and
+// 11.2 and 0 at 12.1, and ORA-00942 at a select's parse has sql type 0 at 10.2
+// and 11.2 and 3 at 12.1.  The error object's layout is checked against real
+// objects of all three servers first (see checkOjdbc14ErrorObjectBuilder()),
+// those two fields with them, and differs from a real one only in what
 // the module can't know and ojdbc14 ignores: the error position, the array
 // element fields, the rowid and a select error's row number (see
 // putOjdbc14Summary()).  A summary's row number is the rows sent since the
@@ -2430,11 +2439,52 @@ static void buildBanner(char *banner, size_t size, uint32_t packed) {
 			(int)((packed>>8)&0x0f),(int)(packed&0xff));
 }
 
-// ojdbc14's version call, and the answer byte for byte: the ttc code, the
+// what real 11.2 and 12.2 servers answer ojdbc14's version call with, in
+// place of their own version (MEASURED, packet [0012] of 10750-dev-ojdbc14-
+// select1-realserver-oracle112 and 10545-dev-ojdbc14-login-select1-
+// realserver-oracle122)
+static const char	*OJDBC14_VERSION_BANNER_11_1=
+			"Oracle Database 11g Release 11.1.0.0.0 - Production";
+static const uint32_t	OJDBC14_VERSION_PACKED_11_1=0x0b100000;
+
+// the banner and packed version the module answers ojdbc14's version call
+// with at a ceiling: the 11.1 ones at 12.1 and 11.2, as real 11.2 and 12.2
+// servers send, and the module's own at 10.2, where real 10.2 sends its own
+// version too
+static void ojdbc14VersionAnswerOf(unsigned char fieldversion,
+					const char *versionno,
+					char *banner, size_t size,
+					uint32_t *packed) {
+	if (fieldversion>=ORA_CCAP_FIELD_VERSION_11_2) {
+		charstring::printf(banner,size,"%s",
+					OJDBC14_VERSION_BANNER_11_1);
+		*packed=OJDBC14_VERSION_PACKED_11_1;
+		return;
+	}
+	*packed=(uint32_t)charstring::convertToUnsignedInteger(versionno);
+	buildBanner(banner,size,*packed);
+}
+
+// the answer to ojdbc14's version call: the data flags, the ttc code, the
 // banner's size and the banner raw, the packed version, then "09 00" and the
-// end of the packet, as packet [0012] of the 10545 ojdbc14 captures has it.
-// the banner and the packed version are the module's own at the ceiling.
-// returns whether it was answered at all
+// end of the packet, as packet [0012] of the ojdbc14 captures has it
+static void putOjdbc14VersionAnswer(unsigned char *buffer, size_t *size,
+						const char *banner,
+						uint32_t packed) {
+	size_t	bannersize=charstring::getLength(banner);
+	putZeros(buffer,size,2);
+	putByte(buffer,size,ORA_TTC_OK);
+	putLenPreInt(buffer,size,(uint32_t)bannersize);
+	bytestring::copy(buffer+*size,banner,bannersize);
+	*size+=bannersize;
+	putLenPreInt(buffer,size,packed);
+	putByte(buffer,size,0x09);
+	putZeros(buffer,size,1);
+}
+
+// ojdbc14's version call, and the answer byte for byte, with the banner and
+// the packed version ojdbc14VersionAnswerOf() gives the ceiling.  returns
+// whether it was answered at all
 static bool checkOjdbc14Version(oracleprotocolclient *client,
 					const char *label,
 					const listenerinfo *li) {
@@ -2448,11 +2498,10 @@ static bool checkOjdbc14Version(oracleprotocolclient *client,
 		return false;
 	}
 
-	uint32_t	packed=(uint32_t)
-			charstring::convertToUnsignedInteger(li->versionno);
 	char		banner[256];
-	buildBanner(banner,sizeof(banner),packed);
-	size_t		bannersize=charstring::getLength(banner);
+	uint32_t	packed=0;
+	ojdbc14VersionAnswerOf(li->fieldversion,li->versionno,
+					banner,sizeof(banner),&packed);
 
 	char		*actualbanner=NULL;
 	uint32_t	actualpacked=0;
@@ -2468,8 +2517,11 @@ static bool checkOjdbc14Version(oracleprotocolclient *client,
 	report(l.getString(),
 		shape && !charstring::compare(actualbanner,banner));
 
+	char	check[64];
+	charstring::printf(check,sizeof(check),
+				" packed version is 0x%08x",packed);
 	l.clear();
-	l.append(label)->append(" packed version is ")->append(li->versionno);
+	l.append(label)->append(check);
 	report(l.getString(),shape && actualpacked==packed);
 
 	l.clear();
@@ -2478,14 +2530,7 @@ static bool checkOjdbc14Version(oracleprotocolclient *client,
 
 	unsigned char	expected[3+5+256+5+2];
 	size_t		expectedsize=0;
-	putZeros(expected,&expectedsize,2);
-	putByte(expected,&expectedsize,ORA_TTC_OK);
-	putLenPreInt(expected,&expectedsize,(uint32_t)bannersize);
-	bytestring::copy(expected+expectedsize,banner,bannersize);
-	expectedsize+=bannersize;
-	putLenPreInt(expected,&expectedsize,packed);
-	putByte(expected,&expectedsize,0x09);
-	putZeros(expected,&expectedsize,1);
+	putOjdbc14VersionAnswer(expected,&expectedsize,banner,packed);
 
 	l.clear();
 	l.append(label)->append(" version answer is exact");
@@ -2504,6 +2549,95 @@ static bool checkOjdbc14Version(oracleprotocolclient *client,
 
 	delete[] actualbanner;
 	return true;
+}
+
+// the version answer builder against real servers' answers to ojdbc14's
+// version call, before any connection, with the banner and the packed version
+// ojdbc14VersionAnswerOf() gives the ceiling that stands for each: 11.2 for
+// oracle112 and 12.1 for oracle122, whose answers the module's have to be byte
+// for byte, and 10.2 for oracle102, whose packed version the module's has to
+// be, with real 10.2's own banner in place of the module's
+static void checkOjdbc14VersionAnswerBuilder() {
+
+	stdoutput.printf("\nojdbc14 version answer builder - expect real "
+						"servers' answers\n");
+
+	// the bytes around each banner, as captured
+	static const unsigned char	head11_1[]={
+		0x00, 0x00, 0x08, 0x01, 0x33
+	};
+	static const unsigned char	tail11_1[]={
+		0x04, 0x0b, 0x10, 0x00, 0x00, 0x09, 0x00
+	};
+	static const unsigned char	head10_2[]={
+		0x00, 0x00, 0x08, 0x01, 0x7a
+	};
+	static const unsigned char	tail10_2[]={
+		0x04, 0x0a, 0x20, 0x01, 0x00, 0x09, 0x00
+	};
+	static const char	*banner10_2=
+		"Oracle Database 10g Enterprise Edition Release 10.2.0.1.0 - "
+		"Production\nWith the Partitioning, OLAP and Data Mining "
+		"options";
+
+	struct {
+		const char		*capture;
+		size_t			listener;
+		const char		*realbanner;
+		const unsigned char	*head;
+		const unsigned char	*tail;
+	} vectors[]={
+		{"[0012] of 10750-dev-ojdbc14-select1-realserver-oracle112",
+			LISTENER_11_2,NULL,head11_1,tail11_1},
+		{"[0012] of 10545-dev-ojdbc14-login-select1-realserver-"
+								"oracle122",
+			LISTENER_12_1,NULL,head11_1,tail11_1},
+		{"[0012] of 10545-dev-ojdbc14-login-select1-realserver-"
+								"oracle102",
+			LISTENER_10_2,banner10_2,head10_2,tail10_2}
+	};
+
+	for (size_t i=0; i<sizeof(vectors)/sizeof(vectors[0]); i++) {
+
+		const listenerinfo	*li=&listeners[vectors[i].listener];
+		char		banner[256];
+		uint32_t	packed=0;
+		ojdbc14VersionAnswerOf(li->fieldversion,li->versionno,
+						banner,sizeof(banner),&packed);
+		if (vectors[i].realbanner) {
+			charstring::printf(banner,sizeof(banner),"%s",
+						vectors[i].realbanner);
+		}
+
+		unsigned char	real[256];
+		size_t		realsize=0;
+		bytestring::copy(real,vectors[i].head,5);
+		realsize+=5;
+		size_t	bannersize=charstring::getLength(banner);
+		bytestring::copy(real+realsize,banner,bannersize);
+		realsize+=bannersize;
+		bytestring::copy(real+realsize,vectors[i].tail,7);
+		realsize+=7;
+
+		unsigned char	built[256];
+		size_t		builtsize=0;
+		putOjdbc14VersionAnswer(built,&builtsize,banner,packed);
+
+		char	label[256];
+		charstring::printf(label,sizeof(label),
+				"ojdbc14 version answer builder reproduces %d "
+				"bytes, packet %s, with the %s ceiling's %s",
+				(int)realsize,vectors[i].capture,li->name,
+				(vectors[i].realbanner)?"packed version":
+						"banner and packed version");
+		bool	ok=(builtsize==realsize &&
+				!bytestring::compare(built,real,realsize));
+		report(label,ok);
+		if (!ok) {
+			dumpBytes("built",built,builtsize);
+			dumpBytes("expected",real,realsize);
+		}
+	}
 }
 
 // the challenge, byte for byte, as a real server sends it to ojdbc14: 65
@@ -3299,13 +3433,15 @@ struct ojdbc14value {
 // a query session in progress.  "ok" goes false at the first call that isn't
 // answered or that ojdbc14 couldn't read, and the rest of the session is
 // skipped.  "urgent" sends one byte of urgent data right behind the next
-// call, the way ojdbc14 cancels one
+// call, the way ojdbc14 cancels one.  "fieldversion" is the listener's, which
+// some fields follow
 struct ojdbc14session {
 	oracleprotocolclient		*client;
 	const char			*label;
 	oracleprotocolojdbc14answer	*answer;
 	bool				ok;
 	bool				urgent;
+	unsigned char			fieldversion;
 };
 
 // the column types the module sends in the abbreviated form, with no
@@ -3393,19 +3529,19 @@ static void putOjdbc14Oer(unsigned char *buffer, size_t *size,
 // the error object the module sends ojdbc14.  what is a real server's:
 // the end to end field (the session's call count), the error number, the sql
 // type, the message, the row number of an error at execute time (0), and
-// success iterations: 0 in an error answering anything but a call that
-// executes and fetches (0x8068), 1 there (MEASURED, step 3a of #10750, both
-// real servers), and 1 with no error or ORA-01403.  what is the module's
-// own choice, which ojdbc14 reads and ignores (CROSS-CHECK, T4CTTIoer's
-// users): the cursor id (any the module opened), the array element fields
-// (0, where a real server keeps 1 and 1400 or 2 and 12899 from the last dml
-// error), the error position (0, where a real server sends the failing
-// token's offset - the module can't learn it from the back end), the rowid's
-// rba (0, where a real server sends ffffffff in and after a dml error), the
-// row number of a select's error (the rows sent, where a real server counts
-// the rows its cursor produced before the failing one, sent or not) and
-// success iterations 1 in an answer with no error (oracle122 sends 0 in a
-// fetch's)
+// success iterations: in an answer to a fetch, ojdbc14FetchSuccessIterations();
+// otherwise 0 in an error answering anything but a call that executes and
+// fetches (0x8068), 1 there, and 1 with no error or ORA-01403 (MEASURED,
+// step 3a of #10750 and the 10750-dev-ojdbc14-*-realserver-oracle112
+// captures, all three real servers).  what is the module's own choice, which
+// ojdbc14 reads and ignores (CROSS-CHECK, T4CTTIoer's users): the cursor id
+// (any the module opened), the array element fields (0, where a real server
+// keeps 1 and 1400 or 2 and 12899 from the last dml error), the error
+// position (0, where a real server sends the failing token's offset - the
+// module can't learn it from the back end), the rowid's rba (0, where a real
+// server sends ffffffff in and after a dml error) and the row number of a
+// select's error (the rows sent, where a real server counts the rows its
+// cursor produced before the failing one, sent or not)
 static void putOjdbc14Summary(unsigned char *buffer, size_t *size,
 					uint32_t endtoend, uint32_t rows,
 					uint32_t oranum, uint32_t cursorid,
@@ -3423,6 +3559,23 @@ static void putOjdbc14Summary(unsigned char *buffer, size_t *size,
 	e.message=message;
 	e.messagesize=messagesize;
 	putOjdbc14Oer(buffer,size,&e);
+}
+
+// success iterations in an answer to a fetch, rows or error, at a ceiling: 1
+// at 10.2 and 11.2 and 0 at 12.1, as real 10.2 and 11.2 servers send 1 and a
+// real 12.2 server 0 (MEASURED, every fetch answer of 10745-dev-ojdbc14-
+// rows25-realserver-oracle102 and -oracle122, 10750-dev-ojdbc14-rows25-
+// realserver-oracle112 and 10750-dev-ojdbc14-fetcherr-realserver-*)
+static uint32_t ojdbc14FetchSuccessIterations(unsigned char fieldversion) {
+	return (fieldversion>=ORA_CCAP_FIELD_VERSION_12_1)?0:1;
+}
+
+// the sql type of ORA-00942 at a select's parse, at a ceiling: 0 at 10.2 and
+// 11.2 and 3 at 12.1, as real 10.2 and 11.2 servers send 0 and a real 12.2
+// server 3 (MEASURED, [0021] of 10745-dev-ojdbc14-error-realserver-oracle102
+// and -oracle122 and of 10750-dev-ojdbc14-error-realserver-oracle112)
+static unsigned char ojdbc14MissingTableSqlType(unsigned char fieldversion) {
+	return (fieldversion>=ORA_CCAP_FIELD_VERSION_12_1)?3:0;
 }
 
 static const char	*ORA_01403="ORA-01403: no data found\n";
@@ -3651,11 +3804,13 @@ static void checkOjdbc14NoMarkers(ojdbc14session *s, const char *what) {
 }
 
 // the error object of an answer with no error in it, or ORA-01403, byte for
-// byte, with success iterations 1
-static void checkOjdbc14Summary(ojdbc14session *s, const char *what,
+// byte, with "successiterations"
+static void checkOjdbc14SummaryIterations(ojdbc14session *s,
+					const char *what,
 					uint32_t endtoend, uint32_t rows,
 					uint32_t oranum, uint32_t cursorid,
-					unsigned char sqltype) {
+					unsigned char sqltype,
+					uint32_t successiterations) {
 	checkOjdbc14NoMarkers(s,what);
 	const char	*message=(oranum==1403)?ORA_01403:NULL;
 	size_t		messagesize=(oranum==1403)?
@@ -3663,12 +3818,32 @@ static void checkOjdbc14Summary(ojdbc14session *s, const char *what,
 	unsigned char	expected[64+256];
 	size_t		size=0;
 	putOjdbc14Summary(expected,&size,endtoend,rows,oranum,cursorid,
-						sqltype,1,message,messagesize);
-	char	check[96];
+					sqltype,successiterations,
+					message,messagesize);
+	char	check[128];
 	charstring::printf(check,sizeof(check),
 			" error object is exact, end to end %d, rows %d, "
-			"error %d",endtoend,rows,oranum);
+			"error %d, success iterations %d",
+			endtoend,rows,oranum,successiterations);
 	checkOjdbc14Object(s,what,check,ORA_TTC_ERROR,expected,size);
+}
+
+// the same with success iterations 1, for an answer to anything but a fetch
+static void checkOjdbc14Summary(ojdbc14session *s, const char *what,
+					uint32_t endtoend, uint32_t rows,
+					uint32_t oranum, uint32_t cursorid,
+					unsigned char sqltype) {
+	checkOjdbc14SummaryIterations(s,what,endtoend,rows,oranum,cursorid,
+								sqltype,1);
+}
+
+// the same for an answer to a fetch, with the ceiling's success iterations
+static void checkOjdbc14FetchSummary(ojdbc14session *s, const char *what,
+					uint32_t endtoend, uint32_t rows,
+					uint32_t oranum, uint32_t cursorid,
+					unsigned char sqltype) {
+	checkOjdbc14SummaryIterations(s,what,endtoend,rows,oranum,cursorid,
+			sqltype,ojdbc14FetchSuccessIterations(s->fieldversion));
 }
 
 // an error's message: the whole of it, or for one that names the back end's
@@ -3932,9 +4107,9 @@ static void putOjdbc14RowHeader(unsigned char *buffer, size_t *size,
 }
 
 // a fetch answer, the whole of it byte for byte: the row header, a row
-// object per row with a short clr per value, and the error object.  rows
-// come in a run of "rowcount", "columncount" values each.  "rowsasked" is
-// what the fetch asked for
+// object per row with a short clr per value, and the error object with the
+// ceiling's success iterations.  rows come in a run of "rowcount",
+// "columncount" values each.  "rowsasked" is what the fetch asked for
 static void checkOjdbc14FetchRows(ojdbc14session *s, const char *what,
 					uint32_t columncount,
 					const ojdbc14value *values,
@@ -3960,13 +4135,18 @@ static void checkOjdbc14FetchRows(ojdbc14session *s, const char *what,
 			}
 		}
 	}
-	putOjdbc14Summary(expected,&size,endtoend,rows,oranum,cursorid,3,1,
+	uint32_t	successiterations=
+			ojdbc14FetchSuccessIterations(s->fieldversion);
+	putOjdbc14Summary(expected,&size,endtoend,rows,oranum,cursorid,3,
+				successiterations,
 				ORA_01403,charstring::getLength(ORA_01403));
 
-	char	check[96];
+	char	check[128];
 	charstring::printf(check,sizeof(check),
-			" answer is exact, %d rows, end to end %d, error %d",
-			(int)rowcount,(int)endtoend,(int)oranum);
+			" answer is exact, %d rows, end to end %d, error %d, "
+			"success iterations %d",
+			(int)rowcount,(int)endtoend,(int)oranum,
+			(int)successiterations);
 	checkOjdbc14Bytes(s,what,check,s->client->getResponse(),
 				s->client->getResponseSize(),expected,size);
 }
@@ -4349,7 +4529,9 @@ static void runPrepared(ojdbc14session *s, uint32_t *open, uint32_t *count) {
 // (MEASURED, [0018] to [0021] of 10745-dev-ojdbc14-error-realserver-
 // oracle122; #10745 sent the object bare, which ojdbc14 takes too), with the
 // cursor the module opened for it, which the logoff closes along with select
-// 1 from dual's.  a real server's error position here is 14, the module's 0
+// 1 from dual's, and the ceiling's sql type - see
+// ojdbc14MissingTableSqlType().  a real server's error position here is 14,
+// the module's 0
 static void runError(ojdbc14session *s, uint32_t *open, uint32_t *count) {
 	const char	*what="select * from protocoltest10745_nonexistent";
 	if (!ojdbc14Statement(s,what,OJDBC14_STATEMENT,0,
@@ -4358,7 +4540,9 @@ static void runError(ojdbc14session *s, uint32_t *open, uint32_t *count) {
 		return;
 	}
 	uint32_t	c1=checkOjdbc14ErrorCursor(s,what,0);
-	checkOjdbc14QueryError(s,what,4,0,942,c1,3,0,&MSG_00942);
+	checkOjdbc14QueryError(s,what,4,0,942,c1,
+				ojdbc14MissingTableSqlType(s->fieldversion),0,
+				&MSG_00942);
 
 	uint32_t	c2=ojdbc14Select1(s,"select 1 from dual",
 					"select 1 from dual",5,NULL,0);
@@ -4477,7 +4661,7 @@ static void runTypes(ojdbc14session *s, uint32_t *open, uint32_t *count) {
 	report(l.getString(),a->rowcount==1 && a->values[0][0].size==300 &&
 		!bytestring::compare(a->valuedata+a->values[0][0].offset,
 								big,300));
-	checkOjdbc14Summary(s,"its fetch",8,1,1403,c2,3);
+	checkOjdbc14FetchSummary(s,"its fetch",8,1,1403,c2,3);
 }
 
 // select null: a VARCHAR2 of 4000 in the session's charset, and a null
@@ -4727,8 +4911,10 @@ static void checkOjdbc14PreparedDml(ojdbc14session *s, const char *what,
 // no error, and the error at the first fetch of 10 rows - which is where a
 // real server always puts it (MEASURED, 10750-dev-ojdbc14-execselerr- and
 // -fetcherr-realserver-*).  either way the error comes behind the markers,
-// alone, with row number 0 and success iterations 0, and no row reaches the
-// client.  "endtoend" is the 0x5e's, and comes back as the last answer's
+// alone, with row number 0, and no row reaches the client.  its success
+// iterations are 0 at the 0x5e and the ceiling's for a fetch at the fetch -
+// see ojdbc14FetchSuccessIterations().  "endtoend" is the 0x5e's, and comes
+// back as the last answer's
 static uint32_t ojdbc14SelectError(ojdbc14session *s, const char *what,
 					const char *query,
 					const uint32_t *closecursors,
@@ -4752,8 +4938,9 @@ static uint32_t ojdbc14SelectError(ojdbc14session *s, const char *what,
 	if (ojdbc14Fetch(s,fetch.getString(),c,1)) {
 		checkOjdbc14ErrorCursor(s,fetch.getString(),c);
 		checkOjdbc14QueryError(s,fetch.getString(),
-					nextEndToEnd(endtoend,0),0,oranum,c,
-					3,0,m);
+				nextEndToEnd(endtoend,0),0,oranum,c,3,
+				ojdbc14FetchSuccessIterations(s->fieldversion),
+				m);
 	}
 	return c;
 }
@@ -4987,7 +5174,8 @@ static const char	*FETCHERR_QUERY=
 // execselerr, and no row reaches the client.  at the
 // fetchatonce=1 listener the 0x5e is answered with the describe, a fetch of
 // 1 row gets row 1 (0.5), and the next fetch of 1 row gets the error, behind
-// the markers, alone.  a real server delivers rows 1 and 2 at fetch sizes 2
+// the markers, alone, with a fetch's success iterations.  a real server
+// delivers rows 1 and 2 at fetch sizes 2
 // and 1 before the error (MEASURED, 10750-dev-ojdbc14-fetcherr-realserver-*),
 // where the module loses row 2: the back end fetches ahead and drops the rows
 // it fetched before a failing one, which no change to the protocol module
@@ -5027,7 +5215,9 @@ static void runFetchErr(ojdbc14session *s, uint32_t *open, uint32_t *count,
 	what="its next fetch of 1 row, which fails";
 	if (ojdbc14FetchRows(s,what,c,1,1,NULL,0)) {
 		checkOjdbc14ErrorCursor(s,what,c);
-		checkOjdbc14QueryError(s,what,6,1,1476,c,3,0,&MSG_01476);
+		checkOjdbc14QueryError(s,what,6,1,1476,c,3,
+				ojdbc14FetchSuccessIterations(s->fieldversion),
+				&MSG_01476);
 	}
 	open[(*count)++]=ojdbc14Select1(s,"select 1 from dual",
 					"select 1 from dual",8,&c,1);
@@ -5070,7 +5260,7 @@ static void runPrepFetchErr(ojdbc14session *s, uint32_t *open,
 	open[(*count)++]=c;
 	if (ojdbc14Fetch(s,"its fetch",c,1)) {
 		checkOjdbc14Objects(s,"its fetch","06 07 07 07 07 07 04");
-		checkOjdbc14Summary(s,"its fetch",5,5,1403,c,3);
+		checkOjdbc14FetchSummary(s,"its fetch",5,5,1403,c,3);
 	}
 
 	what="the re-execute with fetch, with 3";
@@ -5098,7 +5288,7 @@ static void runPrepFetchErr(ojdbc14session *s, uint32_t *open,
 	if (ojdbc14Fetch(s,"its fetch, again",c,1)) {
 		checkOjdbc14Objects(s,"its fetch, again",
 						"06 07 07 07 07 07 04");
-		checkOjdbc14Summary(s,"its fetch, again",8,5,1403,c,3);
+		checkOjdbc14FetchSummary(s,"its fetch, again",8,5,1403,c,3);
 	}
 }
 
@@ -5115,10 +5305,11 @@ static const char	*LEVEL5_QUERY=
 // rows than asked for at 10).  a header count in 4 bytes, which the module
 // wrote before #10750 for anything over 65535, makes ojdbc14 close the
 // connection with ORA-17412.  then 100001 rows: over the module's limit of
-// 100000, so ORA-20004, behind the markers, alone, with success iterations
-// 0, and the cursor untouched, so that a fetch of 10 rows after it gets the
-// 5 rows.  a real server has no limit (MEASURED: 100001 rows in one answer);
-// the limit and its error are the module's
+// 100000, so ORA-20004, behind the markers, alone, with a fetch's success
+// iterations, and the cursor untouched, so that a fetch of 10 rows after it
+// gets the 5 rows.  a real server has no limit (MEASURED: 100001 rows in one
+// answer); the limit and its error are the module's, and its success
+// iterations follow a real server's fetch errors (INFERRED)
 static void runFetchSizes(ojdbc14session *s, uint32_t *open,
 							uint32_t *count) {
 	static const ojdbc14column	columns[]={
@@ -5169,7 +5360,8 @@ static void runFetchSizes(ojdbc14session *s, uint32_t *open,
 		}
 		checkOjdbc14ErrorCursor(s,what,c);
 		checkOjdbc14QueryError(s,what,nextEndToEnd(&e,0),0,20004,c,3,
-							0,&MSG_20004);
+				ojdbc14FetchSuccessIterations(s->fieldversion),
+				&MSG_20004);
 	}
 
 	const char	*what="a fetch of 10 rows after the ORA-20004";
@@ -5434,7 +5626,7 @@ static void runBigFetch(ojdbc14session *s, uint32_t *open, uint32_t *count) {
 					(int)a->totalrowcount,
 					(int)a->totalobjectcount);
 	}
-	checkOjdbc14Summary(s,what,5,65536,0,c,3);
+	checkOjdbc14FetchSummary(s,what,5,65536,0,c,3);
 
 	char		numbers[5][8];
 	ojdbc14value	values[5];
@@ -5574,6 +5766,7 @@ static void runOjdbc14QuerySession(size_t listener, ojdbc14script script) {
 	s.answer=answer;
 	s.ok=true;
 	s.urgent=false;
+	s.fieldversion=li->fieldversion;
 
 	uint32_t	open[8];
 	uint32_t	count=0;
@@ -5956,7 +6149,10 @@ static void checkOjdbc14CallBuilders() {
 
 // the error object builder against real servers' objects, field for field,
 // before any connection, so that the objects the sessions expect have a real
-// server's layout and differ from one only where putOjdbc14Summary() says
+// server's layout and differ from one only where putOjdbc14Summary() says.
+// the fields that follow the ceiling come from the functions the sessions
+// take them from, at the ceiling that stands for each real server: 10.2 for
+// oracle102, 11.2 for oracle112 and 12.1 for oracle122
 static void checkOjdbc14ErrorObjectBuilder() {
 
 	stdoutput.printf("\nojdbc14 error object builder - expect real "
@@ -5987,38 +6183,167 @@ static void checkOjdbc14ErrorObjectBuilder() {
 		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x1a
 	};
 
+	// ORA-00942 at a select's parse, whose sql type follows the server
+	static const unsigned char	head00942of102[]={
+		0x04, 0x01, 0x04, 0x00, 0x02, 0x03, 0xae, 0x00, 0x00, 0x01,
+		0x02, 0x01, 0x0e, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x28
+	};
+	static const unsigned char	head00942of112[]={
+		0x04, 0x01, 0x04, 0x00, 0x02, 0x03, 0xae, 0x00, 0x00, 0x01,
+		0x03, 0x01, 0x0e, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x28
+	};
+	static const unsigned char	head00942of122[]={
+		0x04, 0x01, 0x04, 0x00, 0x02, 0x03, 0xae, 0x00, 0x00, 0x01,
+		0x01, 0x01, 0x0e, 0x03, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x28
+	};
+
+	// answers to a fetch - an error, ORA-01403 and rows with no error -
+	// whose success iterations follow the server
+	static const unsigned char	headfetch01476of102[]={
+		0x04, 0x01, 0x05, 0x01, 0x02, 0x02, 0x05, 0xc4, 0x00, 0x00,
+		0x01, 0x02, 0x01, 0x08, 0x03, 0x00, 0x00, 0x00, 0x00, 0x00,
+		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01,
+		0x01, 0x24
+	};
+	static const unsigned char	headfetch01476of112[]={
+		0x04, 0x01, 0x05, 0x01, 0x02, 0x02, 0x05, 0xc4, 0x00, 0x00,
+		0x01, 0x03, 0x01, 0x08, 0x03, 0x00, 0x00, 0x00, 0x00, 0x00,
+		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01,
+		0x01, 0x24
+	};
+	static const unsigned char	headfetch01476of122[]={
+		0x04, 0x01, 0x05, 0x01, 0x02, 0x02, 0x05, 0xc4, 0x00, 0x00,
+		0x01, 0x01, 0x01, 0x08, 0x03, 0x00, 0x00, 0x00, 0x00, 0x00,
+		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+		0x24
+	};
+	static const unsigned char	headfetch01403of112[]={
+		0x04, 0x01, 0x08, 0x01, 0x01, 0x02, 0x05, 0x7b, 0x00, 0x00,
+		0x01, 0x04, 0x00, 0x03, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x01,
+		0x19
+	};
+	static const unsigned char	headfetch01403of122[]={
+		0x04, 0x01, 0x07, 0x01, 0x01, 0x02, 0x05, 0x7b, 0x00, 0x00,
+		0x01, 0x03, 0x00, 0x03, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x19
+	};
+	static const unsigned char	headfetchrowsof112[]={
+		0x04, 0x01, 0x0b, 0x01, 0x02, 0x00, 0x00, 0x00, 0x01, 0x02,
+		0x00, 0x03, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x01
+	};
+	static const unsigned char	headfetchrowsof122[]={
+		0x04, 0x01, 0x0a, 0x01, 0x02, 0x00, 0x00, 0x00, 0x01, 0x03,
+		0x00, 0x03, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
+	};
+
+	// the ceilings, for the fields that follow them
+	const unsigned char	at102=ORA_CCAP_FIELD_VERSION_10_2;
+	const unsigned char	at112=ORA_CCAP_FIELD_VERSION_11_2;
+	const unsigned char	at121=ORA_CCAP_FIELD_VERSION_12_1;
+
+	// "rule" names the field the sessions take from the ceiling, if any,
+	// and the ceiling, whose value the vector's field is
 	struct {
 		const char		*capture;
+		const char		*rule;
 		const unsigned char	*head;
 		size_t			headsize;
 		ojdbc14oer		e;
 	} vectors[]={
 		{"[0030] of 10750-dev-ojdbc14-execerr-realserver-oracle122",
+			NULL,
 			head00001,sizeof(head00001),
 			{9,0,1,0,0,10,0,2,0xffffffff,0,
 			"ORA-00001: unique constraint "
 			"(TESTUSER.PROTOCOLTEST10750E_PK) violated\n",0}},
 		{"[0039] of 10750-dev-ojdbc14-execerr-realserver-oracle122",
+			NULL,
 			head01400,sizeof(head01400),
 			{14,0,1400,1,1400,5,42,2,0xffffffff,0,
 			"ORA-01400: cannot insert NULL into "
 			"(\"TESTUSER\".\"PROTOCOLTEST10750E\".\"NN\")\n",0}},
 		{"[0029] of 10750-dev-ojdbc14-prepfetcherr-realserver-"
 							"oracle122",
+			NULL,
 			head01476,sizeof(head01476),
 			{9,2,1476,0,0,1,8,3,0,1,
 			"ORA-01476: divisor is equal to zero\n",0}},
 		{"[0034] of 10750-dev-ojdbc14-execselerr-realserver-"
 							"oracle122",
+			"12.1 fetch success iterations",
 			head01722,sizeof(head01722),
-			{10,0,1722,0,0,3,17,3,0,0,
-			"ORA-01722: invalid number\n",0}}
+			{10,0,1722,0,0,3,17,3,0,
+			ojdbc14FetchSuccessIterations(at121),
+			"ORA-01722: invalid number\n",0}},
+		{"[0021] of 10745-dev-ojdbc14-error-realserver-oracle102",
+			"10.2 sql type of ORA-00942",
+			head00942of102,sizeof(head00942of102),
+			{4,0,942,0,0,2,14,ojdbc14MissingTableSqlType(at102),
+			0,0,MSG_00942.prefix,0}},
+		{"[0021] of 10750-dev-ojdbc14-error-realserver-oracle112",
+			"11.2 sql type of ORA-00942",
+			head00942of112,sizeof(head00942of112),
+			{4,0,942,0,0,3,14,ojdbc14MissingTableSqlType(at112),
+			0,0,MSG_00942.prefix,0}},
+		{"[0021] of 10745-dev-ojdbc14-error-realserver-oracle122",
+			"12.1 sql type of ORA-00942",
+			head00942of122,sizeof(head00942of122),
+			{4,0,942,0,0,1,14,ojdbc14MissingTableSqlType(at121),
+			0,0,MSG_00942.prefix,0}},
+		{"[0023] of 10750-dev-ojdbc14-fetcherr-realserver-oracle102",
+			"10.2 fetch success iterations",
+			headfetch01476of102,sizeof(headfetch01476of102),
+			{5,2,1476,0,0,2,8,3,0,
+			ojdbc14FetchSuccessIterations(at102),
+			MSG_01476.prefix,0}},
+		{"[0023] of 10750-dev-ojdbc14-fetcherr-realserver-oracle112",
+			"11.2 fetch success iterations",
+			headfetch01476of112,sizeof(headfetch01476of112),
+			{5,2,1476,0,0,3,8,3,0,
+			ojdbc14FetchSuccessIterations(at112),
+			MSG_01476.prefix,0}},
+		{"[0023] of 10750-dev-ojdbc14-fetcherr-realserver-oracle122",
+			"12.1 fetch success iterations",
+			headfetch01476of122,sizeof(headfetch01476of122),
+			{5,2,1476,0,0,1,8,3,0,
+			ojdbc14FetchSuccessIterations(at121),
+			MSG_01476.prefix,0}},
+		{"[0027] of 10750-dev-ojdbc14-fetcherr-realserver-oracle112",
+			"11.2 fetch success iterations",
+			headfetch01403of112,sizeof(headfetch01403of112),
+			{8,1,1403,0,0,4,0,3,0,
+			ojdbc14FetchSuccessIterations(at112),
+			ORA_01403,0}},
+		{"[0027] of 10750-dev-ojdbc14-fetcherr-realserver-oracle122",
+			"12.1 fetch success iterations",
+			headfetch01403of122,sizeof(headfetch01403of122),
+			{7,1,1403,0,0,3,0,3,0,
+			ojdbc14FetchSuccessIterations(at121),
+			ORA_01403,0}},
+		{"[0031] of 10750-dev-ojdbc14-fetcherr-realserver-oracle112",
+			"11.2 fetch success iterations",
+			headfetchrowsof112,sizeof(headfetchrowsof112),
+			{11,2,0,0,0,2,0,3,0,
+			ojdbc14FetchSuccessIterations(at112),
+			NULL,0}},
+		{"[0031] of 10750-dev-ojdbc14-fetcherr-realserver-oracle122",
+			"12.1 fetch success iterations",
+			headfetchrowsof122,sizeof(headfetchrowsof122),
+			{10,2,0,0,0,3,0,3,0,
+			ojdbc14FetchSuccessIterations(at121),
+			NULL,0}}
 	};
 
 	for (size_t i=0; i<sizeof(vectors)/sizeof(vectors[0]); i++) {
 
 		ojdbc14oer	e=vectors[i].e;
-		e.messagesize=charstring::getLength(e.message);
+		e.messagesize=(e.message)?charstring::getLength(e.message):0;
 
 		unsigned char	real[256];
 		size_t		realsize=vectors[i].headsize;
@@ -6033,8 +6358,10 @@ static void checkOjdbc14ErrorObjectBuilder() {
 		char	label[256];
 		charstring::printf(label,sizeof(label),
 				"ojdbc14 error object builder reproduces %d "
-				"bytes, packet %s",(int)realsize,
-				vectors[i].capture);
+				"bytes, packet %s%s%s",(int)realsize,
+				vectors[i].capture,
+				(vectors[i].rule)?", with the ":"",
+				(vectors[i].rule)?vectors[i].rule:"");
 		bool	ok=(builtsize==realsize &&
 				!bytestring::compare(built,real,realsize));
 		report(label,ok);
@@ -6149,6 +6476,7 @@ int main(int argc, char **argv) {
 					"0x%04x ======\n",
 					negotiatedconnectversion);
 		checkKnownAnswers();
+		checkOjdbc14VersionAnswerBuilder();
 		for (size_t i=0; i<sizeof(ojdbc14cases)/
 					sizeof(ojdbc14cases[0]); i++) {
 			runOjdbc14Case(&ojdbc14cases[i]);

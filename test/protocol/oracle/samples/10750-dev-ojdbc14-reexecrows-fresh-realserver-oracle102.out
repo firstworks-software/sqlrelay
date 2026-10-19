@@ -1,0 +1,6 @@
+== reexecrows
+exec 0 fetchsize 10 rows 25 first 1 last 25 under30s true
+exec 1 fetchsize 10 rows 25 first 1 last 25 under30s true
+exec 2 fetchsize 10 rows 25 first 1 last 25 under30s true
+select1 1
+exit 0
