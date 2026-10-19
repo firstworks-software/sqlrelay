@@ -23,19 +23,21 @@
 # the default), "c" (client->server), or "both".
 #
 # This is for #9174/#9173: a real server's platform banner
-# ('x86_64/Linux 2.4.xx') and the banner the module sends to select the
-# portable encoding ('Solaris64/SunOS 5.9') are both exactly 19 bytes, so
-# swapping one for the other in the TTIPRO exchange is a same-length
-# substitution that makes an OCI client pick the portable encoding
-# against a real server.
+# ('x86_64/Linux 2.4.xx') is 19 bytes, so swapping it for another 19 byte
+# string in the TTIPRO exchange is a same-length substitution that makes
+# the banners differ.  When the banners are equal the client sends a short
+# data type request with no type list and marshals natively.  When they
+# differ it sends the full type list, and the encoding follows the server's
+# answer for type 0x20: 0x01 is portable, anything else is the client's
+# own representation, which is native (see the README, #10718).
 #
-# Use "both".  The encoding is not chosen by the server's banner alone -
-# each end compares the banner it got against its own, and goes portable
-# only when they differ.  Rewriting one direction makes that comparison
-# come out differently at the two ends: the client goes portable and the
-# real server stays native, the server cannot parse the client's portable
-# datatype negotiation, and it drops the connection (ORA-28547).
-# Rewriting both directions puts both ends in the portable encoding.
+# Use "both".  Each end compares the banner it got against its own, and
+# rewriting one direction makes that comparison come out differently at
+# the two ends: the client sees different banners and sends the full type
+# list while the real server still sees equal ones and expects a short
+# request, so it cannot parse the client's datatype negotiation and drops
+# the connection (ORA-28547).  Rewriting both directions makes both ends
+# see different banners.
 #
 # With ORAPROXY_UNIVERSAL_REPS=1 in the environment, it also rewrites the
 # client's data type negotiation so the server has only the universal

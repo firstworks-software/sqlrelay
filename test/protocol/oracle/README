@@ -269,6 +269,35 @@ and the 12.2 server's objects stand in for it. A 143 byte object is a real
 capture only at field version 9 (10039 and the 10544 ccapcf capture), and
 the module never negotiates 9.
 
+The native struct is the 64 bit one. The module reads and writes only the
+64 bit native login layout: 8 byte pointers, an 8 byte field count, and a
+135 byte summary object (143 at 12.1 and up) with the pointer at offset
+71. A real 32 bit server, oracle102, sends something else to a 32 bit
+client natively (#10718, the 10718-fedora16x86-*-realserver-oracle102
+captures): 4 byte pointers ("fe ff ff ff"), a 4 byte user size, auth mode
+and field count, and a 95 byte summary object (the 93 byte OCI7 native
+struct plus the 2 byte end to end field, a 4 byte live pointer at offset
+63, an ORA-01017 object of 147 bytes with its message). A 64 bit client's
+native login against a real server answering a representation other than
+0x01 has a 4 byte field count and a 70 byte error object with no "36 01"
+marker, which the 8 byte field count read does not fit either.
+
+Two things trigger the native login, and the module triggers neither.
+One is a client banner equal to the server's: the client sends a short
+data type request with no type list, and the module's banner never
+matches. The other is the server answering type 0x20 with a
+representation other than 0x01 (a real 12.2 server answers a 64 bit
+client 0x0c, and the rep20to0a capture answers a 32 bit client 0x0a):
+the module always answers 0x01. A 32 bit 11.2 or 12.2 OCI client (banner
+"Linuxi386/Linux-2.0.34-8.1.0", offers 0x0a first for type 0x20) is
+therefore always portable against the module, at 12.1, 11.2 and 10.2,
+and against a real oracle112 or oracle122 too. A 32 bit client goes
+native only against a real 32 bit server with the same banner
+(oracle102). If a proxy rewrites the module's banner or its answer for
+type 0x20, the module reads the 4 byte pointers as 8 byte ones,
+fabricates a 64 bit challenge, and the client hangs. That is a
+documented limitation, not supported, and the module does not crash.
+
 The portable run (#10717) compares the whole count prefixed error object
 byte for byte as well, size and message included, for the ORA-28040
 refusals of the 0x05 (O3LOGON shape) and 0x08 (modern shape) clients. It
@@ -550,12 +579,23 @@ mode against the real oracle122 server, and decodes the result.
 
 This is how #9174 got the capture both #9174 and #9173 were stuck
 without: a real Oracle server answering an OCI client in the portable
-encoding. An OCI client picks the wire encoding by comparing the server's
-platform banner against its own, so against a real server it always goes
-native. The module's banner ("Solaris64/SunOS 5.9") and the real 12.2
-server's ("x86_64/Linux 2.4.xx") are both exactly 19 bytes, so a proxy
-can swap one for the other inside the TTIPRO exchange without touching a
-length field.
+encoding. An OCI client compares the server's platform
+banner against its own, and #10718 measured what that does. When they are
+equal, the client sends a short data type request with no type list, and
+both ends marshal in the client's platform encoding (native). When they
+differ, the client sends the full type list, and the encoding follows the
+server's answer for type 0x20: 0x01 is portable, and anything else is the
+client's own platform representation, which is native. The real 12.2
+server answered a 64 bit OCI 23 client 0x0c, so that pair is native
+whatever the banner is, and a real server answers a 32 bit client 0x01,
+so a 32 bit client is portable against a real 64 bit server whatever the
+banner is. The module's banner is "SQLRelay/PortableTTC", which differs
+from every client's, and the module always answers 0x01, so no client
+reaches the native encoding against it. The real 12.2 server's banner
+("x86_64/Linux 2.4.xx") is 19 bytes, so a proxy can swap it for any other
+19 byte string inside the TTIPRO exchange without touching a length field.
+This script uses "Solaris64/SunOS 5.9", which is only a stand-in of that
+length.
 
 The swap has to be done in BOTH directions. Each end runs the same
 comparison, so rewriting only the server's banner puts the client in the
@@ -5150,6 +5190,193 @@ that statement, except where noted.
                                       packets, 0x0137. The break and reset at
                                       [0014] to [0016] carry 0, unchanged by
                                       the fix (#10720)
+
+    10718-fedora16x86-oci11-native-loginretry-unknownuser-wrongpassword-correctpassword-realserver-oracle102.oraproxy
+                                     the genuine 32 bit Oracle 11.2 Instant
+                                      Client on fedora16x86 (platform banner
+                                      "Linuxi386/Linux-2.0.34-8.1.0"),
+                                      ociloginretry with an unknown user, a
+                                      wrong password and the correct password,
+                                      straight against the real 10.2 server (a
+                                      32 bit server with the same banner), no
+                                      rewriting. 31 packets, TNS 0x0139. The
+                                      banners are equal, so the client sends a
+                                      short data type request with no type
+                                      list at [0009] (66 bytes) and the server
+                                      answers with none at [0010], and both
+                                      ends marshal natively with 32 bit
+                                      pointers. This is the only reference for
+                                      a 32 bit native O5LOGON login. The login
+                                      at [0011] starts "fe ff ff ff", a 4 byte
+                                      pointer, then a 4 byte user size, auth
+                                      mode and field count (0a000000 01000000
+                                      fe ff ff ff 05000000). The challenge at
+                                      [0012] has pair count 02 and ends with
+                                      the 0x04 and a 95 byte summary struct:
+                                      the 93 byte OCI7 native struct with the
+                                      2 byte end to end field (2) after the
+                                      status. "36 01" is at offset 55 and a
+                                      live 4 byte pointer, not zero, at 63.
+                                      The ORA-01017 at [0017] is 147 bytes
+                                      after the 0x04: the same 95 byte struct,
+                                      the length byte 0x33 and the 51 byte
+                                      message. The module's 64 bit native
+                                      layout is 135 bytes (143 at 12.1) with
+                                      an 8 byte pointer at 71, so it matches
+                                      none of this (#10718)
+
+    10718-fedora16x86-oci12-native-loginretry-unknownuser-wrongpassword-correctpassword-realserver-oracle102.oraproxy
+                                     the same with the genuine 32 bit Oracle
+                                      12.2 Instant Client (the same banner,
+                                      offers TTC versions 6 and 5 only). 31
+                                      packets, TNS 0x0139. Identical to the
+                                      11.2 client in every width: the short
+                                      request (69 bytes) and answer, 4 byte
+                                      pointers and counts, the 95 byte struct
+                                      in the challenge and the 147 byte
+                                      ORA-01017 (#10718)
+
+    10718-fedora16x86-oci11-portable-loginretry-unknownuser-wrongpassword-correctpassword-realserver-oracle112.oraproxy
+                                     the same 32 bit 11.2 client against the
+                                      real 11.2 server (a 64 bit server,
+                                      banner "x86_64/Linux 2.4.xx"), no
+                                      rewriting. 32 packets, TNS 0x013a. The
+                                      banners differ, so the client sends the
+                                      full type list and offers "0020 0020
+                                      000a 0020 0001 0000" for type 0x20, its
+                                      platform representation 0x0a first. The
+                                      server answers 0x01 at [0010], not 0x0a,
+                                      so the session is portable: the first
+                                      login pointer is 01, and the user size,
+                                      auth mode and field count are fixed 4
+                                      byte little endian (0a000000 01000000 01
+                                      05000000). The real 12.2 server answered
+                                      a 64 bit OCI 23 client 0x0c, its own
+                                      representation, but a 32 bit client gets
+                                      0x01. The ORA-01017 at [0017] and [0024]
+                                      is 117 bytes after the 0x04: a 65 byte
+                                      fixed width object, the length byte and
+                                      the 51 byte message. testuser is expired
+                                      here, so the correct password ends in
+                                      ORA-28001 at [0031] (#10718)
+
+    10718-fedora16x86-oci11-portable-loginretry-unknownuser-wrongpassword-correctpassword-realserver-oracle122.oraproxy
+                                     the same against the real 12.2 server,
+                                      which answers like the 11.2 one. 31
+                                      packets, TNS 0x013a. Type 0x20 is
+                                      offered 0x0a first and answered 0x01,
+                                      first pointer 01, 65 byte fixed width
+                                      ORA-01017 object (117 bytes after the
+                                      0x04), and the correct password logs in
+                                      (#10718)
+
+    10718-fedora16x86-oci12-portable-loginretry-unknownuser-wrongpassword-correctpassword-realserver-oracle122.oraproxy
+                                     the 32 bit 12.2 client against the real
+                                      12.2 server. 31 packets, TNS 0x013c (the
+                                      large header). Type 0x20 is offered 0x0a
+                                      first and answered 0x01, first pointer
+                                      01, and the ORA-01017 object is 70 bytes
+                                      (122 bytes after the 0x04), 5 more than
+                                      at 0x013a (#10718)
+
+    10718-fedora16x86-oci11-portable-loginretry-unknownuser-wrongpassword-correctpassword-sqlrelay102.oraproxy
+                                     the 32 bit 11.2 client against
+                                      sqlr-listener emulating 10.2, no
+                                      rewriting. 31 packets, TNS 0x013a. The
+                                      module's banner is
+                                      "SQLRelay/PortableTTC", so the client
+                                      sends the full type list (0x20 offered
+                                      0x0a first) and the module answers 0x01
+                                      from its static table. The client's
+                                      first pointer is 01 and its counts are
+                                      count prefixed (01 01 1e 01 01 01 01 05
+                                      ...), the same portable shape every 10g
+                                      or later client gets, and the module
+                                      logs "encoding: portable". The ORA-01017
+                                      object is 83 bytes after the 0x04 and
+                                      the correct password logs in. A genuine
+                                      32 bit client never goes native against
+                                      the module this way (#10718)
+
+    10718-fedora16x86-oci11-portable-loginretry-unknownuser-wrongpassword-correctpassword-sqlrelay112.oraproxy
+                                     the same against sqlr-listener emulating
+                                      11.2. 31 packets, TNS 0x013a. The same
+                                      portable shape, with the 11g challenge
+                                      (#10718)
+
+    10718-fedora16x86-oci12-portable-loginretry-unknownuser-wrongpassword-correctpassword-sqlrelay121.oraproxy
+                                     the 32 bit 12.2 client against
+                                      sqlr-listener emulating 12.1. 31
+                                      packets, TNS 0x013b. The same portable
+                                      shape, 0x20 offered 0x0a first and
+                                      answered 0x01. The ORA-01017 object is
+                                      87 bytes after the 0x04 (#10718)
+
+    10718-fedora16x86-oci11-native-loginretry-unknownuser-rep20to0a-sqlrelay121.oraproxy
+                                     the 32 bit 11.2 client against
+                                      sqlr-listener emulating 12.1, through a
+                                      scratch oraproxy that rewrote the
+                                      module's answer for type 0x20 from 0x01
+                                      to 0x0a on the way back (the
+                                      representation a real server answers
+                                      when it wants the client's own, not the
+                                      one the module gives). 14 packets. The
+                                      client then sends a hybrid login at
+                                      [0011]: a 4 byte "fe ff ff ff" pointer
+                                      and count prefixed fields after it. The
+                                      module takes that for the native
+                                      encoding, reads 8 byte pointers,
+                                      misparses the request and answers a
+                                      challenge in its 64 bit layout. The
+                                      client sends a reset marker at [0013],
+                                      the module answers at [0014], and both
+                                      then wait. The client stays in
+                                      OCISessionBegin until it is killed. The
+                                      module does not crash (#10718)
+
+    10718-fedora16x86-oci11-native-loginretry-unknownuser-bannerlinuxi386-sqlrelay102.oraproxy
+                                     the 32 bit 11.2 client against
+                                      sqlr-listener emulating 10.2, through a
+                                      scratch oraproxy that rewrote the
+                                      module's banner in the TTIPRO answer to
+                                      the client's own
+                                      "Linuxi386/Linux-2.0.34-8.1.0" (8 bytes
+                                      longer, with the TNS length fixed). 14
+                                      packets, TNS 0x013a. The banners now
+                                      match, so the client behaves as it does
+                                      against the real 10.2 server: a short
+                                      data type request at [0009], and a login
+                                      at [0011] with 4 byte pointers (fe ff ff
+                                      ff 1e000000 01000000 fe ff ff ff
+                                      05000000 ...). The module reads a user
+                                      size of 1, an auth mode of 0xfffffffe
+                                      and a field count of -2, and answers a
+                                      64 bit challenge at [0012] (254 payload
+                                      bytes, 40 more than the real server's
+                                      214 for the same pair count). The client
+                                      sends a reset marker, the module answers
+                                      it, and both wait. The client hangs
+                                      until it is killed. The module logs
+                                      "outcome: exchange failed" on close and
+                                      does not crash (#10718)
+
+    10718-fedora16x86-oci11-native-loginretry-unknownuser-bannerlinuxi386-sqlrelay121.oraproxy
+                                     the same against sqlr-listener emulating
+                                      12.1. 14 packets. The same login bytes,
+                                      and a 64 bit challenge (378 payload
+                                      bytes) that the client cannot use. It
+                                      resets and hangs (#10718)
+
+    10718-fedora16x86-oci12-native-loginretry-unknownuser-bannerlinuxi386-sqlrelay121.oraproxy
+                                     the 32 bit 12.2 client against
+                                      sqlr-listener emulating 12.1, through
+                                      the same banner rewrite. 14 packets, TNS
+                                      0x013b, so the markers carry flags 0x20.
+                                      The same outcome as with the 11.2
+                                      client: the short request, the 4 byte
+                                      pointer login, a 64 bit challenge (509
+                                      payload bytes), a reset and a hang
+                                      (#10718)
 
 The v11 time zone file for the oci8 run
 ---------------------------------------

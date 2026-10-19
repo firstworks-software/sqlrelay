@@ -6,19 +6,20 @@
 #
 # For #9174/#9173.  Both tickets are stuck on the same missing evidence:
 # no capture exists of a real oracle server answering an OCI client in
-# the portable encoding, because OCI picks the encoding from the server's
-# platform banner and every real server's banner puts it in the native
-# encoding.  The module's banner ('Solaris64/SunOS 5.9') and the real
-# 12.2 server's banner ('x86_64/Linux 2.4.xx') are both exactly 19 bytes,
-# so a proxy can swap one for the other inside the TTIPRO exchange
-# without touching any length field.
+# the portable encoding, because OCI compares the server's platform banner
+# with its own and a real server's banner equals the client's, which makes
+# the client send a short data type request and marshal natively.  The
+# real 12.2 server's banner ('x86_64/Linux 2.4.xx') is exactly 19 bytes,
+# so a proxy can swap it for another 19 byte string ('Solaris64/SunOS
+# 5.9' here, only a stand-in) inside the TTIPRO exchange without touching
+# any length field.
 #
 # The substitution has to happen in both directions.  Each end compares
-# the banner it was sent against its own and goes portable only when they
-# differ, so rewriting only the server's banner puts the client in the
-# portable encoding while leaving the real server in the native one - the
-# server then cannot parse the client's portable datatype negotiation and
-# drops the connection (ORA-28547).
+# the banner it was sent against its own, so rewriting only the server's
+# banner makes the client see different banners and send the full type
+# list while the real server still sees equal ones and expects a short
+# request - the server then cannot parse the client's datatype negotiation
+# and drops the connection (ORA-28547).
 #
 # Usage:
 #   ./ocibannerrewritetest [both|s|c|native] [LISTENPORT]

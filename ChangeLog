@@ -827,7 +827,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   value (eg. router fronting a wide varchar) wrap silently into
   a small or negative-looking byte on the wire
 - documented why no real client selects the oracle protocol module's
-  native encoding, and why a 9i login never can
+  native encoding, why a 9i login never can, and that a 32-bit
+  native login isn't supported
 - the oracle protocol module honors an oci7 client's odefin's now - a
   legacy fetch sends back the columns the client defined and no
   others, the way a real server does, instead of every column of

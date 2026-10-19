@@ -2624,15 +2624,23 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_oracle : public sqlrprotocol {
 
 		// whether the client marshals in its own memory layout.
 		//
-		// no real client ever turns this on.  it is picked by the
-		// sentinel in the login request's first pointer field, which
-		// follows from the pointer representation negotiated in
-		// recvDataTypeRequest(): a modern 64-bit OCI client offers a
-		// representation this module can't echo and falls back to
-		// the universal one, so it never writes the sentinel.  a
-		// legacy client offering the native representation would, but
-		// every one on file goes through the 9i/classic dispatch
-		// instead, which returns ahead of the probe that sets this.
+		// no real client turns this on against this module.  it is
+		// picked by the sentinel in the login request's first pointer
+		// field, which a client writes when the server's banner
+		// matches its own or when the server answers type 0x20 with
+		// a representation other than 0x01 (a real 12.2 server
+		// answers a 64-bit client 0x0c).  the banner is fixed and
+		// 0x20 is answered 0x01, so neither happens, and a 10g or
+		// later client stays portable.  a legacy client goes through
+		// the 9i/classic dispatch instead, which returns ahead of the
+		// probe that sets this.
+		//
+		// the native login layout (8-byte pointers, 8-byte field
+		// count, 135/143 byte summary) is 64-bit only.  a 32-bit
+		// native client (4-byte pointers and counts, 95-byte struct as
+		// a real 32-bit server sends) isn't supported, and neither is
+		// a 64-bit client answered 0x0c, which uses a 4-byte field
+		// count that the 8-byte read would misparse.
 		//
 		// the branches behind it are still exercised, though - the
 		// raw-socket test client in
@@ -6157,11 +6165,11 @@ void sqlrprotocol_oracle::putTtiResponse(byte_t version,
 	// protocol version and server banner...
 	//
 	// the server's platform, echoed back to the client as a plain string
-	// it compares but doesn't parse.  native vs portable TTC encoding is
-	// decided independently, by the pointer representation negotiated in
-	// recvDataTypeRequest()/countDataTypes() - not by this string.
-	// measured: OCI 23.26 goes portable for "Solaris64/SunOS 5.9", for
-	// "SQLRelay" and for "SQL Relay 2.3.0" alike.
+	// it compares but doesn't parse.  a client whose own banner equals
+	// this string goes native: it sends a short data type request with no
+	// list and marshals in its own layout.  measured: OCI 23.26 goes
+	// portable for "Solaris64/SunOS 5.9", for "SQLRelay" and for
+	// "SQL Relay 2.3.0" alike.
 	//
 	// a real server's is its platform - a live 11.2 on centos 5 x64 and a
 	// live 12.2 on centos 7 x64 both send "x86_64/Linux 2.4.xx", an 8i,
@@ -6899,10 +6907,10 @@ bool sqlrprotocol_oracle::recvDataTypeRequest() {
 		localdatetimes=false;
 	}
 
-	// the client's data type list.  whether this session ends up in
-	// native or portable TTC encoding follows from the pointer
-	// representation the client offers here, not from SERVER_BANNER,
-	// which plays no part in it.  both sides send their full type
+	// the client's data type list.  the session goes native when the
+	// client's banner matches the server's (no list is sent) or when the
+	// server answers a representation other than 0x01 for type 0x20.  the
+	// module gives neither.  otherwise both sides send their full type
 	// catalog and each waits for the other's.  a short or empty list is
 	// counted and reported rather than refused, since a real server
 	// answers whatever it gets.
@@ -7634,11 +7642,10 @@ bool sqlrprotocol_oracle::sendDataTypeResponse() {
 		}
 	}
 
-	// the data types, if the client sent a list of its own.  native or
-	// portable TTC encoding follows from the pointer representation the
-	// client offered in recvDataTypeRequest(), not from SERVER_BANNER -
-	// but every client on file sends its own full catalog either way, so
-	// one that did is waiting for one back and hangs without it.
+	// the data types, if the client sent a list of its own.  a client
+	// that did is waiting for one back and hangs without it.  a client
+	// whose banner matches the server's sends none, but the module's
+	// banner never matches.
 	//
 	// a ub1 client gets ttidatatypes9i, the 10.2 server's own ub1 catalog,
 	// in that server's own order.  the client's offer only picks the
@@ -7908,6 +7915,8 @@ bool sqlrprotocol_oracle::getAuthPointer(const byte_t *rp,
 					const byte_t *end,
 					const byte_t **rpout) {
 
+	// native pointers are 8 bytes, 64-bit clients only - see
+	// nativeencoding
 	byte_t	size=(nativeencoding)?8:1;
 
 	if ((size_t)(end-rp)<(size_t)size) {
@@ -9398,14 +9407,12 @@ bool sqlrprotocol_oracle::recvAuthenticationRequest(bool secondphase) {
 		return retval;
 	}
 
-	// which of the two wire encodings the client uses follows from the
-	// pointer representation negotiated in recvDataTypeRequest(), and
-	// the first pointer field tells them apart here - 0x01 against the
-	// first byte of the native sentinel, 0xfe.  phase two keeps
-	// whatever phase one decided.
-	// (the native encoding isn't something the module provokes - an OCI
-	// client sends the same bytes to a real oracle server, and a real
-	// server answers in kind)
+	// the first pointer field tells the two wire encodings apart here -
+	// 0x01 against the first byte of the native sentinel, 0xfe.  a client
+	// goes native when the server's banner matches its own (it then sends
+	// a short data type request with no list) or when the server answers
+	// a representation other than 0x01 for type 0x20.  the module gives
+	// neither.  phase two keeps whatever phase one decided.
 	if (!secondphase) {
 		nativeencoding=(end-rp>=1 && *rp==0xfe);
 	}
@@ -9442,9 +9449,7 @@ bool sqlrprotocol_oracle::recvAuthenticationRequest(bool secondphase) {
 	// character count times the bytes per character of its charset - so an
 	// 8 character name in AL32UTF8 is declared as 24.  these are OCI
 	// properties, not native encoding properties, and OCI does the
-	// portable encoding too - that follows from the pointer representation
-	// negotiated in recvDataTypeRequest()/countDataTypes(), not from
-	// SERVER_BANNER.
+	// portable encoding too.
 	//
 	// so the prefix is taken when the next byte can be one: the bytes are
 	// there for it, and either it is below a space - no user name starts
@@ -9882,6 +9887,11 @@ void sqlrprotocol_oracle::putNativeSummary(byte_t endtoend,
 						uint32_t oranum,
 						byte_t statementtype) {
 
+	// 64-bit only: 8-byte pointer, 135/143 bytes.  a 32-bit native
+	// client (4-byte pointers, 95-byte struct as a real 32-bit server
+	// sends) isn't supported, but none reaches native against this
+	// module - see nativeencoding.
+	//
 	// a marshalled struct rather than a field stream, so it gets no
 	// summary extension.  reproduced byte for byte, with the live pointer
 	// zeroed, from a real server's login errors and auth trailers to a
