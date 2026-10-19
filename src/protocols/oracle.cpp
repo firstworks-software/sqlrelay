@@ -505,10 +505,21 @@
 // the two bits a genuine 9i client sets, alone, in CCAP_LOGON_TYPES (0x05).
 // nothing names them, and which one is oracle's O4L is unmeasured
 #define CCAP_LEGACY_LOGONS		0x05
-// CCAP_TTC1 bit 0x01, and CCAP_OCI1 bit 0x01 per go-ora - another reading
-// names fast session propagate as 0x10 in that same index, and nothing on
-// the wire settles which is right
+// CCAP_TTC1 bit 0x01, and CCAP_OCI1 bit 0x01 per go-ora
 #define CCAP_END_OF_CALL_STATUS		0x01
+// CCAP_OCI1 bit 0x10, by another reading's name.  a real server sends an
+// o3logon client the oci7 end to end field in its summary and error objects
+// when the client sets it.  the logon types, field version, tns version and
+// data type request flags play no part: rewriting any of them leaves the
+// field in, and clearing this bit alone takes it out.  a 10g classic login
+// with the bit clear is inferred, not measured: no client on file sends it,
+// and the module there went from sending the field to leaving it out, as
+// the 9i and 10g o5logon cells with the bit clear do against a real server.
+// the 10.2 and 23 OCI clients send 0xff in CCAP_OCI1, ojdbc14 0x90 and
+// every genuine 9i client 0x0f or 0x07.  see the
+// 10735-fedora9x86-oci10-oci8-ccap05-fv2, -fv3, -fv4, -tns0138, -flags12
+// and -cap16xef captures and the 10735-redhat9x86-oci9-oci7-fv4 and
+// -cap16x1f ones, against real servers, in test/protocol/oracle/samples/
 #define CCAP_FAST_SESSION_PROPAGATE	0x10
 // CCAP_TTC1 bit 0x08, python-oracledb's TNS_CCAP_IND_RCD, which it sets.
 // a client without it gets an indicator and a return code behind each value
@@ -2733,11 +2744,13 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_oracle : public sqlrprotocol {
 		uint32_t	verifiertype;
 
 		// the client's CCAP_LOGON_TYPES byte, 0 if its compile caps
-		// array is too short to carry one, and whether its data type
-		// list offers any type in more than one representation.  read
-		// in recvDataTypeRequest() and reset by init(), for
+		// array is too short to carry one, whether it sets
+		// CCAP_FAST_SESSION_PROPAGATE, and whether its data type list
+		// offers any type in more than one representation.  read in
+		// recvDataTypeRequest() and reset by init(), for
 		// chooseVerifierType()
 		byte_t		clientlogontypes;
+		bool		clientfastsessionpropagate;
 		bool		clientmultireps;
 
 		// the CCAP_LOGON_TYPES byte putTti6Response() advertised, 0 if
@@ -3526,6 +3539,7 @@ void sqlrprotocol_oracle::init() {
 	verifiertype=(serverfieldversion==CCAP_FIELD_VERSION_10_2)?
 				VERIFIER_TYPE_9I:VERIFIER_TYPE_11G_2;
 	clientlogontypes=0;
+	clientfastsessionpropagate=false;
 	serverlogontypes=0;
 	clientmultireps=false;
 	oci7endtoendseqnumber=false;
@@ -6766,6 +6780,12 @@ bool sqlrprotocol_oracle::recvDataTypeRequest() {
 	clientlogontypes=(compilecapssize>CCAP_LOGON_TYPES)?
 				compilecaps[CCAP_LOGON_TYPES]:0;
 
+	// whether an o3logon session's oci7 objects carry the end to end
+	// field - see chooseVerifierType()
+	clientfastsessionpropagate=(compilecapssize>CCAP_OCI1 &&
+				(compilecaps[CCAP_OCI1]&
+					CCAP_FAST_SESSION_PROPAGATE)!=0);
+
 	// the db time zone group, there only if the client asked for it
 	clientwantsdbtimezone=(runtimecapssize>RCAP_DB_TIMEZONE &&
 				(runtimecaps[RCAP_DB_TIMEZONE]&
@@ -6961,6 +6981,8 @@ bool sqlrprotocol_oracle::recvDataTypeRequest() {
 			(encodingflags&ENCODING_MULTI_BYTE)?" multibyte":"",
 			(encodingflags&ENCODING_CONV_LENGTH)?" convlength":"");
 		debugWrite("client logon types: 0x%02x",clientlogontypes);
+		debugWrite("client fast session propagate: %s",
+				(clientfastsessionpropagate)?"true":"false");
 		debugWrite("client multiple representations: %s",
 					(clientmultireps)?"true":"false");
 		debugWrite("client compile caps size: %d",compilecapssize);
@@ -9631,17 +9653,16 @@ void sqlrprotocol_oracle::chooseVerifierType() {
 	rawtextargs=(isO3Logon() && !(encodingflags&ENCODING_CONV_LENGTH));
 
 	// whether the oci7 status and summary objects carry the end to end
-	// sequence number.  this is a second, separate client-driven selector:
-	// a real 10.2 server sends the field to the client it sends the 64 hex
-	// challenge to and leaves it out for the one it sends 32, but it goes
-	// on sending the field when CCAP_LOGON_TYPES alone is rewritten down
-	// to 0x05, so it tracks something else that nothing here has pinned
-	// down.  the two move together on every client measured, so they are
-	// gated together: leaving the field out starves an o5logon-capable
-	// client's error block parser and hangs its login, and sending it to a
-	// genuine OCI7 client would break the shape that one reads.  a tagged
-	// 10g login is an o5logon one, and gets the modern objects instead
-	oci7endtoendseqnumber=(verifiertype==VERIFIER_TYPE_10G && classiclogon);
+	// sequence number - for an o3logon client, when it sets
+	// CCAP_FAST_SESSION_PROPAGATE, whatever its logon types or verifier.
+	// a 10g classic login with the bit clear is inferred: no client on
+	// file sends it, and the module there went from sending the field to
+	// leaving it out, as the 9i and 10g o5logon cells with the bit clear
+	// do against a real server.  a client that wants the field and
+	// doesn't get it starves its error block parser and hangs, against a
+	// real server too, and a genuine 9i client sent it misreads the
+	// objects.  an o5logon session gets the modern objects instead
+	oci7endtoendseqnumber=(isO3Logon() && clientfastsessionpropagate);
 
 	// an oci client is the only client measured that offers more than one
 	// representation for a type - it offers its platform's and then the
@@ -9658,6 +9679,8 @@ void sqlrprotocol_oracle::chooseVerifierType() {
 	debugStart("verifier type");
 	debugWrite("classic logon: %s",(classiclogon)?"true":"false");
 	debugWrite("client logon types: 0x%02x",clientlogontypes);
+	debugWrite("client fast session propagate: %s",
+			(clientfastsessionpropagate)?"true":"false");
 	debugWrite("verifier type: 0x%04x",verifiertype);
 	debugWrite("allowed by allowedlogonversion: %s",
 				(logonVersionAllowed())?"yes":"no");
@@ -9840,14 +9863,15 @@ bool sqlrprotocol_oracle::sendAuthenticationChallenge() {
 			putAuthCount(1,2);
 			putAuthField("AUTH_SESSKEY",serverauthsesskey);
 
-			// a tagged o3logon login is always a 9i one.  a genuine
-			// 9i client reads every summary object without the end
-			// to end field, this one included, and a real 10.2
-			// server sends it the oci7 summary here (packet [0012]
-			// of samples/10273-redhat9x86-sqlplus-query-
-			// we8iso8859p1-realserver-oracle102-r8b).  reading
-			// putAuthTrailer()'s object, which has the field, the
-			// client takes the zero ahead of the call number as the
+			// a tagged o3logon login is always a 9i one, and gets
+			// the oci7 summary, as from a real 10.2 server (packet
+			// [0012] of samples/10273-redhat9x86-sqlplus-query-
+			// we8iso8859p1-realserver-oracle102-r8b).  it carries
+			// the end to end field only for a client that sets
+			// CCAP_FAST_SESSION_PROPAGATE - see
+			// chooseVerifierType().  a genuine 9i client doesn't,
+			// and reading putAuthTrailer()'s object, which has the
+			// field, takes the zero ahead of the call number as the
 			// call number, and the call number as the length of the
 			// field after it, so anything but 01 there leaves it
 			// waiting for a byte that never comes
@@ -10188,10 +10212,11 @@ void sqlrprotocol_oracle::putOci7Summary(uint32_t cursorid,
 
 	// the end to end sequence number, the second of the two fields
 	// putSummary() writes at the front, and the one this object was
-	// decoded without.  a real 10.2 server does send it to a client that
-	// asked for the 10g/DES login - its portable summary there is 31 bytes
-	// where a genuine OCI7 client's is 29 - and leaving it out starves
-	// that client's error block parser and hangs the login.
+	// decoded without.  a real server sends it to a client that sets
+	// CCAP_FAST_SESSION_PROPAGATE - its portable challenge summary is
+	// then 31 bytes where a genuine 9i client's is 29 - and leaving it
+	// out starves that client's error block parser and hangs the login.
+	// see chooseVerifierType().
 	//
 	// the value tracks the call being answered.  a real server sends 2
 	// with the challenge and 3 with the login answer, which is what
@@ -10661,8 +10686,8 @@ bool sqlrprotocol_oracle::sendErrorPacket(const char *what,
 	// reads as a dropped socket, ORA-03113 or ORA-12537, not a refusal.
 	//
 	// what goes out instead is a summary object with a login's field
-	// values in it, and which summary object depends on the verifier
-	// type: an oci7 client gets putOci7Summary()'s, everybody else gets
+	// values in it.  an o3logon client without the end to end field (see
+	// oci7endtoendseqnumber) gets putOci7Summary()'s, everybody else gets
 	// putSummary()'s.  the two differ by one field - putSummary() has a
 	// zero between the end of call status and the rows processed count,
 	// so the ora number lands one field later - and a client told the
@@ -10734,7 +10759,22 @@ bool sqlrprotocol_oracle::sendErrorPacket(const char *what,
 		// client that expects that field takes that branch instead.
 		// sent this narrower shape, such a client reads the ora
 		// number's length prefix as a field of its own and reports
-		// ORA-03120 for what is really ORA-01017
+		// ORA-03120 for what is really ORA-01017 or ORA-28040.
+		//
+		// for ORA-28040 this is byte for byte a real 12.2 server's
+		// refusal of a genuine 9.0.1 client (10545-solaris8sparc-
+		// oci9-oci7-login-realserver-oracle122-allowed10 in
+		// test/protocol/oracle/samples/).  a real 12.2 server adds
+		// the field, 0, to its own wider form of the object - 65
+		// bytes where it is otherwise 63 - for an o3logon client
+		// that sets CCAP_FAST_SESSION_PROPAGATE (10735-fedora9x86-
+		// oci10-oci8-ccap05-realserver-oracle122-allowed10), and
+		// drops it for the same client with the bit cleared
+		// (-cap16xef-realserver-oracle122-allowed11), which then
+		// misreads the refusal.  so such a client takes the modern
+		// branch, whose 31 bytes ahead of the message, below field
+		// version 12.1, are this object plus that field, 0 - each
+		// piece measured, the combination inferred
 		reqpacket.append(prefix,sizeof(prefix));
 		writeLenPreInt(&reqpacket,oranum);
 		reqpacket.append(beforestatementtype,

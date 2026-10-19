@@ -175,6 +175,18 @@ static const unsigned char	ORA_CCAP_FIELD_VERSION_11_2=6;
 static const size_t		ORA_CCAP_SIZE=42;
 static const size_t		ORA_RCAP_SIZE=7;
 
+// CCAP_OCI1 and CCAP_FAST_SESSION_PROPAGATE in src/protocols/oracle.cpp.  a
+// real server puts the end to end field in an o3logon session's summary and
+// error objects exactly when the client sets the bit - see setOci1()
+static const size_t		ORA_CCAP_OCI1=16;
+static const unsigned char	ORA_CCAP_FAST_SESSION_PROPAGATE=0x10;
+
+// where the compile capabilities' size byte and the capabilities themselves
+// start in a data type request, counted from behind its ttc code: past the
+// two character sets and the encoding flags
+static const size_t		ORA_DATA_TYPE_REQUEST_CCAP_SIZE=5;
+static const size_t		ORA_DATA_TYPE_REQUEST_CCAP=6;
+
 // RCAP_TTC and RCAP_TTC_ZERO_COPY in src/protocols/oracle.cpp.  a client
 // that sets the bit, against a module that also sets it, gets a lob read's
 // data in data descriptor packets rather than inline - see
@@ -463,6 +475,20 @@ class oracleprotocolclient {
 		// and stops there.  it has to be set before connect(), since
 		// the byte goes out in the data type negotiation
 		void	setLogonTypes(unsigned char logontypes);
+
+		// what this client's CCAP_OCI1 byte advertises, 0 by default.
+		// a genuine 9i client sends 0x0f or 0x07, ojdbc14 0x90 and
+		// a genuine 10.2, 11.2 or OCI 23 client 0xff.  its 0x10 bit
+		// decides whether an o3logon session's summary and error
+		// objects carry the end to end field - see
+		// chooseVerifierType() in src/protocols/oracle.cpp.  it has
+		// to be set before connect(), since the byte goes out in the
+		// data type negotiation
+		void	setOci1(unsigned char oci1);
+
+		// whether this client sets CCAP_OCI1's 0x10 bit, through
+		// setOci1() or in the request setDataTypeRequest() gave
+		bool	getFastSessionPropagate();
 
 		// the CCAP_FIELD_VERSION byte this client advertises, 11.2
 		// (6) by default.  the listener negotiates down to the lower
@@ -903,6 +929,7 @@ class oracleprotocolclient {
 		bool			bigchunkclr;
 		bool			nativeencoding;
 		unsigned char		logontypes;
+		unsigned char		oci1;
 		const unsigned char	*datatyperequest;
 		size_t			datatyperequestsize;
 		size_t			datatyperequestsplit;
@@ -1134,6 +1161,7 @@ oracleprotocolclient::oracleprotocolclient() {
 	bigchunkclr=false;
 	nativeencoding=false;
 	logontypes=ORA_CCAP_O5LOGON;
+	oci1=0;
 	datatyperequest=NULL;
 	datatyperequestsize=0;
 	datatyperequestsplit=0;
@@ -1210,6 +1238,21 @@ bool oracleprotocolclient::getNativeEncoding() {
 
 void oracleprotocolclient::setLogonTypes(unsigned char logontypes) {
 	this->logontypes=logontypes;
+}
+
+void oracleprotocolclient::setOci1(unsigned char oci1) {
+	this->oci1=oci1;
+}
+
+bool oracleprotocolclient::getFastSessionPropagate() {
+	if (!datatyperequest) {
+		return (oci1&ORA_CCAP_FAST_SESSION_PROPAGATE)!=0;
+	}
+	return (datatyperequestsize>ORA_DATA_TYPE_REQUEST_CCAP+ORA_CCAP_OCI1 &&
+		datatyperequest[ORA_DATA_TYPE_REQUEST_CCAP_SIZE]>
+							ORA_CCAP_OCI1 &&
+		(datatyperequest[ORA_DATA_TYPE_REQUEST_CCAP+ORA_CCAP_OCI1]&
+					ORA_CCAP_FAST_SESSION_PROPAGATE)!=0);
 }
 
 void oracleprotocolclient::setFieldVersion(unsigned char fieldversion) {
@@ -2049,8 +2092,9 @@ bool oracleprotocolclient::sendDataTypeNegotiation() {
 	appendByte(0x02);
 
 	// the compile capabilities.  everything but the logon types, the
-	// field version and CCAP_TTC3 is zero, and a zero at CCAP_TTC3 leaves
-	// the time zone version out of the request, which keeps this simple.
+	// field version, CCAP_OCI1 and CCAP_TTC3 is zero, and a zero at
+	// CCAP_TTC3 leaves the time zone version out of the request, which
+	// keeps this simple.
 	//
 	// the logon types are O5LOGON alone unless setLogonTypes() said
 	// otherwise, an 11g-only client's: no O3LOGON login at 11.2 or 12.1,
@@ -2070,6 +2114,7 @@ bool oracleprotocolclient::sendDataTypeNegotiation() {
 	bytestring::zero(compilecaps,sizeof(compilecaps));
 	compilecaps[ORA_CCAP_LOGON_TYPES]=logontypes;
 	compilecaps[ORA_CCAP_FIELD_VERSION]=fieldversion;
+	compilecaps[ORA_CCAP_OCI1]=oci1;
 	if (bigchunkclr) {
 		compilecaps[ORA_CCAP_TTC3]|=ORA_CCAP_TTC3_BIG_CHUNK_CLR;
 	}
@@ -2707,9 +2752,13 @@ bool oracleprotocolclient::answerO3LogonChallenge(const char *user,
 		return false;
 	}
 
-	// the oci7 summary: the ttc code, the end of call status, the rows
-	// processed and then the error number
+	// the oci7 summary: the ttc code, the end of call status, the end to
+	// end field when this client set fast session propagate, the rows
+	// processed and then the error number.  an error object opens the
+	// same way.  read without the field, one that has it would pass with
+	// its rows processed taken for the error number
 	uint32_t	eocstatus=0;
+	uint32_t	endtoend=0;
 	uint32_t	rowsprocessed=0;
 	uint32_t	oranum=0;
 	unsigned char	skip[3];
@@ -2718,6 +2767,8 @@ bool oracleprotocolclient::answerO3LogonChallenge(const char *user,
 			getResponseTtcCode()!=ORA_TTC_ERROR ||
 			!readBytes(skip,sizeof(skip)) ||
 			!readLenPreInt(&eocstatus) ||
+			(getFastSessionPropagate() &&
+				!readLenPreInt(&endtoend)) ||
 			!readLenPreInt(&rowsprocessed) ||
 			!readLenPreInt(&oranum) || oranum) {
 		setError("the listener refused the login");

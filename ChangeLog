@@ -2506,8 +2506,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   aes-128 session key and a wider summary object instead, and
   blocked waiting for bytes that never came. the module now reads
   that capability byte and answers with whichever o3logon variant
-  the client asked for, while a genuine old client still gets
-  exactly what it got before (#10048)
+  the client asked for (the wider summary object follows the
+  client's CCAP_OCI1 byte, bit 0x10, instead), while a genuine
+  old client still gets exactly what it got before (#10048,
+  #10735)
 - fixed the oracle protocol module hanging the same o5logon-capable
   legacy oci7 clients (#10048) on their first describe call once
   login was fixed. their describe response needs an extra count

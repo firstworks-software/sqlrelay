@@ -58,11 +58,32 @@
 // and checks the challenge each one gets: its shape, the verifier type in
 // AUTH_VFR_DATA's flags, the session key's length, the pbkdf2 fields, and
 // the call number in its trailer, which has to echo the request's sequence
-// number.  A 9i challenge's trailer is the oci7 summary, which has no end to
-// end field, since that is how a genuine 9i client reads it.  It also checks
-// the logon types and field version each listener advertises, and completes
-// the login wherever the 11g verifier comes back, since that is the one
-// exchange oracleprotocolclient can finish.
+// number.  It also checks the logon types and field version each listener
+// advertises, and completes the login wherever the 11g verifier comes back,
+// since that is the one exchange oracleprotocolclient can finish.
+//
+// A 9i challenge's trailer is the oci7 summary.  Whether it, and every other
+// object of an o3logon session, carries the end to end field follows bit 0x10
+// of the client's CCAP_OCI1 byte (compile caps byte 16), not its logon types
+// or its field version.  Real 10.2 and 12.2 servers send the field exactly
+// when the bit is set: to the genuine 10.2 client with its logon types
+// rewritten to 0x05 (samples/10735-fedora9x86-oci10-oci8-ccap05-fv4-
+// realserver-oracle102 and -oracle122.oraproxy) and not once the bit is
+// cleared too (10735-fedora9x86-oci10-oci8-ccap05-cap16xef-realserver-
+// oracle102 and -oracle122.oraproxy).  So each case advertises its genuine
+// client's CCAP_OCI1 byte along with its logon types: 0x90 for ojdbc14, 0x0f
+// for a 9i client, which leaves the bit clear, and 0xff for the rest.
+//
+// The genuine 10.2 client's own data type request is also sent with its
+// logon types byte rewritten 0x0d -> 0x05, the byte those captures rewrite,
+// with its CCAP_OCI1 byte as sent (0xff) and rewritten to 0xef.  With the
+// bit set, the 9i challenge's trailer, the ORA-28040 refusal and a wrong
+// password's ORA-01017 have to carry the field.  Sent without it, that
+// client hangs on the challenge and reports ORA-03120 for the refusal -
+// samples/10545-fedora9x86-oci10-oci8-sdu8192-ccap05-correctpassword-
+// sqlrelay121 and -sqlrelay121-allowed10.oraproxy.  With the bit cleared
+// they have to leave it out, as a real server does, and the client hangs on
+// a real server's challenge too.
 //
 // The listeners are all on the oracleprotocol instance - see
 // test/sqlrelay.conf.d/oracleprotocol.conf.in - except the 11.2 one, which is
@@ -129,14 +150,24 @@
 //	- the challenge of the 0x0f classic login, whose key a real server makes
 //	  96 hex characters and the module 64
 //	- the ORA-28040 and ORA-01017 objects of the classic login and of the
-//	  field version 4 client, which a real server sends in a fixed width form
+//	  genuine 10.2 client, which a real server sends in a fixed width form
 //	  and the module in the count prefixed one that its clients read
 //	- which of the legacy bits, 0x01 or 0x04, floor 9 looks at.  The bytes
 //	  here have both or neither
+//	- the trailer of the 0x00 client's challenge, whose bit is set
 //
 // The verifier the 0x0d client gets at 12.1 is the module's choice too: a
 // real 12.2 server gives it the 10g one where the module gives it 11g, which
 // the client completes.
+//
+// So are some of what the rewritten 10.2 client gets.  A real server sends
+// it fixed width objects, so the count prefixed ones checked here are
+// inferred: each field is measured, in the modern objects and in the real
+// server's, and their combination is not.  The end to end field of its 9i
+// challenge is the call number, the module's choice: a real server sent 2,
+// which was also the call number in every capture.  Nothing here completes
+// its login, which against a real server fails in the client with ORA-28041
+// when tagged and gets ORA-01017 when classic.
 
 // the verifier types - the VERIFIER_TYPE_* defines in
 // src/protocols/oracle.cpp.  only the ones that run under o5logon go out on
@@ -167,6 +198,14 @@ static const unsigned char	LOGON_TYPES_9I=0x05;
 static const unsigned char	LOGON_TYPES_10G=0x0d;
 static const unsigned char	LOGON_TYPES_11G=0x0f;
 static const unsigned char	LOGON_TYPES_12C=0xef;
+
+// the CCAP_OCI1 bytes the genuine clients send: ojdbc14's, a 9i client's,
+// whose fast session propagate bit is clear, and the 10.2, 11.2 and OCI 23
+// clients'.  and the 10.2 client's with that bit cleared
+static const unsigned char	OCI1_OJDBC14=0x90;
+static const unsigned char	OCI1_9I=0x0f;
+static const unsigned char	OCI1_10G=0xff;
+static const unsigned char	OCI1_10G_NO_FAST_SESSION_PROPAGATE=0xef;
 
 // PROTOCOL_VERSION_10 and PROTOCOL_VERSION_11 in src/protocols/oracle.cpp, the
 // versions a genuine 10.2 and 11.2 client offer, and the flags byte of a
@@ -200,7 +239,8 @@ static const uint32_t		ORA_CLOB_LENGTH=400;
 static const uint32_t	ORA_NO_MATCHING_AUTH_PROTOCOL=28040;
 
 // the end to end field putAuthTrailer() writes: the login phase, 2 in the
-// challenge and 3 in the login answer
+// challenge and 3 in the login answer.  putOci7Summary() writes the call
+// number there instead
 static const unsigned char	ORA_AUTH_PHASE_CHALLENGE=2;
 static const unsigned char	ORA_AUTH_PHASE_ANSWER=3;
 
@@ -216,9 +256,11 @@ static const size_t	ORA_NATIVE_TRAILER_CALL_NUMBER=49;
 static const size_t	ORA_TRAILER_CALL_NUMBER_SIZE=31;
 static const size_t	ORA_TRAILER_EXTENSION_SIZE=2;
 
-// the portable trailer of a 9i challenge, the oci7 summary: the ttc code,
-// the end of call status, 19 zero fields with no end to end field among
-// them, the call number and 6 more zero fields, and the same extension
+// the portable trailer of a 9i challenge, the oci7 summary, for a client
+// without fast session propagate: the ttc code, the end of call status, 19
+// zero fields with no end to end field among them, the call number and 6
+// more zero fields, and the same extension.  for a client with it, the oci7
+// summary has the end to end field and the portable trailer's layout
 static const size_t	ORA_OCI7_SUMMARY_CALL_NUMBER=22;
 static const size_t	ORA_OCI7_SUMMARY_SIZE_BASE=29;
 
@@ -494,6 +536,19 @@ static const unsigned char	ORA_10G_DATA_TYPE_REQUEST[]={
 	0x00, 0x02, 0x03, 0x02, 0x03, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00
 };
 
+// the same request with its logon types byte rewritten 0x0d -> 0x05 and its
+// CCAP_OCI1 byte set to one of the OCI1_10G* bytes, as an oraproxy rewrote
+// it in packet [0009] of the 10735-fedora9x86-oci10-oci8-ccap05-* captures in
+// samples/.  see rewrite10gDataTypeRequest()
+static const size_t		ORA_10G_DATA_TYPE_REQUEST_LOGON_TYPES=
+					ORA_DATA_TYPE_REQUEST_CCAP+
+					ORA_CCAP_LOGON_TYPES;
+static const size_t		ORA_10G_DATA_TYPE_REQUEST_OCI1=
+					ORA_DATA_TYPE_REQUEST_CCAP+
+					ORA_CCAP_OCI1;
+static unsigned char	rewritten10gdatatyperequest[
+					sizeof(ORA_10G_DATA_TYPE_REQUEST)];
+
 // its classic phase one call, TTI_LOGON_PRESENT_USER, with the ttc code and
 // the sequence number 2, and the TTI_LOGON_PRESENT_PWD that answers the 64 hex
 // character challenge the module gave it, sequence number 3 - [0011] and
@@ -719,6 +774,33 @@ static const testcase	genuine10gcases[]={
 	{LISTENER_FLOOR_12A,LOGON_TYPES_10G,FORM_CLASSIC,VERIFIER_10G,OUTCOME_REFUSED_BASIC}
 };
 
+// the genuine 10.2 client with its logon types rewritten to 0x05 and its
+// fast session propagate bit set.  it gets the 9i verifier whatever the
+// ceiling, the challenge and the refusals carry the end to end field, and
+// floors 10 and up refuse it, as a real 12.2 server did at 10 and 11 -
+// samples/10735-fedora9x86-oci10-oci8-ccap05-realserver-oracle122-allowed10
+// and -allowed11, and the olog ones beside them for the classic login
+static const testcase	rewritten10gcases[]={
+	{LISTENER_12_1,LOGON_TYPES_9I,FORM_TAGGED,VERIFIER_9I,OUTCOME_CHALLENGE},
+	{LISTENER_12_1,LOGON_TYPES_9I,FORM_CLASSIC,VERIFIER_9I,OUTCOME_CHALLENGE},
+	{LISTENER_11_2,LOGON_TYPES_9I,FORM_TAGGED,VERIFIER_9I,OUTCOME_CHALLENGE},
+	{LISTENER_10_2,LOGON_TYPES_9I,FORM_TAGGED,VERIFIER_9I,OUTCOME_CHALLENGE},
+	{LISTENER_FLOOR_9,LOGON_TYPES_9I,FORM_TAGGED,VERIFIER_9I,OUTCOME_ADMITTED},
+	{LISTENER_FLOOR_11,LOGON_TYPES_9I,FORM_TAGGED,VERIFIER_9I,OUTCOME_REFUSED},
+	{LISTENER_FLOOR_11,LOGON_TYPES_9I,FORM_CLASSIC,VERIFIER_9I,OUTCOME_REFUSED_BASIC},
+	{LISTENER_FLOOR_12,LOGON_TYPES_9I,FORM_TAGGED,VERIFIER_9I,OUTCOME_REFUSED},
+	{LISTENER_FLOOR_12A,LOGON_TYPES_9I,FORM_TAGGED,VERIFIER_9I,OUTCOME_REFUSED}
+};
+
+// the same with the bit cleared too, which leaves the end to end field out
+// of the challenge and the refusal, as a real 12.2 server did - samples/
+// 10735-fedora9x86-oci10-oci8-ccap05-cap16xef-realserver-oracle122 and
+// -oracle122-allowed11
+static const testcase	rewritten10gnofspcases[]={
+	{LISTENER_12_1,LOGON_TYPES_9I,FORM_TAGGED,VERIFIER_9I,OUTCOME_CHALLENGE},
+	{LISTENER_FLOOR_11,LOGON_TYPES_9I,FORM_TAGGED,VERIFIER_9I,OUTCOME_REFUSED}
+};
+
 static const char	*host="127.0.0.1";
 static const char	*sid="ora1";
 static const char	*user="testuser";
@@ -820,9 +902,10 @@ static void dumpBytes(const char *what, const unsigned char *bytes,
 }
 
 // the trailer behind the pairs, byte for byte, and its call number on its
-// own, so a failure says which
+// own, so a failure says which.  "endtoend" is the value of its end to end
+// field, and "oci7summary" says it is the oci7 summary without one
 static void checkTrailer(oracleprotocolclient *client, const char *label,
-				unsigned char phase, unsigned char seqnumber,
+				unsigned char endtoend, unsigned char seqnumber,
 				bool oci7summary) {
 
 	const unsigned char	*trailer=NULL;
@@ -844,7 +927,7 @@ static void checkTrailer(oracleprotocolclient *client, const char *label,
 	expected[0]=ORA_TTC_ERROR;
 	if (nativeencoding) {
 		expected[1]=1;
-		expected[ORA_NATIVE_TRAILER_END_TO_END]=phase;
+		expected[ORA_NATIVE_TRAILER_END_TO_END]=endtoend;
 		expected[ORA_NATIVE_TRAILER_UNNAMED]=1;
 		expected[ORA_NATIVE_TRAILER_MARKER]=0x36;
 		expected[ORA_NATIVE_TRAILER_MARKER+1]=0x01;
@@ -862,7 +945,7 @@ static void checkTrailer(oracleprotocolclient *client, const char *label,
 		expected[1]=1;
 		expected[2]=1;
 		expected[3]=1;
-		expected[4]=phase;
+		expected[4]=endtoend;
 		expectedsize=ORA_TRAILER_CALL_NUMBER_SIZE+extensionsize;
 		callnumberoffset=ORA_TRAILER_CALL_NUMBER;
 	}
@@ -1004,10 +1087,17 @@ static void checkChallenge(oracleprotocolclient *client,
 			hasField(client,"AUTH_GLOBALLY_UNIQUE_DBID"));
 	}
 
+	// a 9i challenge's oci7 summary has the end to end field for a client
+	// with fast session propagate, and carries the call number in it
+	bool	oci7endtoend=(o3logon && client->getFastSessionPropagate());
 	l.clear();
 	l.append(label)->append(" trailer");
+	if (oci7endtoend) {
+		l.append(" with the end to end field");
+	}
 	checkTrailer(client,l.getString(),
-			ORA_AUTH_PHASE_CHALLENGE,seqnumber,expected==VERIFIER_9I);
+			(o3logon)?seqnumber:ORA_AUTH_PHASE_CHALLENGE,
+			seqnumber,o3logon && !oci7endtoend);
 }
 
 static bool isHexCharacter(unsigned char c) {
@@ -1360,7 +1450,13 @@ static void putLenPreInt(unsigned char *buffer, size_t *size, uint32_t value) {
 // no real server sends the extension in the o3logon shape, since no real
 // 9i client negotiates field version 12.1, and no 11.2 server was captured
 // with a 9i client, so those bytes are inferred from the modern shape and
-// from the 10.2 server
+// from the 10.2 server.
+//
+// the modern shape that an o3logon session gets when its client sets fast
+// session propagate is inferred too.  a real 12.2 server sends that client
+// its fixed width form, with the end to end field 0: packet [0017] of
+// samples/10735-fedora9x86-oci10-oci8-ccap05-realserver-oracle122-
+// allowed11.oraproxy
 static void checkPortableError(oracleprotocolclient *client,
 				const char *label,
 				const listenerinfo *li,
@@ -1459,12 +1555,14 @@ static void checkPortableError(oracleprotocolclient *client,
 }
 
 // the ORA-28040 a below-floor login gets in place of the challenge.  a 9i
-// session gets the narrow oci7 error shape and any other the modern one,
-// which has one more zero field ahead of the ora number - see
+// session whose client lacks fast session propagate gets the narrow oci7
+// error shape and any other the modern one, which has one more zero field,
+// the end to end field, ahead of the ora number - see
 // sendErrorPacket() in src/protocols/oracle.cpp.  in the native encoding
 // every session gets the native struct.  "exact" says whether to compare that
 // object byte for byte: a real server's is known for the tagged login of a
-// client at field version 6 or up, and not for the others
+// client at field version 6 or up, inferred for the rewritten 10.2 client's
+// tagged login, and not known for the others
 static void checkRefusal(oracleprotocolclient *client,
 				const char *label,
 				const listenerinfo *li,
@@ -1501,7 +1599,9 @@ static void checkRefusal(oracleprotocolclient *client,
 				ORA_NO_MATCHING_AUTH_PROTOCOL,
 				message,seqnumber,false);
 	} else {
-		checkPortableError(client,label,li,(expected==VERIFIER_9I),
+		checkPortableError(client,label,li,
+				(expected==VERIFIER_9I &&
+					!client->getFastSessionPropagate()),
 				ORA_NO_MATCHING_AUTH_PROTOCOL,
 				message,seqnumber,false);
 	}
@@ -1573,6 +1673,94 @@ static void checkBarred(oracleprotocolclient *client, const char *label) {
 						"username/password"));
 }
 
+// how a case connects: as the hand built client the other cases use, or as
+// the genuine 10.2 client does, at its default sdu of 2048 with its data type
+// request in two packets or, as when its connect descriptor asks for 8192, in
+// one.  or as that client with its logon types rewritten, at its default
+// sdu, with CCAP_OCI1's fast session propagate bit as sent or cleared
+enum session {
+	SESSION_HAND_BUILT,
+	SESSION_GENUINE_10G,
+	SESSION_GENUINE_10G_BIG_SDU,
+	SESSION_REWRITTEN_10G,
+	SESSION_REWRITTEN_10G_BIT_CLEAR
+};
+
+static const char *sessionLabel(session sess) {
+	switch (sess) {
+		case SESSION_GENUINE_10G:
+			return "genuine 10.2 client, sdu 2048, ";
+		case SESSION_GENUINE_10G_BIG_SDU:
+			return "genuine 10.2 client, sdu 8192, ";
+		case SESSION_REWRITTEN_10G:
+			return "rewritten 10.2 client, CCAP_OCI1 0xff, ";
+		case SESSION_REWRITTEN_10G_BIT_CLEAR:
+			return "rewritten 10.2 client, CCAP_OCI1 0xef, ";
+		default:
+			return "";
+	}
+}
+
+// the CCAP_OCI1 byte of the genuine client whose logon types a hand built
+// case advertises
+static unsigned char genuineOci1(unsigned char logontypes) {
+	if (logontypes==LOGON_TYPES_NONE) {
+		return OCI1_OJDBC14;
+	}
+	if (logontypes==LOGON_TYPES_9I) {
+		return OCI1_9I;
+	}
+	return OCI1_10G;
+}
+
+// the genuine 10.2 client's data type request with its logon types
+// rewritten to 0x05 and its CCAP_OCI1 byte set to "oci1"
+static const unsigned char *rewrite10gDataTypeRequest(unsigned char oci1) {
+	bytestring::copy(rewritten10gdatatyperequest,
+				ORA_10G_DATA_TYPE_REQUEST,
+				sizeof(ORA_10G_DATA_TYPE_REQUEST));
+	rewritten10gdatatyperequest[ORA_10G_DATA_TYPE_REQUEST_LOGON_TYPES]=
+								LOGON_TYPES_9I;
+	rewritten10gdatatyperequest[ORA_10G_DATA_TYPE_REQUEST_OCI1]=oci1;
+	return rewritten10gdatatyperequest;
+}
+
+// the data type negotiation a session sends.  a hand built one advertises
+// "logontypes", and the CCAP_OCI1 byte of the client that sends it
+static void setDataTypeRequest(oracleprotocolclient *client, session sess,
+						unsigned char logontypes) {
+	switch (sess) {
+		case SESSION_HAND_BUILT:
+			client->setFieldVersion(clientfieldversion);
+			client->setLogonTypes(logontypes);
+			client->setOci1(genuineOci1(logontypes));
+			return;
+		case SESSION_GENUINE_10G:
+		case SESSION_GENUINE_10G_BIG_SDU:
+			client->setDataTypeRequest(ORA_10G_DATA_TYPE_REQUEST,
+					sizeof(ORA_10G_DATA_TYPE_REQUEST));
+			break;
+		case SESSION_REWRITTEN_10G:
+			client->setDataTypeRequest(
+				rewrite10gDataTypeRequest(OCI1_10G),
+				sizeof(rewritten10gdatatyperequest));
+			break;
+		case SESSION_REWRITTEN_10G_BIT_CLEAR:
+			client->setDataTypeRequest(
+				rewrite10gDataTypeRequest(
+					OCI1_10G_NO_FAST_SESSION_PROPAGATE),
+				sizeof(rewritten10gdatatyperequest));
+			break;
+	}
+	if (sess==SESSION_GENUINE_10G_BIG_SDU) {
+		client->setSdu(ORA_10G_SDU_BIG);
+	} else {
+		client->setSdu(ORA_10G_SDU);
+		client->setDataTypeRequestSplit(
+					ORA_10G_DATA_TYPE_REQUEST_SPLIT);
+	}
+}
+
 // the listeners a wrong password is tried against: 12.1, where a phase two
 // error has the statement type and the second ora number, and 11.2, where
 // it has neither
@@ -1581,22 +1769,24 @@ static const size_t	wrongpasswordlisteners[]={LISTENER_12_1,LISTENER_11_2};
 // phase two with a password that isn't the user's: a break and a reset, then
 // ORA-01017 in the native struct or the portable object, with the phase two
 // sequence number as its call number.  "o3logon" tries it with the 9i
-// verifier, portable encoding only
-static void runWrongPassword(size_t index, bool o3logon) {
+// verifier, portable encoding only.  the rewritten 10.2 client gets the 9i
+// verifier, and the modern object since it sets fast session propagate
+static void runWrongPassword(size_t index, bool o3logon, session sess) {
 
 	const listenerinfo	*li=&listeners[wrongpasswordlisteners[index]];
 	unsigned char		logontypes=(o3logon)?LOGON_TYPES_9I:
 							LOGON_TYPES_11G;
 
 	// a sequence number per case, apart from runCase()'s
-	unsigned char	seqnumber=(unsigned char)((o3logon)?0x60+2*index:
-							0x50+2*index);
+	unsigned char	seqnumber=(unsigned char)(
+				(sess!=SESSION_HAND_BUILT)?0x70+2*index:
+				((o3logon)?0x60+2*index:0x50+2*index));
 
 	char	label[256];
 	charstring::printf(label,sizeof(label),
-			"%s, logon types 0x%02x, field version %d, "
+			"%s, %slogon types 0x%02x, field version %d, "
 			"tns version 0x%04x, wrong password",li->name,
-			logontypes,clientfieldversion,
+			sessionLabel(sess),logontypes,clientfieldversion,
 			negotiatedconnectversion);
 	stdoutput.printf("\n%s - expect ORA-01017\n",label);
 
@@ -1605,9 +1795,8 @@ static void runWrongPassword(size_t index, bool o3logon) {
 
 	oracleprotocolclient	client;
 	client.setNativeEncoding(nativeencoding);
-	client.setFieldVersion(clientfieldversion);
 	client.setConnectVersion(clientconnectversion);
-	client.setLogonTypes(logontypes);
+	setDataTypeRequest(&client,sess,logontypes);
 	client.setAuthSequenceNumbers(seqnumber,seqnumber+1);
 
 	stringbuffer	l;
@@ -1660,7 +1849,9 @@ static void runWrongPassword(size_t index, bool o3logon) {
 					ORA_INVALID_USERNAME_PASSWORD,
 					message,seqnumber+1,true);
 		} else {
-			checkPortableError(&client,label,li,o3logon,
+			checkPortableError(&client,label,li,
+					(o3logon &&
+					!client.getFastSessionPropagate()),
 					ORA_INVALID_USERNAME_PASSWORD,
 					message,seqnumber+1,true);
 		}
@@ -1668,16 +1859,6 @@ static void runWrongPassword(size_t index, bool o3logon) {
 
 	client.disconnect();
 }
-
-// how a case connects: as the hand built client the other cases use, or as
-// the genuine 10.2 client does, at its default sdu of 2048 with its data type
-// request in two packets or, as when its connect descriptor asks for 8192, in
-// one
-enum session {
-	SESSION_HAND_BUILT,
-	SESSION_GENUINE_10G,
-	SESSION_GENUINE_10G_BIG_SDU
-};
 
 static void runCase(const testcase *tc, size_t index, session sess) {
 
@@ -1694,10 +1875,7 @@ static void runCase(const testcase *tc, size_t index, session sess) {
 	charstring::printf(label,sizeof(label),
 				"%s, %slogon types 0x%02x, field version %d, "
 				"tns version 0x%04x, %s login",
-				li->name,
-				(sess==SESSION_GENUINE_10G)?
-					"genuine 10.2 client, sdu 2048, ":
-				((genuine10g)?"genuine 10.2 client, sdu 8192, ":""),
+				li->name,sessionLabel(sess),
 				tc->logontypes,clientfieldversion,
 				negotiatedconnectversion,
 				(classic)?"classic":"tagged");
@@ -1737,21 +1915,11 @@ static void runCase(const testcase *tc, size_t index, session sess) {
 	client.setConnectVersion(clientconnectversion);
 	client.setAuthSequenceNumbers(seqnumber,seqnumber+1);
 
+	setDataTypeRequest(&client,sess,tc->logontypes);
+
 	bool	lobread=false;
-	if (genuine10g) {
-		client.setDataTypeRequest(ORA_10G_DATA_TYPE_REQUEST,
-					sizeof(ORA_10G_DATA_TYPE_REQUEST));
-		if (sess==SESSION_GENUINE_10G) {
-			client.setSdu(ORA_10G_SDU);
-			client.setDataTypeRequestSplit(
-					ORA_10G_DATA_TYPE_REQUEST_SPLIT);
-		} else {
-			client.setSdu(ORA_10G_SDU_BIG);
-		}
-	} else {
-		client.setFieldVersion(clientfieldversion);
+	if (!genuine10g) {
 		client.setAnoNegotiation(true);
-		client.setLogonTypes(tc->logontypes);
 
 		// lobRead() sends the portable request only, and query3() the
 		// one of field version 11.2, which lacks the fields
@@ -1769,7 +1937,7 @@ static void runCase(const testcase *tc, size_t index, session sess) {
 		return;
 	}
 
-	// the genuine 10.2 client's session runs no ano exchange
+	// the genuine 10.2 client's sessions run no ano exchange
 	if (!genuine10g) {
 		checkAnoResponseFlags(&client,label);
 	}
@@ -1881,9 +2049,10 @@ int main(int argc, char **argv) {
 
 			for (size_t i=0; i<sizeof(wrongpasswordlisteners)/
 				sizeof(wrongpasswordlisteners[0]); i++) {
-				runWrongPassword(i,false);
+				runWrongPassword(i,false,SESSION_HAND_BUILT);
 				if (!nativeencoding) {
-					runWrongPassword(i,true);
+					runWrongPassword(i,true,
+							SESSION_HAND_BUILT);
 				}
 			}
 		}
@@ -1909,6 +2078,25 @@ int main(int argc, char **argv) {
 		for (size_t i=0; i<count; i++) {
 			runCase(&genuine10gcases[i],base+count+i,
 						SESSION_GENUINE_10G_BIG_SDU);
+		}
+
+		// and with its logon types rewritten
+		base+=2*count;
+		count=sizeof(rewritten10gcases)/sizeof(rewritten10gcases[0]);
+		for (size_t i=0; i<count; i++) {
+			runCase(&rewritten10gcases[i],base+i,
+						SESSION_REWRITTEN_10G);
+		}
+		for (size_t i=0; i<sizeof(wrongpasswordlisteners)/
+				sizeof(wrongpasswordlisteners[0]); i++) {
+			runWrongPassword(i,true,SESSION_REWRITTEN_10G);
+		}
+		base+=count;
+		count=sizeof(rewritten10gnofspcases)/
+				sizeof(rewritten10gnofspcases[0]);
+		for (size_t i=0; i<count; i++) {
+			runCase(&rewritten10gnofspcases[i],base+i,
+					SESSION_REWRITTEN_10G_BIT_CLEAR);
 		}
 	}
 

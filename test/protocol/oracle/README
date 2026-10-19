@@ -253,6 +253,11 @@ and for a classic login that gets past the bits at 12 and 12a the
 challenge and the ORA-01017 that follows it. Which logins a floor admits
 and refuses are the measurements of the 10545 -allowedN captures: 9 needs
 0x01, 0x04 or 0x08, 10 and 11 need 0x08, 12 needs 0x02 and 12a needs 0x20.
+Each hand-built case also sends its genuine client's CCAP_OCI1 byte (compile
+caps byte 16): 0x90 with 0x00 (ojdbc14), 0x0f with 0x05 (a 9i client) and
+0xff with 0x0d, 0x0f and 0xef. Bit 0x10 of that byte decides whether the
+module sends the oci7 end to end field (#10735, below), and 0x0f leaves it
+clear, as every genuine 9i client does.
 
 The 0x0d client is played as the genuine 10.2.0.5 OCI client sends itself,
 in sessions of their own, as both a tagged and a classic login, at the 12.1,
@@ -281,6 +286,31 @@ correctpassword-sqlrelay121-allowed8). The module's answers to the genuine
 The 0x0d client's tagged verifier at 12.1 is the module's too: a real 12.2
 server gives it the 10g one where the module gives it 11g, which the client
 completes.
+
+The portable run also plays that data type request with the logon types
+byte rewritten from 0x0d to 0x05, the rewrite the 10735-*-ccap05-* captures
+use (#10735), in two sessions. One leaves CCAP_OCI1 at 0xff, bit 0x10 set,
+and one rewrites it to 0xef, bit 0x10 clear. With the bit set it checks:
+* the tagged challenge at 12.1, 11.2 and 10.2: the 9i verifier, a 32 hex key
+  and the 31 byte trailer with the end to end field after the call status
+* the classic challenge at 12.1: a 32 hex key
+* floor 9: admitted
+* floors 11, 12 and 12a: the ORA-28040 refusal of the tagged login byte for
+  byte in the 31 byte shape (the classic login at 11 gets the basic one)
+* a wrong password at 12.1 and 11.2: the ORA-01017 in the same modern shape
+With the bit clear it checks the 29 byte trailer with no field at 12.1 and
+the narrow ORA-28040 at floor 11, as real servers send them. Against the
+module before #10735 exactly 17 of the bit-set checks failed and all the
+others passed. What is measured and what is inferred: the end to end field
+with the bit set and without it is measured (the 10735 real server captures
+below, trailers of 95 and 93 bytes from oracle102 and 65 and 63 from
+oracle122); the 31 byte count prefixed ORA-28040 and ORA-01017, the
+challenge value equal to the call number and floors 12 and 12a refusing
+this client are inferred, each piece having been measured alone.
+oracleprotocolclient reads the field in the challenge and the refusal when
+its setOci1() byte has the bit, since a refusal with the field used to parse
+as a success. The sessions run once, at tns version 0x0139 and field
+version 4, and the -native run skips them.
 
 Its -native run does the same in the native encoding for the tagged logins
 with the 10g and later verifiers, and runs twice: once with the client
@@ -5611,7 +5641,11 @@ that statement, except where noted.
                                       9i exchange). The 10.2 client never
                                       sends its 0x73: it gives up locally with
                                       ORA-28041. So a 10.2 client does not
-                                      accept the 9i exchange (#10545)
+                                      accept the 9i exchange. The challenge
+                                      (159 body bytes) carries the end to end
+                                      field (2) in its trailer, because the
+                                      client sets bit 0x10 of compile caps
+                                      byte 16 (#10545, #10735)
 
     10545-fedora9x86-oci10-olog-correctpassword-ccap05-realserver-oracle102.oraproxy
                                      the olog form with the same 0x0d to 0x05
@@ -5621,7 +5655,9 @@ that statement, except where noted.
                                       64 hex password, and the server refuses
                                       the right password with ORA-01017 (that
                                       the client ignores the key size is
-                                      inferred) (#10545)
+                                      inferred). The challenge (134 body
+                                      bytes) carries the end to end field
+                                      (#10545, #10735)
 
     10545-fedora9x86-oci10-oci8-correctpassword-ccap05-realserver-oracle122.oraproxy
                                      the oci8 run with the 0x05 rewrite
@@ -5629,7 +5665,9 @@ that statement, except where noted.
                                       packets, portable encoding. The same
                                       outcome as against oracle102: a 32 hex
                                       AUTH_SESSKEY, no AUTH_VFR_DATA, and no
-                                      0x73 from the client (#10545)
+                                      0x73 from the client. The challenge
+                                      (129 body bytes) carries the end to end
+                                      field (#10545, #10735)
 
     10545-fedora9x86-oci10-oci8-correctpassword-realserver-oracle122-allowed10.oraproxy
                                      the oci8 run against a scratch listener
@@ -6150,14 +6188,489 @@ that statement, except where noted.
                                       the same client against real oracle102
                                       fails locally with ORA-28041. No genuine
                                       client sends this byte, only a rewrite
-                                      reaches it (#10545)
+                                      reaches it. Before #10735: the module's
+                                      challenge left out the end to end
+                                      field (29 byte trailer) that every real
+                                      server sends this client, because the
+                                      client sets compile caps byte 16 bit
+                                      0x10, and the client's parser waited
+                                      for the rest. The module now sends the
+                                      field and this client gets ORA-28041
+                                      at once, as against real oracle102
+                                      (10735-fedora9x86-oci10-oci8-ccap05-
+                                      correctpassword-sqlrelay121) (#10545,
+                                      #10735)
 
     10545-fedora9x86-oci10-oci8-sdu8192-ccap05-correctpassword-sqlrelay121-allowed10.oraproxy
                                      the same at allowedlogonversion 10. 19
                                       packets. The module refuses the 9i
                                       verifier with ORA-28040, but the client
                                       reports ORA-03120 and does not parse the
-                                      refusal (#10545)
+                                      refusal. Before #10735: the refusal is
+                                      the 78 byte narrow object with no end to
+                                      end field, which the client reads in
+                                      its wider layout. The module now sends
+                                      the 79 byte object with the field and
+                                      the client reports ORA-28040 (see
+                                      10735-fedora9x86-oci10-oci8-ccap05-
+                                      correctpassword-sqlrelay121-allowed10
+                                      and its -before) (#10545, #10735)
+
+    10735-fedora9x86-oci10-oci8-ccap05-fv4-realserver-oracle102.oraproxy
+                                     the base cell of the end to end field table
+                                      below. The 10.2 client's oci8 login with
+                                      its logon types rewritten from 0x0d to
+                                      0x05 (the bits of a genuine 9i client) and
+                                      nothing else: field version 4, TNS 0x0139,
+                                      compile caps byte 16 0xff, 36 compile caps
+                                      bytes. Against the real oracle102 server,
+                                      through the logon types rewriting scratch
+                                      oraproxy. 12 packets, native encoding. The
+                                      server answers the tagged login with a 32
+                                      hex AUTH_SESSKEY and a 95 byte summary
+                                      struct (159 body bytes) that carries the
+                                      end to end field (2) after the call
+                                      status. The client never sends its 0x73
+                                      and gives up locally with ORA-28041.
+                                      Measured: the field is there, for a field
+                                      version 4 client with 0x05 (#10735)
+
+    10735-fedora9x86-oci10-oci8-ccap05-fv4-realserver-oracle122.oraproxy
+                                     the same against the real oracle122 server
+                                      (floor 8). 14 packets, portable encoding,
+                                      the data type request split into 2003 and
+                                      281 bytes. A 32 hex key and the fixed
+                                      width trailer of 65 bytes with the end to
+                                      end field (129 body bytes). The client
+                                      gives up with ORA-28041 (#10735)
+
+    10735-fedora9x86-oci10-oci8-ccap05-fv3-realserver-oracle102.oraproxy
+                                     the base cell with the client's
+                                      CCAP_FIELD_VERSION rewritten from 4 to 3.
+                                      12 packets. The challenge is the same 159
+                                      bytes with the field, so the field version
+                                      is not the selector (#10735)
+
+    10735-fedora9x86-oci10-oci8-ccap05-fv2-realserver-oracle102.oraproxy
+                                     the same with CCAP_FIELD_VERSION 2, the
+                                      value a genuine 9i client sends. 12
+                                      packets, the same 159 byte challenge with
+                                      the field (#10735)
+
+    10735-fedora9x86-oci10-oci8-ccap05-fv2-realserver-oracle122.oraproxy
+                                     field version 2 against the real oracle122
+                                      server. 14 packets, the same 129 byte
+                                      challenge with the 65 byte trailer. Both
+                                      real servers send this client the field at
+                                      field version 2, the version a genuine 9i
+                                      client negotiates (#10735)
+
+    10735-fedora9x86-oci10-oci8-ccap05-tns0138-realserver-oracle102.oraproxy
+                                     the base cell with the connect version the
+                                      client offers rewritten from 0x0139 to
+                                      0x0138, which the server accepts (the
+                                      accept version is 0x0138; a genuine 9i
+                                      client's). 12 packets, the same 159 byte
+                                      challenge with the field, so the TNS
+                                      version is not the selector (#10735)
+
+    10735-fedora9x86-oci10-oci8-ccap05-tns0138-realserver-oracle122.oraproxy
+                                     TNS 0x0138 against the real oracle122
+                                      server. 14 packets, the same 129 byte
+                                      challenge with the field (#10735)
+
+    10735-fedora9x86-oci10-oci8-ccap05-flags12-realserver-oracle102.oraproxy
+                                     the base cell with the flags byte of the
+                                      data type request rewritten from 0x42 to
+                                      0x12. 12 packets, the same 159 byte
+                                      challenge with the field, so the request
+                                      flags are not the selector (#10735)
+
+    10735-fedora9x86-oci10-oci8-ccap05-cap15x7f-realserver-oracle102.oraproxy
+                                     the base cell with compile caps byte 15
+                                      (CCAP_TTC1) rewritten from 0xff to 0x7f.
+                                      12 packets, the same 159 byte challenge
+                                      with the field: a neighboring byte plays
+                                      no part (#10735)
+
+    10735-fedora9x86-oci10-oci8-ccap05-cap18x06-realserver-oracle102.oraproxy
+                                     the base cell with compile caps byte 18
+                                      (CCAP_RPC_VERSION) rewritten from 0x08 to
+                                      0x06. 12 packets, the same 159 byte
+                                      challenge with the field (#10735)
+
+    10735-fedora9x86-oci10-oci8-ccap05-cap20x00-realserver-oracle102.oraproxy
+                                     the base cell with compile caps byte 20
+                                      rewritten from 0x03 to 0x00. 12 packets,
+                                      the same 159 byte challenge with the field
+                                      (#10735)
+
+    10735-fedora9x86-oci10-oci8-ccap05-servercap16xef-realserver-oracle102.oraproxy
+                                     the base cell with compile caps byte 16
+                                      rewritten from 0xff to 0xef in the
+                                      server's TTIPRO answer only, so the
+                                      client's own byte stays 0xff. 12 packets,
+                                      the same 159 byte challenge with the
+                                      field: the server's caps play no part
+                                      (#10735)
+
+    10735-fedora9x86-oci10-oci8-ccap05-cap16x7f-realserver-oracle102.oraproxy
+                                     the base cell with the client's compile
+                                      caps byte 16 (CCAP_OCI1) rewritten from
+                                      0xff to 0x7f, bit 0x10 still set. 12
+                                      packets, the 159 byte challenge with the
+                                      field (#10735)
+
+    10735-fedora9x86-oci10-oci8-ccap05-cap16xbf-realserver-oracle102.oraproxy
+                                     the same with byte 16 0xbf, bit 0x10 still
+                                      set. 12 packets, the 159 byte challenge
+                                      with the field (#10735)
+
+    10735-fedora9x86-oci10-oci8-ccap05-cap16xdf-realserver-oracle102.oraproxy
+                                     the same with byte 16 0xdf, bit 0x10 still
+                                      set. 12 packets, the 159 byte challenge
+                                      with the field. The three captures clear
+                                      bits 0x80, 0x40 and 0x20, none of which
+                                      matters (#10735)
+
+    10735-fedora9x86-oci10-oci8-ccap05-cap16xef-realserver-oracle102.oraproxy
+                                     the same with byte 16 0xef: bit 0x10 clear,
+                                      everything else as the base cell. 12
+                                      packets. The challenge is 157 body bytes,
+                                      a 93 byte struct with no end to end field,
+                                      two bytes shorter than the base cell's.
+                                      The client waits for the missing field and
+                                      hangs (about 60 s against the real server,
+                                      then ORA-03113). Measured: clearing this
+                                      one bit drops the field and makes the
+                                      client hang, as it did against the module
+                                      before #10735 (#10735)
+
+    10735-fedora9x86-oci10-oci8-ccap05-cap16xef-realserver-oracle122.oraproxy
+                                     byte 16 0xef against the real oracle122
+                                      server. 14 packets. The trailer is 63
+                                      bytes with no field (127 body bytes, two
+                                      fewer than with the bit) and the client
+                                      hangs the same way (#10735)
+
+    10735-fedora9x86-oci10-oci8-ccap05-caps21-realserver-oracle102.oraproxy
+                                     the base cell with the compile caps cut
+                                      from 36 to 21 bytes, the length a genuine
+                                      9i client sends (byte 16 stays 0xff). 11
+                                      packets. Not a usable cell: the capture
+                                      ends at the client's 0x76 login, which is
+                                      written in a form with 4 byte lengths
+                                      unlike the other captures, and no
+                                      challenge is on file. Whether the caps
+                                      length plays a part is not measured
+                                      (#10735)
+
+    10735-fedora9x86-oci10-oci8-ccap0d-cap16xef-realserver-oracle102.oraproxy
+                                     the unrewritten 10.2 client (logon types
+                                      0x0d, the 10g verifier) with only byte 16
+                                      rewritten to 0xef. 12 packets. The
+                                      challenge is 215 body bytes where
+                                      10545-fedora9x86-oci10-oci8-correctpassword-realserver-oracle102
+                                      has 217: oracle102 drops the field from
+                                      the modern trailer when the bit is clear
+                                      too. The module still sends it there, and
+                                      no genuine client is affected (#10735)
+
+    10735-fedora9x86-oci10-olog-ccap05-fv4-realserver-oracle102.oraproxy
+                                     the base cell in the olog form (classic
+                                      login, TTI 0x52 then 0x51). 18 packets,
+                                      native encoding. The O3LOGON challenge is
+                                      134 body bytes with the end to end field.
+                                      The classic client answers with a 64 hex
+                                      password, the server sends BREAK and RESET
+                                      and then ORA-01017 for the right password
+                                      (150 body bytes) (#10735)
+
+    10735-fedora9x86-oci10-olog-ccap05-fv2-realserver-oracle102.oraproxy
+                                     the olog form with field version 2. 18
+                                      packets, the same 134 byte challenge with
+                                      the field and the same ORA-01017 (#10735)
+
+    10735-fedora9x86-oci10-olog-ccap05-fv4-realserver-oracle122.oraproxy
+                                     the olog form against the real oracle122
+                                      server. 20 packets, portable encoding. The
+                                      challenge is 104 body bytes with the
+                                      field, the client answers and gets
+                                      ORA-01017 (120 body bytes) (#10735)
+
+    10735-fedora9x86-oci10-olog-ccap05-fv2-realserver-oracle122.oraproxy
+                                     the olog form against oracle122 with field
+                                      version 2. 20 packets, the same 104 byte
+                                      challenge with the field and the same
+                                      ORA-01017 (#10735)
+
+    10735-fedora9x86-oci10-olog-ccap05-cap16xef-realserver-oracle102.oraproxy
+                                     the olog form with byte 16 0xef. 12
+                                      packets. The challenge is 132 body bytes
+                                      with no field, two fewer than with the
+                                      bit, and the classic client never answers
+                                      it (#10735)
+
+    10735-fedora9x86-oci10-olog-ccap05-cap16xef-realserver-oracle122.oraproxy
+                                     the olog form with byte 16 0xef against
+                                      oracle122. 14 packets. The challenge is
+                                      102 body bytes with no field, and the
+                                      client never answers it (#10735)
+
+    10735-fedora9x86-oci10-oci8-ccap05-realserver-oracle122-allowed10.oraproxy
+                                     the floor 10 refusal, from a scratch
+                                      oracle122 listener at port 1621 with its
+                                      own TNS_ADMIN and
+                                      SQLNET.ALLOWED_LOGON_VERSION_SERVER 10
+                                      (torn down; the stock listeners are
+                                      unchanged). The 10.2 client's oci8 login
+                                      with logon types 0x05 and byte 16 0xff. 17
+                                      packets. The server refuses it in phase
+                                      one: BREAK, RESET and the client's RESET,
+                                      then the 65 byte fixed width error object
+                                      with the end to end field 0 (116 body
+                                      bytes), which the client reads as
+                                      ORA-28040. This is the shape the module
+                                      sends with the bit, count prefixed
+                                      (#10735)
+
+    10735-fedora9x86-oci10-oci8-ccap05-realserver-oracle122-allowed11.oraproxy
+                                     the same at floor 11. 17 packets, the same
+                                      116 byte refusal and the same ORA-28040
+                                      (#10735)
+
+    10735-fedora9x86-oci10-olog-ccap05-realserver-oracle122-allowed10.oraproxy
+                                     the olog form at floor 10. 18 packets. The
+                                      same 116 byte refusal, ORA-28040 (#10735)
+
+    10735-fedora9x86-oci10-olog-ccap05-realserver-oracle122-allowed11.oraproxy
+                                     the olog form at floor 11. 18 packets, the
+                                      same refusal and ORA-28040 (#10735)
+
+    10735-fedora9x86-oci10-oci8-ccap05-cap16xef-realserver-oracle122-allowed11.oraproxy
+                                     the floor 11 refusal with byte 16 0xef. 21
+                                      packets. The error object is 63 bytes with
+                                      no end to end field (114 body bytes). The
+                                      10.2 client reads it with the layout that
+                                      has the field and misparses it
+                                      (ORA-00912): the same kind of failure as
+                                      the module's ORA-03120 before #10735. The
+                                      module's refusal before #10735 is the one
+                                      real oracle122 sends a genuine 9.0.1
+                                      client, whose bit is clear
+                                      (10545-solaris8sparc-oci9-oci7-login-realserver-oracle122-allowed10)
+                                      (#10735)
+
+    10735-redhat9x86-oci9-oci7-control-realserver-oracle102.oraproxy
+                                     the control: a genuine Oracle 9.2.0.4
+                                      client on redhat9x86 (the OCI7 program)
+                                      logging in to the real oracle102 server
+                                      and selecting. 35 packets, TNS 0x0138,
+                                      logon types 0x05, field version 2, 21
+                                      compile caps bytes, byte 16 0x0f (bit 0x10
+                                      clear). The classic O3LOGON challenge is
+                                      132 body bytes with no end to end field,
+                                      and the session completes (#10735)
+
+    10735-redhat9x86-oci9-oci7-fv4-realserver-oracle102.oraproxy
+                                     the control with CCAP_FIELD_VERSION
+                                      rewritten to 4. 35 packets, the same 132
+                                      byte challenge with no field and the same
+                                      session. Measured: a field version of 4
+                                      does not make a real server send the field
+                                      to this client (#10735)
+
+    10735-redhat9x86-oci9-oci7-cap16x1f-realserver-oracle102.oraproxy
+                                     the control with byte 16 rewritten from
+                                      0x0f to 0x1f, which sets bit 0x10. 16
+                                      packets. The challenge is 134 bytes with
+                                      the field, and the session stops there,
+                                      short of the control's 35. The client's
+                                      error is not recorded; that it breaks on a
+                                      field it does not expect is inferred. The
+                                      module now sends the field to such a
+                                      client too (#10735)
+
+    10735-redhat9x86-oci9-sqlplus-fv4-realserver-oracle102.oraproxy
+                                     the genuine 9.2.0.4 sqlplus (tagged login)
+                                      with CCAP_FIELD_VERSION rewritten to 4,
+                                      byte 16 0x0f. 31 packets. The challenge is
+                                      157 body bytes with no field and the
+                                      session goes on past the login (#10735)
+
+    10735-redhat9x86-oci9-sqlplus-cap16x1f-realserver-oracle102.oraproxy
+                                     sqlplus with byte 16 0x1f. 16 packets, the
+                                      challenge is 159 bytes with the field and
+                                      the session stops there (#10735)
+
+    10735-fedora9x86-oci10-oci8-ccap05-correctpassword-sqlrelay121.oraproxy
+                                     after #10735: the same rewritten client
+                                      (logon types 0x05, byte 16 0xff) against
+                                      sqlr-listener emulating 12.1 (floor 8). 14
+                                      packets. The module picks the 9i verifier
+                                      and sends a 32 hex AUTH_SESSKEY with the
+                                      31 byte trailer that carries the end to
+                                      end field after the call status (87 body
+                                      bytes; the field is 2, the call number).
+                                      The client gives up locally with ORA-28041
+                                      in about 0.6 s and never sends its 0x73:
+                                      no hang, as against real oracle102
+                                      (#10735)
+
+    10735-fedora9x86-oci10-oci8-ccap05-correctpassword-sqlrelay112.oraproxy
+                                     the same against the 11.2 listener. 14
+                                      packets, the same 87 byte challenge with
+                                      the field, ORA-28041 (#10735)
+
+    10735-fedora9x86-oci10-oci8-ccap05-correctpassword-sqlrelay102.oraproxy
+                                     the same against the 10.2 listener. 14
+                                      packets, the same challenge with the
+                                      field, ORA-28041 (#10735)
+
+    10735-fedora9x86-oci10-olog-ccap05-correctpassword-sqlrelay121.oraproxy
+                                     the olog form against the 12.1 listener. 20
+                                      packets. The challenge is a 32 hex key and
+                                      the 31 byte trailer with the field (69
+                                      body bytes). The classic client answers
+                                      with a 64 hex 0x51 password, which the
+                                      module parses, and gets ORA-01017 for the
+                                      right password after BREAK and RESET (86
+                                      body bytes), in about 0.7 s, as against
+                                      real oracle102 and oracle122 (#10735)
+
+    10735-fedora9x86-oci10-olog-ccap05-correctpassword-sqlrelay112.oraproxy
+                                     the olog form against the 11.2 listener. 20
+                                      packets, the same sequence and ORA-01017
+                                      (#10735)
+
+    10735-fedora9x86-oci10-olog-ccap05-correctpassword-sqlrelay102.oraproxy
+                                     the olog form against the 10.2 listener. 20
+                                      packets, the same sequence and ORA-01017
+                                      (#10735)
+
+    10735-fedora9x86-oci10-oci8-ccap05-correctpassword-sqlrelay121-allowed10.oraproxy
+                                     the floor 10 refusal after #10735 (a 12.1
+                                      listener, allowedlogonversion 10). 17
+                                      packets, the same count as real
+                                      oracle122's. The module refuses the 9i
+                                      verifier in phase one with ORA-28040 as a
+                                      79 byte payload (82 body bytes): the 30
+                                      byte compressed object with the end to
+                                      end field, a single 00 byte, after the
+                                      call status, so 31 bytes before the
+                                      message. The client reports ORA-28040,
+                                      where it reported ORA-03120 before. The
+                                      piece sizes are measured, the combination
+                                      inferred (#10735)
+
+    10735-fedora9x86-oci10-oci8-ccap05-correctpassword-sqlrelay121-allowed11.oraproxy
+                                     the same at floor 11. 17 packets, the same
+                                      82 byte refusal and ORA-28040 (#10735)
+
+    10735-fedora9x86-oci10-olog-ccap05-correctpassword-sqlrelay121-allowed10.oraproxy
+                                     the olog form at floor 10. 18 packets, the
+                                      same 82 byte refusal and ORA-28040
+                                      (#10735)
+
+    10735-fedora9x86-oci10-olog-ccap05-correctpassword-sqlrelay121-allowed11.oraproxy
+                                     the olog form at floor 11. 18 packets, the
+                                      same refusal and ORA-28040 (#10735)
+
+    10735-fedora9x86-oci10-oci8-ccap05-correctpassword-sqlrelay121-allowed10-before.oraproxy
+                                     the same floor 10 run against the module
+                                      before #10735 (HEAD's build), for
+                                      comparison. 21 packets. The refusal is the
+                                      78 byte payload (81 body bytes) with no
+                                      end to end field, one byte shorter than
+                                      the new one. The client reports ORA-03120,
+                                      then sends a BREAK and the module answers
+                                      ORA-01013 to the client's cancel (#10735)
+
+    10735-fedora9x86-oci10-oci8-ccap05-correctpassword-sqlrelay121-allowed11-before.oraproxy
+                                     the same at floor 11 before #10735. 21
+                                      packets, the same 81 byte refusal,
+                                      ORA-03120 at the client (#10735)
+
+    10735-fedora9x86-oci10-olog-ccap05-correctpassword-sqlrelay121-allowed10-before.oraproxy
+                                     the olog form at floor 10 before #10735. 21
+                                      packets, the same 81 byte refusal,
+                                      ORA-03120 at the client (#10735)
+
+    10735-fedora9x86-oci10-oci8-ccap05-cap16xef-sqlrelay121.oraproxy
+                                     after #10735: the rewritten client with
+                                      byte 16 0xef (bit clear) against the 12.1
+                                      listener. 14 packets. The module sends the
+                                      29 byte trailer with no end to end field
+                                      (85 body bytes), as a real server does for
+                                      this client, and the client hangs until it
+                                      is killed (90 s). No ORA-03113 follows,
+                                      since the module has no server side
+                                      timeout. Matches the real server's
+                                      behavior; no fix is planned (#10735)
+
+    10735-fedora9x86-oci10-olog-ccap05-cap16xef-sqlrelay121.oraproxy
+                                     the olog form with byte 16 0xef. 14
+                                      packets. The challenge is 67 body bytes
+                                      with no field, and the client hangs the
+                                      same way (#10735)
+
+    10735-fedora9x86-oci10-oci8-correctpassword-sqlrelay121.oraproxy
+                                     regression run after #10735: the
+                                      unrewritten 10.2 client (logon types 0x0d,
+                                      byte 16 0xff) against the 12.1 listener.
+                                      21 packets, the 11g verifier (0x1b25, 96
+                                      hex key), the trailer with the field, and
+                                      the login completes. Unchanged (#10735)
+
+    10735-fedora9x86-oci10-oci8-correctpassword-sqlrelay112.oraproxy
+                                     the same against the 11.2 listener. 21
+                                      packets, the 11g verifier, the login
+                                      completes (#10735)
+
+    10735-fedora9x86-oci10-oci8-correctpassword-sqlrelay102.oraproxy
+                                     the same against the 10.2 listener. 21
+                                      packets, the 10g verifier (0x0939, 64 hex
+                                      key), the login completes (#10735)
+
+    10735-fedora9x86-oci10-olog-correctpassword-sqlrelay121.oraproxy
+                                     the unrewritten 10.2 client's olog form
+                                      against the 12.1 listener. 37 packets, the
+                                      classic login completes (#10735)
+
+    10735-fedora9x86-oci10-olog-correctpassword-sqlrelay112.oraproxy
+                                     the olog form against the 11.2 listener. 37
+                                      packets, the login completes (#10735)
+
+    10735-fedora9x86-oci10-olog-correctpassword-sqlrelay102.oraproxy
+                                     the olog form against the 10.2 listener. 37
+                                      packets, the login completes (#10735)
+
+    10735-dev-oci23-oci8-correctpassword-sqlrelay121.oraproxy
+                                     OCI 23 (logon types 0xef, byte 16 0xff) on
+                                      dev, oci8 login against the 12.1 listener.
+                                      19 packets, the login completes. Unchanged
+                                      (#10735)
+
+    10735-dev-oci23-olog-correctpassword-sqlrelay121.oraproxy
+                                     OCI 23's olog form against the 12.1
+                                      listener. 35 packets, the login completes
+                                      (#10735)
+
+    10735-redhat9x86-oci9-oci7-select-sqlrelay121.oraproxy
+                                     the genuine 9.2.0.4 OCI7 client (logon
+                                      types 0x05, field version 2, byte 16 0x0f)
+                                      logging in and selecting against the 12.1
+                                      listener. 35 packets. The challenge is 67
+                                      body bytes, two fewer than the rewritten
+                                      client's 69: the module sends no end to
+                                      end field, since the bit is clear, and the
+                                      session completes (#10735)
+
+    10735-redhat9x86-oci9-sqlplus-select-sqlrelay121.oraproxy
+                                     the genuine 9.2.0.4 sqlplus against the
+                                      12.1 listener. 55 packets, the tagged
+                                      login and a select complete. The challenge
+                                      is 85 body bytes with no field (#10735)
 
 The genuine 10g OCI client and the logon version floors (#10545)
 ----------------------------------------------------------------
@@ -6342,12 +6855,90 @@ Two module bugs the 10.2 client found, both fixed:
 Not measured: real 12.1 (the module gives the tagged 0x0d client the 11g
 verifier at 12.1, as oracle112 does; real oracle122 gives it the 10g one;
 the client completes both); floor 9's bit; whether floor 12 needs 0x08;
-the empty password at 12 and 12a; any 10.1 client; and the module's reply
-to the 10.2 client with its logon types rewritten to 0x05 (#10735). In that
-case the module picks the 9i verifier and sends a 32 hex key, the client
-never sends its 0x73 and hangs, and at floor 10 it reads the module's
-ORA-28040 as ORA-03120. No genuine client sends the byte; only a rewrite
-reaches it.
+the empty password at 12 and 12a; and any 10.1 client.
+
+The end to end field and the 0x05 client (#10735)
+-------------------------------------------------
+
+The 10.2 client with its logon types rewritten to 0x05 hung on the module's
+9i challenge, and read the module's floor 10 and 11 ORA-28040 as ORA-03120.
+No genuine client sends that combination (0x05 with field version 4); the
+rewrite is an experiment. The cause was the oci7 end to end field, a 2 byte
+field after the call status in the summary and error objects of an O3LOGON
+session. The module left it out. That the client's parser expected it and
+waited for the bytes (the starved parser of #10048), and that it read the
+message length of the ORA-28040 object from the wrong place, are inferred
+from the layouts; the module's modern shape refusal, which has the field,
+is one this client reads.
+
+The rule, measured on every real server capture on file when #10735 was
+decided (598 sample files plus the 35 new ones; 515 have a client data type
+request, in all three encodings; none contradicts it): a real server sends
+the field in an O3LOGON session's challenge, login answer and error objects
+exactly when the client sets bit 0x10 of compile caps byte 16 (CCAP_OCI1,
+CCAP_FAST_SESSION_PROPAGATE in src/protocols/oracle.cpp). The 10.2 client
+and OCI 23 send 0xff there, ojdbc14 0x90, and every genuine 9i client 0x0f
+or 0x07, so the 9i clients get none. One cell is not on file, so the rule is
+inferred there: a 10g classic login with the bit clear (no client sends it).
+The 9i cell and the 10g O5LOGON cell with the bit clear both drop the field.
+The 10735-* captures above, against real oracle102 and oracle122 and the
+10.2 client with 0x05:
+
+    rewritten                        oracle102 trailer   oracle122 trailer
+    nothing (byte 16 0xff)           95 bytes, field     65 bytes, field
+    field version 3 or 2             95, field           65, field (2 only)
+    TNS version 0x0138               95, field           65, field
+    request flags 0x12               95, field           -
+    byte 15, 18 or 20                95, field           -
+    server's byte 16 0xef            95, field           -
+    byte 16 0x7f, 0xbf or 0xdf       95, field           -
+    byte 16 0xef (bit 0x10 clear)    93, no field        63, no field
+
+The classic (olog) challenge is 134 body bytes from oracle102 and 104 from
+oracle122 with the bit, and 132 and 102 without it. With the bit clear the
+10.2 client hangs on a real server's challenge too (about 60 s, then
+ORA-03113), as it did on the module's. With the bit set and 0x05, the tagged
+client gives ORA-28041 and the classic client ORA-01017. The genuine 9.2.0.4
+client with its field version rewritten to 4 still gets no field (redhat9x86
+oci7 and sqlplus, -fv4), and with byte 16 rewritten to 0x1f it gets the
+field (-cap16x1f). Not a selector, measured by rewriting each: the logon
+types, the field version (an early reading of the captures proposed a field
+version of 4 or higher as the gate; ojdbc14 at field version 3 gets the
+field and a 9i client at 4 does not), the TNS version and the request flags.
+Whether the compile caps length plays a part is not measured: the one
+capture cut to 21 bytes (-caps21) has no challenge on file.
+
+The refusal (a scratch oracle122 listener at floors 10 and 11): with the bit
+set, a real server sends the 65 byte fixed width object with the field 0 and
+the client reports ORA-28040. With the bit clear it sends a 63 byte object
+with no field and the 10.2 client misparses it (ORA-00912). The module's
+refusal before #10735 was byte for byte what real oracle122 sends a genuine
+9.0.1 client, whose bit is clear.
+
+The module now sets the field from the bit, which is inferred for a 10g
+classic login with the bit clear: no client on file sends it, and the module
+there went from sending the field to leaving it out, on the strength of the
+9i cell and the 10g O5LOGON cell, where a real server drops it.
+recvDataTypeRequest() records CCAP_OCI1 bit 0x10 in
+clientfastsessionpropagate and chooseVerifierType() sets
+oci7endtoendseqnumber when the session is O3LOGON and the bit is set; the
+old gate was a 10g verifier with a classic login. sendErrorPacket() is
+unchanged. Measured on the module (the 10735 -sqlrelay* captures): the
+rewritten client gets ORA-28041 (tagged) or ORA-01017 (classic) in under a
+second at the 12.1, 11.2 and 10.2 listeners instead of a hang; the floor 10
+and 11 refusal is ORA-28040, the 31 byte object (the 30 byte compressed
+object and the end to end field, a single 00 byte, after the call status) in
+place of ORA-03120. The 31 byte combination is inferred from pieces each
+measured alone. With the bit clear (0x05, byte 16 0xef) the module sends no
+field, and the client hangs as against a real server; there is no ORA-03113
+because the module has no server side timeout, and no fix is planned. A
+genuine 9i client forced to byte 16 0x1f now gets the field, as against real
+Oracle, where the client stops (the error is not recorded, so that it breaks
+on the field is inferred). Unrewritten 10.2, genuine 9.2.0.4 (oci7, sqlplus)
+and OCI 23 logins are unchanged (regression captures above). Not covered,
+and no genuine client is affected: for the modern 0x0d trailer real
+oracle102 also drops the field when the bit is clear (-ccap0d-cap16xef),
+where the module always sends it.
 
 The v11 time zone file for the oci8 run
 ---------------------------------------
