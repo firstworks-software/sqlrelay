@@ -1,0 +1,10 @@
+== fetchbig
+exec fetchsize 65535 rows 65540 first 1 last 65540 under30s true
+select1 1
+exec fetchsize 65536 rows 65541 first 1 last 65541 under30s true
+select1 1
+exec fetchsize 70000 rows 70005 first 1 last 70005 under30s true
+select1 1
+exec fetchsize 100001 after 0 rows (first null last null) error 20004 ORA-20004: Maximum fetch row count exceeded.
+select1 1
+exit 0

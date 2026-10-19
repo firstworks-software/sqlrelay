@@ -1,0 +1,10 @@
+== fetchbig
+exec fetchsize 65535 rows 65540 first 1 last 65540 under30s true
+select1 1
+exec fetchsize 65536 rows 65541 first 1 last 65541 under30s true
+select1 1
+exec fetchsize 70000 rows 70005 first 1 last 70005 under30s true
+select1 1
+exec fetchsize 100001 rows 100006 first 1 last 100006 under30s true
+select1 1
+exit 0

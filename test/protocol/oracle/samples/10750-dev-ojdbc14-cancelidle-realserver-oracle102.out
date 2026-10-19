@@ -1,0 +1,9 @@
+== cancelidle
+cancel idle ok
+select1 1
+cancel after query ok
+select1 1
+cols 3/NUMBER/0/0
+row 1: [BigDecimal:3]
+rows 1
+exit 0

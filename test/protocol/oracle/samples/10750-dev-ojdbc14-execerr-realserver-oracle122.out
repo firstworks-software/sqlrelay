@@ -1,0 +1,32 @@
+== execerr
+create 0
+seed 1
+autocommit false
+dup error 1 ORA-00001: unique constraint (TESTUSER.PROTOCOLTEST10750E_PK) violated
+select1 1
+null error 1400 ORA-01400: cannot insert NULL into ("TESTUSER"."PROTOCOLTEST10750E"."NN")
+select1 1
+badnum error 1722 ORA-01722: invalid number
+select1 1
+toolong error 12899 ORA-12899: value too large for column "TESTUSER"."PROTOCOLTEST10750E"."V" (actual: 12, maximum: 5)
+select1 1
+good update 1
+select1 1
+cols C/NUMBER/0/0
+row 1: [BigDecimal:2]
+rows 1
+autocommit true
+dup error 1 ORA-00001: unique constraint (TESTUSER.PROTOCOLTEST10750E_PK) violated
+select1 1
+null error 1400 ORA-01400: cannot insert NULL into ("TESTUSER"."PROTOCOLTEST10750E"."NN")
+select1 1
+badnum error 1722 ORA-01722: invalid number
+select1 1
+toolong error 12899 ORA-12899: value too large for column "TESTUSER"."PROTOCOLTEST10750E"."V" (actual: 12, maximum: 5)
+select1 1
+good update 1
+select1 1
+cols C/NUMBER/0/0
+row 1: [BigDecimal:3]
+rows 1
+exit 0

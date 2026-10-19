@@ -1,0 +1,6 @@
+== s:100001
+query after 0 rows threw java.sql.SQLException: ORA-20004: Maximum fetch row count exceeded.
+query vendor code 20004
+isClosed false
+select1 1
+done

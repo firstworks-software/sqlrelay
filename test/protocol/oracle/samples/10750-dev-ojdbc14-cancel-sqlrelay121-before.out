@@ -1,0 +1,32 @@
+== cancel
+autocommit false
+update completed 1
+update returned after 6 s (cancelled around 2 s, holder commits at 6 s)
+select1 1
+cols ID/NUMBER/0/-127 V/VARCHAR2/10/0
+row 1: [BigDecimal:1] [String:x]
+row 2: [BigDecimal:2] [String:b]
+rows 2
+forupdate completed rows 1
+forupdate returned after 6 s (cancelled around 2 s, holder commits at 6 s)
+select1 1
+cols ID/NUMBER/0/-127 V/VARCHAR2/10/0
+row 1: [BigDecimal:1] [String:a]
+row 2: [BigDecimal:2] [String:b]
+rows 2
+autocommit true
+update completed 1
+update returned after 6 s (cancelled around 2 s, holder commits at 6 s)
+select1 1
+cols ID/NUMBER/0/-127 V/VARCHAR2/10/0
+row 1: [BigDecimal:1] [String:x]
+row 2: [BigDecimal:2] [String:b]
+rows 2
+forupdate completed rows 1
+forupdate returned after 6 s (cancelled around 2 s, holder commits at 6 s)
+select1 1
+cols ID/NUMBER/0/-127 V/VARCHAR2/10/0
+row 1: [BigDecimal:1] [String:x]
+row 2: [BigDecimal:2] [String:b]
+rows 2
+exit 0

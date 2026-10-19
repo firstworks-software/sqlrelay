@@ -1,0 +1,14 @@
+== fetchbig
+exec fetchsize 65535 rows 65540 first 1 last 65540 under30s true
+select1 1
+Exception in thread "main" java.lang.NullPointerException: Cannot read field "lastRowProcessed" because "this.definesAccessors[0]" is null
+	at oracle.jdbc.driver.T4C8Oall.getNumRows(T4C8Oall.java:887)
+	at oracle.jdbc.driver.T4CStatement.executeForRows(T4CStatement.java:969)
+	at oracle.jdbc.driver.OracleStatement.executeMaybeDescribe(OracleStatement.java:1074)
+	at oracle.jdbc.driver.T4CStatement.executeMaybeDescribe(T4CStatement.java:845)
+	at oracle.jdbc.driver.OracleStatement.doExecuteWithTimeout(OracleStatement.java:1156)
+	at oracle.jdbc.driver.OracleStatement.executeQuery(OracleStatement.java:1315)
+	at Conn14.bigQuery(Conn14.java:646)
+	at Conn14.fetchbig(Conn14.java:669)
+	at Conn14.run(Conn14.java:728)
+	at Conn14.main(Conn14.java:756)

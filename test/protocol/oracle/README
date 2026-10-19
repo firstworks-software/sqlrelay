@@ -353,7 +353,8 @@ within 10 seconds. Against the module before #10734 (a scratch build of
 HEAD's oracle.cpp) 44 checks fail, the 20 ojdbc14 sessions at the version
 call and 24 in the hand-built 0x00 rows, and the rest pass; against the new
 modules the portable run passed 2610 checks and the -native run 812, with 0
-failures in both (the portable run has 4692 checks since #10745, below). What
+failures in both (the portable run has 4692 checks since #10745 and 7565
+since #10750, below). What
 is measured and what is inferred: the version answer, challenge, login trailer and both
 error objects are measured against real servers; the banner is the module's
 own at each ceiling, where real 11.2 and 12.2 servers send an 11.1 one, and
@@ -373,7 +374,8 @@ runs below cover the pad digits.
 
 Once logged in, ojdbc14 is played through query sessions (#10745), in the
 portable run only. 13 scripts run at the 12.1, 11.2 and 10.2 listeners and at
-the connectstrings one, 52 sessions: select1, rows25, twoqueries, reuse,
+the connectstrings one, 52 sessions (#10750 added 11 scripts and 36 sessions,
+below): select1, rows25, twoqueries, reuse,
 prepared, error, longtext, newline, types, null, dml, dmlauto and
 commitfirst. Each logs in as above and then sends the calls ojdbc14 sent real
 10.2 and 12.2 servers in the 10745-dev-ojdbc14-*-realserver captures: its 0x5e
@@ -381,8 +383,8 @@ with the text raw behind 9 fixed fields, its fetch of 10 rows, its commit and
 rollback, and its cursor closes riding in front of the next call, all with
 sequence number 0. oracleprotocolclient builds them (buildOjdbc14Query(),
 buildOjdbc14Fetch() and buildOjdbc14Call()), and checkOjdbc14CallBuilders()
-first has to reproduce ten of the captured calls byte for byte, before any
-connection. Each answer is read the way ojdbc14 reads it
+first has to reproduce ten of the captured calls (23 since #10750) byte for
+byte, before any connection. Each answer is read the way ojdbc14 reads it
 (readOjdbc14Answer()), which fails wherever the driver would close the
 connection: a length byte too long for its field (the old 4 byte scale of
 -127 is ORA-17412 there), a ttc code the driver does not take in an answer
@@ -397,10 +399,11 @@ the module's and aren't compared. The logoff at the end of each session
 closes every cursor the script left open, and is answered 09 00.
 
 Some of what a query session checks is the module's choice rather than a real
-server's: no key/value pairs in the return parameters, no break and reset
-markers ahead of an error, a NUMBER's size 22, success iterations 1 in every
-error object, and the 0x8068 re-execute with fetch's row number counted over
-the cursor (2 where a real server says 1). So are two scripts and one step:
+server's: no key/value pairs in the return parameters and a NUMBER's size 22.
+(Until #10750 the list also held no break and reset markers ahead of an
+error, success iterations 1 in every error object and a row number of the
+0x8068 re-execute counted over the cursor; the module now follows the real
+servers in all three, see below.) So are two scripts and one step:
 newline, a text whose first byte is a newline; null, select null, which the
 module describes as a VARCHAR2 of 4000; and the rollback in dmlauto, which
 finds nothing to undo. The commitfirst script, a commit before any 0x5e
@@ -411,8 +414,9 @@ backend as text. Against a scratch module
 built from HEAD's oracle.cpp 56 checks fail (52 sessions, which drop at
 their first 0x5e, and the 4 commitfirst ones, which get 09 01 05 where 09 01
 04 is expected) and the rest pass, since a session stops at its first failed
-call; against the new module the portable run passes 4692 checks and the
--native run 812 (it skips the query sessions), with 0 failures in both.
+call; against the new module the portable run passed 4692 checks and the
+-native run 812 (it skips the query sessions), with 0 failures in both. With
+#10750 the portable run has 7565 checks, below.
 
 Its -native run does the same in the native encoding for the tagged logins
 with the 10g and later verifiers, and runs twice: once with the client
@@ -7664,6 +7668,562 @@ the module. Each .oraproxy has a .out beside it with what Conn14 printed.
                                      login as NOSUCHUSER. 20 packets, the same
                                       ORA-01017 as a wrong password (#10745)
 
+The 10750 captures below are the same driver running the error, cancel and
+fetch size actions that Conn14 gained for #10750 (see "ojdbc14 errors, cancel
+and fetch sizes (#10750)" below). There are 134 files: 57 .oraproxy captures,
+65 .out files (what Conn14 printed; eight of them have no capture beside them,
+the fetchbig and prepfetchbig runs of the real servers, of the module before
+and of the module after) and 12 .oraproxy.times files. 30 of the captures are
+of the real oracle102 and oracle122 servers, 7 of HEAD's module before the
+change (the -before ones) and 20 of the module after it.
+
+Table names. The runs used scratch tables, and Oracle puts the name in its
+error messages, so the .out files of one action differ by name: the real
+server execerr and prepexecerr runs use PROTOCOLTEST10750E and
+PROTOCOLTEST10750P, the module after runs PROTOCOLTEST10750SE (execerr) and
+PROTOCOLTEST10750SP (prepexecerr), and the before run of execerr
+PROTOCOLTEST10750DE, since the before runs used a copy of Conn14 with table
+names of its own. The cancel runs are the same: PROTOCOLTEST10750C in the
+real server cancel, cancellate, cancelinband, cancelresetdelay and
+cancel-nooobrelay runs, PROTOCOLTEST10750T in the real server timeout runs
+and the timeout-nooobrelay run, PROTOCOLTEST10750SC and
+PROTOCOLTEST10750ST in the module's cancel and timeout runs, and
+PROTOCOLTEST10750DC in the module's before cancel run. Nothing else in the
+files depends on the names.
+
+    10750-dev-ojdbc14-execerr-realserver-oracle102.oraproxy
+    10750-dev-ojdbc14-execerr-realserver-oracle122.oraproxy
+    (each with a matching .out - Conn14's own stdout for that run)
+                                     inserts that fail at the execute, as a
+                                      Statement's 0x5e with autocommit off
+                                      (0x8021) and on (0x8121): ORA-00001,
+                                      ORA-01400, ORA-01722 and ORA-12899, each
+                                      followed by a select 1, then a good
+                                      insert and a count. 126 packets. Before
+                                      every 04 error object the server sends a
+                                      break marker and a reset marker, takes
+                                      the client's one reset marker, and sends
+                                      the 04 alone in a data packet, with
+                                      success iterations 0 and the end to end
+                                      counter running on (+1 for the failing
+                                      call, +1 for a close riding in front of
+                                      the next call, markers none): [0027] to
+                                      [0030] of the oracle122 one. The same in
+                                      all 27 errors per server of these five
+                                      captures; no marker ahead of an answer
+                                      that is not an error.
+                                      oracleverifiernegotiation cites it
+                                      (#10750)
+
+    10750-dev-ojdbc14-prepexecerr-realserver-oracle102.oraproxy
+    10750-dev-ojdbc14-prepexecerr-realserver-oracle122.oraproxy
+    (each with a matching .out - Conn14's own stdout for that run)
+                                     a PreparedStatement insert (setInt,
+                                      setString, setString) executed four
+                                      times at autocommit off and on, with a
+                                      select 1 after each: a duplicate key
+                                      (the first execute, 0x8029 or 0x8129,
+                                      fails ORA-00001 and names the cursor the
+                                      server opened), a good row, the
+                                      duplicate again as a re-execute (0x8020
+                                      or 0x8120, ORA-00001) and a value too
+                                      long (ORA-12899). 108 packets. After
+                                      each error the driver parses again on
+                                      the error's cursor (0x8029). Markers and
+                                      the lone 04 as in execerr.
+                                      oracleverifiernegotiation cites [0026],
+                                      [0041] and [0050] of the oracle122 one
+                                      (#10750)
+
+    10750-dev-ojdbc14-execselerr-realserver-oracle102.oraproxy
+    10750-dev-ojdbc14-execselerr-realserver-oracle122.oraproxy
+    (each with a matching .out - Conn14's own stdout for that run)
+                                     select 1/0 from dual and select
+                                      to_number('x') from dual, a select 1
+                                      after each. 41 packets. The 0x5e is
+                                      answered normally (describe, return
+                                      parameters, an 04 with no error) and the
+                                      error comes on the first fetch, behind
+                                      the markers: ORA-01476 and ORA-01722, an
+                                      04 alone (#10750)
+
+    10750-dev-ojdbc14-fetcherr-realserver-oracle102.oraproxy
+    10750-dev-ojdbc14-fetcherr-realserver-oracle122.oraproxy
+    (each with a matching .out - Conn14's own stdout for that run)
+                                     select 1/(3-level) x from dual connect
+                                      by level <= 5 (the third row fails) at
+                                      fetch sizes 10, 2 and 1, a select 1
+                                      after each. 58 packets. Rows and the
+                                      error are never in one answer. At size
+                                      10 the driver gets 0 rows before
+                                      ORA-01476 (the rows before the failing
+                                      row are dropped; the error object counts
+                                      2 rows). At sizes 2 and 1 rows 1 and 2
+                                      (0.5 and 1) arrive in normal answers and
+                                      the next fetch gets the error, behind
+                                      the markers (#10750)
+
+    10750-dev-ojdbc14-prepfetcherr-realserver-oracle102.oraproxy
+    10750-dev-ojdbc14-prepfetcherr-realserver-oracle122.oraproxy
+    (each with a matching .out - Conn14's own stdout for that run)
+                                     a PreparedStatement select 1/(? - level)
+                                      at fetch sizes 10, 2 and 1, executed
+                                      four times at each with ? = 10, 3, 10, 3
+                                      (the executions with 3 fail on the third
+                                      row). 157 packets. The executions with 3
+                                      are 0x8068 re-executes, which execute
+                                      and fetch in one call. A failing 0x8068
+                                      gets the break, the reset and an 04
+                                      alone as well, with success iterations 1
+                                      where the other errors have 0 ([0026] to
+                                      [0029] of the oracle122 one).
+                                      oracleverifiernegotiation cites [0017]
+                                      and [0025] (#10750)
+
+    10750-dev-ojdbc14-reexecrows-realserver-oracle102.oraproxy
+    10750-dev-ojdbc14-reexecrows-realserver-oracle122.oraproxy
+    (each with a matching .out - Conn14's own stdout for that run)
+                                     select level n from dual connect by
+                                      level <= ?, a PreparedStatement of 25
+                                      rows at fetch size 10, executed three
+                                      times (a 0x8029 and its fetches, then
+                                      two 0x8068 re-executes with their
+                                      fetches). 43 packets. The row count in
+                                      each summary is the rows sent so far in
+                                      the current execution and starts again
+                                      at every execute, the 0x8068 included:
+                                      10, 20 and 25 in each of the three. The
+                                      1 the 10745 prepared captures show is
+                                      the same rule on a one row result.
+                                      [0017] and [0025] of the oracle122 one
+                                      are cited by oracleverifiernegotiation
+                                      (#10750)
+
+    10750-dev-ojdbc14-fetchsizes-realserver-oracle102.oraproxy
+    10750-dev-ojdbc14-fetchsizes-realserver-oracle122.oraproxy
+    (each with a matching .out - Conn14's own stdout for that run)
+                                     a Statement select of 3 rows (select
+                                      level n from dual connect by level <= 3)
+                                      at fetch sizes 65535, 65536, 70000 and
+                                      100001, a select 1 after each. 51
+                                      packets. The fetch carries the size as a
+                                      minimal compressed integer ([0019] 02 ff
+                                      ff, [0027] 03 01 00 00, [0035] 03 01 11
+                                      70, [0043] 03 01 86 a1) and the row
+                                      header of the answer holds the low 16
+                                      bits of it as a minimal ub2, whatever
+                                      number of rows follows: 02 ff ff, 00, 02
+                                      11 70 and 02 86 a1 ([0020], [0028],
+                                      [0036], [0044]). The calls and the row
+                                      header counts are the same bytes on both
+                                      servers; the row header flags differ
+                                      (02 on oracle102, 22 on oracle122), and
+                                      so do the 0x15 bit vectors and the row
+                                      data of the answers. They
+                                      stand in for the 3 MB fetchbig captures
+                                      as the on file evidence for the header
+                                      and the calls (#10750)
+
+    10750-dev-ojdbc14-prepfetchsizes-realserver-oracle102.oraproxy
+    10750-dev-ojdbc14-prepfetchsizes-realserver-oracle122.oraproxy
+    (each with a matching .out - Conn14's own stdout for that run)
+                                     a PreparedStatement of the same 3 rows
+                                      (select level n from dual connect by
+                                      level <= ?), a first execute (0x8029)
+                                      with its 0x05 fetch and one 0x8068 re-
+                                      execute at each of the four fetch sizes,
+                                      a select 1 after each. 59 packets. The
+                                      fetches are at [0019], [0029], [0039]
+                                      and [0049]; the re-executes carry the
+                                      size in al8i4[1] ([0021] 02 ff ff,
+                                      [0031] 03 01 00 00, [0041] 03 01 11 70,
+                                      [0051] 03 01 86 a1) and their answers
+                                      ([0022], [0032], [0042], [0052]) have
+                                      the row header counts 02 ff ff, 00, 02
+                                      11 70 and 02 86 a1. A real server runs a
+                                      0x8068 asking for 100001 rows normally,
+                                      with no limit. oracleverifiernegotiation
+                                      cites [0041] of the oracle122 one
+                                      (#10750)
+
+    10750-dev-ojdbc14-fetchbig-realserver-oracle102.out
+    10750-dev-ojdbc14-fetchbig-realserver-oracle122.out
+    10750-dev-ojdbc14-prepfetchbig-realserver-oracle102.out
+    10750-dev-ojdbc14-prepfetchbig-realserver-oracle122.out
+                                     the .out files only of the real server
+                                      runs of the fetchbig action (a Statement
+                                      select of N+5 rows at fetch size N =
+                                      65535, 65536, 70000 and 100001, a select
+                                      1 after each) and the prepfetchbig
+                                      action (a PreparedStatement of 70005
+                                      rows at fetch size 70000, executed three
+                                      times). Every row arrived and select 1
+                                      worked afterwards. The captures are 2.99
+                                      and 2.09 MB each and are not checked in,
+                                      since 10 MB would have doubled this
+                                      directory; trimming the rows out leaves
+                                      answers oradecode can not walk and
+                                      renumbers every packet. What they showed
+                                      is quoted in the section below, and the
+                                      fetchsizes captures above replace them
+                                      as the files to read (#10750)
+
+    10750-dev-ojdbc14-cancel-realserver-oracle102.oraproxy
+    10750-dev-ojdbc14-cancel-realserver-oracle122.oraproxy
+    10750-dev-ojdbc14-cancel-realserver-oracle102.oraproxy.times
+    10750-dev-ojdbc14-cancel-realserver-oracle122.oraproxy.times
+    (each with a matching .out - Conn14's own stdout for that run;
+    .times files: each chunk with its time, and the urgent bytes)
+                                     Statement.cancel() 2 seconds into an
+                                      update and into a select for update that
+                                      wait for a row lock a second session
+                                      holds until 6 s, at autocommit off and
+                                      on, with a select 1 and a select of the
+                                      table after each. 86 packets. The
+                                      driver's cancel is one byte of TCP
+                                      urgent data (0x21) and nothing in band,
+                                      which an oraproxy capture can not hold:
+                                      the .times file lists every chunk with
+                                      its time and the urgent bytes (C URGENT
+                                      byte 21 after chunk N). The server
+                                      answers within about 1 ms with one reset
+                                      marker (no break marker), waits for the
+                                      client's reset marker and then sends the
+                                      04 with ORA-01013 and a 54 byte message,
+                                      success iterations 0, error position 7
+                                      for the update and 14 for the select for
+                                      update ([0028] to [0031] of the
+                                      oracle122 one). The cancelled call
+                                      counts in the end to end counter, the
+                                      markers do not. Only the cancelled
+                                      statement is rolled back, at autocommit
+                                      on or off. Made with a proxy that relays
+                                      urgent data, which the tracked oraproxy
+                                      does not (see below). (#10750)
+
+    10750-dev-ojdbc14-timeout-realserver-oracle102.oraproxy
+    10750-dev-ojdbc14-timeout-realserver-oracle122.oraproxy
+    10750-dev-ojdbc14-timeout-realserver-oracle102.oraproxy.times
+    10750-dev-ojdbc14-timeout-realserver-oracle122.oraproxy.times
+    (each with a matching .out - Conn14's own stdout for that run;
+    .times files: each chunk with its time, and the urgent bytes)
+                                     the same with setQueryTimeout(2) instead
+                                      of cancel(). 86 packets, the same bytes:
+                                      the driver's timeout thread calls the
+                                      statement's cancel() (#10750)
+
+    10750-dev-ojdbc14-cancelidle-realserver-oracle102.oraproxy
+    10750-dev-ojdbc14-cancelidle-realserver-oracle122.oraproxy
+    10750-dev-ojdbc14-cancelidle-realserver-oracle102.oraproxy.times
+    10750-dev-ojdbc14-cancelidle-realserver-oracle122.oraproxy.times
+    (each with a matching .out - Conn14's own stdout for that run;
+    .times files: each chunk with its time, and the urgent bytes)
+                                     cancel() on a Statement with nothing
+                                      running and again after its query
+                                      finished, with a select 1 after the
+                                      first. 35 packets. Nothing goes on the
+                                      wire for either: no urgent byte (the
+                                      .times files list none) and no marker,
+                                      since the driver sends the break only
+                                      for a statement that is executing
+                                      (#10750)
+
+Real server experiments. The four sets below are not what the driver does by
+itself: each changed one thing in the proxy and is named for it. They are
+reference runs for how a real server answers a break, and
+oracleverifiernegotiation does not cite them.
+
+    10750-dev-ojdbc14-cancellate-realserver-oracle102.oraproxy
+    10750-dev-ojdbc14-cancellate-realserver-oracle122.oraproxy
+    10750-dev-ojdbc14-cancellate-realserver-oracle102.oraproxy.times
+    10750-dev-ojdbc14-cancellate-realserver-oracle122.oraproxy.times
+    (each with a matching .out - Conn14's own stdout for that run;
+    .times files: each chunk with its time, and the urgent bytes)
+                                     the cancel run with an urgent 0x21
+                                      injected by the proxy 0.5 s after a
+                                      fetch answer ([0039]), while no call is
+                                      running and the client is idle for about
+                                      3.5 s. 88 packets. The server sends
+                                      nothing while idle. The client's next
+                                      call ([0040], a close and a rollback) is
+                                      discarded: reset ([0041]), the client's
+                                      reset ([0042]), then an 04 with
+                                      ORA-01013 that carries the previous
+                                      call's counter ([0043]), and the
+                                      rollback throws; the session stays in
+                                      step (#10750)
+
+    10750-dev-ojdbc14-cancelresetdelay-realserver-oracle102.oraproxy
+    10750-dev-ojdbc14-cancelresetdelay-realserver-oracle122.oraproxy
+    10750-dev-ojdbc14-cancelresetdelay-realserver-oracle102.oraproxy.times
+    10750-dev-ojdbc14-cancelresetdelay-realserver-oracle122.oraproxy.times
+    (each with a matching .out - Conn14's own stdout for that run;
+    .times files: each chunk with its time, and the urgent bytes)
+                                     the cancel run with every client marker
+                                      held back 1.5 s by the proxy. 86
+                                      packets. The server's 04 left it about 1
+                                      ms after the delayed reset was
+                                      forwarded, for the cancel resets and for
+                                      the break and reset ahead of an
+                                      ORA-00942: a real server waits for the
+                                      client's reset before it sends the 04
+                                      (#10750)
+
+    10750-dev-ojdbc14-cancelinband-realserver-oracle102.oraproxy
+    10750-dev-ojdbc14-cancelinband-realserver-oracle122.oraproxy
+    10750-dev-ojdbc14-cancelinband-realserver-oracle102.oraproxy.times
+    10750-dev-ojdbc14-cancelinband-realserver-oracle122.oraproxy.times
+    (each with a matching .out - Conn14's own stdout for that run;
+    .times files: each chunk with its time, and the urgent bytes)
+                                     the cancel run with the accept's service
+                                      options rewritten to 0x0a01 for the
+                                      client only, so the driver breaks in
+                                      band (an interrupt marker, [0029]) and
+                                      sends no urgent byte. 90 packets. The
+                                      server notices the break only after the
+                                      call finished: the update succeeds
+                                      ([0030]), the server's reset follows in
+                                      the same segment ([0031]), and the next
+                                      statement, select 1, fails with
+                                      ORA-01013 ([0034], carrying the update's
+                                      counter and fields; the cursor id is the
+                                      update's on oracle102, 1, but 0 on
+                                      oracle122, where the update's was 8)
+                                      (#10750)
+
+    10750-dev-ojdbc14-cancel-nooobrelay-realserver-oracle122.oraproxy
+    10750-dev-ojdbc14-timeout-nooobrelay-realserver-oracle102.oraproxy
+    (each with a matching .out - Conn14's own stdout for that run)
+                                     the cancel run at oracle122 and the
+                                      timeout run at oracle102 through the
+                                      tracked oraproxy, which drops the urgent
+                                      byte. 82 packets. No marker comes after
+                                      a call is sent (the only markers are the
+                                      three before the ORA-00942 of the setup
+                                      drop table, [0018] to [0020]): the
+                                      update and the select for update
+                                      complete after 6 s when the lock holder
+                                      commits, the update is applied, and
+                                      everything after works. That is what the
+                                      module sees from ojdbc14 (#10750)
+
+Before captures: HEAD's module (before #10750) with the genuine driver, at the
+12.1 listener unless the name says another. The 11.2, 10.2 and connectstrings
+listeners gave the same bytes apart from the banner, and the fetchatonce=1
+listener the same apart from where a select error lands (fetcherr and
+prepfetcherr); none of them is checked in but the fetchatonce fetcherr run.
+
+    10750-dev-ojdbc14-execerr-sqlrelay121-before.oraproxy
+    (each with a matching .out - Conn14's own stdout for that run)
+                                     the execerr action against the module
+                                      before the change. 99 packets. Every
+                                      error is an 04 alone, with no markers,
+                                      success iterations 1 and a message that
+                                      carries the 23ai backend's Help line and
+                                      a trailing 00 inside the string; the
+                                      driver accepts it and runs the next
+                                      statement (#10750)
+
+    10750-dev-ojdbc14-fetcherr-sqlrelay121-before.oraproxy
+    (each with a matching .out - Conn14's own stdout for that run)
+                                     the fetcherr action. 37 packets. The
+                                      0x5e itself fails at every fetch size
+                                      ([0017] and [0018]), so the rows 1 and 2
+                                      a real server delivers at sizes 2 and 1
+                                      never reach the driver (#10750)
+
+    10750-dev-ojdbc14-fetcherr-sqlrelayfetchatonce-before.oraproxy
+    (each with a matching .out - Conn14's own stdout for that run)
+                                     the same against a listener whose back
+                                      end connection has fetchatonce=1. 45
+                                      packets. The 0x5e is answered normally
+                                      and the error comes at a fetch, as with
+                                      a real server, but the back end fetches
+                                      ahead: rows 1 and 2 are lost at size 2,
+                                      and at size 1 row 1 arrives and row 2 is
+                                      lost ([0035] to [0038]) (#10750)
+
+    10750-dev-ojdbc14-prepfetcherr-sqlrelay121-before.oraproxy
+    (each with a matching .out - Conn14's own stdout for that run)
+                                     the prepfetcherr action. 131 packets.
+                                      The failing 0x8068 gets a bare 04 with a
+                                      row number of 5 where a real server says
+                                      2 ([0025], [0026]) (#10750)
+
+    10750-dev-ojdbc14-reexecrows-sqlrelay121-before.oraproxy
+    (each with a matching .out - Conn14's own stdout for that run)
+                                     the reexecrows action. 43 packets. The
+                                      summary row count runs on over the
+                                      cursor: 10, 20, 25, then 35, 45, 50 and
+                                      60, 70, 75 where a real server says 10,
+                                      20, 25 each time (#10750)
+
+    10750-dev-ojdbc14-cancel-sqlrelay121-before.oraproxy
+    (each with a matching .out - Conn14's own stdout for that run)
+                                     the cancel action. 79 packets. The
+                                      module never sees the urgent byte, so
+                                      cancel() has no effect: the update and
+                                      the select for update complete after 6 s
+                                      and report success, and the cancelled
+                                      update stays applied (committed under
+                                      autocommit); the session stays in step
+                                      (#10750)
+
+    10750-dev-ojdbc14-bigs100001-sqlrelay121-before.oraproxy
+    (with a matching .out - Big14's own stdout for that run)
+                                     one Statement select at fetch size
+                                      100001, run by a one purpose program
+                                      (Big14) and not by Conn14. 27 packets.
+                                      The fetch ([0019], 03 01 86 a1) gets the
+                                      module's ORA-20004 as an 04 alone
+                                      ([0020]), the connection stays open and
+                                      the next select 1 works (#10750)
+
+    10750-dev-ojdbc14-fetchbig-sqlrelay121-before.out
+    10750-dev-ojdbc14-prepfetchbig-sqlrelay121-before.out
+                                     the .out files only of the fetchbig and
+                                      prepfetchbig runs against the module
+                                      before the change. At fetch size 65536
+                                      and above the driver closes the
+                                      connection and executeQuery() throws a
+                                      NullPointerException, as the first fetch
+                                      of prepfetchbig does. The module wrote
+                                      the row header count in the 4 byte form:
+                                      [0216] and [0217] of the (not checked
+                                      in) fetchbig capture hold the driver's
+                                      fetch for 65536 rows, 03 05 00 01 01 03
+                                      01 00 00, and an answer that begins 06
+                                      02 01 01 00 04 00 01 00 00, and the
+                                      driver's EOF is [0249] (#10750)
+
+After captures: the module with the change at the 12.1 listener
+(-sqlrelay121), the 10.2 (-sqlrelay102) and connectstrings listeners where
+named, and the fetchatonce=1 listener for fetcherr. Each is the same action as
+its real server twin above, and its .out is the same as the real server's
+except where the section below lists a difference.
+
+    10750-dev-ojdbc14-execerr-sqlrelay121.oraproxy
+    10750-dev-ojdbc14-execerr-sqlrelay102.oraproxy
+    10750-dev-ojdbc14-execerr-sqlrelayconnectstrings.oraproxy
+    (each with a matching .out - Conn14's own stdout for that run)
+                                     execerr against the module. 126 packets,
+                                      the same as the real server's: the break
+                                      and the reset marker, the client's reset
+                                      and the 04 alone, with success
+                                      iterations 0 and the message cut at its
+                                      first NUL, without the Help line and
+                                      ending in a line feed (#10750)
+
+    10750-dev-ojdbc14-prepexecerr-sqlrelay121.oraproxy
+    (each with a matching .out - Conn14's own stdout for that run)
+                                     prepexecerr against the module. 108
+                                      packets, the same as the real server's
+                                      (#10750)
+
+    10750-dev-ojdbc14-execselerr-sqlrelay121.oraproxy
+    (each with a matching .out - Conn14's own stdout for that run)
+                                     execselerr against the module. 37
+                                      packets where the real server's has 41:
+                                      the module fails the select at the 0x5e
+                                      (the back end fetches at the execute),
+                                      so the markers and the 04 answer the
+                                      0x5e and there is no fetch, 2 packets
+                                      fewer per select. Depending on the back
+                                      end session the error can land at the
+                                      first fetch instead, as the real
+                                      server's does (#10750)
+
+    10750-dev-ojdbc14-fetcherr-sqlrelay121.oraproxy
+    10750-dev-ojdbc14-fetcherr-sqlrelay121fetchatonce.oraproxy
+    (each with a matching .out - Conn14's own stdout for that run)
+                                     fetcherr against the module at the
+                                      default fetchatonce and at
+                                      fetchatonce=1. 46 and 54 packets. At the
+                                      default the error comes at the 0x5e, or
+                                      at the first fetch, depending on the
+                                      back end session, and no row reaches the
+                                      driver. At fetchatonce=1 the error comes
+                                      at a fetch, behind the markers; rows 1
+                                      and 2 are still lost at size 2, and row
+                                      1 arrives at size 1, where a real server
+                                      delivers both (#10750)
+
+    10750-dev-ojdbc14-prepfetcherr-sqlrelay121.oraproxy
+    10750-dev-ojdbc14-prepfetcherr-sqlrelay102.oraproxy
+    10750-dev-ojdbc14-prepfetcherr-sqlrelayconnectstrings.oraproxy
+    (each with a matching .out - Conn14's own stdout for that run)
+                                     prepfetcherr against the module. 149
+                                      packets. The failing 0x8068 gets the
+                                      markers and an 04 alone with success
+                                      iterations 1; the row number is the
+                                      module's 0 (the rows sent since that
+                                      execute) where a real server says 2
+                                      (#10750)
+
+    10750-dev-ojdbc14-reexecrows-sqlrelay121.oraproxy
+    (each with a matching .out - Conn14's own stdout for that run)
+                                     reexecrows against the module. 43
+                                      packets, the summary row counts 10, 20,
+                                      25 on each of the three executes, as the
+                                      real servers' (#10750)
+
+    10750-dev-ojdbc14-cancel-sqlrelay121.oraproxy
+    10750-dev-ojdbc14-timeout-sqlrelay121.oraproxy
+    10750-dev-ojdbc14-cancelidle-sqlrelay121.oraproxy
+    (each with a matching .out - Conn14's own stdout for that run)
+                                     cancel, timeout and cancelidle against
+                                      the module. 82, 82 and 35 packets.
+                                      Unchanged from before the change: cancel
+                                      and timeout are ignored, the update
+                                      completes after 6 s and stays applied,
+                                      and the session stays in step;
+                                      cancelidle is the real server's (#10750)
+
+    10750-dev-ojdbc14-fetchsizes-sqlrelay121.oraproxy
+    10750-dev-ojdbc14-fetchsizes-sqlrelay102.oraproxy
+    10750-dev-ojdbc14-fetchsizes-sqlrelayconnectstrings.oraproxy
+    (each with a matching .out - Conn14's own stdout for that run)
+                                     fetchsizes against the module. 54
+                                      packets. The row header counts and the
+                                      calls of 65535, 65536 and 70000 are the
+                                      real server's ([0020], [0028], [0036]):
+                                      02 ff ff, 00 and 02 11 70, with every
+                                      row. At 100001 the fetch gets markers
+                                      and the module's ORA-20004 ([0043]
+                                      answered by [0044] to [0047]), and
+                                      select 1 works after it, where a real
+                                      server returns the 3 rows (#10750)
+
+    10750-dev-ojdbc14-prepfetchsizes-sqlrelay121.oraproxy
+    10750-dev-ojdbc14-prepfetchsizes-sqlrelay102.oraproxy
+    10750-dev-ojdbc14-prepfetchsizes-sqlrelayconnectstrings.oraproxy
+    (each with a matching .out - Conn14's own stdout for that run)
+                                     prepfetchsizes against the module. 67
+                                      packets. The headers at 65535, 65536 and
+                                      70000 are the real server's, for the
+                                      0x05 fetch and the 0x8068 ([0022],
+                                      [0032], [0042]). At 100001 the 0x05
+                                      fetch at [0049] gets markers and
+                                      ORA-20004, the 04 at [0053]; the driver
+                                      then parses again (0x8029, [0054]) and
+                                      its next fetch gets ORA-20004 again
+                                      ([0060]), so the 0x8068 over 100000 rows
+                                      the module also refuses is never reached
+                                      by this driver, only by the test client
+                                      (#10750)
+
+    10750-dev-ojdbc14-fetchbig-sqlrelay121.out
+    10750-dev-ojdbc14-prepfetchbig-sqlrelay121.out
+                                     the .out files only of the fetchbig and
+                                      prepfetchbig runs against the module
+                                      after the change (the captures are 1.2
+                                      MB each and are not checked in). Fetch
+                                      sizes 65535, 65536 and 70000 return
+                                      every row where the module before the
+                                      change threw the NullPointerException;
+                                      100001 gets ORA-20004 and the connection
+                                      stays open (#10750)
+
 The genuine 10g OCI client and the logon version floors (#10545)
 ----------------------------------------------------------------
 
@@ -8132,7 +8692,8 @@ dml commit (13), rollback (16) and commit (22). The counter is a uint16_t,
 since ojdbc14 reads the field as a UB2 and closes the connection with
 ORA-17412 on a longer length byte, so it wraps; what a real server does at
 65535 is not measured. That a close of two cursors followed by a call other
-than the logoff counts one is inferred; no capture has it. The login
+than the logoff counts one was inferred; #10750 measured it ([0068] and
+[0080] of the cancel real server captures). The login
 answers keep their constants 2 and 3.
 
 The shapes. Read from the 24 real server captures and checked against the
@@ -8175,12 +8736,13 @@ captures), where the module's answer differs from a real server's:
 * No 0x15 bit vectors in front of the rows. Real servers send them from the
   second or third row of the first fetch answer. The driver reads every
   column of a row when there is none (rows25, types and the dml selects).
-* Errors without the break and reset markers. A real server sends two
-  markers, takes the client's reset and then sends the 04; the module sends
-  the 04 alone. The driver reports the error ("error 942 ORA-00942 ...")
-  and runs the next statement on the same connection (the error, dml,
-  dmlauto and rollbackauto scripts). That is why the module captures of
-  those scripts have 3 packets fewer than the real server ones.
+* Errors without the break and reset markers, as the module of #10745 did
+  it. A real server sends two markers, takes the client's reset and then
+  sends the 04; that module sent the 04 alone. The driver reports the error
+  ("error 942 ORA-00942 ...") and runs the next statement on the same
+  connection (the error, dml, dmlauto and rollbackauto scripts). That is why
+  the 10745 module captures of those scripts have 3 packets fewer than the
+  real server ones. Since #10750 the module sends the markers, see below.
 * A commit before the first query: real oracle102 and oracle122 and the
   module all answer 09 01 04, the counter after the 0x3b, the two logins and
   the commit itself, and the call sequence is the same.
@@ -8201,11 +8763,16 @@ measured doing it differently:
   12.2 ones. Measured live: every script works at 11.2 as at 12.1 and 10.2,
   and the objects are the same on oracle102 and oracle122, which is why
   this is inferred only for what a real 11.2 server would send.
-* Success iterations 1 in every error object, where real servers send 0 or
-  1 (oracle122 sends 0 in fetch answers). The driver never reads it.
-* The 0x8068 answer's cumulative row count: the module counts rows over the
-  cursor and says 2, 3 and 4 in the preptime script where a real server
-  says 1. The driver counts rows from the rows it reads.
+* Success iterations 1 in every error object of the module of #10745, where
+  real servers send 0 or 1 (oracle122 sends 0 in fetch answers). The driver
+  never reads it. Since #10750 it is 0 for an error at the execute and 1 for
+  a failing 0x8068, as the real servers' are, see below.
+* The 0x8068 answer's cumulative row count in the module of #10745: it
+  counted rows over the cursor and said 2, 3 and 4 in the preptime script,
+  where the real server captures seemed to say 1. A real server restarts the
+  count at every execute (10, 20 and 25 each time; the 1 came from a one row
+  result), and since #10750 the module does too, see below. The driver
+  counts rows from the rows it reads.
 * The prepared script's int. The module binds it to the backend as text and
   describes N as a VARCHAR2 of 32, so the driver reads the String "10"
   where a real server describes a NUMBER and gives a BigDecimal.
@@ -8233,10 +8800,12 @@ Not covered, follow-ups:
   BINARY_DOUBLE, INTERVAL, the time zone types, ROWID, LONG and LONG RAW,
   setDate(), setTimestamp(), setBytes(), setBigDecimal() and setNull(), bind
   values over 64 bytes (chunked), and charsets other than 31 and 873
-* the break and reset markers before an error as a real server sends them,
-  errors at execute time and in the middle of a fetch (ORA-01476),
-  Statement.cancel() and setFetchSize() above 65535 (the row header's
-  rows this time is a UB2 to the driver)
+The last item of this list when #10745 was written, the break and reset
+markers before an error, errors at execute time and in the middle of a
+fetch, Statement.cancel() and setFetchSize() above 65535, was measured
+in #10750, below. The markers, the errors and setFetchSize() above 65535 were
+done there; Statement.cancel() was only measured (the module still ignores
+it).
 
 Running the genuine driver. ojdbc14.jar is not redistributable and is not
 checked in. It is in the 10.2.0.5 basic zip (vmi9:/u04/software/Oracle/10g/
@@ -8322,6 +8891,348 @@ objects, as for the 10734 captures. The 12 that decode without it are the
 version and metadata ones (login, banner and logoff only). The run still
 ends cleanly in all of them, and oratoolstest.py passes over all the
 samples.
+
+ojdbc14 errors, cancel and fetch sizes (#10750)
+-----------------------------------------------
+
+#10745 left four things about the genuine ojdbc14 10.2.0.5 driver
+unmeasured: the exact answers to errors at the execute and in the middle of a
+fetch, Statement.cancel() and query timeouts, fetch sizes over 65535, and the
+row count of a re-execute. #10750 measured them against the real oracle102
+and oracle122 servers (the 10750-dev-ojdbc14-*-realserver captures), then
+changed the module and the tests to follow them. All of it is behind
+use8iQueryObjects() (see "The gate" above) in src/protocols/oracle.cpp, so no
+other client sees a change, and there is no header, API or ABI change.
+
+What the module does now:
+* Break and reset markers. Before every post-login error 04 except error 0
+  and ORA-01403 the module sends a break marker and a reset marker (as one
+  helper, sendBreakAndReset(), which the refused logins already used with
+  the same bytes), reads the client's reset marker, and then sends the 04
+  alone in a data packet. The markers count 0 in the session counter. A
+  client that answers the break with a call instead of its reset gets its
+  connection closed (the noreset session), not an answer out of step.
+  Errors the module makes itself get the markers too (inferred: the real
+  servers were measured for backend errors).
+* Error messages. Cut at the first NUL, without the 23ai backend's Help line,
+  and ending in a line feed, as the real servers' 36 byte ORA-01476 does.
+  Other clients still get the NUL and the Help line.
+* Success iterations. 0 for an error at the execute, 1 for a failing 0x8068,
+  as measured; they were 1 for every error before.
+* Row header. Its count is the low 16 bits of the rows the client asked for,
+  as a minimal ub2 (65536 gives 00, 70000 gives 02 11 70, and 100000 gives 02
+  86 a0 by the same rule). The module wrote the full count, 04 00 01 00 00 for
+  65536, and the driver closed the connection (ORA-17412; the application saw
+  a NullPointerException, below). The summary's row count is written in the
+  narrowest form, as the real servers' is (03 01 11 70 for 70000).
+* Row counts. The summary row count restarts at every execute, a 0x8068
+  included (10, 20 and 25 each time in reexecrows), where it ran on over the
+  cursor before (35, 45, 50, 60, 70, 75).
+* The limit. MAX_FETCH_ROW_COUNT (100000) stays, but an execute-and-fetch
+  asking for more now gets ORA-20004 before anything runs, the same error a
+  fetch gets, where it was capped silently.
+* The putOci7Summary() comment on the error position now says what was
+  measured (below).
+
+Measured on the real servers, oracle102 and oracle122 alike:
+* Errors. Execute-time errors are on the execute: DML (Statement 0x5e,
+  prepared first execute 0x8029 and 0x8129, re-execute 0x8020 and 0x8120).
+  A select that fails to evaluate answers the 0x5e normally and fails at
+  the first fetch. Before every 04 whose error number is not 0 or 1403, in
+  all 27 errors per server, the server sends a break marker and a reset
+  marker, takes the client's one reset marker, and sends the 04 alone (no
+  describe, rows, row header or return parameters in it). A failing 0x8068
+  gets the same. The failing call counts 1 in the end to end counter, a
+  piggybacked close counts 1, the markers 0 (all 303 consecutive answers
+  fit). Rows and the error are never in one answer: at fetch size 10 the
+  rows before the failing row are dropped (the driver gets 0 rows, and the
+  error object counts 2), at sizes 2 and 1 rows 1 and 2 arrive in normal
+  answers and the next fetch gets the error.
+* Error position (field 7 of the summary and error objects). The wiki and
+  the putOci7Summary() comment said every error and describe failure carries
+  0. Decoding all 704 captures then on file (6293 objects, 3344 from real
+  servers) says otherwise. Logins and refusals carry 0 (719 objects). A
+  parse error naming a missing object carries the offset of the name (all
+  364 ORA-00942: 14 for select * from x, 11 for drop table x, 12 for insert
+  into x). Expression errors carry the offset of the expression (ORA-01722
+  38, ORA-01476 8 or 32 mid-fetch, ORA-00932 25, ORA-01465 24). ORA-00001,
+  ORA-01000, ORA-01405, PL/SQL runtime errors and LOB errors carry 0, with
+  three exceptions that carry the offset of dual, and the ORA-01013s of the
+  cancel captures, which carry the offset of the cancelled statement's table
+  (7 for the update, 14 for the select for update). Fetch answers, PL/SQL
+  blocks, CREATE TABLE, ALTER SESSION and a successful GRANT carry 0. Other
+  successful statements carry 0 or the offset of the first object named,
+  and which one depends on the server's history with the statement (one
+  statement gave 40, 40, 0, 0 in one session). That history effect is
+  inferred to be the shared cursor cache. The module sends 0 in all 2949 of
+  its objects then on file; the driver never reads the field.
+* Cancel and timeout. ojdbc14 cancels with one byte of TCP urgent data (0x21)
+  and nothing in band, because the accept options are 0x0e01 (bit 0x0400
+  sends urgent data, bit 0x0800 suppresses the in band marker); the
+  module echoes the client's options, so it gets the same. A timeout goes
+  through the same cancel() path, and a cancel with nothing running puts
+  nothing on the wire. A real server answers an urgent byte during a call
+  within 1 ms with one reset marker (no break marker), waits for the
+  client's reset (proved by holding it back 1.5 s), then sends the 04 with
+  ORA-01013: the cancelled call's counter, row count 0, error position 7 for
+  the update and 14 for the select for update, success iterations 0.
+  Autocommit on or off gives the same packets; only the cancelled statement
+  is rolled back. An urgent byte that arrives with no call running gets no
+  answer until the client's next call, which the server discards (reset,
+  the client's reset, an 04 with ORA-01013 repeating the previous counter).
+  With an in band break (options 0x0a01) the server noticed the break only
+  after the call finished: the cancelled update succeeded and the next
+  statement failed. These last two are experiments (named in the sample
+  list) that show how a real server handles a late break.
+* Fetch sizes. A first execute carries no row count. A 0x05 fetch carries
+  the count as a minimal compressed integer (65535 is 02 ff ff, 65536 is 03
+  01 00 00, 70000 is 03 01 11 70, 100001 is 03 01 86 a1), and a 0x8068
+  re-execute carries it in al8i4[1]. The row header holds the low 16 bits of
+  the count asked for, as a minimal ub2 (02 ff ff, 00, 02 11 70, 02 86 a1),
+  even when fewer rows follow (the fetchsizes and prepfetchsizes captures,
+  3 rows each). There is no split and no limit: 65535, 65536, 70000 and
+  100001 rows each came in one answer, and the next fetch got the last 5
+  rows and ORA-01403. A 0x8068 asking for 100001 rows runs normally. The
+  fetchbig captures that showed this are not checked in (2.99 MB each); the
+  .out files hold only what Conn14 printed, so the bytes are quoted here: the
+  summary row count of the first answer, then of the last 5 rows with
+  ORA-01403, was 02 ff ff then 03 01 00 04 for 65535, 03 01 00 00 then 03 01
+  00 05 for 65536, 03 01 11 70 then 03 01 11 75 for 70000 and 03 01 86 a1
+  then 03 01 86 a6 for 100001; the 100001 row answer was 988940 bytes in 495
+  packets from oracle102 (506 packets from oracle122).
+* Row counts. The summary row count is the rows sent so far in the current
+  execution and is reset by every execute, 0x8068 included: 10, 20 and 25
+  for each of three executes (reexecrows). The "real server says 1" of the
+  10745 notes was a one row result.
+
+Cross-checked in the driver (javap of ojdbc14 10.2.0.5):
+* T4C8TTIrxh reads the row header count with unmarshalUB2 and nothing reads
+  it again. A UB2 with a length byte over 2 makes the driver close the
+  connection and throw ORA-17412, so only its width matters. setFetchSize()
+  has no upper limit.
+* The driver answers a marker with its own reset, discards every packet
+  until a reset marker arrives, then reads the next message normally. A 04
+  with no markers takes the same path, which is why the bare 04s of #10745
+  worked, and why a break marker alone, with no reset after it, would
+  make the driver discard the 04 and hang.
+* The driver uses only the error number, message, cursor id, row count (DML)
+  and flags of an error object. The summary row count of a select does not
+  change what getNumRows() returns.
+* Cancel: NSProtocol.sendBreak() sends the urgent byte when the accepted
+  options have 0x0400, and then an in band marker only if they lack 0x0800;
+  without 0x0400 it sends the marker alone. OracleStatement.cancel() sends
+  nothing unless a statement is executing.
+
+The module with the genuine driver, before and after (measured, the
+-before and -sqlrelay captures; 29 actions at the 12.1, 11.2, 10.2,
+connectstrings and fetchatonce=1 listeners, direct and through oraproxy, all
+exit 0, every proxied .out the same as the direct one):
+* Before (HEAD's module, 279015ef5): fetch sizes 65536, 70000 and 100000
+  killed the connection and executeQuery() threw a NullPointerException
+  (inferred, from the bytecode: the driver's finally block calls
+  getNumRows() after the ORA-17412 and hides it; nothing on the wire shows
+  the ORA-17412), then 17008 closed connection; 65535 worked and 100001 got
+  ORA-20004 with the connection alive. Cancel and query timeout were
+  ignored (below). Rows before a select error were lost. The summary row
+  count ran on over the cursor. A bare 04 was accepted by the driver in
+  every error case. The messages carried the Help line and a NUL.
+* After: 65535, 65536 and 70000 return every row with the real servers'
+  header and summary bytes ([0020], [0028], [0036] of the fetchsizes
+  captures; the module's 3 MB fetchbig answers matched oracle122's at
+  [0020], [0351], [0359], [0690], [0698] and [1052] of that capture, which
+  is not checked in); 100001 gets the markers and ORA-20004 and the
+  connection stays (a real server returns every row). The markers, the
+  client reset and the lone 04 sit at the same packet numbers as the real
+  servers' in all 270 error pairs of the five error actions, and the
+  messages are the same after the table name; the counter is in step over
+  135 captures. reexecrows gives 10, 20 and 25 on each execute, like the real
+  servers.
+* The driver-visible differences from oracle122 that remain, all by design:
+  fetcherr at sizes 2 and 1 and prepfetcherr at the 0x8068 re-executes get 0
+  rows before ORA-01476 where oracle122 delivers 2 (with fetchatonce=1,
+  size 1 gives 1 row); cancel and timeout complete after 6 s; fetchsizes
+  and prepfetchsizes at 100001 get ORA-20004; and the #10745 ones (banner,
+  prepared N as a VARCHAR2, select null precision 4000).
+* The error object differs from a real server's only in the fields on the
+  keep list: the error position (0), the cursor id numbering, the rowid
+  and array error fields, curRowNumber (0 where a real server says 2 for a
+  select error), and, when a select error lands at the 0x5e or the 0x8068
+  instead of a fetch, the counter and success iterations of that call.
+  Success iterations for a fetch error are 0, oracle122's; oracle102 sends 1.
+
+What the module can not do, on purpose, and says so:
+* Statement.cancel() and setQueryTimeout() have no effect. The urgent byte
+  never reaches the module (nothing in sqlrelay or rudiments reads urgent
+  data), the module is single threaded, and no backend can be interrupted.
+  The statement runs to completion, the driver gets its normal answer, the
+  session stays in step, and under autocommit the cancelled update stays
+  committed (it ran to the end after 6 s in the measured runs; a real
+  server gives ORA-01013 after 2 s and leaves the row alone). Reporting
+  ORA-01013 after the DML ran was considered and refused: the next,
+  unrelated statement would fail while the cancelled one has committed. With
+  handoff=proxy the listener relays over a unix socket, which can not carry
+  urgent data to the module at all (read from the code, not run).
+* The error position is always 0; the real offset needs the backend to
+  report it.
+* A select whose rows fail to evaluate fails at the execute (the backend
+  fetches at the execute, and its array fetch drops the rows before the
+  error), so rows 1 and 2 never reach the driver at fetch sizes 2 and 1,
+  and the error is reported at the 0x5e or the first fetch, depending on
+  the backend session. At fetchatonce=1 the error comes at a fetch but a
+  row is still lost. The test pins this shape.
+* More than 100000 rows in one answer: ORA-20004. A real server has no limit
+  (the 32 MB response limit is what bounds the module's memory).
+* The cursor id an error names can be one the same packet's piggybacked close
+  just closed (the module recycles ids). The driver does not mind.
+* The 11.2 ceiling is inferred. oracle112's testuser is expired, so there is
+  no real 11.2 reference; every script works at 11.2 as at 12.1 and 10.2,
+  and the objects are the same on oracle102 and oracle122. Unlocking it is a
+  change to a shared server and was not made; whether to is an open question.
+
+Inferred, not measured: that the module's own errors (not the backend's) get
+markers as the backend's do; that a re-execute with 0x8060, 0x8020 or 0x8120
+restarts the row count (0x8068 and the parse options are measured); that
+the history effect on the error position is the cursor cache; that no
+sequence other than a 0x05 fetch and a 0x8029 re-parse reaches a 0x8068 over
+100000 rows with the genuine driver. Not measured: 0x8060, an empty last
+fetch, fetch sizes over 100001 beyond the run itself, a break while the
+driver is still sending a call or during a fetch, and any 11.2 server.
+
+Left for follow-up tickets:
+* #10756: the oracle connection: deliver the rows before a failing row and
+  defer the error, so a select that fails to evaluate fails at the fetch
+  (all protocols)
+* #10757: the server API: expose the backend's parse error offset, so the
+  module can send a real error position
+* #10759: real Statement.cancel() and query timeout support (a backend cancel
+  call and a way to notice the client's break while a backend call runs)
+* #10760: the trailing NUL and Help line of backend error messages for the
+  clients other than ojdbc14 (filed as oracle protocol and oracle connection)
+* #10761: getTtiFunction()'s marker branch, which answers a client's break
+  without waiting for its reset and would put a client that breaks in band
+  out of step
+* #10762: oraproxy relaying and recording TCP urgent data (low priority;
+  below)
+* #10763: break and reset markers before post-login errors for the other
+  clients (the 10700 ojdbc failedstmt captures show them)
+* #10764: the 100000 row limit, MAX_FETCH_ROW_COUNT, which is redundant with
+  the response size limit
+* #10765: read the client's reset after a break with the continuation timeout
+  instead of waiting for it without one
+* a real 11.2 reference for ojdbc14, if wanted (the open question; no ticket)
+
+The tests.
+* oracleprotocolclient: recvOjdbc14Answer() takes the break and the reset
+  marker, sends the one client reset and reads the 04, the way ojdbc14 does;
+  the call builders write counts in ojdbc14's minimal width
+  (appendOjdbc14Number(), 65536 as 03 01 00 00); sendUrgentByte() sends a
+  MSG_OOB byte; the reassembly buffer is 4 MB; readOjdbc14Answer() counts rows
+  and objects past the ones it keeps, so a 65536 row answer can be checked.
+* oracleverifiernegotiation: 11 new scripts and 36 sessions. execerr,
+  prepexecerr, execselerr, fetcherr, prepfetcherr, fetchsizes, prepfetchsizes
+  and reexecrows run at the 12.1, 11.2 and 10.2 listeners and at the
+  connectstrings one; fetcherr also at the fetchatonce=1 listener; bigfetch
+  (a fetch of 65536 rows, then the last 5), noreset (a client that answers
+  the break with a call) and urgent (a urgent byte behind a call and between
+  two calls: normal answers, the counter in step) at 12.1 only. Every error
+  other than ORA-01403 is checked for the markers, their flags, the client
+  reset, the 04 alone, the message (no NUL, no Help line, a line feed at
+  the end), and the error object byte for byte; every non-error answer for no
+  markers. The headers and summaries of fetch sizes 65535, 65536, 70000 and
+  100000 and the refusal at 100001 (the cursor untouched), the row counts of
+  reexecrows and the counters are asserted. checkOjdbc14CallBuilders() has 13
+  more captured calls (23), checkOjdbc14ErrorObjectBuilder() reproduces 4
+  real error objects, and the #10745 check that expected a data packet after
+  an error now expects the markers. Fields the module chooses and the driver
+  ignores (error position, array error fields, rba, a select error's row
+  number) are not compared. Cancel is a guard only. The lost rows before a
+  mid-fetch error are pinned as the module's shape, so that a fix shows up
+  as a change to the test.
+* Counts. The portable run has 7565 checks (4692 since #10745) and the
+  -native run 812, with 0 failures in both. The portable count varies a
+  little between runs (7530 in another run): a select error lands at the
+  0x5e or at the first fetch depending on the backend session, and the test
+  accepts either. Against a scratch module built from HEAD's oracle.cpp
+  before #10750, 410 portable checks fail and the rest pass (the 93 errors
+  times 4 checks for the markers, the message and the success iterations,
+  9 for ORA-17412 on the 4 byte row header, 28 for the carried row counts
+  and 1 for noreset); the -native run is unchanged (812, 0 failed); the
+  urgent session passes on HEAD by design.
+* The fetch size vectors are the real servers' bytes: the four fetch calls
+  are packets [0019], [0027], [0035] and [0043] of the fetchsizes
+  captures, and the 70000 re-execute is packet [0041] of
+  10750-dev-ojdbc14-prepfetchsizes-realserver-oracle122 with the bind 70005
+  where the capture binds 3, the rest being the same bytes.
+
+Running the new actions. Conn14 (still not checked in) has these actions
+beyond the table above, and each prints what it did and ends with exit 0:
+
+    action          what it runs
+    execerr         Statement inserts that fail, ORA-00001, ORA-01400,
+                    ORA-01722 and ORA-12899, a select 1 after each, then a
+                    good insert and a count, at autocommit off and on
+    prepexecerr     a PreparedStatement insert executed four times (a
+                    duplicate, a good row, the duplicate again, a value too
+                    long), a select 1 after each, at autocommit off and on
+    execselerr      select 1/0 from dual and select to_number('x') from dual
+    fetcherr        select 1/(3-level) x from dual connect by level <= 5 at
+                    fetch sizes 10, 2 and 1
+    prepfetcherr    a PreparedStatement select 1/(? - level) at fetch sizes
+                    10, 2 and 1, executed with 10, 3, 10 and 3
+    cancel          an update and a select for update that wait for a row
+                    lock another session holds for 6 s, Statement.cancel()
+                    2 s in, at autocommit off and on
+    timeout         the same with setQueryTimeout(2)
+    cancelidle      cancel() with nothing running and after a query
+    fetchbig        a Statement of N+5 rows at fetch size N = 65535, 65536,
+                    70000 and 100001, a select 1 after each
+    prepfetchbig    a PreparedStatement of 70005 rows at fetch size 70000,
+                    three executes
+    reexecrows      a PreparedStatement of 25 rows at fetch size 10, three
+                    executes
+    fetchsizes      fetchbig with a 3 row result (the small captures)
+    prepfetchsizes  a PreparedStatement of 3 rows, the first execute and one
+                    re-execute at each of the four fetch sizes
+
+Their scratch tables are protocoltest10750se, sp, sc and st, dropped first
+and at the end. cancel and timeout need a second session to hold the lock;
+it logs in directly to the database named by ORA14_DIRECT (HOST:PORT:SID) as
+the same user, so that it does not go through the proxy or the listener, and
+at a listener the listener's backend user has to be that user too (the
+connect string of the oracleprotocolconnectstrings instance, TESTUSER). Run
+at oracle122:
+
+    ORA14_DIRECT=10.0.2.1:1521:ora1 java -cp .:ojdbc14.jar Conn14 \
+                                   localhost:1523:ora1 cancel
+
+The big fetch actions are slow at a listener with fetchatonce=1 (fetchbig
+took 46 s against 7 s), and each cancel or timeout against the module waits
+the 6 s for the lock holder. A one purpose program (Big14) ran the single
+fetch of the bigs100001 capture.
+
+The cancel captures need a proxy that relays TCP urgent data. The tracked
+oraproxy does not: it reads with plain recv() and writes with plain
+sendall(), so the urgent byte is dropped, which is also what the module sees
+(a run through the stock oraproxy is the cancel-nooobrelay and
+timeout-nooobrelay capture, and every module .out is the same through the
+stock proxy as direct). The scratch copy used for the real server cancel
+captures (not checked in) changes relay() only: where it did chunk =
+src.recv(65536), it calls select() on the connection, and when select()
+reports an exceptional condition on the source it forwards the normal data
+up to the mark first (recv() stops at the mark; the test is the SIOCATMARK
+ioctl, 0x8905), then reads the byte with src.recv(1, socket.MSG_OOB) and
+sends it with dst.send(byte, socket.MSG_OOB). It imports select and fcntl.
+The capture format has no place for an urgent byte, so the copy logged each
+one and wrote the .times files of the sample list (a time for each chunk, and
+a line "C URGENT byte 21 after chunk N"). It also had three test-only knobs
+for the experiments: an urgent byte injected after a chunk, every client
+marker held back, and the accept's options rewritten. Making the tracked
+oraproxy relay and record urgent data is left as a low priority follow-up.
+
+oradecode prints "legacy call decode failed ... falling back to hex dump"
+for all 57 of the 10750 captures, for the post-login messages and 04 objects
+of a field version 3 client, as for #10745 and #10734. The run still ends
+cleanly in all of them, and oratoolstest.py passes over all the samples.
 
 The v11 time zone file for the oci8 run
 ---------------------------------------

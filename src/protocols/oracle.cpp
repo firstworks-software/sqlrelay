@@ -1973,6 +1973,10 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_oracle : public sqlrprotocol {
 						bool secondphase);
 		bool	sendAuthenticationBreak();
 
+		// the break marker, reset marker and client reset a real server
+		// runs in front of a failure, "what" naming it in the debug log
+		bool	sendBreakAndReset(const char *what);
+
 		void	debugTtcCode(byte_t ttccode);
 		void	debugTtiFunction(byte_t ttifunction);
 		void	debugOptions(uint16_t options, uint16_t moreoptions);
@@ -2390,6 +2394,11 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_oracle : public sqlrprotocol {
 							const char *message,
 							uint32_t messagesize,
 							uint32_t arrayerror=0);
+
+		// writes "value" as a length prefixed integer in its narrowest
+		// form, the 3-byte one included
+		void	writeMinimalLenPreInt(bytebuffer *buffer,
+							uint32_t value);
 		void	putSummaryExtension(uint32_t oranum,
 							uint32_t rowcount);
 		void	putNumberField(const char *field,
@@ -2583,6 +2592,19 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_oracle : public sqlrprotocol {
 
 		bool	sendQueryError(sqlrservercursor *cursor,
 						bool rowcounts=false);
+
+		// the marker exchange in front of a post-login error answer,
+		// for an 8i query session only - every other session gets the
+		// error alone
+		bool	sendErrorBreak();
+
+		// copies "message" to "out" the way a real server words it for
+		// an 8i client: up to the first nul, without the back end
+		// client's "Help:" line, and ending in a newline
+		void	normalizeErrorMessage8i(const char *message,
+						uint32_t messagesize,
+						stringbuffer *out);
+
 		bool	sendCursorNotOpenError(uint32_t cursorid=0);
 		bool	sendMaxOpenCursorsError();
 		bool	sendUnimplementedFunctionError();
@@ -3059,6 +3081,12 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_oracle : public sqlrprotocol {
 		// carry 0).  a ub2 to ojdbc14, which drops the connection on a
 		// wider field, so it wraps rather than grows
 		uint16_t	endtoend8i;
+
+		// whether the tti function being answered is an 8i execute
+		// that also fetches, and whether its answer has run the error
+		// break - both decide an 8i error object's success iterations
+		bool		executefetch8i;
+		bool		errorbreak8i;
 
 		// the bind section of the query3 request being handled: one
 		// descriptor per placeholder in the statement, and one value
@@ -3595,6 +3623,8 @@ void sqlrprotocol_oracle::init() {
 
 	query3session=false;
 	endtoend8i=0;
+	executefetch8i=false;
+	errorbreak8i=false;
 	callnumber=0;
 	justpiggybacked=false;
 	oci7executed=false;
@@ -3723,6 +3753,8 @@ clientsessionexitstatus_t sqlrprotocol_oracle::clientSession(
 			// 32 10745-dev-ojdbc14-*-realserver captures).
 			if (query8i) {
 				endtoend8i++;
+				executefetch8i=false;
+				errorbreak8i=false;
 			}
 
 			// do the appropriate thing...
@@ -10453,11 +10485,19 @@ void sqlrprotocol_oracle::putOci7Summary(uint32_t cursorid,
 	// second parse acknowledgement to a different FROM-bearing query
 	// (packet [0024], "select 1 as num, 'two' as txt, sysdate as dt from
 	// dual") with 0, right after the first one answered 25.  so this
-	// sends 0 for every caller.  0 is the only value no capture
-	// contradicts, and it is what a real server sends in every error and
-	// describe-failure summary captured so far, including the ORA-01007
-	// out-of-range describe this module has to answer, which is 0 in both
-	// the portable and the native realtable-outofrange captures
+	// sends 0 for every caller.  0 matches a real server for a login, a
+	// fetch, a pl/sql block, a create table, an error such as ORA-00001
+	// or the ORA-01007 out-of-range describe this module has to answer
+	// (0 in both the portable and the native realtable-outofrange
+	// captures), and any statement the server already has cached.  for
+	// ORA-00942 a real server sends the offset of the missing object (14
+	// for "select * from protocoltest10745_nonexistent", packet [0021] of
+	// 10745-dev-ojdbc14-error-realserver-oracle102), and for ORA-01722 and
+	// ORA-01476 the offset of the failing expression (8 for "select 1/0
+	// from dual", packet [0295] of 10700-dev-ojdbc-failedstmt-realserver-
+	// oracle122).  the module has no way to learn either from the back
+	// end, so those get 0 too.  see "Oracle Wire Protocol - Summary
+	// Object"
 	writeLenPreInt(&reqpacket,0);
 
 	// 3 answering the parse of a select, 0 answering the login.  a caller
@@ -10852,11 +10892,17 @@ bool sqlrprotocol_oracle::sendAuthenticationError(uint32_t oranum,
 bool sqlrprotocol_oracle::sendAuthenticationBreak() {
 
 	// the marker exchange a real 10.2 server runs in front of any login
-	// failure: a break marker, then a reset marker, then the client's reset
-	// marker back.  a client that sends something else is out of step with
-	// the module either way, so anything but a marker ends the exchange.
+	// failure
+	return sendBreakAndReset("authentication break");
+}
 
-	debugStart("authentication break");
+bool sqlrprotocol_oracle::sendBreakAndReset(const char *what) {
+
+	// a break marker, then a reset marker, then the client's reset marker
+	// back.  a client that sends something else is out of step with the
+	// module either way, so anything but a marker ends the exchange.
+
+	debugStart("%s",what);
 	debugEnd();
 
 	if (!sendMarker(MARKER_TYPE_BREAK) ||
@@ -14762,6 +14808,15 @@ bool sqlrprotocol_oracle::query3(const byte_t *rp) {
 		return false;
 	}
 
+	// An 8i execute that also fetches (0x8068, 0x8060) gets success
+	// iterations 1 in an error object, where every other call gets 0
+	// (MEASURED, 10750-dev-ojdbc14-prepfetcherr-realserver-oracle102 and
+	// -oracle122 [0029]; 0x8060 INFERRED).
+	if (use8iQueryObjects()) {
+		executefetch8i=((options&OPTION_EXECUTE) &&
+					(options&OPTION_FETCH));
+	}
+
 	// which layout a fetch that follows this is in
 	query3session=true;
 
@@ -14805,6 +14860,21 @@ bool sqlrprotocol_oracle::query3(const byte_t *rp) {
 	if (prefetchrows>MAX_FETCH_ROW_COUNT) {
 		debugWrite("prefetch rows %d exceeds %d",
 					prefetchrows,MAX_FETCH_ROW_COUNT);
+		return sendMaxResponseError(cursorid,
+				ORA_MAX_FETCH_ROW_COUNT_EXCEEDED,
+				ORA_MAX_FETCH_ROW_COUNT_EXCEEDED_MESSAGE);
+	}
+
+	// An 8i execute that also fetches asks for its rows through
+	// al8i4[1], and is refused the same way rather than capped, so it
+	// gets the ORA-20004 a fetch of that many rows gets (a real server has
+	// no cap and ran a re-execute asking for 100001 rows normally -
+	// MEASURED, [0051] and [0052] of 10750-dev-ojdbc14-prepfetchsizes-
+	// realserver-oracle102 and -oracle122).
+	if (use8iQueryObjects() && (options&OPTION_FETCH) &&
+			query3iterations>MAX_FETCH_ROW_COUNT) {
+		debugWrite("8i fetch rows %d exceeds %d",
+					query3iterations,MAX_FETCH_ROW_COUNT);
 		return sendMaxResponseError(cursorid,
 				ORA_MAX_FETCH_ROW_COUNT_EXCEEDED,
 				ORA_MAX_FETCH_ROW_COUNT_EXCEEDED_MESSAGE);
@@ -14888,6 +14958,15 @@ bool sqlrprotocol_oracle::query3(const byte_t *rp) {
 		// a fresh execute means a new result set - drop any row
 		// it was pinning for a lob read
 		clearLobPin(cont->getId(cursor));
+
+		// An 8i summary's row count is the rows sent in the current
+		// execution, so every execute restarts it, a re-execute
+		// included (MEASURED for 0x8068, 10750-dev-ojdbc14-reexecrows-
+		// realserver-oracle102 and -oracle122 [0026] and [0032];
+		// INFERRED for 0x8060, 0x8020 and 0x8120).
+		if (executing && use8iQueryObjects()) {
+			rowssent[curid]=0;
+		}
 
 		// an array bind sends one row data block per element, and a
 		// re-parse without one means the previous statement's binds
@@ -17740,7 +17819,17 @@ void sqlrprotocol_oracle::putRowHeader(byte_t flags,
 	// count (rxh.numItersThisTime), uac buffer length (rxh.uacBufLength)
 	writeLenPreInt(&reqpacket,colcount);
 	writeLenPreInt(&reqpacket,0);
-	writeLenPreInt(&reqpacket,prefetchrows);
+
+	// An 8i client reads the row count as a ub2 and drops the connection
+	// on a wider one (ORA-17412), and a real server sends it the low 16
+	// bits of the count it asked for: 00 for 65536, 02 11 70 for 70000
+	// (MEASURED, [0028] and [0036] of 10750-dev-ojdbc14-fetchsizes-
+	// realserver-oracle102 and -oracle122).
+	uint32_t	rowcount=prefetchrows;
+	if (use8iQueryObjects()) {
+		rowcount=(uint32_t)(uint16_t)prefetchrows;
+	}
+	writeLenPreInt(&reqpacket,rowcount);
 	writeLenPreInt(&reqpacket,0);
 
 	// bit vector size.  a real server sends a bit vector here to say which
@@ -17757,6 +17846,9 @@ void sqlrprotocol_oracle::putRowHeader(byte_t flags,
 	debugWrite("flags: 0x%02x",(uint32_t)flags);
 	debugWrite("column count: %d",colcount);
 	debugWrite("prefetch rows: %d",prefetchrows);
+	if (rowcount!=prefetchrows) {
+		debugWrite("row count sent: %d",rowcount);
+	}
 	debugEnd();
 }
 
@@ -20952,7 +21044,17 @@ void sqlrprotocol_oracle::putSummary(uint32_t cursorid,
 		writeLenPreInt(&reqpacket,endtoendseqnumber);
 	}
 
-	writeLenPreInt(&reqpacket,rowcount);
+	// An 8i client's row count is in the narrowest form, 3 bytes for
+	// 65536 to 16777215 (MEASURED: a real server's summary for a 70000
+	// row answer holds 03 01 11 70, from the fetchbig captures, which
+	// are not checked in - the README in test/protocol/oracle quotes the
+	// bytes - and the fetch call for 70000 rows has the same form at
+	// [0035] of 10750-dev-ojdbc14-fetchsizes-realserver-oracle102).
+	if (summary8i) {
+		writeMinimalLenPreInt(&reqpacket,rowcount);
+	} else {
+		writeLenPreInt(&reqpacket,rowcount);
+	}
 	writeLenPreInt(&reqpacket,oranum);
 	writeLenPreInt(&reqpacket,0);
 
@@ -20995,7 +21097,18 @@ void sqlrprotocol_oracle::putSummary(uint32_t cursorid,
 
 	// success iterations, which is one execution rather than one row - a
 	// live server sends 1 for a fetch of 10 rows and for a fetch of none
-	writeLenPreInt(&reqpacket,1);
+	//
+	// An 8i error object behind the error break gets 0, or 1 answering an
+	// execute that also fetches (MEASURED, 10750-dev-ojdbc14-execerr-
+	// realserver-oracle122 [0030] and -prepfetcherr-realserver-oracle122
+	// [0029]; 0 for a fetch error follows oracle122, oracle102 sends 1).
+	// A commit or rollback error gets the same 0 (INFERRED, no real
+	// server capture of one).
+	uint32_t	successiterations=1;
+	if (summary8i && errorbreak8i && !executefetch8i) {
+		successiterations=0;
+	}
+	writeLenPreInt(&reqpacket,successiterations);
 
 	if (!summary8i) {
 		writeLenPreInt(&reqpacket,0);
@@ -21013,6 +21126,7 @@ void sqlrprotocol_oracle::putSummary(uint32_t cursorid,
 	debugStart("summary");
 	if (summary8i) {
 		debugWrite("8i client");
+		debugWrite("success iterations: %d",successiterations);
 	} else {
 		debugWrite("call status: %d",callstatus);
 	}
@@ -21027,6 +21141,22 @@ void sqlrprotocol_oracle::putSummary(uint32_t cursorid,
 		debugWrite("message: %.*s",(int)messagesize,message);
 	}
 	debugEnd();
+}
+
+void sqlrprotocol_oracle::writeMinimalLenPreInt(bytebuffer *buffer,
+							uint32_t value) {
+
+	// writeLenPreInt() goes from 2 bytes straight to 4
+	if (value<=0xffff) {
+		writeLenPreInt(buffer,value);
+	} else if (value<=0xffffff) {
+		buffer->append((byte_t)3);
+		buffer->append((byte_t)((value>>16)&0xff));
+		buffer->append((byte_t)((value>>8)&0xff));
+		buffer->append((byte_t)(value&0xff));
+	} else {
+		writeLenPreInt(buffer,value);
+	}
 }
 
 void sqlrprotocol_oracle::putNumberField(const char *field,
@@ -25988,6 +26118,19 @@ bool sqlrprotocol_oracle::sendTransactionError(uint32_t cursorid) {
 		messagesize=errorsize;
 	}
 
+	// the markers, the message wording and the success iterations 0 that
+	// putSummary() sends are the ones sendQueryError() sends.  INFERRED
+	// for a commit or rollback error - no real server capture of one
+	if (!sendErrorBreak()) {
+		return false;
+	}
+	stringbuffer	message8i;
+	if (use8iQueryObjects()) {
+		normalizeErrorMessage8i(message,messagesize,&message8i);
+		message=message8i.getString();
+		messagesize=message8i.getStringLength();
+	}
+
 	resetSendPacketBuffer(PACKET_DATA);
 
 	uint16_t	dataflags=0;
@@ -26669,6 +26812,64 @@ void sqlrprotocol_oracle::putGenericFooter() {
 	debugEnd();
 }
 
+bool sqlrprotocol_oracle::sendErrorBreak() {
+
+	// A real server answers an 8i client's failed call with a break
+	// marker, a reset marker, waits for the client's reset, then sends
+	// the error object alone, for every error but 0 and ORA-01403
+	// (MEASURED, all 27 errors of each 10750-dev-ojdbc14-*err-realserver-
+	// oracle102 and -oracle122 capture, e.g. execerr [0027]-[0030]).  The
+	// client's reset is read here, so getTtiFunction() never takes it for
+	// a cancel, and the markers count nothing in endtoend8i.  The errors
+	// the module raises itself get the same exchange (INFERRED).
+	if (!use8iQueryObjects()) {
+		return true;
+	}
+	if (!sendBreakAndReset("error break")) {
+		return false;
+	}
+	errorbreak8i=true;
+	return true;
+}
+
+void sqlrprotocol_oracle::normalizeErrorMessage8i(const char *message,
+						uint32_t messagesize,
+						stringbuffer *out) {
+
+	// A real server's message ends in a newline (MEASURED, 10750-dev-
+	// ojdbc14-fetcherr-realserver-oracle122 [0023]), where the back end's
+	// replaces its last newline with a nul that it counts, and a 23ai
+	// client's adds a "Help:" line.
+	static const char	helpprefix[]=
+				"Help: https://docs.oracle.com/error-help/";
+	size_t			helpprefixsize=sizeof(helpprefix)-1;
+
+	// stop at the first nul
+	const char	*nul=(const char *)bytestring::findFirst(
+						message,'\0',messagesize);
+	const char	*end=(nul)?nul:message+messagesize;
+
+	// copy every line but the help line
+	const char	*line=message;
+	while (line<end) {
+		const char	*newline=(const char *)bytestring::findFirst(
+						line,'\n',end-line);
+		const char	*next=(newline)?newline+1:end;
+		size_t		linesize=next-line;
+		if (linesize<helpprefixsize ||
+			bytestring::compare(line,helpprefix,helpprefixsize)) {
+			out->append(line,linesize);
+		}
+		line=next;
+	}
+
+	// end in a newline
+	size_t	outsize=out->getStringLength();
+	if (!outsize || out->getString()[outsize-1]!='\n') {
+		out->append('\n');
+	}
+}
+
 bool sqlrprotocol_oracle::sendQueryError(sqlrservercursor *cursor,
 							bool rowcounts) {
 
@@ -26702,6 +26903,20 @@ bool sqlrprotocol_oracle::sendQueryError(sqlrservercursor *cursor,
 	if (errorsize && errorstring) {
 		message=errorstring;
 		messagesize=errorsize;
+	}
+
+	// the markers go out before the answer is built - each one resets
+	// the send buffer
+	if (!sendErrorBreak()) {
+		return false;
+	}
+
+	// an 8i client gets the message the way a real server words it
+	stringbuffer	message8i;
+	if (use8iQueryObjects()) {
+		normalizeErrorMessage8i(message,messagesize,&message8i);
+		message=message8i.getString();
+		messagesize=message8i.getStringLength();
 	}
 
 	resetSendPacketBuffer(PACKET_DATA);
@@ -26752,6 +26967,10 @@ bool sqlrprotocol_oracle::sendBadLocatorBindError(uint32_t cursorid) {
 	// answers an execute with a lob bind whose locator isn't one of the
 	// lobs this module is holding
 
+	if (!sendErrorBreak()) {
+		return false;
+	}
+
 	resetSendPacketBuffer(PACKET_DATA);
 
 	uint16_t	dataflags=0;
@@ -26786,6 +27005,10 @@ bool sqlrprotocol_oracle::sendNotAllVariablesBoundError(uint32_t cursorid) {
 	// bound for.  only the query3 path can see it - the descriptor flag
 	// that says so is part of that request's bind section
 
+	if (!sendErrorBreak()) {
+		return false;
+	}
+
 	resetSendPacketBuffer(PACKET_DATA);
 
 	uint16_t	dataflags=0;
@@ -26806,6 +27029,10 @@ bool sqlrprotocol_oracle::sendLocalRegionBindError(uint32_t cursorid) {
 
 	// answers an execute with a timestamp with time zone bind that's in
 	// a named region and in local time - see getOracleTimestampBindValue()
+
+	if (!sendErrorBreak()) {
+		return false;
+	}
 
 	resetSendPacketBuffer(PACKET_DATA);
 
@@ -26828,6 +27055,10 @@ bool sqlrprotocol_oracle::sendMaxBindCountExceededError(uint32_t cursorid) {
 	// answers a request whose bind section named more binds than
 	// maxbindcount allows.  the query2 path answers the same case in the
 	// oci7 shape instead - see query2()
+
+	if (!sendErrorBreak()) {
+		return false;
+	}
 
 	resetSendPacketBuffer(PACKET_DATA);
 
@@ -26860,6 +27091,10 @@ bool sqlrprotocol_oracle::sendMaxResponseError(uint32_t cursorid,
 		return sendOci7StatementError(cursorid,oranum,message);
 	}
 
+	if (!sendErrorBreak()) {
+		return false;
+	}
+
 	resetSendPacketBuffer(PACKET_DATA);
 
 	uint16_t	dataflags=0;
@@ -26886,6 +27121,10 @@ bool sqlrprotocol_oracle::sendLobPrefetchError(uint32_t cursorid) {
 }
 
 bool sqlrprotocol_oracle::sendCursorNotOpenError(uint32_t cursorid) {
+
+	if (!sendErrorBreak()) {
+		return false;
+	}
 
 	resetSendPacketBuffer(PACKET_DATA);
 
@@ -26920,6 +27159,10 @@ bool sqlrprotocol_oracle::sendMaxOpenCursorsError() {
 
 	// no cursor id was ever allocated for this request, unlike
 	// sendCursorNotOpenError()'s wire-cursor-id case above
+
+	if (!sendErrorBreak()) {
+		return false;
+	}
 
 	resetSendPacketBuffer(PACKET_DATA);
 
@@ -26995,6 +27238,10 @@ bool sqlrprotocol_oracle::sendUnimplementedFunctionError() {
 	// recognize at all) gets back, instead of the caller dropping the
 	// session - keeps the client connected so the rest of the session can
 	// still run
+
+	if (!sendErrorBreak()) {
+		return false;
+	}
 
 	resetSendPacketBuffer(PACKET_DATA);
 

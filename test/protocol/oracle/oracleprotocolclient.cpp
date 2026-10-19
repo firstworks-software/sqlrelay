@@ -55,6 +55,10 @@
 #include <rudiments/csprng.h>
 #include <rudiments/stdio.h>
 
+// for sendUrgentByte(), which rudiments has no call for
+#include <sys/types.h>
+#include <sys/socket.h>
+
 // ns layer packet types - the PACKET_* defines in src/protocols/oracle.cpp
 static const unsigned char	ORA_PACKET_CONNECT=1;
 static const unsigned char	ORA_PACKET_ACCEPT=2;
@@ -412,10 +416,15 @@ static const uint16_t	ORA_DEFAULT_SDU=8192;
 static const uint16_t	ORA_MIN_SDU=512;
 static const uint16_t	ORA_MAX_SDU=4086;
 
-// how big a message this client will reassemble out of packets.  a single
-// packet can't exceed the negotiated sdu, but a message split across packets
-// can be far longer, and this is what bounds it
+// how big one packet may say it is.  a single packet can't exceed the
+// negotiated sdu, so this is only a sanity bound on the header
 static const size_t	ORA_MAX_PACKET_SIZE=65536;
+
+// how big a message this client will reassemble out of packets.  a message
+// split across packets can be far longer than one packet: a real server
+// answers ojdbc14's fetch of 65536 one column rows in about 650 KB (#10750),
+// so this is what bounds the response buffer
+static const size_t	ORA_MAX_RESPONSE_SIZE=4*1024*1024;
 
 // the two data flag bytes every data packet's body starts with, repeated on
 // every fragment of a message split across packets
@@ -570,11 +579,15 @@ struct oracleprotocolojdbc14value {
 };
 
 // an answer to one of ojdbc14's calls, as readOjdbc14Answer() found it.  each
-// part is meaningful only if its ttc code is among the objects
+// part is meaningful only if its ttc code is among the objects.  an answer
+// with more than ORA_8I_MAX_OBJECTS objects keeps the first ones and, in the
+// last slot, the latest one, so the object that ends the call is always
+// there; totalobjectcount counts them all
 struct oracleprotocolojdbc14answer {
 
 	oracleprotocolojdbc14object	objects[ORA_8I_MAX_OBJECTS];
 	size_t				objectcount;
+	size_t				totalobjectcount;
 
 	// TTC_DESCRIBE_INFO (0x10)
 	size_t				prologuesize;
@@ -602,8 +615,11 @@ struct oracleprotocolojdbc14answer {
 	size_t				bitvectorsize;
 
 	// TTC_ROW_DATA (0x07), every row, a column suppressed by a bit
-	// vector carrying the row above's value
+	// vector carrying the row above's value.  the first ORA_8I_MAX_ROWS
+	// rows are kept, rowcount of them; totalrowcount counts every row,
+	// those read past and not kept included
 	size_t				rowcount;
+	size_t				totalrowcount;
 	oracleprotocolojdbc14value	values[ORA_8I_MAX_ROWS]
 						[ORA_8I_MAX_COLUMNS];
 	unsigned char			valuedata[ORA_8I_MAX_VALUE_DATA];
@@ -920,10 +936,12 @@ class oracleprotocolclient {
 		// in every one.  each build*() leaves the request in the
 		// request buffer, where getRequest() shows it, and each of
 		// the others builds, sends and reads the answer into the
-		// response.  "closecursors" are closed in front of the call,
-		// in the same packet, the only way ojdbc14 closes a cursor:
-		// 11 69 00 01, the count and the ids.  readOjdbc14Answer()
-		// picks the answer apart
+		// response with recvOjdbc14Answer().  "closecursors" are
+		// closed in front of the call, in the same packet, the only
+		// way ojdbc14 closes a cursor: 11 69 00 01, the count and the
+		// ids.  every count is in ojdbc14's minimal width - see
+		// appendOjdbc14Number().  readOjdbc14Answer() picks the
+		// answer apart
 		void	buildOjdbc14Query(const oracleprotocolojdbc14query *q,
 					const uint32_t *closecursors=NULL,
 					uint32_t closecount=0);
@@ -944,6 +962,22 @@ class oracleprotocolclient {
 					uint32_t closecount=0);
 		bool	ojdbc14Rollback(const uint32_t *closecursors=NULL,
 					uint32_t closecount=0);
+
+		// the answer to an ojdbc14 call already sent, read into the
+		// response the way ojdbc14 reads it off the wire: a break
+		// marker and a reset marker in front of an error are answered
+		// with one reset marker, and the data packet behind them is
+		// the answer.  gotBreak(), getBreakFlags() and getResetFlags()
+		// say whether the markers came for this call and how they
+		// were flagged.  a real server sends them in front of every
+		// error but ORA-01403 (#10750, samples/10750-dev-ojdbc14-
+		// execerr-realserver-oracle122, packets [0027] to [0030])
+		bool	recvOjdbc14Answer();
+
+		// one byte of tcp urgent data, which is how ojdbc14 cancels
+		// a call: Statement.cancel() and a query timeout send 0x21
+		// this way and nothing in band (#10750)
+		bool	sendUrgentByte(unsigned char value);
 
 		// the answer in the response, walked the way ojdbc14 reads it
 		// - see the definition.  "columncount" is how many columns a
@@ -1146,6 +1180,13 @@ class oracleprotocolclient {
 		void	appendBE32(uint32_t value);
 		void	appendLE16(uint16_t value);
 		void	appendLenPreInt(uint32_t value);
+
+		// a count prefixed int in ojdbc14's minimal width, which
+		// appendLenPreInt() only matches up to 0xffff: 65536 is
+		// 03 01 00 00 here and 04 00 01 00 00 there (MEASURED, the
+		// fetches at packets [0019], [0027], [0035] and [0043] of
+		// 10750-dev-ojdbc14-fetchsizes-realserver-oracle102)
+		void	appendOjdbc14Number(uint32_t value);
 
 		// the two encoding-aware primitives - a count, and the
 		// pointer field a count often sits behind.  "nativesize" is
@@ -1530,7 +1571,7 @@ oracleprotocolclient::oracleprotocolclient() {
 	servercompilecapssize=0;
 	fieldversion=ORA_CCAP_FIELD_VERSION_11_2;
 	reqpackettype=0;
-	resppacket=new unsigned char[ORA_MAX_PACKET_SIZE];
+	resppacket=new unsigned char[ORA_MAX_RESPONSE_SIZE];
 	respsize=0;
 	resppackettype=0;
 	resppacketflags=0;
@@ -1783,6 +1824,19 @@ void oracleprotocolclient::appendLenPreInt(uint32_t value) {
 	} else {
 		appendByte(4);
 		appendBE32(value);
+	}
+}
+
+// T4CMAREngine's marshalUB4()/marshalSWORD() for a value that isn't negative:
+// as few big-endian bytes as hold it, behind their count
+void oracleprotocolclient::appendOjdbc14Number(uint32_t value) {
+	unsigned char	count=0;
+	while (count<4 && (value>>(8*count))) {
+		count++;
+	}
+	appendByte(count);
+	for (unsigned char i=count; i>0; i--) {
+		appendByte((unsigned char)((value>>(8*(i-1)))&0xff));
 	}
 }
 
@@ -2046,7 +2100,7 @@ bool oracleprotocolclient::recvFragment(bool continuation,
 	}
 
 	size_t	bodysize=size-overhead;
-	if (respsize+bodysize>ORA_MAX_PACKET_SIZE) {
+	if (respsize+bodysize>ORA_MAX_RESPONSE_SIZE) {
 		setError("response too large to reassemble");
 		return false;
 	}
@@ -3359,9 +3413,9 @@ void oracleprotocolclient::beginOjdbc14Call(unsigned char ttifunction,
 		appendByte(ORA_8I_TTI_CLOSE_CURSORS);
 		appendByte(0);
 		appendByte(1);
-		appendLenPreInt(closecount);
+		appendOjdbc14Number(closecount);
 		for (uint32_t i=0; i<closecount; i++) {
-			appendLenPreInt(closecursors[i]);
+			appendOjdbc14Number(closecursors[i]);
 		}
 	}
 	appendByte(ORA_TTC_TTI_FUNCTION);
@@ -3385,29 +3439,29 @@ void oracleprotocolclient::buildOjdbc14Query(
 	bool	descriptors=(q->descriptors!=NULL);
 
 	beginOjdbc14Call(ORA_TTI_QUERY3,closecursors,closecount);
-	appendLenPreInt(q->options);
-	appendLenPreInt(q->cursorid);
+	appendOjdbc14Number(q->options);
+	appendOjdbc14Number(q->cursorid);
 	appendByte((q->query)?1:0);
-	appendLenPreInt((uint32_t)querysize);
+	appendOjdbc14Number((uint32_t)querysize);
 	appendByte(1);
-	appendLenPreInt(ORA_8I_AL8I4_SIZE);
+	appendOjdbc14Number(ORA_8I_AL8I4_SIZE);
 	appendByte(0);
 	appendByte(0);
-	appendLenPreInt(0);
-	appendLenPreInt(0);
-	appendLenPreInt(ORA_8I_MAX_LONG);
+	appendOjdbc14Number(0);
+	appendOjdbc14Number(0);
+	appendOjdbc14Number(ORA_8I_MAX_LONG);
 	appendByte((descriptors)?1:0);
-	appendLenPreInt((descriptors)?q->bindcount:0);
+	appendOjdbc14Number((descriptors)?q->bindcount:0);
 	for (uint8_t i=0; i<5; i++) {
 		appendByte(0);
 	}
 	appendByte(0);
-	appendLenPreInt(0);
+	appendOjdbc14Number(0);
 	if (querysize) {
 		appendBytes((const unsigned char *)q->query,querysize);
 	}
 	for (uint32_t i=0; i<ORA_8I_AL8I4_SIZE; i++) {
-		appendLenPreInt(q->al8i4[i]);
+		appendOjdbc14Number(q->al8i4[i]);
 	}
 	if (descriptors) {
 		appendBytes(q->descriptors,q->descriptorssize);
@@ -3423,8 +3477,8 @@ void oracleprotocolclient::buildOjdbc14Fetch(uint32_t cursorid,
 						const uint32_t *closecursors,
 						uint32_t closecount) {
 	beginOjdbc14Call(ORA_TTI_FETCH,closecursors,closecount);
-	appendLenPreInt(cursorid);
-	appendLenPreInt(rowstofetch);
+	appendOjdbc14Number(cursorid);
+	appendOjdbc14Number(rowstofetch);
 }
 
 // a call with nothing behind its sequence number: commit, rollback, logoff
@@ -3438,7 +3492,7 @@ bool oracleprotocolclient::ojdbc14Query(const oracleprotocolojdbc14query *q,
 						const uint32_t *closecursors,
 						uint32_t closecount) {
 	buildOjdbc14Query(q,closecursors,closecount);
-	return sendPacket() && recvPacket();
+	return sendPacket() && recvOjdbc14Answer();
 }
 
 bool oracleprotocolclient::ojdbc14Fetch(uint32_t cursorid,
@@ -3446,19 +3500,55 @@ bool oracleprotocolclient::ojdbc14Fetch(uint32_t cursorid,
 						const uint32_t *closecursors,
 						uint32_t closecount) {
 	buildOjdbc14Fetch(cursorid,rowstofetch,closecursors,closecount);
-	return sendPacket() && recvPacket();
+	return sendPacket() && recvOjdbc14Answer();
 }
 
 bool oracleprotocolclient::ojdbc14Commit(const uint32_t *closecursors,
 						uint32_t closecount) {
 	buildOjdbc14Call(ORA_8I_TTI_COMMIT,closecursors,closecount);
-	return sendPacket() && recvPacket();
+	return sendPacket() && recvOjdbc14Answer();
 }
 
 bool oracleprotocolclient::ojdbc14Rollback(const uint32_t *closecursors,
 						uint32_t closecount) {
 	buildOjdbc14Call(ORA_8I_TTI_ROLLBACK,closecursors,closecount);
-	return sendPacket() && recvPacket();
+	return sendPacket() && recvOjdbc14Answer();
+}
+
+// what ojdbc14 does on a marker (CROSS-CHECK, javap of NetInputStream,
+// T4CMAREngine and NSProtocol.sendReset()): a break throws inside the reader,
+// it sends one reset marker, discards everything up to the server's reset,
+// and goes back to reading the answer.  a real server sends the break, then
+// the reset, waits for the client's reset, and then sends the error alone -
+// recvAfterBreak() is that exchange
+bool oracleprotocolclient::recvOjdbc14Answer() {
+	gotbreak=false;
+	breakflags=0;
+	resetflags=0;
+	if (!recvPacket()) {
+		return false;
+	}
+	if (resppackettype!=ORA_PACKET_MARKER) {
+		return true;
+	}
+	return recvAfterBreak("ojdbc14 call");
+}
+
+// ::send() with MSG_OOB on the socket, the way the jvm's
+// Socket.sendUrgentData() puts it on the wire (MEASURED, strace of ojdbc14's
+// cancel, #10750: sendto(fd, "!", 1, MSG_OOB))
+bool oracleprotocolclient::sendUrgentByte(unsigned char value) {
+	if (!connected) {
+		setError("not connected");
+		return false;
+	}
+	sock.flushWriteBuffer(-1,-1);
+	if (::send(sock.getFileDescriptor(),(const char *)&value,1,
+							MSG_OOB)!=1) {
+		setError("failed to send urgent data");
+		return false;
+	}
+	return true;
 }
 
 // ojdbc14's compressed number - T4CMAREngine.buffer2Value(): a length byte
@@ -3752,6 +3842,7 @@ bool oracleprotocolclient::readOjdbc14Answer(
 	int64_t		ncols=columncount;
 	unsigned char	bitvector[ORA_8I_MAX_COLUMNS];
 	bool		usebitvector=false;
+	unsigned char	scratch[ORA_8I_MAX_VALUE_DATA];
 
 	for (;;) {
 
@@ -3761,15 +3852,15 @@ bool oracleprotocolclient::readOjdbc14Answer(
 				"the answer ends without an error object");
 			return false;
 		}
-		if (a->objectcount==ORA_8I_MAX_OBJECTS) {
-			setError("too many objects in the answer");
-			return false;
+		// past the last slot, the latest object takes the last one
+		if (a->objectcount<ORA_8I_MAX_OBJECTS) {
+			a->objectcount++;
 		}
-
-		oracleprotocolojdbc14object	*o=&a->objects[a->objectcount];
+		a->totalobjectcount++;
+		oracleprotocolojdbc14object	*o=
+					&a->objects[a->objectcount-1];
 		o->offset=respposition;
 		readByte(&o->code);
-		a->objectcount++;
 
 		bool	last=false;
 		if (statuscall && o->code==ORA_8I_TTC_STATUS) {
@@ -3874,25 +3965,37 @@ bool oracleprotocolclient::readOjdbc14Answer(
 		} else if (o->code==ORA_TTC_ROW_DATA) {
 
 			// T4CTTIrxd: a clr for each column, except one a bit
-			// vector says repeats the row above
-			if (a->rowcount==ORA_8I_MAX_ROWS) {
-				setError("too many rows in the answer");
-				return false;
-			}
+			// vector says repeats the row above.  a row past the
+			// ones kept is read the same way and not kept
+			bool	keep=(a->rowcount<ORA_8I_MAX_ROWS);
 			for (int64_t c=0; c<ncols; c++) {
-				oracleprotocolojdbc14value	*v=
-						&a->values[a->rowcount][c];
 				if (usebitvector &&
 					!(bitvector[c/8]&(1<<(c%8)))) {
-					if (!a->rowcount) {
+					if (!a->totalrowcount) {
 						setError("a bit vector "
 							"suppresses a column "
 							"of the first row");
 						return false;
 					}
-					*v=a->values[a->rowcount-1][c];
+					if (keep) {
+						a->values[a->rowcount][c]=
+						a->values[a->rowcount-1][c];
+					}
 					continue;
 				}
+				if (!keep) {
+					size_t	size=0;
+					bool	isnull=false;
+					if (!readOjdbc14Clr(scratch,
+							sizeof(scratch),
+							&size,&isnull,
+							"a row value")) {
+						return false;
+					}
+					continue;
+				}
+				oracleprotocolojdbc14value	*v=
+						&a->values[a->rowcount][c];
 				v->offset=a->valuedatasize;
 				if (!readOjdbc14Clr(
 					a->valuedata+a->valuedatasize,
@@ -3903,7 +4006,10 @@ bool oracleprotocolclient::readOjdbc14Answer(
 				}
 				a->valuedatasize+=v->size;
 			}
-			a->rowcount++;
+			if (keep) {
+				a->rowcount++;
+			}
+			a->totalrowcount++;
 			usebitvector=false;
 		} else {
 			char	detail[64];

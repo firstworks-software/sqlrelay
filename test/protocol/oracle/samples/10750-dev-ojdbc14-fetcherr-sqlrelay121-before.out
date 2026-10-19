@@ -1,0 +1,11 @@
+== fetcherr
+fetchsize 10
+after 0 rows error 1476 ORA-01476: divisor is equal to zero
+select1 1
+fetchsize 2
+after 0 rows error 1476 ORA-01476: divisor is equal to zero
+select1 1
+fetchsize 1
+after 0 rows error 1476 ORA-01476: divisor is equal to zero
+select1 1
+exit 0

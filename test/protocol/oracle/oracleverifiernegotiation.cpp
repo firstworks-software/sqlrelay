@@ -197,7 +197,7 @@
 // it sent them to real 10.2 and 12.2 servers in the 10745-dev-ojdbc14-*-
 // realserver captures: its 0x5e with the text raw behind 9 fixed fields, its
 // fetch, commit and rollback, and its cursor closes riding in front of the
-// next call, all with sequence number 0.  The builders have to reproduce ten
+// next call, all with sequence number 0.  The builders have to reproduce 23
 // of those calls byte for byte first.  The scripts are the captures' select1,
 // rows25, twoqueries, reuse, prepared, error, longtext, types, dml and
 // dmlauto.  Every answer is read the way ojdbc14 reads it - see
@@ -213,18 +213,48 @@
 //
 // Some of what a query session checks is the module's choice rather than a
 // real server's, since no real server answers the module's way or no capture
-// covers it: no key/value pairs in the return parameters, no break and reset
-// markers ahead of an error, a NUMBER's size 22, success iterations 1 in
-// every error object, and the re-execute with fetch's row number 2, counted
-// over the cursor where a real server says 1.  So are two scripts: newline,
-// a text whose first byte is a newline; and null, select null, which the
-// module describes as a VARCHAR2 of 4000 with a null value where a real
+// covers it: no key/value pairs in the return parameters, a NUMBER's size 22,
+// and success iterations 1 in an answer with no error.  So are two scripts:
+// newline, a text whose first byte is a newline; and null, select null, which
+// the module describes as a VARCHAR2 of 4000 with a null value where a real
 // server describes it 0 bytes wide and sends no value byte (selectnull
 // captures), so the test pins the module's shape.  The prepared script's int
 // comes back as the text "10" in a VARCHAR2, since the module binds it to the
 // backend as text.  Commitfirst, a commit before any 0x5e, is a real
 // server's: it answers "09 01 04" (commitfirst captures), as does the
 // rollback in dmlauto, "09 01 09" (rollbackauto captures).
+//
+// Errors, fetch sizes and re-executes (#10750).  An error other than
+// ORA-01403 comes the way a real server sends it (10750-dev-ojdbc14-*err-
+// realserver captures): a break marker and a reset marker, the client's one
+// reset marker back, then the error object alone, with success iterations 0,
+// or 1 answering a re-execute with fetch (0x8068), and the message one line
+// ending in a line feed.  An answer with no error has no markers.  The error
+// object's layout is checked against four real objects first (see
+// checkOjdbc14ErrorObjectBuilder()), and differs from a real one only in what
+// the module can't know and ojdbc14 ignores: the error position, the array
+// element fields, the rowid and a select error's row number (see
+// putOjdbc14Summary()).  A summary's row number is the rows sent since the
+// statement's last execute, as a real server's (2 in the prepared script's
+// re-execute was 1 more than that).  A row header names the rows the call
+// asked for as their low 16 bits, and a row number of 65536 and up takes 3
+// bytes.  The scripts, at the same four listeners: execerr and prepexecerr,
+// inserts failing with ORA-00001, ORA-01400, ORA-01722 and ORA-12899 at the
+// execute, the re-execute and the re-parse; execselerr, fetcherr and
+// prepfetcherr, selects whose rows fail to evaluate, at the 0x5e, at a fetch
+// or in a re-execute with fetch; fetchsizes and prepfetchsizes, fetches of
+// 65535, 65536, 70000, 100000 and 100001 rows (the last over the module's
+// limit, so ORA-20004); and reexecrows, the row numbers of three executes.
+// Then fetcherr at the fetchatonce=1 listener, where the error comes at a
+// fetch after a row, and at 12.1 only: bigfetch, 65536 rows in one answer;
+// noreset, a client that sends its next call where its reset belongs, which
+// the listener answers by closing the connection; and urgent, a byte of tcp
+// urgent data, ojdbc14's cancel, which the module doesn't read, right behind
+// a call and between two.  Not asserted as a real server's, and so pinned as
+// the module's shape: where a select's error comes at the default
+// fetchatonce (the back end decides, see ojdbc14SelectError()), the rows a
+// real server delivers ahead of a mid-fetch error and the module loses, and
+// the cancel, which a real server answers with ORA-01013.
 //
 // The verifier the 0x0d client gets at 12.1 is the module's choice too: a
 // real 12.2 server gives it the 10g one where the module gives it 11g, which
@@ -839,6 +869,9 @@ static const listenerinfo	listeners[]={
 		ORA_CCAP_SIZE,"202375680"},
 	{"12.1 oracle_connectstrings","ORACLEPROTOCOLPORT4",1524,
 		ORA_SERVER_LOGON_TYPES_12_1,ORA_CCAP_FIELD_VERSION_12_1,
+		ORA_CCAP_SIZE,"202375680"},
+	{"12.1 fetchatonce=1","ORACLEPROTOCOLPORT5",1525,
+		ORA_SERVER_LOGON_TYPES_12_1,ORA_CCAP_FIELD_VERSION_12_1,
 		ORA_CCAP_SIZE,"202375680"}
 };
 
@@ -850,7 +883,8 @@ enum {
 	LISTENER_FLOOR_12A,
 	LISTENER_FLOOR_9,
 	LISTENER_FLOOR_12,
-	LISTENER_CONNECTSTRINGS
+	LISTENER_CONNECTSTRINGS,
+	LISTENER_FETCHATONCE
 };
 
 // the login form a case sends: the tagged 0x76 call, which this builds, or
@@ -2975,6 +3009,10 @@ static const uint32_t	OJDBC14_PREPARED_COMMIT=0x8129;
 static const uint32_t	OJDBC14_REEXECUTE_QUERY=0x8068;
 static const uint32_t	OJDBC14_REEXECUTE_DML=0x8120;
 
+// a prepared dml's re-execute with autocommit off, MEASURED in #10750's
+// prepexecerr captures
+static const uint32_t	OJDBC14_REEXECUTE_DML_NO_COMMIT=0x8020;
+
 // how many rows each fetch asks for, ojdbc14's default prefetch
 static const uint32_t	OJDBC14_FETCH_ROWS=10;
 
@@ -3081,6 +3119,165 @@ static const unsigned char	OJDBC14_CALL_CLOSE2_LOGOFF[]={
 	0x00
 };
 
+// the calls of #10750's sessions, as ojdbc14 sent them to real servers: the
+// fetches of 65535, 65536, 70000 and 100001 rows, whose counts above 65535
+// take 3 bytes where appendLenPreInt() would write 4 (packets [0019], [0027],
+// [0035] and [0043] of 10750-dev-ojdbc14-fetchsizes-realserver-oracle102),
+// the re-execute with fetch of 70000 rows (packet [0041] of 10750-dev-
+// ojdbc14-prepfetchsizes-realserver-oracle122, which binds 3 where this
+// binds 70005, the rest being the same bytes), and the rest from the
+// captures checkOjdbc14CallBuilders() names
+static const unsigned char	OJDBC14_CALL_FETCH_65535[]={
+	0x03, 0x05, 0x00, 0x01, 0x02, 0x02, 0xff, 0xff
+};
+static const unsigned char	OJDBC14_CALL_FETCH_65536[]={
+	0x03, 0x05, 0x00, 0x01, 0x01, 0x03, 0x01, 0x00, 0x00
+};
+static const unsigned char	OJDBC14_CALL_FETCH_70000[]={
+	0x03, 0x05, 0x00, 0x01, 0x02, 0x03, 0x01, 0x11, 0x70
+};
+static const unsigned char	OJDBC14_CALL_FETCH_100001[]={
+	0x03, 0x05, 0x00, 0x01, 0x01, 0x03, 0x01, 0x86, 0xa1
+};
+static const unsigned char	OJDBC14_CALL_REEXECUTE_70000[]={
+	0x03, 0x5e, 0x00, 0x02, 0x80, 0x68, 0x01, 0x01, 0x00, 0x00, 0x01,
+	0x01, 0x0d, 0x00, 0x00, 0x00, 0x00, 0x04, 0x7f, 0xff, 0xff, 0xff,
+	0x01, 0x01, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x03, 0x01, 0x11, 0x70, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x01,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x06, 0x03, 0x00, 0x00, 0x01, 0x16,
+	0x00, 0x00, 0x00, 0x00, 0x02, 0x03, 0x69, 0x01, 0x00, 0x07, 0x04,
+	0xc3, 0x08, 0x01, 0x06
+};
+static const unsigned char	OJDBC14_CALL_PREPARED_LEVEL[]={
+	0x03, 0x5e, 0x00, 0x02, 0x80, 0x29, 0x00, 0x01, 0x01, 0x2f, 0x01,
+	0x01, 0x0d, 0x00, 0x00, 0x00, 0x00, 0x04, 0x7f, 0xff, 0xff, 0xff,
+	0x01, 0x01, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 's', 'e',
+	'l', 'e', 'c', 't', ' ', 'l', 'e', 'v', 'e', 'l', ' ', 'n', ' ', 'f',
+	'r', 'o', 'm', ' ', 'd', 'u', 'a', 'l', ' ', 'c', 'o', 'n', 'n', 'e',
+	'c', 't', ' ', 'b', 'y', ' ', 'l', 'e', 'v', 'e', 'l', ' ', '<', '=',
+	' ', ':', '1', 0x01, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01,
+	0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x06, 0x03, 0x00, 0x00, 0x01,
+	0x16, 0x00, 0x00, 0x00, 0x00, 0x02, 0x03, 0x69, 0x01, 0x00, 0x07,
+	0x02, 0xc1, 0x1a
+};
+static const unsigned char	OJDBC14_CALL_REEXECUTE_10[]={
+	0x03, 0x5e, 0x00, 0x02, 0x80, 0x68, 0x01, 0x01, 0x00, 0x00, 0x01,
+	0x01, 0x0d, 0x00, 0x00, 0x00, 0x00, 0x04, 0x7f, 0xff, 0xff, 0xff,
+	0x01, 0x01, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x01, 0x0a, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x01, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x06, 0x03, 0x00, 0x00, 0x01, 0x16, 0x00, 0x00,
+	0x00, 0x00, 0x02, 0x03, 0x69, 0x01, 0x00, 0x07, 0x02, 0xc1, 0x1a
+};
+static const unsigned char	OJDBC14_CALL_CLOSE_PREPARED_INSERT3[]={
+	0x11, 0x69, 0x00, 0x01, 0x01, 0x01, 0x01, 0x06, 0x03, 0x5e, 0x00,
+	0x02, 0x80, 0x29, 0x00, 0x01, 0x01, 0x32, 0x01, 0x01, 0x0d, 0x00,
+	0x00, 0x00, 0x00, 0x04, 0x7f, 0xff, 0xff, 0xff, 0x01, 0x01, 0x03,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 'i', 'n', 's', 'e', 'r',
+	't', ' ', 'i', 'n', 't', 'o', ' ', 'p', 'r', 'o', 't', 'o', 'c', 'o',
+	'l', 't', 'e', 's', 't', '1', '0', '7', '5', '0', 'p', ' ', 'v', 'a',
+	'l', 'u', 'e', 's', ' ', '(', ':', '1', ',', ' ', ':', '2', ',', ' ',
+	':', '3', ')', 0x01, 0x01, 0x01, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x06, 0x03, 0x00, 0x00, 0x01,
+	0x16, 0x00, 0x00, 0x00, 0x00, 0x02, 0x03, 0x69, 0x01, 0x00, 0x01,
+	0x03, 0x00, 0x00, 0x01, 0x04, 0x00, 0x01, 0x10, 0x00, 0x00, 0x02,
+	0x03, 0x69, 0x01, 0x00, 0x01, 0x03, 0x00, 0x00, 0x01, 0x04, 0x00,
+	0x01, 0x10, 0x00, 0x00, 0x02, 0x03, 0x69, 0x01, 0x00, 0x07, 0x02,
+	0xc1, 0x02, 0x01, 0x62, 0x01, 0x62
+};
+static const unsigned char	OJDBC14_CALL_CLOSE_REEXECUTE_INSERT3[]={
+	0x11, 0x69, 0x00, 0x01, 0x01, 0x01, 0x01, 0x05, 0x03, 0x5e, 0x00,
+	0x02, 0x80, 0x20, 0x01, 0x0a, 0x00, 0x00, 0x01, 0x01, 0x0d, 0x00,
+	0x00, 0x00, 0x00, 0x04, 0x7f, 0xff, 0xff, 0xff, 0x00, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x01, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x07, 0x02,
+	0xc1, 0x02, 0x01, 0x62, 0x01, 0x62
+};
+static const unsigned char	OJDBC14_CALL_CLOSE_REPARSE_INSERT3[]={
+	0x11, 0x69, 0x00, 0x01, 0x01, 0x01, 0x01, 0x04, 0x03, 0x5e, 0x00,
+	0x02, 0x80, 0x29, 0x01, 0x0a, 0x01, 0x01, 0x32, 0x01, 0x01, 0x0d,
+	0x00, 0x00, 0x00, 0x00, 0x04, 0x7f, 0xff, 0xff, 0xff, 0x01, 0x01,
+	0x03, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 'i', 'n', 's', 'e',
+	'r', 't', ' ', 'i', 'n', 't', 'o', ' ', 'p', 'r', 'o', 't', 'o', 'c',
+	'o', 'l', 't', 'e', 's', 't', '1', '0', '7', '5', '0', 'p', ' ', 'v',
+	'a', 'l', 'u', 'e', 's', ' ', '(', ':', '1', ',', ' ', ':', '2', ',',
+	' ', ':', '3', ')', 0x01, 0x01, 0x01, 0x01, 0x00, 0x00, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x06, 0x03, 0x00, 0x00,
+	0x01, 0x16, 0x00, 0x00, 0x00, 0x00, 0x02, 0x03, 0x69, 0x01, 0x00,
+	0x01, 0x03, 0x00, 0x00, 0x01, 0x04, 0x00, 0x01, 0x10, 0x00, 0x00,
+	0x02, 0x03, 0x69, 0x01, 0x00, 0x01, 0x03, 0x00, 0x00, 0x01, 0x30,
+	0x00, 0x01, 0x10, 0x00, 0x00, 0x02, 0x03, 0x69, 0x01, 0x00, 0x07,
+	0x02, 0xc1, 0x1f, 0x01, 0x62, 0x0c, 't', 'o', 'o', 'l', 'o', 'n', 'g',
+	'v', 'a', 'l', 'u', 'e'
+};
+static const unsigned char	OJDBC14_CALL_PREPARED_DIVIDE[]={
+	0x03, 0x5e, 0x00, 0x02, 0x80, 0x29, 0x00, 0x01, 0x01, 0x37, 0x01,
+	0x01, 0x0d, 0x00, 0x00, 0x00, 0x00, 0x04, 0x7f, 0xff, 0xff, 0xff,
+	0x01, 0x01, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 's', 'e',
+	'l', 'e', 'c', 't', ' ', '1', '/', '(', ':', '1', ' ', '-', ' ', 'l',
+	'e', 'v', 'e', 'l', ')', ' ', 'x', ' ', 'f', 'r', 'o', 'm', ' ', 'd',
+	'u', 'a', 'l', ' ', 'c', 'o', 'n', 'n', 'e', 'c', 't', ' ', 'b', 'y',
+	' ', 'l', 'e', 'v', 'e', 'l', ' ', '<', '=', ' ', '5', 0x01, 0x01,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x01, 0x00, 0x00, 0x00,
+	0x00, 0x00, 0x06, 0x03, 0x00, 0x00, 0x01, 0x16, 0x00, 0x00, 0x00,
+	0x00, 0x02, 0x03, 0x69, 0x01, 0x00, 0x07, 0x02, 0xc1, 0x0b
+};
+static const unsigned char	OJDBC14_CALL_CLOSE_REEXECUTE_DIVIDE[]={
+	0x11, 0x69, 0x00, 0x01, 0x01, 0x01, 0x01, 0x03, 0x03, 0x5e, 0x00,
+	0x02, 0x80, 0x68, 0x01, 0x01, 0x00, 0x00, 0x01, 0x01, 0x0d, 0x00,
+	0x00, 0x00, 0x00, 0x04, 0x7f, 0xff, 0xff, 0xff, 0x01, 0x01, 0x01,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x0a, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x01, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x06, 0x03, 0x00, 0x00, 0x01, 0x16, 0x00, 0x00, 0x00, 0x00, 0x02,
+	0x03, 0x69, 0x01, 0x00, 0x07, 0x02, 0xc1, 0x04
+};
+static const unsigned char	OJDBC14_CALL_CLOSE_INSERT[]={
+	0x11, 0x69, 0x00, 0x01, 0x01, 0x01, 0x01, 0x04, 0x03, 0x5e, 0x00,
+	0x02, 0x80, 0x21, 0x00, 0x01, 0x01, 0x33, 0x01, 0x01, 0x0d, 0x00,
+	0x00, 0x00, 0x00, 0x04, 0x7f, 0xff, 0xff, 0xff, 0x00, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 'i', 'n', 's', 'e', 'r', 't', ' ',
+	'i', 'n', 't', 'o', ' ', 'p', 'r', 'o', 't', 'o', 'c', 'o', 'l', 't',
+	'e', 's', 't', '1', '0', '7', '5', '0', 'e', ' ', 'v', 'a', 'l', 'u',
+	'e', 's', ' ', '(', '1', ',', ' ', 0x27, 0x62, 0x27, 0x2c, 0x20, 0x27,
+	0x62, 0x27, 0x29, 0x01, 0x01, 0x01, 0x01, 0x00, 0x00, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
+};
+
+
+// the al8i4 vectors of a prepared query's re-execute with fetch asking for
+// 70000 and 100001 rows, the first MEASURED (packet [0041] above), the
+// second the same with one more row than the module's MAX_FETCH_ROW_COUNT
+static const uint32_t	AL8I4_REEXECUTE_70000[ORA_8I_AL8I4_SIZE]={
+	0,70000,0,0,0,0,0,1,0,0,0,0,0
+};
+static const uint32_t	AL8I4_REEXECUTE_100001[ORA_8I_AL8I4_SIZE]={
+	0,100001,0,0,0,0,0,1,0,0,0,0,0
+};
+
+// the bind descriptors of setInt() alone, and of setInt() and two
+// setString()s of 1 character each, 4 bytes at charset 873, and of 1 and 12
+// characters: [0017] of 10750-dev-ojdbc14-prepfetcherr-realserver-oracle122,
+// and [0026] and [0050] of -prepexecerr- beside it
+static const unsigned char	OJDBC14_BINDS_INT[]={
+	0x06, 0x03, 0x00, 0x00, 0x01, 0x16, 0x00, 0x00, 0x00, 0x00, 0x02, 0x03,
+	0x69, 0x01, 0x00
+};
+static const unsigned char	OJDBC14_BINDS_INT_STRING1_STRING1[]={
+	0x06, 0x03, 0x00, 0x00, 0x01, 0x16, 0x00, 0x00, 0x00, 0x00, 0x02, 0x03,
+	0x69, 0x01, 0x00,
+	0x01, 0x03, 0x00, 0x00, 0x01, 0x04, 0x00, 0x01, 0x10, 0x00, 0x00, 0x02,
+	0x03, 0x69, 0x01, 0x00,
+	0x01, 0x03, 0x00, 0x00, 0x01, 0x04, 0x00, 0x01, 0x10, 0x00, 0x00, 0x02,
+	0x03, 0x69, 0x01, 0x00
+};
+static const unsigned char	OJDBC14_BINDS_INT_STRING1_STRING12[]={
+	0x06, 0x03, 0x00, 0x00, 0x01, 0x16, 0x00, 0x00, 0x00, 0x00, 0x02, 0x03,
+	0x69, 0x01, 0x00,
+	0x01, 0x03, 0x00, 0x00, 0x01, 0x04, 0x00, 0x01, 0x10, 0x00, 0x00, 0x02,
+	0x03, 0x69, 0x01, 0x00,
+	0x01, 0x03, 0x00, 0x00, 0x01, 0x30, 0x00, 0x01, 0x10, 0x00, 0x00, 0x02,
+	0x03, 0x69, 0x01, 0x00
+};
+
 // one column a describe has to carry, in the shape the module sends.
 // OJDBC14_ANY takes the precision, the scale or the size from the answer,
 // where only the backend decides it, so what is checked there is the form
@@ -3101,12 +3298,14 @@ struct ojdbc14value {
 
 // a query session in progress.  "ok" goes false at the first call that isn't
 // answered or that ojdbc14 couldn't read, and the rest of the session is
-// skipped
+// skipped.  "urgent" sends one byte of urgent data right behind the next
+// call, the way ojdbc14 cancels one
 struct ojdbc14session {
 	oracleprotocolclient		*client;
 	const char			*label;
 	oracleprotocolojdbc14answer	*answer;
 	bool				ok;
+	bool				urgent;
 };
 
 // the column types the module sends in the abbreviated form, with no
@@ -3145,29 +3344,85 @@ static void putShortClr(unsigned char *buffer, size_t *size,
 	*size+=valuesize;
 }
 
-// the error object the module sends ojdbc14, in the field order real servers
-// send it (MEASURED): the end to end field, the row number, the error number,
-// two zero fields, the cursor, the error position, the sql type, 14 zero
-// bytes, success iterations and the message if there's an error.  the error
-// position 0 and success iterations 1 are the module's
+// the 23 fields of an error object as ojdbc14's T4CTTIoer reads them, and the
+// message behind them if the error number isn't 0
+struct ojdbc14oer {
+	uint32_t	endtoend;
+	uint32_t	rows;
+	uint32_t	oranum;
+	uint32_t	arrayelementwitherror;
+	uint32_t	arrayelementerrno;
+	uint32_t	cursorid;
+	uint32_t	errorposition;
+	unsigned char	sqltype;
+	uint32_t	rba;
+	uint32_t	successiterations;
+	const char	*message;
+	size_t		messagesize;
+};
+
+// an error object, in the field order real servers send it (MEASURED, and
+// checked against real objects by checkOjdbc14ErrorObjectBuilder()): the end
+// to end field, the row number, the error number, the array element with an
+// error and its error number, the cursor, the error position, the sql type,
+// five raw zeros (fatal, flags, user cursor options, upi, warning), the
+// rowid's rba, four zeros for the rest of the rowid, four for the os error,
+// the statement number, the call number (0, ojdbc14's sequence number) and
+// the pad, then success iterations and the message if there's an error
+static void putOjdbc14Oer(unsigned char *buffer, size_t *size,
+						const ojdbc14oer *e) {
+	putByte(buffer,size,ORA_TTC_ERROR);
+	putLenPreInt(buffer,size,e->endtoend);
+	putLenPreInt(buffer,size,e->rows);
+	putLenPreInt(buffer,size,e->oranum);
+	putLenPreInt(buffer,size,e->arrayelementwitherror);
+	putLenPreInt(buffer,size,e->arrayelementerrno);
+	putLenPreInt(buffer,size,e->cursorid);
+	putLenPreInt(buffer,size,e->errorposition);
+	putByte(buffer,size,e->sqltype);
+	putZeros(buffer,size,5);
+	putLenPreInt(buffer,size,e->rba);
+	putZeros(buffer,size,4);
+	putZeros(buffer,size,4);
+	putLenPreInt(buffer,size,e->successiterations);
+	if (e->oranum) {
+		putShortClr(buffer,size,e->message,e->messagesize);
+	}
+}
+
+// the error object the module sends ojdbc14.  what is a real server's:
+// the end to end field (the session's call count), the error number, the sql
+// type, the message, the row number of an error at execute time (0), and
+// success iterations: 0 in an error answering anything but a call that
+// executes and fetches (0x8068), 1 there (MEASURED, step 3a of #10750, both
+// real servers), and 1 with no error or ORA-01403.  what is the module's
+// own choice, which ojdbc14 reads and ignores (CROSS-CHECK, T4CTTIoer's
+// users): the cursor id (any the module opened), the array element fields
+// (0, where a real server keeps 1 and 1400 or 2 and 12899 from the last dml
+// error), the error position (0, where a real server sends the failing
+// token's offset - the module can't learn it from the back end), the rowid's
+// rba (0, where a real server sends ffffffff in and after a dml error), the
+// row number of a select's error (the rows sent, where a real server counts
+// the rows its cursor produced before the failing one, sent or not) and
+// success iterations 1 in an answer with no error (oracle122 sends 0 in a
+// fetch's)
 static void putOjdbc14Summary(unsigned char *buffer, size_t *size,
 					uint32_t endtoend, uint32_t rows,
 					uint32_t oranum, uint32_t cursorid,
 					unsigned char sqltype,
+					uint32_t successiterations,
 					const char *message, size_t messagesize) {
-	putByte(buffer,size,ORA_TTC_ERROR);
-	putLenPreInt(buffer,size,endtoend);
-	putLenPreInt(buffer,size,rows);
-	putLenPreInt(buffer,size,oranum);
-	putZeros(buffer,size,2);
-	putLenPreInt(buffer,size,cursorid);
-	putZeros(buffer,size,1);
-	putByte(buffer,size,sqltype);
-	putZeros(buffer,size,14);
-	putLenPreInt(buffer,size,1);
-	if (oranum) {
-		putShortClr(buffer,size,message,messagesize);
-	}
+	ojdbc14oer	e;
+	bytestring::zero(&e,sizeof(e));
+	e.endtoend=endtoend;
+	e.rows=rows;
+	e.oranum=oranum;
+	e.cursorid=cursorid;
+	e.sqltype=sqltype;
+	e.successiterations=successiterations;
+	e.message=message;
+	e.messagesize=messagesize;
+	putOjdbc14Oer(buffer,size,&e);
 }
 
 static const char	*ORA_01403="ORA-01403: no data found\n";
@@ -3198,9 +3453,9 @@ static void checkOjdbc14Bytes(ojdbc14session *s, const char *what,
 }
 
 // the call built in the client, sent, and its answer read as ojdbc14 reads
-// it.  "columncount" is the cursor's, for a fetch.  false, reported, if it
-// wasn't answered or couldn't be read.  "maxseconds", if not 0, is how long
-// the answer may take
+// it, markers and all.  "columncount" is the cursor's, for a fetch.  false,
+// reported, if it wasn't answered or couldn't be read.  "maxseconds", if not
+// 0, is how long the answer may take
 static bool sendOjdbc14Call(ojdbc14session *s, const char *what,
 					uint32_t columncount, bool statuscall,
 					time_t maxseconds) {
@@ -3212,8 +3467,16 @@ static bool sendOjdbc14Call(ojdbc14session *s, const char *what,
 	datetime	dt;
 	dt.initFromSystemDateTime();
 	time_t		start=dt.getEpoch();
-	bool		answered=(s->client->sendPacket() &&
-					s->client->recvPacket());
+	bool		answered=s->client->sendPacket();
+	if (answered && s->urgent) {
+		s->urgent=false;
+		ojdbc14Label(&l,s,what,
+			" is followed by one byte of urgent data, 0x21");
+		bool	sent=s->client->sendUrgentByte(0x21);
+		report(l.getString(),sent);
+		answered=sent;
+	}
+	answered=(answered && s->client->recvOjdbc14Answer());
 	dt.initFromSystemDateTime();
 	time_t		elapsed=dt.getEpoch()-start;
 
@@ -3257,6 +3520,7 @@ static bool ojdbc14Query(ojdbc14session *s, const char *what,
 				const char *query, const uint32_t *al8i4,
 				const unsigned char *descriptors,
 				size_t descriptorssize,
+				uint32_t bindcount,
 				const unsigned char *bindrow,
 				size_t bindrowsize,
 				const uint32_t *closecursors,
@@ -3268,7 +3532,7 @@ static bool ojdbc14Query(ojdbc14session *s, const char *what,
 	q.cursorid=cursorid;
 	q.query=query;
 	q.al8i4=al8i4;
-	q.bindcount=(descriptors)?2:0;
+	q.bindcount=(descriptors)?bindcount:0;
 	q.descriptors=descriptors;
 	q.descriptorssize=descriptorssize;
 	q.bindrow=bindrow;
@@ -3286,16 +3550,28 @@ static bool ojdbc14Statement(ojdbc14session *s, const char *what,
 				const uint32_t *closecursors,
 				uint32_t closecount) {
 	return ojdbc14Query(s,what,options,cursorid,query,al8i4,
-				NULL,0,NULL,0,closecursors,closecount,0,0);
+				NULL,0,0,NULL,0,closecursors,closecount,0,0);
+}
+
+// a fetch of "rowstofetch" rows, ojdbc14's fetch size
+static bool ojdbc14FetchRows(ojdbc14session *s, const char *what,
+					uint32_t cursorid,
+					uint32_t columncount,
+					uint32_t rowstofetch,
+					const uint32_t *closecursors,
+					uint32_t closecount) {
+	if (s->ok) {
+		s->client->buildOjdbc14Fetch(cursorid,rowstofetch,
+						closecursors,closecount);
+	}
+	return sendOjdbc14Call(s,what,columncount,false,0);
 }
 
 static bool ojdbc14Fetch(ojdbc14session *s, const char *what,
 					uint32_t cursorid,
 					uint32_t columncount) {
-	if (s->ok) {
-		s->client->buildOjdbc14Fetch(cursorid,OJDBC14_FETCH_ROWS);
-	}
-	return sendOjdbc14Call(s,what,columncount,false,0);
+	return ojdbc14FetchRows(s,what,cursorid,columncount,
+					OJDBC14_FETCH_ROWS,NULL,0);
 }
 
 // which objects the answer carries, in order, as a string of ttc codes
@@ -3366,39 +3642,190 @@ static uint32_t checkOjdbc14ReturnParameters(ojdbc14session *s,
 	return cursorid;
 }
 
-// the error object, byte for byte.  a backend error's message is the
-// backend's, so only its start is checked, and the object around it exactly
+// no break or reset marker came ahead of an answer with no error in it, as a
+// real server sends none there (MEASURED, step 3a of #10750)
+static void checkOjdbc14NoMarkers(ojdbc14session *s, const char *what) {
+	stringbuffer	l;
+	ojdbc14Label(&l,s,what," answer has no break or reset marker ahead");
+	report(l.getString(),!s->client->gotBreak());
+}
+
+// the error object of an answer with no error in it, or ORA-01403, byte for
+// byte, with success iterations 1
 static void checkOjdbc14Summary(ojdbc14session *s, const char *what,
 					uint32_t endtoend, uint32_t rows,
 					uint32_t oranum, uint32_t cursorid,
-					unsigned char sqltype,
-					const char *messagestart) {
-	const char	*message=NULL;
-	size_t		messagesize=0;
-	if (oranum==1403) {
-		message=ORA_01403;
-		messagesize=charstring::getLength(ORA_01403);
-	} else if (oranum) {
-		message=s->answer->message;
-		messagesize=s->answer->messagesize;
-		stringbuffer	l;
-		ojdbc14Label(&l,s,what," message starts with ");
-		l.append(messagestart);
-		report(l.getString(),
-			charstring::isNullOrEmpty(messagestart) ||
-			!charstring::compare(message,messagestart,
-				charstring::getLength(messagestart)));
-	}
-
+					unsigned char sqltype) {
+	checkOjdbc14NoMarkers(s,what);
+	const char	*message=(oranum==1403)?ORA_01403:NULL;
+	size_t		messagesize=(oranum==1403)?
+					charstring::getLength(ORA_01403):0;
 	unsigned char	expected[64+256];
 	size_t		size=0;
 	putOjdbc14Summary(expected,&size,endtoend,rows,oranum,cursorid,
-						sqltype,message,messagesize);
+						sqltype,1,message,messagesize);
 	char	check[96];
 	charstring::printf(check,sizeof(check),
 			" error object is exact, end to end %d, rows %d, "
 			"error %d",endtoend,rows,oranum);
 	checkOjdbc14Object(s,what,check,ORA_TTC_ERROR,expected,size);
+}
+
+// an error's message: the whole of it, or for one that names the back end's
+// schema, which differs per listener, what comes before the schema and what
+// comes after it.  "suffix" is NULL for a message checked whole
+struct ojdbc14message {
+	const char	*prefix;
+	const char	*suffix;
+};
+
+// the messages a real 12.2 server sends ojdbc14 (MEASURED, the 10750-dev-
+// ojdbc14-*-realserver-oracle122 captures, there in schema TESTUSER and
+// table PROTOCOLTEST10750E), each a single line ending in a line feed
+static const ojdbc14message	MSG_00001={
+	"ORA-00001: unique constraint (",
+	".PROTOCOLTEST10750_PK) violated\n"
+};
+static const ojdbc14message	MSG_01400={
+	"ORA-01400: cannot insert NULL into (\"",
+	"\".\"PROTOCOLTEST10750\".\"NN\")\n"
+};
+static const ojdbc14message	MSG_01722={
+	"ORA-01722: invalid number\n",NULL
+};
+static const ojdbc14message	MSG_12899={
+	"ORA-12899: value too large for column \"",
+	"\".\"PROTOCOLTEST10750\".\"V\" (actual: 12, maximum: 5)\n"
+};
+static const ojdbc14message	MSG_01476={
+	"ORA-01476: divisor is equal to zero\n",NULL
+};
+static const ojdbc14message	MSG_00942={
+	"ORA-00942: table or view does not exist\n",NULL
+};
+
+// the module's own, which no real server sends: ORA-20004 for a fetch of
+// more rows than MAX_FETCH_ROW_COUNT, 100000, in src/protocols/oracle.cpp
+static const ojdbc14message	MSG_20004={
+	"ORA-20004: Maximum fetch row count exceeded.\n",NULL
+};
+
+// the break and reset markers' flags byte a real server sets: 0x20 when the
+// version the client read off the accept is 0x013b or higher, 0 below it,
+// which is where ojdbc14's 0x0134 is
+static unsigned char ojdbc14MarkerFlags(ojdbc14session *s) {
+	return (s->client->getAcceptVersion()>=ORA_PROTOCOL_VERSION_12)?
+						ORA_MARKER_PACKET_FLAGS:0;
+}
+
+// an answer with an error other than ORA-01403 in it, the way a real server
+// sends one (MEASURED, all 27 errors per server of step 3a of #10750, e.g.
+// [0027] to [0030] of 10750-dev-ojdbc14-execerr-realserver-oracle122): a
+// break marker and a reset marker, which the client answers with one reset
+// marker, and then the error object alone in a data packet.  then the
+// message - one line ending in a line feed, with no zero byte, and no "Help:"
+// line, which the 23ai client the back end links against appends and no real
+// server sends - and the object around it byte for byte.  every answer to
+// the next call checks the end to end field, which a module that left the
+// client's reset for its next read would get out of step
+static void checkOjdbc14QueryError(ojdbc14session *s, const char *what,
+					uint32_t endtoend, uint32_t rows,
+					uint32_t oranum, uint32_t cursorid,
+					unsigned char sqltype,
+					uint32_t successiterations,
+					const ojdbc14message *m) {
+
+	stringbuffer	l;
+	unsigned char	flags=ojdbc14MarkerFlags(s);
+	char		check[160];
+	charstring::printf(check,sizeof(check),
+			" error comes after a break and a reset marker, "
+			"flags 0x%02x, and the client's reset",flags);
+	ojdbc14Label(&l,s,what,check);
+	bool	ok=(s->client->gotBreak() &&
+			s->client->getBreakFlags()==flags &&
+			s->client->getResetFlags()==flags);
+	report(l.getString(),ok);
+	if (!ok) {
+		if (s->client->gotBreak()) {
+			stdoutput.printf("    break flags 0x%02x, reset "
+					"flags 0x%02x\n",
+					s->client->getBreakFlags(),
+					s->client->getResetFlags());
+		} else {
+			stdoutput.printf("    no markers, the error came "
+							"first\n");
+		}
+	}
+	checkOjdbc14Objects(s,what,"04");
+
+	const char	*message=s->answer->message;
+	size_t		messagesize=s->answer->messagesize;
+	size_t		prefixsize=charstring::getLength(m->prefix);
+	size_t		suffixsize=charstring::getLength(m->suffix);
+
+	if (!m->suffix) {
+		ojdbc14Label(&l,s,what," message is exactly \"");
+		l.append(m->prefix,prefixsize-1)->append("\\n\"");
+		ok=(messagesize==prefixsize &&
+			!bytestring::compare(message,m->prefix,prefixsize));
+	} else {
+		ojdbc14Label(&l,s,what," message is \"");
+		l.append(m->prefix)->append("<schema>");
+		l.append(m->suffix,suffixsize-1)->append("\\n\"");
+		ok=(messagesize>prefixsize+suffixsize &&
+			!bytestring::compare(message,m->prefix,prefixsize) &&
+			!bytestring::compare(message+messagesize-suffixsize,
+							m->suffix,suffixsize) &&
+			!bytestring::findFirst(message+prefixsize,
+					(byte_t)'\n',
+					messagesize-prefixsize-suffixsize));
+	}
+	report(l.getString(),ok);
+
+	ojdbc14Label(&l,s,what," message ends in a line feed and has no "
+					"zero byte and no Help: line");
+	bool	tidy=(messagesize && message[messagesize-1]=='\n' &&
+			!bytestring::findFirst(message,(byte_t)0,
+							messagesize) &&
+			!bytestring::findFirst(message,messagesize,
+							"Help:",5));
+	report(l.getString(),tidy);
+	if (!ok || !tidy) {
+		dumpBytes("message",(const unsigned char *)message,
+							messagesize);
+	}
+
+	unsigned char	expected[64+256];
+	size_t		size=0;
+	putOjdbc14Summary(expected,&size,endtoend,rows,oranum,cursorid,
+					sqltype,successiterations,
+					message,messagesize);
+	charstring::printf(check,sizeof(check),
+			" error object is exact, end to end %d, rows %d, "
+			"error %d, success iterations %d",
+			endtoend,rows,oranum,successiterations);
+	checkOjdbc14Object(s,what,check,ORA_TTC_ERROR,expected,size);
+}
+
+// the cursor an error names, which has to be one: the cursor the module
+// opened for a statement on cursor 0, or "cursorid" for one on an open
+// cursor
+static uint32_t checkOjdbc14ErrorCursor(ojdbc14session *s, const char *what,
+							uint32_t cursorid) {
+	uint32_t	c=(uint32_t)s->answer->cursorid;
+	stringbuffer	l;
+	if (cursorid) {
+		char	check[64];
+		charstring::printf(check,sizeof(check),
+				" error names cursor %d",(int)cursorid);
+		ojdbc14Label(&l,s,what,check);
+		report(l.getString(),c==cursorid);
+	} else {
+		ojdbc14Label(&l,s,what," error names a cursor, not 0");
+		report(l.getString(),c!=0);
+	}
+	return c;
 }
 
 // a describe: the 23 byte block ojdbc14 skips, the column count and the
@@ -3485,25 +3912,42 @@ static void checkOjdbc14Describe(ojdbc14session *s, const char *what,
 	}
 }
 
+// the row header the module sends ojdbc14: flags 0x02, the column count, an
+// iteration number of 0, the rows the call asked for, a uac buffer length of
+// 0 and no bit vector.  the rows asked for go out as their low 16 bits, as a
+// minimal ub2, whatever number of rows follows, as real servers send them
+// (MEASURED, step 3c of #10750: 65535 is 02 ff ff, 65536 is 00, 70000 is 02
+// 11 70 and 100001 is 02 86 a1, and 10 is 01 0a when 5 rows follow).
+// ojdbc14 reads the field with unmarshalUB2 and closes the connection with
+// ORA-17412 on a longer length byte
+static void putOjdbc14RowHeader(unsigned char *buffer, size_t *size,
+						uint32_t columncount,
+						uint32_t rowsasked) {
+	putByte(buffer,size,ORA_TTC_ROW_HEADER);
+	putByte(buffer,size,0x02);
+	putLenPreInt(buffer,size,columncount);
+	putZeros(buffer,size,1);
+	putLenPreInt(buffer,size,rowsasked&0xffff);
+	putZeros(buffer,size,3);
+}
+
 // a fetch answer, the whole of it byte for byte: the row header, a row
 // object per row with a short clr per value, and the error object.  rows
-// come in a run of "rowcount", "columncount" values each
-static void checkOjdbc14Fetch(ojdbc14session *s, const char *what,
+// come in a run of "rowcount", "columncount" values each.  "rowsasked" is
+// what the fetch asked for
+static void checkOjdbc14FetchRows(ojdbc14session *s, const char *what,
 					uint32_t columncount,
 					const ojdbc14value *values,
 					uint32_t rowcount,
 					uint32_t endtoend, uint32_t rows,
-					uint32_t oranum, uint32_t cursorid) {
+					uint32_t oranum, uint32_t cursorid,
+					uint32_t rowsasked) {
+	checkOjdbc14NoMarkers(s,what);
 	unsigned char	expected[2048];
 	size_t		size=0;
 	putZeros(expected,&size,2);
 	if (rowcount) {
-		putByte(expected,&size,ORA_TTC_ROW_HEADER);
-		putByte(expected,&size,0x02);
-		putLenPreInt(expected,&size,columncount);
-		putZeros(expected,&size,1);
-		putLenPreInt(expected,&size,OJDBC14_FETCH_ROWS);
-		putZeros(expected,&size,3);
+		putOjdbc14RowHeader(expected,&size,columncount,rowsasked);
 	}
 	for (uint32_t r=0; r<rowcount; r++) {
 		putByte(expected,&size,ORA_TTC_ROW_DATA);
@@ -3516,7 +3960,7 @@ static void checkOjdbc14Fetch(ojdbc14session *s, const char *what,
 			}
 		}
 	}
-	putOjdbc14Summary(expected,&size,endtoend,rows,oranum,cursorid,3,
+	putOjdbc14Summary(expected,&size,endtoend,rows,oranum,cursorid,3,1,
 				ORA_01403,charstring::getLength(ORA_01403));
 
 	char	check[96];
@@ -3527,9 +3971,22 @@ static void checkOjdbc14Fetch(ojdbc14session *s, const char *what,
 				s->client->getResponseSize(),expected,size);
 }
 
+// the same for a fetch of OJDBC14_FETCH_ROWS rows
+static void checkOjdbc14Fetch(ojdbc14session *s, const char *what,
+					uint32_t columncount,
+					const ojdbc14value *values,
+					uint32_t rowcount,
+					uint32_t endtoend, uint32_t rows,
+					uint32_t oranum, uint32_t cursorid) {
+	checkOjdbc14FetchRows(s,what,columncount,values,rowcount,
+				endtoend,rows,oranum,cursorid,
+				OJDBC14_FETCH_ROWS);
+}
+
 // a commit's or a rollback's answer: 09 and the end to end field, exactly
 static void checkOjdbc14Status(ojdbc14session *s, const char *what,
 							uint32_t endtoend) {
+	checkOjdbc14NoMarkers(s,what);
 	unsigned char	expected[8];
 	size_t		size=0;
 	putZeros(expected,&size,2);
@@ -3578,7 +4035,7 @@ static uint32_t ojdbc14Select1(ojdbc14session *s, const char *what,
 	checkOjdbc14Objects(s,what,"10 08 04");
 	checkOjdbc14Describe(s,what,SELECT1_COLUMNS,1);
 	uint32_t	c=checkOjdbc14ReturnParameters(s,what);
-	checkOjdbc14Summary(s,what,endtoend,0,0,c,3,NULL);
+	checkOjdbc14Summary(s,what,endtoend,0,0,c,3);
 	if (ojdbc14Fetch(s,"its fetch",c,1)) {
 		checkOjdbc14Fetch(s,"its fetch",1,SELECT1_ROW,1,
 						endtoend+1,1,1403,c);
@@ -3600,30 +4057,30 @@ static uint32_t ojdbc14Dml(ojdbc14session *s, const char *what,
 	}
 	checkOjdbc14Objects(s,what,"08 04");
 	uint32_t	c=checkOjdbc14ReturnParameters(s,what);
-	checkOjdbc14Summary(s,what,endtoend,rows,0,c,sqltype,NULL);
+	checkOjdbc14Summary(s,what,endtoend,rows,0,c,sqltype);
 	return c;
 }
 
 // the first drop of a dml session, whether or not the table is left from
-// before: ORA-00942 alone, or the return parameters and a drop's summary.
-// either way the cursor stays open until the logoff, which is what keeps
-// every later end to end field the same, and comes back
-static uint32_t ojdbc14FirstDrop(ojdbc14session *s, uint32_t options) {
-	const char	*what="drop table protocoltest10745";
-	if (!ojdbc14Statement(s,what,options,0,
-				"drop table protocoltest10745",AL8I4_DML,
-				NULL,0)) {
+// before: ORA-00942 alone, behind the markers, or the return parameters and
+// a drop's summary.  either way the cursor stays open until the logoff,
+// which is what keeps every later end to end field the same, and comes back
+static uint32_t ojdbc14FirstDrop(ojdbc14session *s, uint32_t options,
+							const char *table) {
+	stringbuffer	drop;
+	drop.append("drop table ")->append(table);
+	const char	*what=drop.getString();
+	if (!ojdbc14Statement(s,what,options,0,what,AL8I4_DML,NULL,0)) {
 		return 0;
 	}
 	if (s->answer->objectcount==1) {
-		checkOjdbc14Objects(s,what,"04");
-		uint32_t	c=(uint32_t)s->answer->cursorid;
-		checkOjdbc14Summary(s,what,4,0,942,c,12,"ORA-00942");
+		uint32_t	c=checkOjdbc14ErrorCursor(s,what,0);
+		checkOjdbc14QueryError(s,what,4,0,942,c,12,0,&MSG_00942);
 		return c;
 	}
 	checkOjdbc14Objects(s,what,"08 04");
 	uint32_t	c=checkOjdbc14ReturnParameters(s,what);
-	checkOjdbc14Summary(s,what,4,0,0,c,12,NULL);
+	checkOjdbc14Summary(s,what,4,0,0,c,12);
 	return c;
 }
 
@@ -3647,7 +4104,7 @@ static uint32_t ojdbc14DmlSelect(ojdbc14session *s, uint32_t endtoend,
 	checkOjdbc14Objects(s,what,"10 08 04");
 	checkOjdbc14Describe(s,what,columns,2);
 	uint32_t	c=checkOjdbc14ReturnParameters(s,what);
-	checkOjdbc14Summary(s,what,endtoend,0,0,c,3,NULL);
+	checkOjdbc14Summary(s,what,endtoend,0,0,c,3);
 	if (ojdbc14Fetch(s,"its fetch",c,2)) {
 		checkOjdbc14Fetch(s,"its fetch",2,values,rowcount,
 					endtoend+1,rowcount,1403,c);
@@ -3671,7 +4128,18 @@ enum ojdbc14script {
 	SCRIPT_NULL,
 	SCRIPT_DML,
 	SCRIPT_DMLAUTO,
-	SCRIPT_COMMITFIRST
+	SCRIPT_COMMITFIRST,
+	SCRIPT_EXECERR,
+	SCRIPT_PREPEXECERR,
+	SCRIPT_EXECSELERR,
+	SCRIPT_FETCHERR,
+	SCRIPT_PREPFETCHERR,
+	SCRIPT_FETCHSIZES,
+	SCRIPT_PREPFETCHSIZES,
+	SCRIPT_REEXECROWS,
+	SCRIPT_BIGFETCH,
+	SCRIPT_NORESET,
+	SCRIPT_URGENT
 };
 
 static const char	*ojdbc14scriptnames[]={
@@ -3687,7 +4155,18 @@ static const char	*ojdbc14scriptnames[]={
 	"null",
 	"dml",
 	"dmlauto",
-	"commitfirst"
+	"commitfirst",
+	"execerr",
+	"prepexecerr",
+	"execselerr",
+	"fetcherr",
+	"prepfetcherr",
+	"fetchsizes",
+	"prepfetchsizes",
+	"reexecrows",
+	"bigfetch",
+	"noreset",
+	"urgent"
 };
 
 // select 1 from dual, its fetch, and the close riding on the logoff
@@ -3712,7 +4191,7 @@ static void runRows25(ojdbc14session *s, uint32_t *open, uint32_t *count) {
 	checkOjdbc14Objects(s,what,"10 08 04");
 	checkOjdbc14Describe(s,what,columns,1);
 	uint32_t	c=checkOjdbc14ReturnParameters(s,what);
-	checkOjdbc14Summary(s,what,4,0,0,c,3,NULL);
+	checkOjdbc14Summary(s,what,4,0,0,c,3);
 	open[(*count)++]=c;
 
 	char		numbers[25][2];
@@ -3756,7 +4235,7 @@ static void runTwoQueries(ojdbc14session *s, uint32_t *open,
 	checkOjdbc14Objects(s,what,"10 08 04");
 	checkOjdbc14Describe(s,what,columns,2);
 	uint32_t	c2=checkOjdbc14ReturnParameters(s,what);
-	checkOjdbc14Summary(s,what,7,0,0,c2,3,NULL);
+	checkOjdbc14Summary(s,what,7,0,0,c2,3);
 	open[(*count)++]=c2;
 	if (ojdbc14Fetch(s,"its fetch",c2,2)) {
 		checkOjdbc14Fetch(s,"its fetch",2,row,1,8,1,1403,c2);
@@ -3789,7 +4268,7 @@ static void runReuse(ojdbc14session *s, uint32_t *open, uint32_t *count) {
 			open[(*count)++]=got;
 		}
 		c=got;
-		checkOjdbc14Summary(s,what,4+2*i,0,0,c,3,NULL);
+		checkOjdbc14Summary(s,what,4+2*i,0,0,c,3);
 		if (ojdbc14Fetch(s,"its fetch",c,1)) {
 			checkOjdbc14Fetch(s,"its fetch",1,row,1,
 						5+2*i,1,1403,c);
@@ -3803,8 +4282,10 @@ static void runReuse(ojdbc14session *s, uint32_t *open, uint32_t *count) {
 // is the row, the return parameters and ORA-01403, within 5 seconds.  the
 // int goes to the backend as text, so the backend describes it as a
 // VARCHAR2 and sends it back as "10", where a real server sends a NUMBER.
-// the re-execute's row number is the module's, 2, counted over the cursor
-// where a real server says 1
+// the re-execute's row number is 1, the rows sent since that execute, as a
+// real server says (MEASURED, 10745-dev-ojdbc14-prepared-realserver-*; the
+// rule is step 3c's of #10750, the count starts again at every execute),
+// where #10745's module counted over the cursor and said 2
 static void runPrepared(ojdbc14session *s, uint32_t *open, uint32_t *count) {
 	static const ojdbc14column	columns[]={
 		{1,OJDBC14_ANY,OJDBC14_ANY,OJDBC14_ANY,"N"},
@@ -3815,7 +4296,7 @@ static void runPrepared(ojdbc14session *s, uint32_t *open, uint32_t *count) {
 	if (!ojdbc14Query(s,what,OJDBC14_PREPARED,0,
 				"select :1 n, :2 v from dual",AL8I4_QUERY,
 				OJDBC14_BINDS_INT_STRING5,
-				sizeof(OJDBC14_BINDS_INT_STRING5),
+				sizeof(OJDBC14_BINDS_INT_STRING5),2,
 				OJDBC14_ROW_BIND0,sizeof(OJDBC14_ROW_BIND0),
 				NULL,0,0,0)) {
 		return;
@@ -3823,7 +4304,7 @@ static void runPrepared(ojdbc14session *s, uint32_t *open, uint32_t *count) {
 	checkOjdbc14Objects(s,what,"10 08 04");
 	checkOjdbc14Describe(s,what,columns,2);
 	uint32_t	c=checkOjdbc14ReturnParameters(s,what);
-	checkOjdbc14Summary(s,what,4,0,0,c,3,NULL);
+	checkOjdbc14Summary(s,what,4,0,0,c,3);
 	open[(*count)++]=c;
 	if (!ojdbc14Fetch(s,"its fetch",c,2)) {
 		return;
@@ -3834,7 +4315,7 @@ static void runPrepared(ojdbc14session *s, uint32_t *open, uint32_t *count) {
 	if (!ojdbc14Query(s,what,OJDBC14_REEXECUTE_QUERY,c,NULL,
 				AL8I4_REEXECUTE_QUERY,
 				OJDBC14_BINDS_INT_STRING5,
-				sizeof(OJDBC14_BINDS_INT_STRING5),
+				sizeof(OJDBC14_BINDS_INT_STRING5),2,
 				OJDBC14_ROW_BIND1,sizeof(OJDBC14_ROW_BIND1),
 				NULL,0,2,5)) {
 		return;
@@ -3860,13 +4341,15 @@ static void runPrepared(ojdbc14session *s, uint32_t *open, uint32_t *count) {
 	stringbuffer	l;
 	ojdbc14Label(&l,s,what," names the same cursor");
 	report(l.getString(),again==c);
-	checkOjdbc14Summary(s,what,6,2,1403,c,3,NULL);
+	checkOjdbc14Summary(s,what,6,1,1403,c,3);
 }
 
-// ORA-00942 at the parse: the error object alone, no break or reset
-// markers ahead of it (the module's choice; a real server sends them), and
-// with the cursor the module opened for it, which the logoff closes
-// along with select 1 from dual's
+// ORA-00942 at the parse: a break marker and a reset marker, the client's
+// reset, and then the error object alone, as a real server sends it
+// (MEASURED, [0018] to [0021] of 10745-dev-ojdbc14-error-realserver-
+// oracle122; #10745 sent the object bare, which ojdbc14 takes too), with the
+// cursor the module opened for it, which the logoff closes along with select
+// 1 from dual's.  a real server's error position here is 14, the module's 0
 static void runError(ojdbc14session *s, uint32_t *open, uint32_t *count) {
 	const char	*what="select * from protocoltest10745_nonexistent";
 	if (!ojdbc14Statement(s,what,OJDBC14_STATEMENT,0,
@@ -3874,15 +4357,8 @@ static void runError(ojdbc14session *s, uint32_t *open, uint32_t *count) {
 				AL8I4_QUERY,NULL,0)) {
 		return;
 	}
-	stringbuffer	l;
-	ojdbc14Label(&l,s,what," answer is a data packet, not a marker");
-	report(l.getString(),
-		s->client->getPacketType()==ORA_PACKET_DATA);
-	checkOjdbc14Objects(s,what,"04");
-	uint32_t	c1=(uint32_t)s->answer->cursorid;
-	checkOjdbc14Summary(s,what,4,0,942,c1,3,"ORA-00942");
-	ojdbc14Label(&l,s,what," cursor id isn't 0");
-	report(l.getString(),c1!=0);
+	uint32_t	c1=checkOjdbc14ErrorCursor(s,what,0);
+	checkOjdbc14QueryError(s,what,4,0,942,c1,3,0,&MSG_00942);
 
 	uint32_t	c2=ojdbc14Select1(s,"select 1 from dual",
 					"select 1 from dual",5,NULL,0);
@@ -3966,7 +4442,7 @@ static void runTypes(ojdbc14session *s, uint32_t *open, uint32_t *count) {
 	checkOjdbc14Objects(s,what,"10 08 04");
 	checkOjdbc14Describe(s,what,columns,12);
 	uint32_t	c=checkOjdbc14ReturnParameters(s,what);
-	checkOjdbc14Summary(s,what,4,0,0,c,3,NULL);
+	checkOjdbc14Summary(s,what,4,0,0,c,3);
 	if (!ojdbc14Fetch(s,"its fetch",c,12)) {
 		return;
 	}
@@ -3986,7 +4462,7 @@ static void runTypes(ojdbc14session *s, uint32_t *open, uint32_t *count) {
 	checkOjdbc14Objects(s,what,"10 08 04");
 	checkOjdbc14Describe(s,what,bigcolumns,1);
 	uint32_t	c2=checkOjdbc14ReturnParameters(s,what);
-	checkOjdbc14Summary(s,what,7,0,0,c2,3,NULL);
+	checkOjdbc14Summary(s,what,7,0,0,c2,3);
 	open[(*count)++]=c2;
 	if (!ojdbc14Fetch(s,"its fetch",c2,1)) {
 		return;
@@ -4001,7 +4477,7 @@ static void runTypes(ojdbc14session *s, uint32_t *open, uint32_t *count) {
 	report(l.getString(),a->rowcount==1 && a->values[0][0].size==300 &&
 		!bytestring::compare(a->valuedata+a->values[0][0].offset,
 								big,300));
-	checkOjdbc14Summary(s,"its fetch",8,1,1403,c2,3,NULL);
+	checkOjdbc14Summary(s,"its fetch",8,1,1403,c2,3);
 }
 
 // select null: a VARCHAR2 of 4000 in the session's charset, and a null
@@ -4020,7 +4496,7 @@ static void runNull(ojdbc14session *s, uint32_t *open, uint32_t *count) {
 	checkOjdbc14Objects(s,what,"10 08 04");
 	checkOjdbc14Describe(s,what,columns,1);
 	uint32_t	c=checkOjdbc14ReturnParameters(s,what);
-	checkOjdbc14Summary(s,what,4,0,0,c,3,NULL);
+	checkOjdbc14Summary(s,what,4,0,0,c,3);
 	open[(*count)++]=c;
 	if (ojdbc14Fetch(s,"its fetch",c,1)) {
 		checkOjdbc14Fetch(s,"its fetch",1,row,1,5,1,1403,c);
@@ -4033,7 +4509,8 @@ static void runDml(ojdbc14session *s, uint32_t *open, uint32_t *count) {
 	static const ojdbc14value	both[]={
 		{"\xc1\x02",2},{"uno",3},{"\xc1\x03",2},{"two",3}
 	};
-	uint32_t	drop=ojdbc14FirstDrop(s,OJDBC14_STATEMENT);
+	uint32_t	drop=ojdbc14FirstDrop(s,OJDBC14_STATEMENT,
+						"protocoltest10745");
 	uint32_t	c=ojdbc14Dml(s,"create table",OJDBC14_STATEMENT,
 			"create table protocoltest10745 "
 			"(id number, v varchar2(20))",5,0,1,NULL,0);
@@ -4073,7 +4550,8 @@ static void runDmlAuto(ojdbc14session *s, uint32_t *open, uint32_t *count) {
 		{"\xc1\x03",2},{"bound2",6},
 		{"\xc1\x04",2},{"bound3",6}
 	};
-	uint32_t	drop=ojdbc14FirstDrop(s,OJDBC14_STATEMENT_COMMIT);
+	uint32_t	drop=ojdbc14FirstDrop(s,OJDBC14_STATEMENT_COMMIT,
+						"protocoltest10745");
 	uint32_t	c=ojdbc14Dml(s,"create table",OJDBC14_STATEMENT_COMMIT,
 			"create table protocoltest10745 "
 			"(id number, v varchar2(20))",5,0,1,NULL,0);
@@ -4085,18 +4563,18 @@ static void runDmlAuto(ojdbc14session *s, uint32_t *open, uint32_t *count) {
 	if (!ojdbc14Query(s,what,OJDBC14_PREPARED_COMMIT,0,
 			"insert into protocoltest10745 values (:1,:2)",
 			AL8I4_DML,OJDBC14_BINDS_INT_STRING6,
-			sizeof(OJDBC14_BINDS_INT_STRING6),
+			sizeof(OJDBC14_BINDS_INT_STRING6),2,
 			OJDBC14_ROW_BOUND2,sizeof(OJDBC14_ROW_BOUND2),
 			&c,1,0,0)) {
 		return;
 	}
 	checkOjdbc14Objects(s,what,"08 04");
 	c=checkOjdbc14ReturnParameters(s,what);
-	checkOjdbc14Summary(s,what,9,1,0,c,2,NULL);
+	checkOjdbc14Summary(s,what,9,1,0,c,2);
 
 	what="prepared insert re-execute";
 	if (!ojdbc14Query(s,what,OJDBC14_REEXECUTE_DML,c,NULL,
-				AL8I4_REEXECUTE_DML,NULL,0,
+				AL8I4_REEXECUTE_DML,NULL,0,0,
 				OJDBC14_ROW_BOUND3,sizeof(OJDBC14_ROW_BOUND3),
 				NULL,0,0,0)) {
 		return;
@@ -4106,7 +4584,7 @@ static void runDmlAuto(ojdbc14session *s, uint32_t *open, uint32_t *count) {
 	stringbuffer	l;
 	ojdbc14Label(&l,s,what," names the same cursor");
 	report(l.getString(),again==c);
-	checkOjdbc14Summary(s,what,10,1,0,c,2,NULL);
+	checkOjdbc14Summary(s,what,10,1,0,c,2);
 
 	ojdbc14Transaction(s,"rollback",false,11,NULL,0);
 	c=ojdbc14DmlSelect(s,13,rows,3,&c,1);
@@ -4126,12 +4604,946 @@ static void runCommitFirst(ojdbc14session *s, uint32_t *open,
 					"select 1 from dual",5,NULL,0);
 }
 
+// ---- #10750: errors, fetch sizes, re-execute row counts, cancel ----
+
+// the table the #10750 dml sessions use, dropped first, as
+// ojdbc14FirstDrop() does, and at the end
+static const char	*CREATE_10750=
+	"create table protocoltest10750 (id number constraint "
+	"protocoltest10750_pk primary key, nn varchar2(10) not null, "
+	"v varchar2(5))";
+static const char	*INSERT_10750=
+	"insert into protocoltest10750 values (:1, :2, :3)";
+
+// a non-negative integer as an oracle NUMBER, the way setInt() sends it: an
+// exponent byte, 192 plus the count of base 100 digits ahead of the point,
+// then those digits each plus one, trailing zero digits dropped.  0 is a lone
+// 0x80.  25 is c1 1a (MEASURED, the bind value of 10750-dev-ojdbc14-
+// reexecrows-realserver-oracle122) and 3 is c1 04 ([0041] of 10750-dev-
+// ojdbc14-prepfetchsizes-realserver-oracle122).  70005 is c3 08 01 06 by the
+// same rule
+static void putOracleNumber(unsigned char *buffer, size_t *size,
+							uint32_t value) {
+	if (!value) {
+		putByte(buffer,size,0x80);
+		return;
+	}
+	unsigned char	digits[5];
+	size_t		count=0;
+	for (uint32_t v=value; v; v/=100) {
+		digits[count++]=(unsigned char)(v%100);
+	}
+	size_t	last=0;
+	while (!digits[last]) {
+		last++;
+	}
+	putByte(buffer,size,(unsigned char)(192+count));
+	for (size_t i=count; i>last; i--) {
+		putByte(buffer,size,(unsigned char)(digits[i-1]+1));
+	}
+}
+
+// the value of a NUMBER column the module sends: putOracleNumber()'s bytes
+static void setOjdbc14Number(ojdbc14value *v, char *bytes, uint32_t value) {
+	size_t	size=0;
+	putOracleNumber((unsigned char *)bytes,&size,value);
+	v->bytes=bytes;
+	v->size=size;
+}
+
+// one row of bind values behind its 07: "number" as setInt() sends it, and
+// "string1" and "string2", if not NULL, as setString() sends them
+static size_t putOjdbc14BindRow(unsigned char *buffer, uint32_t number,
+						const char *string1,
+						const char *string2) {
+	size_t	size=0;
+	putByte(buffer,&size,ORA_TTC_ROW_DATA);
+	unsigned char	n[8];
+	size_t		nsize=0;
+	putOracleNumber(n,&nsize,number);
+	putByte(buffer,&size,(unsigned char)nsize);
+	bytestring::copy(buffer+size,n,nsize);
+	size+=nsize;
+	if (string1) {
+		putShortClr(buffer,&size,string1,
+				charstring::getLength(string1));
+	}
+	if (string2) {
+		putShortClr(buffer,&size,string2,
+				charstring::getLength(string2));
+	}
+	return size;
+}
+
+// the end to end field of the next call: one more for the call, and one
+// more for the cursors closed in front of it (MEASURED rule, #10745 and step
+// 3a of #10750; the markers of an error count none)
+static uint32_t nextEndToEnd(uint32_t *endtoend, uint32_t closecount) {
+	*endtoend+=1+((closecount)?1:0);
+	return *endtoend;
+}
+
+// a plain statement that fails at its execute: the markers, then the error
+// object alone, naming the cursor the module opened for it (or "cursorid"),
+// with row number 0 and success iterations 0, as a real server sends them
+static uint32_t ojdbc14StatementError(ojdbc14session *s, const char *what,
+					const char *query,
+					uint32_t options, uint32_t cursorid,
+					const uint32_t *al8i4,
+					const uint32_t *closecursors,
+					uint32_t closecount,
+					uint32_t endtoend, uint32_t oranum,
+					unsigned char sqltype,
+					const ojdbc14message *m) {
+	if (!ojdbc14Statement(s,what,options,cursorid,query,al8i4,
+						closecursors,closecount)) {
+		return 0;
+	}
+	uint32_t	c=checkOjdbc14ErrorCursor(s,what,cursorid);
+	checkOjdbc14QueryError(s,what,endtoend,0,oranum,c,sqltype,0,m);
+	return c;
+}
+
+// a successful dml answer on a prepared statement's cursor: the return
+// parameters naming that cursor, and one row touched
+static void checkOjdbc14PreparedDml(ojdbc14session *s, const char *what,
+						uint32_t endtoend,
+						uint32_t cursorid) {
+	checkOjdbc14Objects(s,what,"08 04");
+	uint32_t	again=checkOjdbc14ReturnParameters(s,what);
+	stringbuffer	l;
+	ojdbc14Label(&l,s,what," names the same cursor");
+	report(l.getString(),again==cursorid);
+	checkOjdbc14Summary(s,what,endtoend,1,0,cursorid,2);
+}
+
+// a Statement select whose rows fail to evaluate.  where its error comes is
+// the back end's to decide: it prefetches rows at the execute (fetchatonce,
+// 10 by default), and whether OCIStmtExecute reports the failing row or
+// leaves it to the first fetch varies with the back end session's history
+// of the statement (MEASURED, both in one run of this test against HEAD's
+// module and in step 3d of #10750).  so either is taken: the error at the
+// 0x5e, or the 0x5e answered with the describe, the return parameters and
+// no error, and the error at the first fetch of 10 rows - which is where a
+// real server always puts it (MEASURED, 10750-dev-ojdbc14-execselerr- and
+// -fetcherr-realserver-*).  either way the error comes behind the markers,
+// alone, with row number 0 and success iterations 0, and no row reaches the
+// client.  "endtoend" is the 0x5e's, and comes back as the last answer's
+static uint32_t ojdbc14SelectError(ojdbc14session *s, const char *what,
+					const char *query,
+					const uint32_t *closecursors,
+					uint32_t closecount,
+					uint32_t *endtoend, uint32_t oranum,
+					const ojdbc14message *m) {
+	if (!ojdbc14Statement(s,what,OJDBC14_STATEMENT,0,query,AL8I4_QUERY,
+						closecursors,closecount)) {
+		return 0;
+	}
+	if (s->answer->objectcount==1) {
+		uint32_t	c=checkOjdbc14ErrorCursor(s,what,0);
+		checkOjdbc14QueryError(s,what,*endtoend,0,oranum,c,3,0,m);
+		return c;
+	}
+	checkOjdbc14Objects(s,what,"10 08 04");
+	uint32_t	c=checkOjdbc14ReturnParameters(s,what);
+	checkOjdbc14Summary(s,what,*endtoend,0,0,c,3);
+	stringbuffer	fetch;
+	fetch.append(what)->append(", its fetch");
+	if (ojdbc14Fetch(s,fetch.getString(),c,1)) {
+		checkOjdbc14ErrorCursor(s,fetch.getString(),c);
+		checkOjdbc14QueryError(s,fetch.getString(),
+					nextEndToEnd(endtoend,0),0,oranum,c,
+					3,0,m);
+	}
+	return c;
+}
+
+// execerr: inserts that fail at the execute with ORA-00001, ORA-01400,
+// ORA-01722 and ORA-12899, sent as a Statement's 0x5e with autocommit off
+// (0x8021) and on (0x8121), each followed by an insert that works.  every
+// error comes behind the markers, alone, with success iterations 0, and
+// the end to end field of the call after it is one more than the error's,
+// plus one for the close in front of it (MEASURED, the 10750-dev-ojdbc14-
+// execerr-realserver captures, from the same calls on table
+// protocoltest10750e).  the cursor each error names is the one the module
+// opened for the statement, and the next call closes it, as ojdbc14 does
+static void runExecErr(ojdbc14session *s, uint32_t *open, uint32_t *count) {
+
+	struct failing {
+		const char		*query;
+		uint32_t		oranum;
+		const ojdbc14message	*m;
+	};
+	static const failing	failings[]={
+		{"insert into protocoltest10750 values (1, 'b', 'b')",
+			1,&MSG_00001},
+		{"insert into protocoltest10750 values (2, null, 'b')",
+			1400,&MSG_01400},
+		{"insert into protocoltest10750 values ('x', 'b', 'b')",
+			1722,&MSG_01722},
+		{"insert into protocoltest10750 values (3, 'b', "
+			"'toolongvalue')",12899,&MSG_12899}
+	};
+
+	uint32_t	drop=ojdbc14FirstDrop(s,OJDBC14_STATEMENT_COMMIT,
+							"protocoltest10750");
+	uint32_t	c=ojdbc14Dml(s,"create table protocoltest10750",
+					OJDBC14_STATEMENT_COMMIT,CREATE_10750,
+					5,0,1,NULL,0);
+	c=ojdbc14Dml(s,"the first row",OJDBC14_STATEMENT_COMMIT,
+			"insert into protocoltest10750 values (1, 'a', 'a')",
+			7,1,2,&c,1);
+
+	uint32_t	e=7;
+	uint32_t	closecount=1;
+	for (uint32_t pass=0; pass<2; pass++) {
+		uint32_t	options=(pass)?OJDBC14_STATEMENT_COMMIT:
+							OJDBC14_STATEMENT;
+		const char	*how=(pass)?", autocommit on":
+						", autocommit off";
+		for (size_t i=0; i<sizeof(failings)/sizeof(failings[0]);
+									i++) {
+			stringbuffer	what;
+			what.append(failings[i].query)->append(how);
+			c=ojdbc14StatementError(s,what.getString(),
+					failings[i].query,options,0,
+					AL8I4_DML,&c,closecount,
+					nextEndToEnd(&e,closecount),
+					failings[i].oranum,2,failings[i].m);
+			closecount=1;
+		}
+		char	good[64];
+		charstring::printf(good,sizeof(good),
+				"insert into protocoltest10750 values "
+				"(%d, 'b', 'b')",(int)(10+pass));
+		c=ojdbc14Dml(s,good,options,good,nextEndToEnd(&e,1),1,2,&c,1);
+		if (!pass) {
+			ojdbc14Transaction(s,"commit",true,
+						nextEndToEnd(&e,1),&c,1);
+			closecount=0;
+		}
+	}
+
+	c=ojdbc14Dml(s,"drop table protocoltest10750",
+			OJDBC14_STATEMENT_COMMIT,
+			"drop table protocoltest10750",
+			nextEndToEnd(&e,1),0,12,&c,1);
+	open[(*count)++]=c;
+	open[(*count)++]=drop;
+}
+
+// one execute of the prepared insert: the first or a re-parse (0x8029 or
+// 0x8129) with the descriptors, or a re-execute (0x8020 or 0x8120) with the
+// values alone, as ojdbc14 sent them (MEASURED, [0026], [0041] and [0050] of
+// 10750-dev-ojdbc14-prepexecerr-realserver-oracle122): setInt(id),
+// setString("b") and setString(v)
+static bool ojdbc14PreparedInsert(ojdbc14session *s, const char *what,
+					uint32_t options, uint32_t cursorid,
+					uint32_t id, const char *v,
+					const uint32_t *closecursors,
+					uint32_t closecount) {
+	unsigned char	row[64];
+	size_t		rowsize=putOjdbc14BindRow(row,id,"b",v);
+	bool		reexecute=!(options&ORA_OPTION_PARSE);
+	bool		longvalue=(charstring::getLength(v)>1);
+	const unsigned char	*descriptors=NULL;
+	size_t			descriptorssize=0;
+	if (!reexecute) {
+		descriptors=(longvalue)?OJDBC14_BINDS_INT_STRING1_STRING12:
+					OJDBC14_BINDS_INT_STRING1_STRING1;
+		descriptorssize=(longvalue)?
+				sizeof(OJDBC14_BINDS_INT_STRING1_STRING12):
+				sizeof(OJDBC14_BINDS_INT_STRING1_STRING1);
+	}
+	return ojdbc14Query(s,what,options,cursorid,
+				(reexecute)?NULL:INSERT_10750,
+				(reexecute)?AL8I4_REEXECUTE_DML:AL8I4_DML,
+				descriptors,descriptorssize,3,
+				row,rowsize,closecursors,closecount,0,0);
+}
+
+// prepexecerr: a PreparedStatement insert whose first execute (0x8029 on
+// cursor 0) fails with ORA-00001 and names the cursor the module opened,
+// then the driver's re-parse on that cursor (0x8029 again, since ojdbc14
+// re-parses after any error) which works, a re-execute (0x8020) that fails
+// with ORA-00001, a re-parse with a value too long that fails with
+// ORA-12899, and a re-parse that works, all on the one cursor; then the same
+// with autocommit on (0x8129 and 0x8120).  the calls and the end to end
+// fields are a real server's (MEASURED, the 10750-dev-ojdbc14-prepexecerr-
+// realserver captures, which run a select 1 between the executes)
+static void runPrepExecErr(ojdbc14session *s, uint32_t *open,
+							uint32_t *count) {
+
+	uint32_t	drop=ojdbc14FirstDrop(s,OJDBC14_STATEMENT_COMMIT,
+							"protocoltest10750");
+	uint32_t	c=ojdbc14Dml(s,"create table protocoltest10750",
+					OJDBC14_STATEMENT_COMMIT,CREATE_10750,
+					5,0,1,NULL,0);
+	c=ojdbc14Dml(s,"the first row",OJDBC14_STATEMENT_COMMIT,
+			"insert into protocoltest10750 values (1, 'a', 'a')",
+			7,1,2,&c,1);
+
+	uint32_t	e=7;
+	uint32_t	closecount=1;
+	for (uint32_t pass=0; pass<2; pass++) {
+
+		uint32_t	parse=(pass)?OJDBC14_PREPARED_COMMIT:
+						OJDBC14_PREPARED;
+		uint32_t	reexecute=(pass)?OJDBC14_REEXECUTE_DML:
+					OJDBC14_REEXECUTE_DML_NO_COMMIT;
+		const char	*how=(pass)?", autocommit on":
+						", autocommit off";
+		stringbuffer	what;
+
+		what.append("the first execute, a duplicate id")->append(how);
+		uint32_t	p=0;
+		if (ojdbc14PreparedInsert(s,what.getString(),parse,0,1,"b",
+							&c,closecount)) {
+			p=checkOjdbc14ErrorCursor(s,what.getString(),0);
+			checkOjdbc14QueryError(s,what.getString(),
+					nextEndToEnd(&e,closecount),0,1,p,2,0,
+					&MSG_00001);
+		}
+
+		what.clear();
+		what.append("the re-parse on the error's cursor")->append(how);
+		if (ojdbc14PreparedInsert(s,what.getString(),parse,p,
+						20+pass,"b",NULL,0)) {
+			checkOjdbc14PreparedDml(s,what.getString(),
+						nextEndToEnd(&e,0),p);
+		}
+
+		what.clear();
+		what.append("the re-execute, a duplicate id")->append(how);
+		if (ojdbc14PreparedInsert(s,what.getString(),reexecute,p,
+							1,"b",NULL,0)) {
+			checkOjdbc14ErrorCursor(s,what.getString(),p);
+			checkOjdbc14QueryError(s,what.getString(),
+					nextEndToEnd(&e,0),0,1,p,2,0,
+					&MSG_00001);
+		}
+
+		what.clear();
+		what.append("the re-parse, a value too long")->append(how);
+		if (ojdbc14PreparedInsert(s,what.getString(),parse,p,
+					30+pass,"toolongvalue",NULL,0)) {
+			checkOjdbc14ErrorCursor(s,what.getString(),p);
+			checkOjdbc14QueryError(s,what.getString(),
+					nextEndToEnd(&e,0),0,12899,p,2,0,
+					&MSG_12899);
+		}
+
+		what.clear();
+		what.append("the re-parse after it")->append(how);
+		if (ojdbc14PreparedInsert(s,what.getString(),parse,p,
+						40+pass,"b",NULL,0)) {
+			checkOjdbc14PreparedDml(s,what.getString(),
+						nextEndToEnd(&e,0),p);
+		}
+
+		c=p;
+		if (!pass) {
+			ojdbc14Transaction(s,"commit",true,
+						nextEndToEnd(&e,1),&c,1);
+			closecount=0;
+		}
+	}
+
+	c=ojdbc14Dml(s,"drop table protocoltest10750",
+			OJDBC14_STATEMENT_COMMIT,
+			"drop table protocoltest10750",
+			nextEndToEnd(&e,1),0,12,&c,1);
+	open[(*count)++]=c;
+	open[(*count)++]=drop;
+}
+
+// execselerr: selects whose only row fails to evaluate, select 1/0 and select
+// to_number('x'), then select 1 - see ojdbc14SelectError() for where the
+// error comes.  ojdbc14 throws from executeQuery() either way, since its
+// first fetch runs inside it.  a real server's error position here is 8 and
+// 17, the module's 0
+static void runExecSelErr(ojdbc14session *s, uint32_t *open,
+							uint32_t *count) {
+	uint32_t	e=4;
+	uint32_t	c1=ojdbc14SelectError(s,"select 1/0 from dual",
+					"select 1/0 from dual",NULL,0,
+					&e,1476,&MSG_01476);
+	nextEndToEnd(&e,1);
+	uint32_t	c2=ojdbc14SelectError(s,
+					"select to_number('x') from dual",
+					"select to_number('x') from dual",
+					&c1,1,&e,1722,&MSG_01722);
+	open[(*count)++]=ojdbc14Select1(s,"select 1 from dual",
+					"select 1 from dual",
+					nextEndToEnd(&e,1),&c2,1);
+}
+
+static const char	*FETCHERR_QUERY=
+	"select 1/(3-level) x from dual connect by level <= 5";
+
+// fetcherr: a select whose third row fails to evaluate, then select 1.  at
+// the default fetchatonce the back end has the first 10 rows at the
+// execute, so the error comes at the 0x5e or at the first fetch, as in
+// execselerr, and no row reaches the client.  at the
+// fetchatonce=1 listener the 0x5e is answered with the describe, a fetch of
+// 1 row gets row 1 (0.5), and the next fetch of 1 row gets the error, behind
+// the markers, alone.  a real server delivers rows 1 and 2 at fetch sizes 2
+// and 1 before the error (MEASURED, 10750-dev-ojdbc14-fetcherr-realserver-*),
+// where the module loses row 2: the back end fetches ahead and drops the rows
+// it fetched before a failing one, which no change to the protocol module
+// can recover.  so what is asserted is the module's shape, the lost row with
+// it, so that a fix shows up as a change to this test.  the error's row
+// number is the module's, the rows it sent (1), where a real server says 2
+static void runFetchErr(ojdbc14session *s, uint32_t *open, uint32_t *count,
+							bool fetchatonce) {
+	if (!fetchatonce) {
+		uint32_t	e=4;
+		uint32_t	c1=ojdbc14SelectError(s,FETCHERR_QUERY,
+					FETCHERR_QUERY,NULL,0,&e,1476,
+					&MSG_01476);
+		open[(*count)++]=ojdbc14Select1(s,"select 1 from dual",
+					"select 1 from dual",
+					nextEndToEnd(&e,1),&c1,1);
+		return;
+	}
+
+	static const ojdbc14column	columns[]={
+		{2,OJDBC14_ANY,OJDBC14_ANY,22,"X"}
+	};
+	static const ojdbc14value	half[]={{"\xc0\x33",2}};
+	const char	*what=FETCHERR_QUERY;
+	if (!ojdbc14Statement(s,what,OJDBC14_STATEMENT,0,FETCHERR_QUERY,
+						AL8I4_QUERY,NULL,0)) {
+		return;
+	}
+	checkOjdbc14Objects(s,what,"10 08 04");
+	checkOjdbc14Describe(s,what,columns,1);
+	uint32_t	c=checkOjdbc14ReturnParameters(s,what);
+	checkOjdbc14Summary(s,what,4,0,0,c,3);
+	what="its fetch of 1 row";
+	if (ojdbc14FetchRows(s,what,c,1,1,NULL,0)) {
+		checkOjdbc14FetchRows(s,what,1,half,1,5,1,0,c,1);
+	}
+	what="its next fetch of 1 row, which fails";
+	if (ojdbc14FetchRows(s,what,c,1,1,NULL,0)) {
+		checkOjdbc14ErrorCursor(s,what,c);
+		checkOjdbc14QueryError(s,what,6,1,1476,c,3,0,&MSG_01476);
+	}
+	open[(*count)++]=ojdbc14Select1(s,"select 1 from dual",
+					"select 1 from dual",8,&c,1);
+}
+
+static const char	*PREPFETCHERR_QUERY=
+	"select 1/(:1 - level) x from dual connect by level <= 5";
+
+// prepfetcherr: a PreparedStatement select with setInt(10), whose rows all
+// evaluate, and its fetch; then the re-execute with fetch (0x8068) with
+// setInt(3), whose third row fails: the markers, then the error object
+// alone, with success iterations 1, as a real server sends it (MEASURED,
+// [0026] to [0029] of 10750-dev-ojdbc14-prepfetcherr-realserver-oracle122);
+// then the re-parse on the same cursor that ojdbc14 sends after an error,
+// with setInt(10) again, which works.  the error's row number is the module's
+// 0 - the rows sent since that execute - where a real server says 2, the rows
+// its cursor produced before the failing one.  the values, 1/9 to 1/5, are
+// the back end's decimals and aren't compared
+static void runPrepFetchErr(ojdbc14session *s, uint32_t *open,
+							uint32_t *count) {
+	static const ojdbc14column	columns[]={
+		{2,OJDBC14_ANY,OJDBC14_ANY,22,"X"}
+	};
+	unsigned char	row10[16];
+	size_t		row10size=putOjdbc14BindRow(row10,10,NULL,NULL);
+	unsigned char	row3[16];
+	size_t		row3size=putOjdbc14BindRow(row3,3,NULL,NULL);
+
+	const char	*what="select 1/(:1 - level) x ..., with 10";
+	if (!ojdbc14Query(s,what,OJDBC14_PREPARED,0,PREPFETCHERR_QUERY,
+				AL8I4_QUERY,OJDBC14_BINDS_INT,
+				sizeof(OJDBC14_BINDS_INT),1,row10,row10size,
+				NULL,0,0,0)) {
+		return;
+	}
+	checkOjdbc14Objects(s,what,"10 08 04");
+	checkOjdbc14Describe(s,what,columns,1);
+	uint32_t	c=checkOjdbc14ReturnParameters(s,what);
+	checkOjdbc14Summary(s,what,4,0,0,c,3);
+	open[(*count)++]=c;
+	if (ojdbc14Fetch(s,"its fetch",c,1)) {
+		checkOjdbc14Objects(s,"its fetch","06 07 07 07 07 07 04");
+		checkOjdbc14Summary(s,"its fetch",5,5,1403,c,3);
+	}
+
+	what="the re-execute with fetch, with 3";
+	if (ojdbc14Query(s,what,OJDBC14_REEXECUTE_QUERY,c,NULL,
+				AL8I4_REEXECUTE_QUERY,OJDBC14_BINDS_INT,
+				sizeof(OJDBC14_BINDS_INT),1,row3,row3size,
+				NULL,0,1,0)) {
+		checkOjdbc14ErrorCursor(s,what,c);
+		checkOjdbc14QueryError(s,what,6,0,1476,c,3,1,&MSG_01476);
+	}
+
+	what="the re-parse on the same cursor, with 10";
+	if (!ojdbc14Query(s,what,OJDBC14_PREPARED,c,PREPFETCHERR_QUERY,
+				AL8I4_QUERY,OJDBC14_BINDS_INT,
+				sizeof(OJDBC14_BINDS_INT),1,row10,row10size,
+				NULL,0,0,0)) {
+		return;
+	}
+	checkOjdbc14Objects(s,what,"10 08 04");
+	uint32_t	again=checkOjdbc14ReturnParameters(s,what);
+	stringbuffer	l;
+	ojdbc14Label(&l,s,what," names the same cursor");
+	report(l.getString(),again==c);
+	checkOjdbc14Summary(s,what,7,0,0,c,3);
+	if (ojdbc14Fetch(s,"its fetch, again",c,1)) {
+		checkOjdbc14Objects(s,"its fetch, again",
+						"06 07 07 07 07 07 04");
+		checkOjdbc14Summary(s,"its fetch, again",8,5,1403,c,3);
+	}
+}
+
+static const char	*LEVEL5_QUERY=
+	"select level x from dual connect by level <= 5";
+
+// fetchsizes: a Statement select of 5 rows, executed again before each fetch
+// on the same cursor, as a reused Statement is, and fetched with ojdbc14's
+// fetch size 65535, 65536, 70000 and 100000: each answer's row header names
+// the rows asked for, as its low 16 bits in a minimal ub2 (02 ff ff, 00,
+// 02 11 70 and 02 86 a0), with the 5 rows and ORA-01403 behind it, as a real
+// server sends it (MEASURED, step 3c of #10750: the header's count is the
+// low 16 bits of the rows asked for, whatever number follows; with fewer
+// rows than asked for at 10).  a header count in 4 bytes, which the module
+// wrote before #10750 for anything over 65535, makes ojdbc14 close the
+// connection with ORA-17412.  then 100001 rows: over the module's limit of
+// 100000, so ORA-20004, behind the markers, alone, with success iterations
+// 0, and the cursor untouched, so that a fetch of 10 rows after it gets the
+// 5 rows.  a real server has no limit (MEASURED: 100001 rows in one answer);
+// the limit and its error are the module's
+static void runFetchSizes(ojdbc14session *s, uint32_t *open,
+							uint32_t *count) {
+	static const ojdbc14column	columns[]={
+		{2,OJDBC14_ANY,OJDBC14_ANY,22,"X"}
+	};
+	static const uint32_t	sizes[]={65535,65536,70000,100000,100001};
+	char		numbers[5][8];
+	ojdbc14value	values[5];
+	for (uint32_t i=0; i<5; i++) {
+		setOjdbc14Number(&values[i],numbers[i],i+1);
+	}
+
+	uint32_t	c=0;
+	uint32_t	e=3;
+	for (size_t i=0; i<sizeof(sizes)/sizeof(sizes[0]); i++) {
+
+		char	what[96];
+		charstring::printf(what,sizeof(what),
+				"%s, before a fetch of %d rows",
+				LEVEL5_QUERY,(int)sizes[i]);
+		if (!ojdbc14Statement(s,what,OJDBC14_STATEMENT,c,
+					LEVEL5_QUERY,AL8I4_QUERY,NULL,0)) {
+			return;
+		}
+		checkOjdbc14Objects(s,what,"10 08 04");
+		checkOjdbc14Describe(s,what,columns,1);
+		uint32_t	got=checkOjdbc14ReturnParameters(s,what);
+		if (c) {
+			stringbuffer	l;
+			ojdbc14Label(&l,s,what," gets the same cursor back");
+			report(l.getString(),got==c);
+		} else {
+			open[(*count)++]=got;
+		}
+		c=got;
+		checkOjdbc14Summary(s,what,nextEndToEnd(&e,0),0,0,c,3);
+
+		charstring::printf(what,sizeof(what),
+				"its fetch of %d rows",(int)sizes[i]);
+		if (!ojdbc14FetchRows(s,what,c,1,sizes[i],NULL,0)) {
+			return;
+		}
+		if (sizes[i]<=100000) {
+			checkOjdbc14FetchRows(s,what,1,values,5,
+						nextEndToEnd(&e,0),5,1403,c,
+						sizes[i]);
+			continue;
+		}
+		checkOjdbc14ErrorCursor(s,what,c);
+		checkOjdbc14QueryError(s,what,nextEndToEnd(&e,0),0,20004,c,3,
+							0,&MSG_20004);
+	}
+
+	const char	*what="a fetch of 10 rows after the ORA-20004";
+	if (ojdbc14Fetch(s,what,c,1)) {
+		checkOjdbc14Fetch(s,what,1,values,5,nextEndToEnd(&e,0),
+								5,1403,c);
+	}
+}
+
+static const char	*LEVELBIND_QUERY=
+	"select level x from dual connect by level <= :1";
+
+// prepfetchsizes: a PreparedStatement select of 5 rows, setInt(5), and its
+// fetch; then the re-execute with fetch (0x8068) asking for 70000 rows in
+// its al8i4 vector, as ojdbc14 does at fetch size 70000 (MEASURED, packet
+// [0041] of 10750-dev-ojdbc14-prepfetchsizes-realserver-oracle122 and its
+// answer [0042], which holds 3 rows where this holds 5): the row header
+// names 02 11 70, the 5 rows follow, then the return parameters and
+// ORA-01403 with row number 5, the rows of that execute.  then a re-execute
+// with fetch asking for 100001: ORA-20004 before anything runs, behind the
+// markers, alone, where the module before #10750 ran it and sent up to
+// 100000 rows.  its success iterations are 1, the rule for an error
+// answering a call that executes and fetches.  ojdbc14 itself can't send it
+// (INFERRED: a fetch size change makes it re-parse, and the fetch after the
+// first execute already gets ORA-20004), so that answer is the module's
+// alone.  then the re-parse on that cursor, which works
+static void runPrepFetchSizes(ojdbc14session *s, uint32_t *open,
+							uint32_t *count) {
+	static const ojdbc14column	columns[]={
+		{2,OJDBC14_ANY,OJDBC14_ANY,22,"X"}
+	};
+	char		numbers[5][8];
+	ojdbc14value	values[5];
+	for (uint32_t i=0; i<5; i++) {
+		setOjdbc14Number(&values[i],numbers[i],i+1);
+	}
+	unsigned char	row5[16];
+	size_t		row5size=putOjdbc14BindRow(row5,5,NULL,NULL);
+
+	const char	*what="select level x ... <= :1, with 5";
+	if (!ojdbc14Query(s,what,OJDBC14_PREPARED,0,LEVELBIND_QUERY,
+				AL8I4_QUERY,OJDBC14_BINDS_INT,
+				sizeof(OJDBC14_BINDS_INT),1,row5,row5size,
+				NULL,0,0,0)) {
+		return;
+	}
+	checkOjdbc14Objects(s,what,"10 08 04");
+	checkOjdbc14Describe(s,what,columns,1);
+	uint32_t	c=checkOjdbc14ReturnParameters(s,what);
+	checkOjdbc14Summary(s,what,4,0,0,c,3);
+	open[(*count)++]=c;
+	if (ojdbc14Fetch(s,"its fetch",c,1)) {
+		checkOjdbc14Fetch(s,"its fetch",1,values,5,5,5,1403,c);
+	}
+
+	what="the re-execute with fetch of 70000 rows";
+	if (ojdbc14Query(s,what,OJDBC14_REEXECUTE_QUERY,c,NULL,
+				AL8I4_REEXECUTE_70000,OJDBC14_BINDS_INT,
+				sizeof(OJDBC14_BINDS_INT),1,row5,row5size,
+				NULL,0,1,0)) {
+		checkOjdbc14Objects(s,what,"06 07 07 07 07 07 08 04");
+		unsigned char	expected[16];
+		size_t		size=0;
+		putOjdbc14RowHeader(expected,&size,1,70000);
+		checkOjdbc14Object(s,what," row header names 02 11 70",
+					ORA_TTC_ROW_HEADER,expected,size);
+		oracleprotocolojdbc14answer	*a=s->answer;
+		bool	ok=(a->rowcount==5);
+		for (size_t r=0; ok && r<5; r++) {
+			ok=(a->values[r][0].size==values[r].size &&
+				!bytestring::compare(
+					a->valuedata+a->values[r][0].offset,
+					values[r].bytes,values[r].size));
+		}
+		stringbuffer	l;
+		ojdbc14Label(&l,s,what," rows are 1 to 5");
+		report(l.getString(),ok);
+		uint32_t	again=checkOjdbc14ReturnParameters(s,what);
+		ojdbc14Label(&l,s,what," names the same cursor");
+		report(l.getString(),again==c);
+		checkOjdbc14Summary(s,what,6,5,1403,c,3);
+	}
+
+	what="the re-execute with fetch of 100001 rows";
+	if (ojdbc14Query(s,what,OJDBC14_REEXECUTE_QUERY,c,NULL,
+				AL8I4_REEXECUTE_100001,OJDBC14_BINDS_INT,
+				sizeof(OJDBC14_BINDS_INT),1,row5,row5size,
+				NULL,0,1,0)) {
+		checkOjdbc14ErrorCursor(s,what,c);
+		checkOjdbc14QueryError(s,what,7,0,20004,c,3,1,&MSG_20004);
+	}
+
+	what="the re-parse on the same cursor";
+	if (!ojdbc14Query(s,what,OJDBC14_PREPARED,c,LEVELBIND_QUERY,
+				AL8I4_QUERY,OJDBC14_BINDS_INT,
+				sizeof(OJDBC14_BINDS_INT),1,row5,row5size,
+				NULL,0,0,0)) {
+		return;
+	}
+	checkOjdbc14Objects(s,what,"10 08 04");
+	uint32_t	again=checkOjdbc14ReturnParameters(s,what);
+	stringbuffer	l;
+	ojdbc14Label(&l,s,what," names the same cursor");
+	report(l.getString(),again==c);
+	checkOjdbc14Summary(s,what,8,0,0,c,3);
+	if (ojdbc14Fetch(s,"its fetch, again",c,1)) {
+		checkOjdbc14Fetch(s,"its fetch, again",1,values,5,9,5,1403,c);
+	}
+}
+
+// reexecrows: a PreparedStatement select of 25 rows, setInt(25), executed
+// three times at fetch size 10: the first execute (0x8029) and three fetches,
+// then twice the re-execute with fetch (0x8068) and two fetches.  the row
+// number in each answer is the rows sent since that execute - 10, 20 and 25
+// every time - and the end to end fields run 4 to 13, as a real server's
+// (MEASURED, 10750-dev-ojdbc14-reexecrows-realserver-oracle102 and
+// -oracle122), where the module before #10750 counted on over the cursor,
+// 35, 45 and 50, then 60, 70 and 75.  ojdbc14 counts a select's rows from
+// the rows it reads, so it never reads this number
+static void runReexecRows(ojdbc14session *s, uint32_t *open,
+							uint32_t *count) {
+	static const ojdbc14column	columns[]={
+		{2,OJDBC14_ANY,OJDBC14_ANY,22,"N"}
+	};
+	char		numbers[25][8];
+	ojdbc14value	values[25];
+	for (uint32_t i=0; i<25; i++) {
+		setOjdbc14Number(&values[i],numbers[i],i+1);
+	}
+	unsigned char	row25[16];
+	size_t		row25size=putOjdbc14BindRow(row25,25,NULL,NULL);
+
+	const char	*what="select level n ... <= :1, with 25";
+	if (!ojdbc14Query(s,what,OJDBC14_PREPARED,0,
+			"select level n from dual connect by level <= :1",
+			AL8I4_QUERY,OJDBC14_BINDS_INT,
+			sizeof(OJDBC14_BINDS_INT),1,row25,row25size,
+			NULL,0,0,0)) {
+		return;
+	}
+	checkOjdbc14Objects(s,what,"10 08 04");
+	checkOjdbc14Describe(s,what,columns,1);
+	uint32_t	c=checkOjdbc14ReturnParameters(s,what);
+	checkOjdbc14Summary(s,what,4,0,0,c,3);
+	open[(*count)++]=c;
+
+	uint32_t	e=4;
+	for (uint32_t x=0; x<3; x++) {
+
+		uint32_t	first=0;
+		if (x) {
+			char	reexecute[64];
+			charstring::printf(reexecute,sizeof(reexecute),
+					"re-execute with fetch %d",(int)x);
+			if (!ojdbc14Query(s,reexecute,OJDBC14_REEXECUTE_QUERY,
+					c,NULL,AL8I4_REEXECUTE_QUERY,
+					OJDBC14_BINDS_INT,
+					sizeof(OJDBC14_BINDS_INT),1,
+					row25,row25size,NULL,0,1,0)) {
+				return;
+			}
+			checkOjdbc14Objects(s,reexecute,
+				"06 07 07 07 07 07 07 07 07 07 07 08 04");
+			unsigned char	expected[16];
+			size_t		size=0;
+			putOjdbc14RowHeader(expected,&size,1,
+						OJDBC14_FETCH_ROWS);
+			checkOjdbc14Object(s,reexecute," row header is exact",
+					ORA_TTC_ROW_HEADER,expected,size);
+			oracleprotocolojdbc14answer	*a=s->answer;
+			bool	ok=(a->rowcount==10);
+			for (size_t r=0; ok && r<10; r++) {
+				ok=(a->values[r][0].size==values[r].size &&
+				!bytestring::compare(
+					a->valuedata+a->values[r][0].offset,
+					values[r].bytes,values[r].size));
+			}
+			stringbuffer	l;
+			ojdbc14Label(&l,s,reexecute," rows are 1 to 10");
+			report(l.getString(),ok);
+			uint32_t	again=
+				checkOjdbc14ReturnParameters(s,reexecute);
+			ojdbc14Label(&l,s,reexecute," names the same cursor");
+			report(l.getString(),again==c);
+			checkOjdbc14Summary(s,reexecute,nextEndToEnd(&e,0),
+								10,0,c,3);
+			first=1;
+		}
+
+		for (uint32_t f=first; f<3; f++) {
+			char	fetch[64];
+			charstring::printf(fetch,sizeof(fetch),
+					"execute %d, fetch %d",
+					(int)x+1,(int)f+1);
+			if (!ojdbc14Fetch(s,fetch,c,1)) {
+				return;
+			}
+			uint32_t	rows=(f<2)?10:5;
+			checkOjdbc14Fetch(s,fetch,1,values+10*f,rows,
+					nextEndToEnd(&e,0),10*f+rows,
+					(f<2)?0:1403,c);
+		}
+	}
+}
+
+// bigfetch, 12.1 only: a fetch of 65536 rows, the first count over 65535,
+// all in one answer: a row header naming 00, the low 16 bits (MEASURED, [0028]
+// of 10750-dev-ojdbc14-fetchsizes-realserver-oracle122), 65536 rows counted,
+// and a row number of 65536 in its minimal form, 03 01 00 00; then the next
+// fetch, the last 5 rows and ORA-01403 with row number 65541, 03 01 00 05.
+// The row numbers are MEASURED in the fetchbig captures of the real servers,
+// which are not checked in; the README in this directory quotes them
+static void runBigFetch(ojdbc14session *s, uint32_t *open, uint32_t *count) {
+	static const ojdbc14column	columns[]={
+		{2,OJDBC14_ANY,OJDBC14_ANY,22,"X"}
+	};
+	const char	*what="select level x from dual connect by level <= "
+								"65541";
+	if (!ojdbc14Statement(s,what,OJDBC14_STATEMENT,0,
+			"select level x from dual connect by level <= 65541",
+			AL8I4_QUERY,NULL,0)) {
+		return;
+	}
+	checkOjdbc14Objects(s,what,"10 08 04");
+	checkOjdbc14Describe(s,what,columns,1);
+	uint32_t	c=checkOjdbc14ReturnParameters(s,what);
+	checkOjdbc14Summary(s,what,4,0,0,c,3);
+	open[(*count)++]=c;
+
+	what="its fetch of 65536 rows";
+	if (!ojdbc14FetchRows(s,what,c,1,65536,NULL,0)) {
+		return;
+	}
+	unsigned char	expected[16];
+	size_t		size=0;
+	putOjdbc14RowHeader(expected,&size,1,65536);
+	checkOjdbc14Object(s,what," row header names 00",
+					ORA_TTC_ROW_HEADER,expected,size);
+	oracleprotocolojdbc14answer	*a=s->answer;
+	stringbuffer	l;
+	ojdbc14Label(&l,s,what," has 65536 rows, the first 1 and the 32nd 32");
+	char	n1[8];
+	char	n32[8];
+	ojdbc14value	v1;
+	ojdbc14value	v32;
+	setOjdbc14Number(&v1,n1,1);
+	setOjdbc14Number(&v32,n32,32);
+	const oracleprotocolojdbc14value	*first=&a->values[0][0];
+	const oracleprotocolojdbc14value	*last=&a->values[31][0];
+	bool	ok=(a->totalrowcount==65536 &&
+			a->totalobjectcount==65538 &&
+			a->rowcount==ORA_8I_MAX_ROWS &&
+			first->size==v1.size &&
+			!bytestring::compare(a->valuedata+first->offset,
+							v1.bytes,v1.size) &&
+			last->size==v32.size &&
+			!bytestring::compare(a->valuedata+last->offset,
+							v32.bytes,v32.size));
+	report(l.getString(),ok);
+	if (!ok) {
+		stdoutput.printf("    %d rows, %d objects\n",
+					(int)a->totalrowcount,
+					(int)a->totalobjectcount);
+	}
+	checkOjdbc14Summary(s,what,5,65536,0,c,3);
+
+	char		numbers[5][8];
+	ojdbc14value	values[5];
+	for (uint32_t i=0; i<5; i++) {
+		setOjdbc14Number(&values[i],numbers[i],65537+i);
+	}
+	what="its next fetch of 65536 rows";
+	if (ojdbc14FetchRows(s,what,c,1,65536,NULL,0)) {
+		checkOjdbc14FetchRows(s,what,1,values,5,6,65541,1403,c,65536);
+	}
+}
+
+// noreset, 12.1 only: a client that answers the break ahead of an error - an
+// ORA-00942, which always comes at the 0x5e - with its next call, a data
+// packet, where its reset marker belongs.  ojdbc14
+// never does that (CROSS-CHECK, NSProtocol.sendReset()), so this is the
+// module's choice: the listener ends the session and closes the connection
+// rather than answer a call out of step, and doesn't hang waiting for a
+// reset that won't come
+static void runNoReset(ojdbc14session *s) {
+
+	stringbuffer		l;
+	oracleprotocolclient	*client=s->client;
+	oracleprotocolojdbc14query	q;
+	bytestring::zero(&q,sizeof(q));
+	q.options=OJDBC14_STATEMENT;
+	q.query="select * from protocoltest10750_nonexistent";
+	q.al8i4=AL8I4_QUERY;
+	client->buildOjdbc14Query(&q);
+
+	const char	*what=q.query;
+	bool	ok=(client->sendPacket() && client->recvPacket() &&
+			client->getPacketType()==ORA_PACKET_MARKER &&
+			client->getResponseSize()==3 &&
+			client->getResponse()[2]==ORA_MARKER_TYPE_BREAK);
+	ojdbc14Label(&l,s,what," answer starts with a break marker");
+	report(l.getString(),ok);
+	if (!ok) {
+		dumpBytes("got",client->getResponse(),
+					client->getResponseSize());
+		s->ok=false;
+		return;
+	}
+	ok=(client->recvPacket() &&
+		client->getPacketType()==ORA_PACKET_MARKER &&
+		client->getResponseSize()==3 &&
+		client->getResponse()[2]==ORA_MARKER_TYPE_RESET);
+	ojdbc14Label(&l,s,what," reset marker follows");
+	report(l.getString(),ok);
+	if (!ok) {
+		s->ok=false;
+		return;
+	}
+
+	q.query="select 1 from dual";
+	client->buildOjdbc14Query(&q);
+	datetime	dt;
+	dt.initFromSystemDateTime();
+	time_t		start=dt.getEpoch();
+	bool		answered=(client->sendPacket() && client->recvPacket());
+	dt.initFromSystemDateTime();
+	time_t		elapsed=dt.getEpoch()-start;
+	ojdbc14Label(&l,s,"select 1 from dual, sent where the reset belongs,",
+				" gets the connection closed, not an answer");
+	report(l.getString(),!answered && elapsed<DROP_SECONDS);
+	if (answered) {
+		dumpBytes("answer",client->getResponse(),
+					client->getResponseSize());
+	} else if (elapsed>=DROP_SECONDS) {
+		stdoutput.printf("    no answer, but no close for %d seconds\n",
+								(int)elapsed);
+	}
+	s->ok=false;
+}
+
+// urgent, 12.1 only: ojdbc14 cancels a call - Statement.cancel(), or a query
+// timeout - with one byte of tcp urgent data, 0x21, and nothing in band
+// (MEASURED, step 3b of #10750).  a real server answers it with a reset
+// marker, takes the client's reset, and fails the call with ORA-01013.  the
+// module doesn't read urgent data: the call it lands behind runs to the end
+// and is answered as usual, and so is the next one, with the end to end
+// field in step (the module's choice, documented in #10750; the back end
+// can't interrupt a statement anyway).  this pins that the byte, right
+// behind a call and between two calls, does no harm: no answer goes out of
+// step and nothing hangs
+static void runUrgent(ojdbc14session *s, uint32_t *open, uint32_t *count) {
+	s->urgent=true;
+	uint32_t	c1=ojdbc14Select1(s,"select 1 from dual, urgent data "
+					"right behind its call",
+					"select 1 from dual",4,NULL,0);
+	if (s->ok) {
+		stringbuffer	l;
+		ojdbc14Label(&l,s,"urgent data between two calls",
+							" is sent");
+		bool	sent=s->client->sendUrgentByte(0x21);
+		report(l.getString(),sent);
+		s->ok=sent;
+	}
+	open[(*count)++]=ojdbc14Select1(s,"select 1 from dual, after urgent "
+					"data","select 1 from dual",7,&c1,1);
+}
+
 // one query session: ojdbc14's login, the script, then the logoff with every
 // cursor the script left open closed in front of it, answered "09 00"
 static void runOjdbc14QuerySession(size_t listener, ojdbc14script script) {
 
 	const listenerinfo	*li=&listeners[listener];
-	const char		*user=(listener==LISTENER_CONNECTSTRINGS)?
+	const char		*user=(listener==LISTENER_CONNECTSTRINGS ||
+					listener==LISTENER_FETCHATONCE)?
 							"testuser":"TESTUSER";
 
 	char	label[256];
@@ -4161,6 +5573,7 @@ static void runOjdbc14QuerySession(size_t listener, ojdbc14script script) {
 	s.label=label;
 	s.answer=answer;
 	s.ok=true;
+	s.urgent=false;
 
 	uint32_t	open[8];
 	uint32_t	count=0;
@@ -4203,6 +5616,40 @@ static void runOjdbc14QuerySession(size_t listener, ojdbc14script script) {
 			break;
 		case SCRIPT_COMMITFIRST:
 			runCommitFirst(&s,open,&count);
+			break;
+		case SCRIPT_EXECERR:
+			runExecErr(&s,open,&count);
+			break;
+		case SCRIPT_PREPEXECERR:
+			runPrepExecErr(&s,open,&count);
+			break;
+		case SCRIPT_EXECSELERR:
+			runExecSelErr(&s,open,&count);
+			break;
+		case SCRIPT_FETCHERR:
+			runFetchErr(&s,open,&count,
+					listener==LISTENER_FETCHATONCE);
+			break;
+		case SCRIPT_PREPFETCHERR:
+			runPrepFetchErr(&s,open,&count);
+			break;
+		case SCRIPT_FETCHSIZES:
+			runFetchSizes(&s,open,&count);
+			break;
+		case SCRIPT_PREPFETCHSIZES:
+			runPrepFetchSizes(&s,open,&count);
+			break;
+		case SCRIPT_REEXECROWS:
+			runReexecRows(&s,open,&count);
+			break;
+		case SCRIPT_BIGFETCH:
+			runBigFetch(&s,open,&count);
+			break;
+		case SCRIPT_NORESET:
+			runNoReset(&s);
+			break;
+		case SCRIPT_URGENT:
+			runUrgent(&s,open,&count);
 			break;
 	}
 	delete answer;
@@ -4272,8 +5719,53 @@ static void checkOjdbc14CallBuilders() {
 			sizeof(OJDBC14_CALL_CLOSE_ROLLBACK)},
 		{"[0026] of 10745-dev-ojdbc14-error-realserver-oracle122",
 			OJDBC14_CALL_CLOSE2_LOGOFF,
-			sizeof(OJDBC14_CALL_CLOSE2_LOGOFF)}
+			sizeof(OJDBC14_CALL_CLOSE2_LOGOFF)},
+		{"[0019] of 10750-dev-ojdbc14-fetchsizes-realserver-oracle102",
+			OJDBC14_CALL_FETCH_65535,
+			sizeof(OJDBC14_CALL_FETCH_65535)},
+		{"[0027] of 10750-dev-ojdbc14-fetchsizes-realserver-oracle102",
+			OJDBC14_CALL_FETCH_65536,
+			sizeof(OJDBC14_CALL_FETCH_65536)},
+		{"[0035] of 10750-dev-ojdbc14-fetchsizes-realserver-oracle102",
+			OJDBC14_CALL_FETCH_70000,
+			sizeof(OJDBC14_CALL_FETCH_70000)},
+		{"[0043] of 10750-dev-ojdbc14-fetchsizes-realserver-oracle102",
+			OJDBC14_CALL_FETCH_100001,
+			sizeof(OJDBC14_CALL_FETCH_100001)},
+		{"[0041] of 10750-dev-ojdbc14-prepfetchsizes-realserver-"
+							"oracle122",
+			OJDBC14_CALL_REEXECUTE_70000,
+			sizeof(OJDBC14_CALL_REEXECUTE_70000)},
+		{"[0017] of 10750-dev-ojdbc14-reexecrows-realserver-oracle122",
+			OJDBC14_CALL_PREPARED_LEVEL,
+			sizeof(OJDBC14_CALL_PREPARED_LEVEL)},
+		{"[0025] of 10750-dev-ojdbc14-reexecrows-realserver-oracle122",
+			OJDBC14_CALL_REEXECUTE_10,
+			sizeof(OJDBC14_CALL_REEXECUTE_10)},
+		{"[0026] of 10750-dev-ojdbc14-prepexecerr-realserver-oracle122",
+			OJDBC14_CALL_CLOSE_PREPARED_INSERT3,
+			sizeof(OJDBC14_CALL_CLOSE_PREPARED_INSERT3)},
+		{"[0041] of 10750-dev-ojdbc14-prepexecerr-realserver-oracle122",
+			OJDBC14_CALL_CLOSE_REEXECUTE_INSERT3,
+			sizeof(OJDBC14_CALL_CLOSE_REEXECUTE_INSERT3)},
+		{"[0050] of 10750-dev-ojdbc14-prepexecerr-realserver-oracle122",
+			OJDBC14_CALL_CLOSE_REPARSE_INSERT3,
+			sizeof(OJDBC14_CALL_CLOSE_REPARSE_INSERT3)},
+		{"[0017] of 10750-dev-ojdbc14-prepfetcherr-realserver-"
+							"oracle122",
+			OJDBC14_CALL_PREPARED_DIVIDE,
+			sizeof(OJDBC14_CALL_PREPARED_DIVIDE)},
+		{"[0025] of 10750-dev-ojdbc14-prepfetcherr-realserver-"
+							"oracle122",
+			OJDBC14_CALL_CLOSE_REEXECUTE_DIVIDE,
+			sizeof(OJDBC14_CALL_CLOSE_REEXECUTE_DIVIDE)},
+		{"[0026] of 10750-dev-ojdbc14-execerr-realserver-oracle122",
+			OJDBC14_CALL_CLOSE_INSERT,
+			sizeof(OJDBC14_CALL_CLOSE_INSERT)}
 	};
+	uint32_t	three=3;
+	uint32_t	four=4;
+	unsigned char	row[64];
 
 	for (size_t i=0; i<sizeof(vectors)/sizeof(vectors[0]); i++) {
 
@@ -4343,6 +5835,101 @@ static void checkOjdbc14CallBuilders() {
 				client.buildOjdbc14Call(ORA_TTI_DISCONNECT,
 								threeone,2);
 				break;
+			case 10:
+				client.buildOjdbc14Fetch(2,65535);
+				break;
+			case 11:
+				client.buildOjdbc14Fetch(1,65536);
+				break;
+			case 12:
+				client.buildOjdbc14Fetch(2,70000);
+				break;
+			case 13:
+				client.buildOjdbc14Fetch(1,100001);
+				break;
+			case 14:
+			case 16:
+			case 21:
+				// a prepared query's re-execute with fetch
+				q.options=OJDBC14_REEXECUTE_QUERY;
+				q.cursorid=1;
+				q.al8i4=(i==14)?AL8I4_REEXECUTE_70000:
+						AL8I4_REEXECUTE_QUERY;
+				q.bindcount=1;
+				q.descriptors=OJDBC14_BINDS_INT;
+				q.descriptorssize=sizeof(OJDBC14_BINDS_INT);
+				q.bindrow=row;
+				q.bindrowsize=putOjdbc14BindRow(row,
+						(i==14)?70005:(i==16)?25:3,
+						NULL,NULL);
+				client.buildOjdbc14Query(&q,
+						(i==21)?&three:NULL,
+						(i==21)?1:0);
+				break;
+			case 15:
+			case 20:
+				// a prepared query's first execute
+				q.options=OJDBC14_PREPARED;
+				q.query=(i==15)?
+					"select level n from dual connect by "
+					"level <= :1":
+					"select 1/(:1 - level) x from dual "
+					"connect by level <= 5";
+				q.al8i4=AL8I4_QUERY;
+				q.bindcount=1;
+				q.descriptors=OJDBC14_BINDS_INT;
+				q.descriptorssize=sizeof(OJDBC14_BINDS_INT);
+				q.bindrow=row;
+				q.bindrowsize=putOjdbc14BindRow(row,
+						(i==15)?25:10,NULL,NULL);
+				client.buildOjdbc14Query(&q);
+				break;
+			case 17:
+			case 19:
+				// a prepared insert's first execute, and its
+				// re-parse with a 12 character value
+				q.options=OJDBC14_PREPARED;
+				q.cursorid=(i==17)?0:10;
+				q.query="insert into protocoltest10750p values "
+							"(:1, :2, :3)";
+				q.al8i4=AL8I4_DML;
+				q.bindcount=3;
+				if (i==17) {
+					q.descriptors=
+					OJDBC14_BINDS_INT_STRING1_STRING1;
+					q.descriptorssize=sizeof(
+					OJDBC14_BINDS_INT_STRING1_STRING1);
+				} else {
+					q.descriptors=
+					OJDBC14_BINDS_INT_STRING1_STRING12;
+					q.descriptorssize=sizeof(
+					OJDBC14_BINDS_INT_STRING1_STRING12);
+				}
+				q.bindrow=row;
+				q.bindrowsize=(i==17)?
+					putOjdbc14BindRow(row,1,"b","b"):
+					putOjdbc14BindRow(row,30,"b",
+							"toolongvalue");
+				client.buildOjdbc14Query(&q,
+						(i==17)?&six:&four,1);
+				break;
+			case 18:
+				// its re-execute, autocommit off
+				q.options=OJDBC14_REEXECUTE_DML_NO_COMMIT;
+				q.cursorid=10;
+				q.al8i4=AL8I4_REEXECUTE_DML;
+				q.bindrow=row;
+				q.bindrowsize=putOjdbc14BindRow(row,1,"b","b");
+				client.buildOjdbc14Query(&q,&five,1);
+				break;
+			case 22:
+				// a statement's insert
+				q.options=OJDBC14_STATEMENT;
+				q.query="insert into protocoltest10750e values "
+							"(1, 'b', 'b')";
+				q.al8i4=AL8I4_DML;
+				client.buildOjdbc14Query(&q,&four,1);
+				break;
 		}
 
 		// behind the header and the data flags
@@ -4363,6 +5950,97 @@ static void checkOjdbc14CallBuilders() {
 			dumpBytes("built",request,size);
 			dumpBytes("expected",vectors[i].bytes,
 							vectors[i].size);
+		}
+	}
+}
+
+// the error object builder against real servers' objects, field for field,
+// before any connection, so that the objects the sessions expect have a real
+// server's layout and differ from one only where putOjdbc14Summary() says
+static void checkOjdbc14ErrorObjectBuilder() {
+
+	stdoutput.printf("\nojdbc14 error object builder - expect real "
+						"servers' objects\n");
+
+	// the fields ahead of each message, as captured
+	static const unsigned char	head00001[]={
+		0x04, 0x01, 0x09, 0x00, 0x01, 0x01, 0x00, 0x00, 0x01, 0x0a,
+		0x00, 0x02, 0x00, 0x00, 0x00, 0x00, 0x00, 0x04, 0xff, 0xff,
+		0xff, 0xff, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+		0x00, 0x47
+	};
+	static const unsigned char	head01400[]={
+		0x04, 0x01, 0x0e, 0x00, 0x02, 0x05, 0x78, 0x01, 0x01, 0x02,
+		0x05, 0x78, 0x01, 0x05, 0x01, 0x2a, 0x02, 0x00, 0x00, 0x00,
+		0x00, 0x00, 0x04, 0xff, 0xff, 0xff, 0xff, 0x00, 0x00, 0x00,
+		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x4a
+	};
+	static const unsigned char	head01476[]={
+		0x04, 0x01, 0x09, 0x01, 0x02, 0x02, 0x05, 0xc4, 0x00, 0x00,
+		0x01, 0x01, 0x01, 0x08, 0x03, 0x00, 0x00, 0x00, 0x00, 0x00,
+		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01,
+		0x01, 0x24
+	};
+	static const unsigned char	head01722[]={
+		0x04, 0x01, 0x0a, 0x00, 0x02, 0x06, 0xba, 0x00, 0x00, 0x01,
+		0x03, 0x01, 0x11, 0x03, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x1a
+	};
+
+	struct {
+		const char		*capture;
+		const unsigned char	*head;
+		size_t			headsize;
+		ojdbc14oer		e;
+	} vectors[]={
+		{"[0030] of 10750-dev-ojdbc14-execerr-realserver-oracle122",
+			head00001,sizeof(head00001),
+			{9,0,1,0,0,10,0,2,0xffffffff,0,
+			"ORA-00001: unique constraint "
+			"(TESTUSER.PROTOCOLTEST10750E_PK) violated\n",0}},
+		{"[0039] of 10750-dev-ojdbc14-execerr-realserver-oracle122",
+			head01400,sizeof(head01400),
+			{14,0,1400,1,1400,5,42,2,0xffffffff,0,
+			"ORA-01400: cannot insert NULL into "
+			"(\"TESTUSER\".\"PROTOCOLTEST10750E\".\"NN\")\n",0}},
+		{"[0029] of 10750-dev-ojdbc14-prepfetcherr-realserver-"
+							"oracle122",
+			head01476,sizeof(head01476),
+			{9,2,1476,0,0,1,8,3,0,1,
+			"ORA-01476: divisor is equal to zero\n",0}},
+		{"[0034] of 10750-dev-ojdbc14-execselerr-realserver-"
+							"oracle122",
+			head01722,sizeof(head01722),
+			{10,0,1722,0,0,3,17,3,0,0,
+			"ORA-01722: invalid number\n",0}}
+	};
+
+	for (size_t i=0; i<sizeof(vectors)/sizeof(vectors[0]); i++) {
+
+		ojdbc14oer	e=vectors[i].e;
+		e.messagesize=charstring::getLength(e.message);
+
+		unsigned char	real[256];
+		size_t		realsize=vectors[i].headsize;
+		bytestring::copy(real,vectors[i].head,realsize);
+		bytestring::copy(real+realsize,e.message,e.messagesize);
+		realsize+=e.messagesize;
+
+		unsigned char	built[256];
+		size_t		builtsize=0;
+		putOjdbc14Oer(built,&builtsize,&e);
+
+		char	label[256];
+		charstring::printf(label,sizeof(label),
+				"ojdbc14 error object builder reproduces %d "
+				"bytes, packet %s",(int)realsize,
+				vectors[i].capture);
+		bool	ok=(builtsize==realsize &&
+				!bytestring::compare(built,real,realsize));
+		report(label,ok);
+		if (!ok) {
+			dumpBytes("built",built,builtsize);
+			dumpBytes("expected",real,realsize);
 		}
 	}
 }
@@ -4480,6 +6158,7 @@ int main(int argc, char **argv) {
 		// and its queries, at every ceiling and through the
 		// oracle_connectstrings auth module
 		checkOjdbc14CallBuilders();
+		checkOjdbc14ErrorObjectBuilder();
 		size_t	querylisteners[]={
 			LISTENER_12_1,
 			LISTENER_11_2,
@@ -4489,10 +6168,21 @@ int main(int argc, char **argv) {
 		for (size_t i=0; i<sizeof(querylisteners)/
 					sizeof(querylisteners[0]); i++) {
 			for (int sc=SCRIPT_SELECT1;
-					sc<=SCRIPT_COMMITFIRST; sc++) {
+					sc<=SCRIPT_REEXECROWS; sc++) {
 				runOjdbc14QuerySession(querylisteners[i],
 							(ojdbc14script)sc);
 			}
+		}
+
+		// and, for #10750, the sessions that need one listener
+		// only: the fetch error at the fetchatonce=1 listener, where
+		// the back end's execute leaves the error to a fetch, and
+		// the 65536 row fetch, the client that sends no reset and
+		// the urgent data at 12.1
+		runOjdbc14QuerySession(LISTENER_FETCHATONCE,SCRIPT_FETCHERR);
+		for (int sc=SCRIPT_BIGFETCH; sc<=SCRIPT_URGENT; sc++) {
+			runOjdbc14QuerySession(LISTENER_12_1,
+						(ojdbc14script)sc);
 		}
 	}
 
