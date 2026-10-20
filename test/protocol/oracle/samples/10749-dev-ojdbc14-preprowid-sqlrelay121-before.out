@@ -1,0 +1,13 @@
+== preprowid
+insert 3
+rowid AASsZPAAFAAAAFVAAB
+step setROWID where rowid = ? threw SQLException 17410 No more data to read from socket
+step setString where rowid = ? threw SQLException 17008 Closed Connection
+step setROWID insert into rowid/urowid columns threw SQLException 17008 Closed Connection
+step setROWID update where rowid = ? threw SQLException 17008 Closed Connection
+step select ? setROWID from dual threw SQLException 17008 Closed Connection
+step setROWID null threw SQLException 17008 Closed Connection
+step setNull ROWID threw SQLException 17008 Closed Connection
+step select table threw SQLException 17008 Closed Connection
+steps that threw 8
+exit 0

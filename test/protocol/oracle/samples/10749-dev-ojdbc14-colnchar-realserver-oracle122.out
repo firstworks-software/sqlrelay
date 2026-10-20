@@ -1,0 +1,49 @@
+== colnchar
+insert 1
+insert 1
+insert 1
+insert 1
+insert 1
+cols ID/NUMBER/0/-127 NC/CHAR/10/0 NV/VARCHAR2/40/0 V/VARCHAR2/40/0
+meta ID type=NUMBER code=2 prec=0 scale=-127 class=java.math.BigDecimal disp=22
+meta NC type=CHAR code=1 prec=10 scale=0 class=java.lang.String disp=10
+meta NV type=VARCHAR2 code=12 prec=40 scale=0 class=java.lang.String disp=40
+meta V type=VARCHAR2 code=12 prec=40 scale=0 class=java.lang.String disp=40
+row 1: [BigDecimal:1] [String:abc       ] [String:abc def] [String:abc]
+str 1: [1] [abc       ] [abc def] [abc]
+row 2: [BigDecimal:2] [String:café      ] [String:üñî café] [String:plain]
+str 2: [2] [café      ] [üñî café] [plain]
+row 3: [BigDecimal:3] [String:日本語       ] [String:日本語テスト] [String:x]
+str 3: [3] [日本語       ] [日本語テスト] [x]
+row 4: [BigDecimal:4] [String:0123456789] [String:éééééééééééééééééééééééééééééééééééééééé] [String:y]
+str 4: [4] [0123456789] [éééééééééééééééééééééééééééééééééééééééé] [y]
+row 5: [BigDecimal:5] [NULL] [NULL] [NULL]
+str 5: [5] [NULL] [NULL] [NULL]
+rows 5
+cols ID/NUMBER/0/-127 DNC/VARCHAR2/4000/0 DNV/VARCHAR2/4000/0 LNV/NUMBER/0/0 LBNV/NUMBER/0/0
+meta ID type=NUMBER code=2 prec=0 scale=-127 class=java.math.BigDecimal disp=22
+meta DNC type=VARCHAR2 code=12 prec=4000 scale=0 class=java.lang.String disp=4000
+meta DNV type=VARCHAR2 code=12 prec=4000 scale=0 class=java.lang.String disp=4000
+meta LNV type=NUMBER code=2 prec=0 scale=0 class=java.math.BigDecimal disp=22
+meta LBNV type=NUMBER code=2 prec=0 scale=0 class=java.math.BigDecimal disp=22
+row 1: [BigDecimal:1] [String:len=87 head=Typ=96 Len=2 hash=-357143065] [String:len=71 head=Typ=1 Len=14 hash=429522795] [BigDecimal:7] [BigDecimal:14]
+str 1: [1] [Typ=96 Len=20 CharacterSet=AL16UTF16: 0,61,0,62,0,63,0,20,0,...len=87] [Typ=1 Len=14 CharacterSet=AL16UTF16: 0,61,0,62,0,63,0,20,0,6...len=71] [7] [14]
+row 2: [BigDecimal:2] [String:len=87 head=Typ=96 Len=2 hash=193907447] [String:len=76 head=Typ=1 Len=16 hash=-74912774] [BigDecimal:8] [BigDecimal:16]
+str 2: [2] [Typ=96 Len=20 CharacterSet=AL16UTF16: 0,63,0,61,0,66,0,e9,0,...len=87] [Typ=1 Len=16 CharacterSet=AL16UTF16: 0,fc,0,f1,0,ee,0,20,0,6...len=76] [8] [16]
+row 3: [BigDecimal:3] [String:len=90 head=Typ=96 Len=2 hash=-1354470467] [String:len=72 head=Typ=1 Len=12 hash=1926475908] [BigDecimal:6] [BigDecimal:12]
+str 3: [3] [Typ=96 Len=20 CharacterSet=AL16UTF16: 65,e5,67,2c,8a,9e,0,20...len=90] [Typ=1 Len=12 CharacterSet=AL16UTF16: 65,e5,67,2c,8a,9e,30,c6...len=72] [6] [12]
+row 4: [BigDecimal:4] [String:len=87 head=Typ=96 Len=2 hash=1115817610] [String:len=236 head=Typ=1 Len=80 hash=-680966033] [BigDecimal:40] [BigDecimal:80]
+str 4: [4] [Typ=96 Len=20 CharacterSet=AL16UTF16: 0,30,0,31,0,32,0,33,0,...len=87] [Typ=1 Len=80 CharacterSet=AL16UTF16: 0,e9,0,e9,0,e9,0,e9,0,e...len=236] [40] [80]
+row 5: [BigDecimal:5] [String:NULL] [String:NULL] [NULL] [NULL]
+str 5: [5] [NULL] [NULL] [NULL] [NULL]
+rows 5
+cols A/CHAR/3/0 B/VARCHAR2/4/0 C/CHAR/3/0 D/VARCHAR2/7/0 E/VARCHAR2/1/0
+meta A type=CHAR code=1 prec=3 scale=0 class=java.lang.String disp=3
+meta B type=VARCHAR2 code=12 prec=4 scale=0 class=java.lang.String disp=4
+meta C type=CHAR code=1 prec=3 scale=0 class=java.lang.String disp=3
+meta D type=VARCHAR2 code=12 prec=7 scale=0 class=java.lang.String disp=7
+meta E type=VARCHAR2 code=12 prec=1 scale=0 class=java.lang.String disp=1
+row 1: [String:abc] [String:café] [String:x  ] [String:y] [String:q]
+str 1: [abc] [café] [x  ] [y] [q]
+rows 1
+exit 0

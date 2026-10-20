@@ -1,0 +1,58 @@
+== preptz
+step insert setTIMESTAMPTZ(String) 2024-03-05 13:14:15.123456 US/Eastern threw SQLException 6502 ORA-06502: PL/SQL: numeric or value error: character string buffer too small
+step select ? setTIMESTAMPTZ(String) 2024-03-05 13:14:15.123456 US/Eastern threw SQLException 6502 ORA-06502: PL/SQL: numeric or value error: character string buffer too small
+insert 1
+cols A/TIMESTAMPTZ/0/9 D/VARCHAR2/4000/0
+meta A type=TIMESTAMPTZ code=-101 prec=0 scale=9 class=oracle.sql.TIMESTAMPTZ disp=13
+meta D type=VARCHAR2 code=12 prec=4000 scale=0 class=java.lang.String disp=4000
+row 1: [TIMESTAMPTZ:2024-3-5 23.44.15.123456000 5:30] [String:len=49 head=Typ=181 Len= hash=-953034538]
+str 1: [2024-3-5 23.44.15.123456000 5:30] [Typ=181 Len=13: 78,7c,3,5,13,f,10,7,5b,ca,0,19,5a]
+rows 1
+step insert setTIMESTAMPTZ(String) 2024-03-05 13:14:15.123456 UTC threw SQLException 6502 ORA-06502: PL/SQL: numeric or value error: character string buffer too small
+step select ? setTIMESTAMPTZ(String) 2024-03-05 13:14:15.123456 UTC threw SQLException 6502 ORA-06502: PL/SQL: numeric or value error: character string buffer too small
+step insert setTIMESTAMPTZ(String) 2024-07-05 13:14:15 Asia/Tokyo threw SQLException 6502 ORA-06502: PL/SQL: numeric or value error: character string buffer too small
+step select ? setTIMESTAMPTZ(String) 2024-07-05 13:14:15 Asia/Tokyo threw SQLException 6502 ORA-06502: PL/SQL: numeric or value error: character string buffer too small
+step insert setTIMESTAMPTZ(Timestamp) threw SQLException 6502 ORA-06502: PL/SQL: numeric or value error: character string buffer too small
+step insert setTIMESTAMPLTZ(Timestamp) threw SQLException 6502 ORA-06502: PL/SQL: numeric or value error: character string buffer too small
+step select ? setTIMESTAMPLTZ threw SQLException 6502 ORA-06502: PL/SQL: numeric or value error: character string buffer too small
+insert 1
+insert 1
+cols A/VARCHAR2/128/0 D/VARCHAR2/4000/0
+meta A type=VARCHAR2 code=12 prec=128 scale=0 class=java.lang.String disp=128
+meta D type=VARCHAR2 code=12 prec=4000 scale=0 class=java.lang.String disp=4000
+row 1: [String:+12-05] [String:Typ=1 Len=6: 2b,31,32,2d,30,35]
+str 1: [+12-05] [Typ=1 Len=6: 2b,31,32,2d,30,35]
+rows 1
+insert 1
+insert 1
+cols A/VARCHAR2/128/0 D/VARCHAR2/4000/0
+meta A type=VARCHAR2 code=12 prec=128 scale=0 class=java.lang.String disp=128
+meta D type=VARCHAR2 code=12 prec=4000 scale=0 class=java.lang.String disp=4000
+row 1: [String:+3 04:05:06.123456789] [String:len=76 head=Typ=1 Len=21 hash=-234841168]
+str 1: [+3 04:05:06.123456789] [Typ=1 Len=21: 2b,33,20,30,34,3a,30,35,3a,30,36,2e,31,32,33,3...len=76]
+rows 1
+step insert setObject TIMESTAMPTZ/INTERVAL threw SQLException 6502 ORA-06502: PL/SQL: numeric or value error: character string buffer too small
+insert 1
+cols ID/NUMBER/0/-127 TZ/TIMESTAMPTZ/0/6 LTZ/TIMESTAMPLTZ/0/6 YM/INTERVALYM/2/0 DS/INTERVALDS/2/6 DTZ/VARCHAR2/4000/0 DLTZ/VARCHAR2/4000/0
+meta ID type=NUMBER code=2 prec=0 scale=-127 class=java.math.BigDecimal disp=22
+meta TZ type=TIMESTAMPTZ code=-101 prec=0 scale=6 class=oracle.sql.TIMESTAMPTZ disp=13
+meta LTZ type=TIMESTAMPLTZ code=-102 prec=0 scale=6 class=oracle.sql.TIMESTAMPLTZ disp=11
+meta YM type=INTERVALYM code=-103 prec=2 scale=0 class=oracle.sql.INTERVALYM disp=11
+meta DS type=INTERVALDS code=-104 prec=2 scale=6 class=oracle.sql.INTERVALDS disp=11
+meta DTZ type=VARCHAR2 code=12 prec=4000 scale=0 class=java.lang.String disp=4000
+meta DLTZ type=VARCHAR2 code=12 prec=4000 scale=0 class=java.lang.String disp=4000
+row 1: [BigDecimal:2] [TIMESTAMPTZ:2024-3-5 23.44.15.123456000 5:30] [NULL] [NULL] [NULL] [String:len=49 head=Typ=181 Len= hash=-953034538] [String:NULL]
+str 1: [2] [2024-3-5 23.44.15.123456000 5:30] [NULL] [NULL] [NULL] [Typ=181 Len=13: 78,7c,3,5,13,f,10,7,5b,ca,0,19,5a] [NULL]
+row 2: [BigDecimal:12] [NULL] [NULL] [INTERVALYM:12-5{8000000c41}] [NULL] [String:NULL] [String:NULL]
+str 2: [12] [NULL] [NULL] [12-5] [NULL] [NULL] [NULL]
+row 3: [BigDecimal:13] [NULL] [NULL] [INTERVALYM:-1-2{7fffffff3a}] [NULL] [String:NULL] [String:NULL]
+str 3: [13] [NULL] [NULL] [-1-2] [NULL] [NULL] [NULL]
+row 4: [BigDecimal:14] [NULL] [NULL] [NULL] [INTERVALDS:3 4:5:6.123457000{80000003404142875bcde8}] [String:NULL] [String:NULL]
+str 4: [14] [NULL] [NULL] [NULL] [3 4:5:6.123457000] [NULL] [NULL]
+row 5: [BigDecimal:15] [NULL] [NULL] [NULL] [INTERVALDS:-1 0:0:0.0{7fffffff3c3c3c80000000}] [String:NULL] [String:NULL]
+str 5: [15] [NULL] [NULL] [NULL] [-1 0:0:0.0] [NULL] [NULL]
+row 6: [BigDecimal:17] [NULL] [NULL] [NULL] [NULL] [String:NULL] [String:NULL]
+str 6: [17] [NULL] [NULL] [NULL] [NULL] [NULL] [NULL]
+rows 6
+steps that threw 10
+exit 0

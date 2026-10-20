@@ -1,0 +1,381 @@
+== preprexec
+exec 0 string insert 1
+exec 1 string insert 1
+exec 2 string insert 1
+exec 3 string insert 1
+exec 4 string insert 1
+exec 0 int insert 1
+exec 1 int insert 1
+exec 2 int insert 1
+exec 3 int insert 1
+exec 4 int insert 1
+exec 0 long insert 1
+exec 1 long insert 1
+exec 2 long insert 1
+exec 3 long insert 1
+exec 4 long insert 1
+exec 0 double insert 1
+exec 1 double insert 1
+exec 2 double insert 1
+exec 3 double insert 1
+exec 4 double insert 1
+exec 0 bigdecimal insert 1
+exec 1 bigdecimal insert 1
+exec 2 bigdecimal insert 1
+exec 3 bigdecimal insert 1
+exec 4 bigdecimal insert 1
+exec 0 date insert 1
+exec 1 date insert 1
+exec 2 date insert 1
+exec 3 date insert 1
+exec 4 date insert 1
+exec 0 timestamp insert 1
+exec 1 timestamp insert 1
+exec 2 timestamp insert 1
+exec 3 timestamp insert 1
+exec 4 timestamp insert 1
+exec 0 bytes insert 1
+exec 1 bytes insert 1
+exec 2 bytes insert 1
+exec 3 bytes insert 1
+exec 4 bytes insert 1
+exec 0 binfloat insert 1
+exec 1 binfloat insert 1
+exec 2 binfloat insert 1
+exec 3 binfloat insert 1
+exec 4 binfloat insert 1
+exec 0 bindouble insert 1
+exec 1 bindouble insert 1
+exec 2 bindouble insert 1
+exec 3 bindouble insert 1
+exec 4 bindouble insert 1
+exec 0 tz insert 1
+exec 1 tz insert 1
+exec 2 tz insert 1
+exec 3 tz insert 1
+exec 4 tz insert 1
+exec 0 nchar insert 1
+exec 1 nchar insert 1
+exec 2 nchar insert 1
+exec 3 nchar insert 1
+exec 4 nchar insert 1
+cols ID/NUMBER/0/-127 KIND/VARCHAR2/20/0 S/VARCHAR2/4000/0 N/NUMBER/0/-127 D/DATE/0/0 TS/TIMESTAMP/0/6 R/RAW/0/0 BF/BINARY_FLOAT/0/0 BD/BINARY_DOUBLE/0/0 TZ/TIMESTAMPTZ/0/6 NC/VARCHAR2/100/0
+meta ID type=NUMBER code=2 prec=0 scale=-127 class=java.math.BigDecimal disp=22
+meta KIND type=VARCHAR2 code=12 prec=20 scale=0 class=java.lang.String disp=20
+meta S type=VARCHAR2 code=12 prec=4000 scale=0 class=java.lang.String disp=4000
+meta N type=NUMBER code=2 prec=0 scale=-127 class=java.math.BigDecimal disp=22
+meta D type=DATE code=91 prec=0 scale=0 class=java.sql.Timestamp disp=7
+meta TS type=TIMESTAMP code=93 prec=0 scale=6 class=oracle.sql.TIMESTAMP disp=11
+meta R type=RAW code=-3 prec=0 scale=0 class=byte[] disp=2000
+meta BF type=BINARY_FLOAT code=100 prec=0 scale=0 class=null disp=4
+meta BD type=BINARY_DOUBLE code=101 prec=0 scale=0 class=null disp=8
+meta TZ type=TIMESTAMPTZ code=-101 prec=0 scale=6 class=oracle.sql.TIMESTAMPTZ disp=13
+meta NC type=VARCHAR2 code=12 prec=100 scale=0 class=java.lang.String disp=100
+row 1: [BigDecimal:0] [String:string] [String:a] [NULL] [NULL] [NULL] [NULL] [NULL] [NULL] [NULL] [NULL]
+str 1: [0] [string] [a] [NULL] [NULL] [NULL] [NULL] [NULL] [NULL] [NULL] [NULL]
+row 2: [BigDecimal:1] [String:string] [String:len=70 head=abcdefghijkl hash=-12359741] [NULL] [NULL] [NULL] [NULL] [NULL] [NULL] [NULL] [NULL]
+str 2: [1] [string] [abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefgh...len=70] [NULL] [NULL] [NULL] [NULL] [NULL] [NULL] [NULL] [NULL]
+row 3: [BigDecimal:2] [String:string] [NULL] [NULL] [NULL] [NULL] [NULL] [NULL] [NULL] [NULL] [NULL]
+str 3: [2] [string] [NULL] [NULL] [NULL] [NULL] [NULL] [NULL] [NULL] [NULL] [NULL]
+row 4: [BigDecimal:3] [String:string] [String:b] [NULL] [NULL] [NULL] [NULL] [NULL] [NULL] [NULL] [NULL]
+str 4: [3] [string] [b] [NULL] [NULL] [NULL] [NULL] [NULL] [NULL] [NULL] [NULL]
+row 5: [BigDecimal:4] [String:string] [String:len=4000 head=abcdefghijkl hash=983146768] [NULL] [NULL] [NULL] [NULL] [NULL] [NULL] [NULL] [NULL]
+str 5: [4] [string] [abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefgh...len=4000] [NULL] [NULL] [NULL] [NULL] [NULL] [NULL] [NULL] [NULL]
+row 6: [BigDecimal:10] [String:int] [NULL] [BigDecimal:1] [NULL] [NULL] [NULL] [NULL] [NULL] [NULL] [NULL]
+str 6: [10] [int] [NULL] [1] [NULL] [NULL] [NULL] [NULL] [NULL] [NULL] [NULL]
+row 7: [BigDecimal:11] [String:int] [NULL] [BigDecimal:-2000000000] [NULL] [NULL] [NULL] [NULL] [NULL] [NULL] [NULL]
+str 7: [11] [int] [NULL] [-2000000000] [NULL] [NULL] [NULL] [NULL] [NULL] [NULL] [NULL]
+row 8: [BigDecimal:12] [String:int] [NULL] [NULL] [NULL] [NULL] [NULL] [NULL] [NULL] [NULL] [NULL]
+str 8: [12] [int] [NULL] [NULL] [NULL] [NULL] [NULL] [NULL] [NULL] [NULL] [NULL]
+row 9: [BigDecimal:13] [String:int] [NULL] [BigDecimal:3] [NULL] [NULL] [NULL] [NULL] [NULL] [NULL] [NULL]
+str 9: [13] [int] [NULL] [3] [NULL] [NULL] [NULL] [NULL] [NULL] [NULL] [NULL]
+row 10: [BigDecimal:14] [String:int] [NULL] [BigDecimal:2000000000] [NULL] [NULL] [NULL] [NULL] [NULL] [NULL] [NULL]
+str 10: [14] [int] [NULL] [2000000000] [NULL] [NULL] [NULL] [NULL] [NULL] [NULL] [NULL]
+row 11: [BigDecimal:20] [String:long] [NULL] [BigDecimal:1] [NULL] [NULL] [NULL] [NULL] [NULL] [NULL] [NULL]
+str 11: [20] [long] [NULL] [1] [NULL] [NULL] [NULL] [NULL] [NULL] [NULL] [NULL]
+row 12: [BigDecimal:21] [String:long] [NULL] [BigDecimal:-4000000000000] [NULL] [NULL] [NULL] [NULL] [NULL] [NULL] [NULL]
+str 12: [21] [long] [NULL] [-4000000000000] [NULL] [NULL] [NULL] [NULL] [NULL] [NULL] [NULL]
+row 13: [BigDecimal:22] [String:long] [NULL] [NULL] [NULL] [NULL] [NULL] [NULL] [NULL] [NULL] [NULL]
+str 13: [22] [long] [NULL] [NULL] [NULL] [NULL] [NULL] [NULL] [NULL] [NULL] [NULL]
+row 14: [BigDecimal:23] [String:long] [NULL] [BigDecimal:3] [NULL] [NULL] [NULL] [NULL] [NULL] [NULL] [NULL]
+str 14: [23] [long] [NULL] [3] [NULL] [NULL] [NULL] [NULL] [NULL] [NULL] [NULL]
+row 15: [BigDecimal:24] [String:long] [NULL] [BigDecimal:4000000000000] [NULL] [NULL] [NULL] [NULL] [NULL] [NULL] [NULL]
+str 15: [24] [long] [NULL] [4000000000000] [NULL] [NULL] [NULL] [NULL] [NULL] [NULL] [NULL]
+row 16: [BigDecimal:30] [String:double] [NULL] [BigDecimal:1.5] [NULL] [NULL] [NULL] [NULL] [NULL] [NULL] [NULL]
+str 16: [30] [double] [NULL] [1.5] [NULL] [NULL] [NULL] [NULL] [NULL] [NULL] [NULL]
+row 17: [BigDecimal:31] [String:double] [NULL] [BigDecimal:-25000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000] [NULL] [NULL] [NULL] [NULL] [NULL] [NULL] [NULL]
+str 17: [31] [double] [NULL] [-2.5E100] [NULL] [NULL] [NULL] [NULL] [NULL] [NULL] [NULL]
+row 18: [BigDecimal:32] [String:double] [NULL] [NULL] [NULL] [NULL] [NULL] [NULL] [NULL] [NULL] [NULL]
+str 18: [32] [double] [NULL] [NULL] [NULL] [NULL] [NULL] [NULL] [NULL] [NULL] [NULL]
+row 19: [BigDecimal:33] [String:double] [NULL] [BigDecimal:3.25] [NULL] [NULL] [NULL] [NULL] [NULL] [NULL] [NULL]
+str 19: [33] [double] [NULL] [3.25] [NULL] [NULL] [NULL] [NULL] [NULL] [NULL] [NULL]
+row 20: [BigDecimal:34] [String:double] [NULL] [BigDecimal:1E-100] [NULL] [NULL] [NULL] [NULL] [NULL] [NULL] [NULL]
+str 20: [34] [double] [NULL] [1.E-100] [NULL] [NULL] [NULL] [NULL] [NULL] [NULL] [NULL]
+row 21: [BigDecimal:40] [String:bigdecimal] [NULL] [BigDecimal:1.5] [NULL] [NULL] [NULL] [NULL] [NULL] [NULL] [NULL]
+str 21: [40] [bigdecimal] [NULL] [1.5] [NULL] [NULL] [NULL] [NULL] [NULL] [NULL] [NULL]
+row 22: [BigDecimal:41] [String:bigdecimal] [NULL] [BigDecimal:-12345678901234567890.123456789] [NULL] [NULL] [NULL] [NULL] [NULL] [NULL] [NULL]
+str 22: [41] [bigdecimal] [NULL] [-12345678901234567890.123456789] [NULL] [NULL] [NULL] [NULL] [NULL] [NULL] [NULL]
+row 23: [BigDecimal:42] [String:bigdecimal] [NULL] [NULL] [NULL] [NULL] [NULL] [NULL] [NULL] [NULL] [NULL]
+str 23: [42] [bigdecimal] [NULL] [NULL] [NULL] [NULL] [NULL] [NULL] [NULL] [NULL] [NULL]
+row 24: [BigDecimal:43] [String:bigdecimal] [NULL] [BigDecimal:3] [NULL] [NULL] [NULL] [NULL] [NULL] [NULL] [NULL]
+str 24: [43] [bigdecimal] [NULL] [3] [NULL] [NULL] [NULL] [NULL] [NULL] [NULL] [NULL]
+row 25: [BigDecimal:44] [String:bigdecimal] [NULL] [BigDecimal:99999999999999999999999999999999999999] [NULL] [NULL] [NULL] [NULL] [NULL] [NULL] [NULL]
+str 25: [44] [bigdecimal] [NULL] [99999999999999999999999999999999999999] [NULL] [NULL] [NULL] [NULL] [NULL] [NULL] [NULL]
+row 26: [BigDecimal:50] [String:date] [NULL] [NULL] [Date:2024-03-05] [NULL] [NULL] [NULL] [NULL] [NULL] [NULL]
+str 26: [50] [date] [NULL] [NULL] [2024-03-05 00:00:00.0] [NULL] [NULL] [NULL] [NULL] [NULL] [NULL]
+row 27: [BigDecimal:51] [String:date] [NULL] [NULL] [Date:1970-01-01] [NULL] [NULL] [NULL] [NULL] [NULL] [NULL]
+str 27: [51] [date] [NULL] [NULL] [1970-01-01 00:00:00.0] [NULL] [NULL] [NULL] [NULL] [NULL] [NULL]
+row 28: [BigDecimal:52] [String:date] [NULL] [NULL] [NULL] [NULL] [NULL] [NULL] [NULL] [NULL] [NULL]
+str 28: [52] [date] [NULL] [NULL] [NULL] [NULL] [NULL] [NULL] [NULL] [NULL] [NULL]
+row 29: [BigDecimal:53] [String:date] [NULL] [NULL] [Date:2000-02-29] [NULL] [NULL] [NULL] [NULL] [NULL] [NULL]
+str 29: [53] [date] [NULL] [NULL] [2000-02-29 00:00:00.0] [NULL] [NULL] [NULL] [NULL] [NULL] [NULL]
+row 30: [BigDecimal:54] [String:date] [NULL] [NULL] [Date:9999-12-31] [NULL] [NULL] [NULL] [NULL] [NULL] [NULL]
+str 30: [54] [date] [NULL] [NULL] [9999-12-31 00:00:00.0] [NULL] [NULL] [NULL] [NULL] [NULL] [NULL]
+row 31: [BigDecimal:60] [String:timestamp] [NULL] [NULL] [NULL] [TIMESTAMP:2024-03-05 13:14:15.123456{787c03050e0f10075bca00}] [NULL] [NULL] [NULL] [NULL] [NULL]
+str 31: [60] [timestamp] [NULL] [NULL] [NULL] [2024-3-5.13.14. 15. 123456000] [NULL] [NULL] [NULL] [NULL] [NULL]
+row 32: [BigDecimal:61] [String:timestamp] [NULL] [NULL] [NULL] [TIMESTAMP:1970-01-01 00:00:00.0{77aa0101010101}] [NULL] [NULL] [NULL] [NULL] [NULL]
+str 32: [61] [timestamp] [NULL] [NULL] [NULL] [1970-1-1.0.0. 0. 0] [NULL] [NULL] [NULL] [NULL] [NULL]
+row 33: [BigDecimal:62] [String:timestamp] [NULL] [NULL] [NULL] [NULL] [NULL] [NULL] [NULL] [NULL] [NULL]
+str 33: [62] [timestamp] [NULL] [NULL] [NULL] [NULL] [NULL] [NULL] [NULL] [NULL] [NULL]
+row 34: [BigDecimal:63] [String:timestamp] [NULL] [NULL] [NULL] [TIMESTAMP:2000-02-29 23:59:59.999999{7864021d183c3c3b9ac618}] [NULL] [NULL] [NULL] [NULL] [NULL]
+str 34: [63] [timestamp] [NULL] [NULL] [NULL] [2000-2-29.23.59. 59. 999999000] [NULL] [NULL] [NULL] [NULL] [NULL]
+row 35: [BigDecimal:64] [String:timestamp] [NULL] [NULL] [NULL] [TIMESTAMP:2024-03-05 13:14:15.0{787c03050e0f10}] [NULL] [NULL] [NULL] [NULL] [NULL]
+str 35: [64] [timestamp] [NULL] [NULL] [NULL] [2024-3-5.13.14. 15. 0] [NULL] [NULL] [NULL] [NULL] [NULL]
+row 36: [BigDecimal:70] [String:bytes] [NULL] [NULL] [NULL] [NULL] [raw:05121f] [NULL] [NULL] [NULL] [NULL]
+str 36: [70] [bytes] [NULL] [NULL] [NULL] [NULL] [05121F] [NULL] [NULL] [NULL] [NULL]
+row 37: [BigDecimal:71] [String:bytes] [NULL] [NULL] [NULL] [NULL] [raw:05121f2c394653606d7a8794a1aebbc8d5e2effc...len=100] [NULL] [NULL] [NULL] [NULL]
+str 37: [71] [bytes] [NULL] [NULL] [NULL] [NULL] [05121F2C394653606D7A8794A1AEBBC8D5E2EFFC091623303D4A5764717E...len=200] [NULL] [NULL] [NULL] [NULL]
+row 38: [BigDecimal:72] [String:bytes] [NULL] [NULL] [NULL] [NULL] [NULL] [NULL] [NULL] [NULL] [NULL]
+str 38: [72] [bytes] [NULL] [NULL] [NULL] [NULL] [NULL] [NULL] [NULL] [NULL] [NULL]
+row 39: [BigDecimal:73] [String:bytes] [NULL] [NULL] [NULL] [NULL] [raw:05121f2c394653606d7a8794a1aebbc8d5e2effc...len=64] [NULL] [NULL] [NULL] [NULL]
+str 39: [73] [bytes] [NULL] [NULL] [NULL] [NULL] [05121F2C394653606D7A8794A1AEBBC8D5E2EFFC091623303D4A5764717E...len=128] [NULL] [NULL] [NULL] [NULL]
+row 40: [BigDecimal:74] [String:bytes] [NULL] [NULL] [NULL] [NULL] [raw:05121f2c394653606d7a8794a1aebbc8d5e2effc...len=2000] [NULL] [NULL] [NULL] [NULL]
+str 40: [74] [bytes] [NULL] [NULL] [NULL] [NULL] [05121F2C394653606D7A8794A1AEBBC8D5E2EFFC091623303D4A5764717E...len=4000] [NULL] [NULL] [NULL] [NULL]
+row 41: [BigDecimal:80] [String:binfloat] [NULL] [NULL] [NULL] [NULL] [NULL] [Float:1.5] [NULL] [NULL] [NULL]
+str 41: [80] [binfloat] [NULL] [NULL] [NULL] [NULL] [NULL] [1.5] [NULL] [NULL] [NULL]
+row 42: [BigDecimal:81] [String:binfloat] [NULL] [NULL] [NULL] [NULL] [NULL] [Float:NaN] [NULL] [NULL] [NULL]
+str 42: [81] [binfloat] [NULL] [NULL] [NULL] [NULL] [NULL] [NaN] [NULL] [NULL] [NULL]
+row 43: [BigDecimal:82] [String:binfloat] [NULL] [NULL] [NULL] [NULL] [NULL] [NULL] [NULL] [NULL] [NULL]
+str 43: [82] [binfloat] [NULL] [NULL] [NULL] [NULL] [NULL] [NULL] [NULL] [NULL] [NULL]
+row 44: [BigDecimal:83] [String:binfloat] [NULL] [NULL] [NULL] [NULL] [NULL] [Float:0.0] [NULL] [NULL] [NULL]
+str 44: [83] [binfloat] [NULL] [NULL] [NULL] [NULL] [NULL] [0.0] [NULL] [NULL] [NULL]
+row 45: [BigDecimal:84] [String:binfloat] [NULL] [NULL] [NULL] [NULL] [NULL] [Float:3.4028235E38] [NULL] [NULL] [NULL]
+str 45: [84] [binfloat] [NULL] [NULL] [NULL] [NULL] [NULL] [3.4028235E38] [NULL] [NULL] [NULL]
+row 46: [BigDecimal:90] [String:bindouble] [NULL] [NULL] [NULL] [NULL] [NULL] [NULL] [Double:1.5] [NULL] [NULL]
+str 46: [90] [bindouble] [NULL] [NULL] [NULL] [NULL] [NULL] [NULL] [1.5] [NULL] [NULL]
+row 47: [BigDecimal:91] [String:bindouble] [NULL] [NULL] [NULL] [NULL] [NULL] [NULL] [Double:NaN] [NULL] [NULL]
+str 47: [91] [bindouble] [NULL] [NULL] [NULL] [NULL] [NULL] [NULL] [NaN] [NULL] [NULL]
+row 48: [BigDecimal:92] [String:bindouble] [NULL] [NULL] [NULL] [NULL] [NULL] [NULL] [NULL] [NULL] [NULL]
+str 48: [92] [bindouble] [NULL] [NULL] [NULL] [NULL] [NULL] [NULL] [NULL] [NULL] [NULL]
+row 49: [BigDecimal:93] [String:bindouble] [NULL] [NULL] [NULL] [NULL] [NULL] [NULL] [Double:0.0] [NULL] [NULL]
+str 49: [93] [bindouble] [NULL] [NULL] [NULL] [NULL] [NULL] [NULL] [0.0] [NULL] [NULL]
+row 50: [BigDecimal:94] [String:bindouble] [NULL] [NULL] [NULL] [NULL] [NULL] [NULL] [Double:1.7976931348623157E308] [NULL] [NULL]
+str 50: [94] [bindouble] [NULL] [NULL] [NULL] [NULL] [NULL] [NULL] [1.7976931348623157E308] [NULL] [NULL]
+row 51: [BigDecimal:100] [String:tz] [NULL] [NULL] [NULL] [NULL] [NULL] [NULL] [NULL] [TIMESTAMPTZ:2024-3-5 13.14.15.0 US/Eastern] [NULL]
+str 51: [100] [tz] [NULL] [NULL] [NULL] [NULL] [NULL] [NULL] [NULL] [2024-3-5 13.14.15.0 US/Eastern] [NULL]
+row 52: [BigDecimal:101] [String:tz] [NULL] [NULL] [NULL] [NULL] [NULL] [NULL] [NULL] [TIMESTAMPTZ:2024-3-5 23.44.15.0 5:30] [NULL]
+str 52: [101] [tz] [NULL] [NULL] [NULL] [NULL] [NULL] [NULL] [NULL] [2024-3-5 23.44.15.0 5:30] [NULL]
+row 53: [BigDecimal:102] [String:tz] [NULL] [NULL] [NULL] [NULL] [NULL] [NULL] [NULL] [NULL] [NULL]
+str 53: [102] [tz] [NULL] [NULL] [NULL] [NULL] [NULL] [NULL] [NULL] [NULL] [NULL]
+row 54: [BigDecimal:103] [String:tz] [NULL] [NULL] [NULL] [NULL] [NULL] [NULL] [NULL] [TIMESTAMPTZ:2024-7-5 5.2.3.0 UTC] [NULL]
+str 54: [103] [tz] [NULL] [NULL] [NULL] [NULL] [NULL] [NULL] [NULL] [2024-7-5 5.2.3.0 UTC] [NULL]
+row 55: [BigDecimal:104] [String:tz] [NULL] [NULL] [NULL] [NULL] [NULL] [NULL] [NULL] [TIMESTAMPTZ:2024-3-6 3.14.15.0 Asia/Tokyo] [NULL]
+str 55: [104] [tz] [NULL] [NULL] [NULL] [NULL] [NULL] [NULL] [NULL] [2024-3-6 3.14.15.0 Asia/Tokyo] [NULL]
+row 56: [BigDecimal:110] [String:nchar] [NULL] [NULL] [NULL] [NULL] [NULL] [NULL] [NULL] [NULL] [String:abc]
+str 56: [110] [nchar] [NULL] [NULL] [NULL] [NULL] [NULL] [NULL] [NULL] [NULL] [abc]
+row 57: [BigDecimal:111] [String:nchar] [NULL] [NULL] [NULL] [NULL] [NULL] [NULL] [NULL] [NULL] [String:café üñ]
+str 57: [111] [nchar] [NULL] [NULL] [NULL] [NULL] [NULL] [NULL] [NULL] [NULL] [café üñ]
+row 58: [BigDecimal:112] [String:nchar] [NULL] [NULL] [NULL] [NULL] [NULL] [NULL] [NULL] [NULL] [NULL]
+str 58: [112] [nchar] [NULL] [NULL] [NULL] [NULL] [NULL] [NULL] [NULL] [NULL] [NULL]
+row 59: [BigDecimal:113] [String:nchar] [NULL] [NULL] [NULL] [NULL] [NULL] [NULL] [NULL] [NULL] [String:日本語]
+str 59: [113] [nchar] [NULL] [NULL] [NULL] [NULL] [NULL] [NULL] [NULL] [NULL] [日本語]
+row 60: [BigDecimal:114] [String:nchar] [NULL] [NULL] [NULL] [NULL] [NULL] [NULL] [NULL] [NULL] [String:x]
+str 60: [114] [nchar] [NULL] [NULL] [NULL] [NULL] [NULL] [NULL] [NULL] [NULL] [x]
+rows 60
+cols ID/NUMBER/0/-127 KIND/VARCHAR2/20/0 DN/VARCHAR2/4000/0 DD/VARCHAR2/4000/0 DTS/VARCHAR2/4000/0 DBF/VARCHAR2/4000/0 DBD/VARCHAR2/4000/0 DTZ/VARCHAR2/4000/0 DNC/VARCHAR2/4000/0
+meta ID type=NUMBER code=2 prec=0 scale=-127 class=java.math.BigDecimal disp=22
+meta KIND type=VARCHAR2 code=12 prec=20 scale=0 class=java.lang.String disp=20
+meta DN type=VARCHAR2 code=12 prec=4000 scale=0 class=java.lang.String disp=4000
+meta DD type=VARCHAR2 code=12 prec=4000 scale=0 class=java.lang.String disp=4000
+meta DTS type=VARCHAR2 code=12 prec=4000 scale=0 class=java.lang.String disp=4000
+meta DBF type=VARCHAR2 code=12 prec=4000 scale=0 class=java.lang.String disp=4000
+meta DBD type=VARCHAR2 code=12 prec=4000 scale=0 class=java.lang.String disp=4000
+meta DTZ type=VARCHAR2 code=12 prec=4000 scale=0 class=java.lang.String disp=4000
+meta DNC type=VARCHAR2 code=12 prec=4000 scale=0 class=java.lang.String disp=4000
+row 1: [BigDecimal:0] [String:string] [String:NULL] [String:NULL] [String:NULL] [String:NULL] [String:NULL] [String:NULL] [String:NULL]
+str 1: [0] [string] [NULL] [NULL] [NULL] [NULL] [NULL] [NULL] [NULL]
+row 2: [BigDecimal:1] [String:string] [String:NULL] [String:NULL] [String:NULL] [String:NULL] [String:NULL] [String:NULL] [String:NULL]
+str 2: [1] [string] [NULL] [NULL] [NULL] [NULL] [NULL] [NULL] [NULL]
+row 3: [BigDecimal:2] [String:string] [String:NULL] [String:NULL] [String:NULL] [String:NULL] [String:NULL] [String:NULL] [String:NULL]
+str 3: [2] [string] [NULL] [NULL] [NULL] [NULL] [NULL] [NULL] [NULL]
+row 4: [BigDecimal:3] [String:string] [String:NULL] [String:NULL] [String:NULL] [String:NULL] [String:NULL] [String:NULL] [String:NULL]
+str 4: [3] [string] [NULL] [NULL] [NULL] [NULL] [NULL] [NULL] [NULL]
+row 5: [BigDecimal:4] [String:string] [String:NULL] [String:NULL] [String:NULL] [String:NULL] [String:NULL] [String:NULL] [String:NULL]
+str 5: [4] [string] [NULL] [NULL] [NULL] [NULL] [NULL] [NULL] [NULL]
+row 6: [BigDecimal:10] [String:int] [String:Typ=2 Len=2: c1,2] [String:NULL] [String:NULL] [String:NULL] [String:NULL] [String:NULL] [String:NULL]
+str 6: [10] [int] [Typ=2 Len=2: c1,2] [NULL] [NULL] [NULL] [NULL] [NULL] [NULL]
+row 7: [BigDecimal:11] [String:int] [String:Typ=2 Len=3: 3a,51,66] [String:NULL] [String:NULL] [String:NULL] [String:NULL] [String:NULL] [String:NULL]
+str 7: [11] [int] [Typ=2 Len=3: 3a,51,66] [NULL] [NULL] [NULL] [NULL] [NULL] [NULL]
+row 8: [BigDecimal:12] [String:int] [String:NULL] [String:NULL] [String:NULL] [String:NULL] [String:NULL] [String:NULL] [String:NULL]
+str 8: [12] [int] [NULL] [NULL] [NULL] [NULL] [NULL] [NULL] [NULL]
+row 9: [BigDecimal:13] [String:int] [String:Typ=2 Len=2: c1,4] [String:NULL] [String:NULL] [String:NULL] [String:NULL] [String:NULL] [String:NULL]
+str 9: [13] [int] [Typ=2 Len=2: c1,4] [NULL] [NULL] [NULL] [NULL] [NULL] [NULL]
+row 10: [BigDecimal:14] [String:int] [String:Typ=2 Len=2: c5,15] [String:NULL] [String:NULL] [String:NULL] [String:NULL] [String:NULL] [String:NULL]
+str 10: [14] [int] [Typ=2 Len=2: c5,15] [NULL] [NULL] [NULL] [NULL] [NULL] [NULL]
+row 11: [BigDecimal:20] [String:long] [String:Typ=2 Len=2: c1,2] [String:NULL] [String:NULL] [String:NULL] [String:NULL] [String:NULL] [String:NULL]
+str 11: [20] [long] [Typ=2 Len=2: c1,2] [NULL] [NULL] [NULL] [NULL] [NULL] [NULL]
+row 12: [BigDecimal:21] [String:long] [String:Typ=2 Len=3: 38,61,66] [String:NULL] [String:NULL] [String:NULL] [String:NULL] [String:NULL] [String:NULL]
+str 12: [21] [long] [Typ=2 Len=3: 38,61,66] [NULL] [NULL] [NULL] [NULL] [NULL] [NULL]
+row 13: [BigDecimal:22] [String:long] [String:NULL] [String:NULL] [String:NULL] [String:NULL] [String:NULL] [String:NULL] [String:NULL]
+str 13: [22] [long] [NULL] [NULL] [NULL] [NULL] [NULL] [NULL] [NULL]
+row 14: [BigDecimal:23] [String:long] [String:Typ=2 Len=2: c1,4] [String:NULL] [String:NULL] [String:NULL] [String:NULL] [String:NULL] [String:NULL]
+str 14: [23] [long] [Typ=2 Len=2: c1,4] [NULL] [NULL] [NULL] [NULL] [NULL] [NULL]
+row 15: [BigDecimal:24] [String:long] [String:Typ=2 Len=2: c7,5] [String:NULL] [String:NULL] [String:NULL] [String:NULL] [String:NULL] [String:NULL]
+str 15: [24] [long] [Typ=2 Len=2: c7,5] [NULL] [NULL] [NULL] [NULL] [NULL] [NULL]
+row 16: [BigDecimal:30] [String:double] [String:Typ=2 Len=3: c1,2,33] [String:NULL] [String:NULL] [String:NULL] [String:NULL] [String:NULL] [String:NULL]
+str 16: [30] [double] [Typ=2 Len=3: c1,2,33] [NULL] [NULL] [NULL] [NULL] [NULL] [NULL]
+row 17: [BigDecimal:31] [String:double] [String:Typ=2 Len=4: c,63,33,66] [String:NULL] [String:NULL] [String:NULL] [String:NULL] [String:NULL] [String:NULL]
+str 17: [31] [double] [Typ=2 Len=4: c,63,33,66] [NULL] [NULL] [NULL] [NULL] [NULL] [NULL]
+row 18: [BigDecimal:32] [String:double] [String:NULL] [String:NULL] [String:NULL] [String:NULL] [String:NULL] [String:NULL] [String:NULL]
+str 18: [32] [double] [NULL] [NULL] [NULL] [NULL] [NULL] [NULL] [NULL]
+row 19: [BigDecimal:33] [String:double] [String:Typ=2 Len=3: c1,4,1a] [String:NULL] [String:NULL] [String:NULL] [String:NULL] [String:NULL] [String:NULL]
+str 19: [33] [double] [Typ=2 Len=3: c1,4,1a] [NULL] [NULL] [NULL] [NULL] [NULL] [NULL]
+row 20: [BigDecimal:34] [String:double] [String:Typ=2 Len=2: 8f,2] [String:NULL] [String:NULL] [String:NULL] [String:NULL] [String:NULL] [String:NULL]
+str 20: [34] [double] [Typ=2 Len=2: 8f,2] [NULL] [NULL] [NULL] [NULL] [NULL] [NULL]
+row 21: [BigDecimal:40] [String:bigdecimal] [String:Typ=2 Len=3: c1,2,33] [String:NULL] [String:NULL] [String:NULL] [String:NULL] [String:NULL] [String:NULL]
+str 21: [40] [bigdecimal] [Typ=2 Len=3: c1,2,33] [NULL] [NULL] [NULL] [NULL] [NULL] [NULL]
+row 22: [BigDecimal:41] [String:bigdecimal] [String:len=61 head=Typ=2 Len=17 hash=1786561799] [String:NULL] [String:NULL] [String:NULL] [String:NULL] [String:NULL] [String:NULL]
+str 22: [41] [bigdecimal] [Typ=2 Len=17: 35,59,43,2d,17,b,59,43,2d,17,b,59,43,2d,17,b,6...len=61] [NULL] [NULL] [NULL] [NULL] [NULL] [NULL]
+row 23: [BigDecimal:42] [String:bigdecimal] [String:NULL] [String:NULL] [String:NULL] [String:NULL] [String:NULL] [String:NULL] [String:NULL]
+str 23: [42] [bigdecimal] [NULL] [NULL] [NULL] [NULL] [NULL] [NULL] [NULL]
+row 24: [BigDecimal:43] [String:bigdecimal] [String:Typ=2 Len=2: c1,4] [String:NULL] [String:NULL] [String:NULL] [String:NULL] [String:NULL] [String:NULL]
+str 24: [43] [bigdecimal] [Typ=2 Len=2: c1,4] [NULL] [NULL] [NULL] [NULL] [NULL] [NULL]
+row 25: [BigDecimal:44] [String:bigdecimal] [String:len=73 head=Typ=2 Len=20 hash=1076426127] [String:NULL] [String:NULL] [String:NULL] [String:NULL] [String:NULL] [String:NULL]
+str 25: [44] [bigdecimal] [Typ=2 Len=20: d3,64,64,64,64,64,64,64,64,64,64,64,64,64,64,6...len=73] [NULL] [NULL] [NULL] [NULL] [NULL] [NULL]
+row 26: [BigDecimal:50] [String:date] [String:NULL] [String:Typ=12 Len=7: 78,7c,3,5,1,1,1] [String:NULL] [String:NULL] [String:NULL] [String:NULL] [String:NULL]
+str 26: [50] [date] [NULL] [Typ=12 Len=7: 78,7c,3,5,1,1,1] [NULL] [NULL] [NULL] [NULL] [NULL]
+row 27: [BigDecimal:51] [String:date] [String:NULL] [String:Typ=12 Len=7: 77,aa,1,1,1,1,1] [String:NULL] [String:NULL] [String:NULL] [String:NULL] [String:NULL]
+str 27: [51] [date] [NULL] [Typ=12 Len=7: 77,aa,1,1,1,1,1] [NULL] [NULL] [NULL] [NULL] [NULL]
+row 28: [BigDecimal:52] [String:date] [String:NULL] [String:NULL] [String:NULL] [String:NULL] [String:NULL] [String:NULL] [String:NULL]
+str 28: [52] [date] [NULL] [NULL] [NULL] [NULL] [NULL] [NULL] [NULL]
+row 29: [BigDecimal:53] [String:date] [String:NULL] [String:Typ=12 Len=7: 78,64,2,1d,1,1,1] [String:NULL] [String:NULL] [String:NULL] [String:NULL] [String:NULL]
+str 29: [53] [date] [NULL] [Typ=12 Len=7: 78,64,2,1d,1,1,1] [NULL] [NULL] [NULL] [NULL] [NULL]
+row 30: [BigDecimal:54] [String:date] [String:NULL] [String:Typ=12 Len=7: c7,c7,c,1f,1,1,1] [String:NULL] [String:NULL] [String:NULL] [String:NULL] [String:NULL]
+str 30: [54] [date] [NULL] [Typ=12 Len=7: c7,c7,c,1f,1,1,1] [NULL] [NULL] [NULL] [NULL] [NULL]
+row 31: [BigDecimal:60] [String:timestamp] [String:NULL] [String:NULL] [String:len=42 head=Typ=180 Len= hash=2046156872] [String:NULL] [String:NULL] [String:NULL] [String:NULL]
+str 31: [60] [timestamp] [NULL] [NULL] [Typ=180 Len=11: 78,7c,3,5,e,f,10,7,5b,ca,0] [NULL] [NULL] [NULL] [NULL]
+row 32: [BigDecimal:61] [String:timestamp] [String:NULL] [String:NULL] [String:Typ=180 Len=7: 77,aa,1,1,1,1,1] [String:NULL] [String:NULL] [String:NULL] [String:NULL]
+str 32: [61] [timestamp] [NULL] [NULL] [Typ=180 Len=7: 77,aa,1,1,1,1,1] [NULL] [NULL] [NULL] [NULL]
+row 33: [BigDecimal:62] [String:timestamp] [String:NULL] [String:NULL] [String:NULL] [String:NULL] [String:NULL] [String:NULL] [String:NULL]
+str 33: [62] [timestamp] [NULL] [NULL] [NULL] [NULL] [NULL] [NULL] [NULL]
+row 34: [BigDecimal:63] [String:timestamp] [String:NULL] [String:NULL] [String:len=47 head=Typ=180 Len= hash=1299957177] [String:NULL] [String:NULL] [String:NULL] [String:NULL]
+str 34: [63] [timestamp] [NULL] [NULL] [Typ=180 Len=11: 78,64,2,1d,18,3c,3c,3b,9a,c6,18] [NULL] [NULL] [NULL] [NULL]
+row 35: [BigDecimal:64] [String:timestamp] [String:NULL] [String:NULL] [String:Typ=180 Len=7: 78,7c,3,5,e,f,10] [String:NULL] [String:NULL] [String:NULL] [String:NULL]
+str 35: [64] [timestamp] [NULL] [NULL] [Typ=180 Len=7: 78,7c,3,5,e,f,10] [NULL] [NULL] [NULL] [NULL]
+row 36: [BigDecimal:70] [String:bytes] [String:NULL] [String:NULL] [String:NULL] [String:NULL] [String:NULL] [String:NULL] [String:NULL]
+str 36: [70] [bytes] [NULL] [NULL] [NULL] [NULL] [NULL] [NULL] [NULL]
+row 37: [BigDecimal:71] [String:bytes] [String:NULL] [String:NULL] [String:NULL] [String:NULL] [String:NULL] [String:NULL] [String:NULL]
+str 37: [71] [bytes] [NULL] [NULL] [NULL] [NULL] [NULL] [NULL] [NULL]
+row 38: [BigDecimal:72] [String:bytes] [String:NULL] [String:NULL] [String:NULL] [String:NULL] [String:NULL] [String:NULL] [String:NULL]
+str 38: [72] [bytes] [NULL] [NULL] [NULL] [NULL] [NULL] [NULL] [NULL]
+row 39: [BigDecimal:73] [String:bytes] [String:NULL] [String:NULL] [String:NULL] [String:NULL] [String:NULL] [String:NULL] [String:NULL]
+str 39: [73] [bytes] [NULL] [NULL] [NULL] [NULL] [NULL] [NULL] [NULL]
+row 40: [BigDecimal:74] [String:bytes] [String:NULL] [String:NULL] [String:NULL] [String:NULL] [String:NULL] [String:NULL] [String:NULL]
+str 40: [74] [bytes] [NULL] [NULL] [NULL] [NULL] [NULL] [NULL] [NULL]
+row 41: [BigDecimal:80] [String:binfloat] [String:NULL] [String:NULL] [String:NULL] [String:Typ=100 Len=4: bf,c0,0,0] [String:NULL] [String:NULL] [String:NULL]
+str 41: [80] [binfloat] [NULL] [NULL] [NULL] [Typ=100 Len=4: bf,c0,0,0] [NULL] [NULL] [NULL]
+row 42: [BigDecimal:81] [String:binfloat] [String:NULL] [String:NULL] [String:NULL] [String:Typ=100 Len=4: ff,c0,0,0] [String:NULL] [String:NULL] [String:NULL]
+str 42: [81] [binfloat] [NULL] [NULL] [NULL] [Typ=100 Len=4: ff,c0,0,0] [NULL] [NULL] [NULL]
+row 43: [BigDecimal:82] [String:binfloat] [String:NULL] [String:NULL] [String:NULL] [String:NULL] [String:NULL] [String:NULL] [String:NULL]
+str 43: [82] [binfloat] [NULL] [NULL] [NULL] [NULL] [NULL] [NULL] [NULL]
+row 44: [BigDecimal:83] [String:binfloat] [String:NULL] [String:NULL] [String:NULL] [String:Typ=100 Len=4: 80,0,0,0] [String:NULL] [String:NULL] [String:NULL]
+str 44: [83] [binfloat] [NULL] [NULL] [NULL] [Typ=100 Len=4: 80,0,0,0] [NULL] [NULL] [NULL]
+row 45: [BigDecimal:84] [String:binfloat] [String:NULL] [String:NULL] [String:NULL] [String:Typ=100 Len=4: ff,7f,ff,ff] [String:NULL] [String:NULL] [String:NULL]
+str 45: [84] [binfloat] [NULL] [NULL] [NULL] [Typ=100 Len=4: ff,7f,ff,ff] [NULL] [NULL] [NULL]
+row 46: [BigDecimal:90] [String:bindouble] [String:NULL] [String:NULL] [String:NULL] [String:NULL] [String:Typ=101 Len=8: bf,f8,0,0,0,0,0,0] [String:NULL] [String:NULL]
+str 46: [90] [bindouble] [NULL] [NULL] [NULL] [NULL] [Typ=101 Len=8: bf,f8,0,0,0,0,0,0] [NULL] [NULL]
+row 47: [BigDecimal:91] [String:bindouble] [String:NULL] [String:NULL] [String:NULL] [String:NULL] [String:Typ=101 Len=8: ff,f8,0,0,0,0,0,0] [String:NULL] [String:NULL]
+str 47: [91] [bindouble] [NULL] [NULL] [NULL] [NULL] [Typ=101 Len=8: ff,f8,0,0,0,0,0,0] [NULL] [NULL]
+row 48: [BigDecimal:92] [String:bindouble] [String:NULL] [String:NULL] [String:NULL] [String:NULL] [String:NULL] [String:NULL] [String:NULL]
+str 48: [92] [bindouble] [NULL] [NULL] [NULL] [NULL] [NULL] [NULL] [NULL]
+row 49: [BigDecimal:93] [String:bindouble] [String:NULL] [String:NULL] [String:NULL] [String:NULL] [String:Typ=101 Len=8: 80,0,0,0,0,0,0,0] [String:NULL] [String:NULL]
+str 49: [93] [bindouble] [NULL] [NULL] [NULL] [NULL] [Typ=101 Len=8: 80,0,0,0,0,0,0,0] [NULL] [NULL]
+row 50: [BigDecimal:94] [String:bindouble] [String:NULL] [String:NULL] [String:NULL] [String:NULL] [String:Typ=101 Len=8: ff,ef,ff,ff,ff,ff,ff,ff] [String:NULL] [String:NULL]
+str 50: [94] [bindouble] [NULL] [NULL] [NULL] [NULL] [Typ=101 Len=8: ff,ef,ff,ff,ff,ff,ff,ff] [NULL] [NULL]
+row 51: [BigDecimal:100] [String:tz] [String:NULL] [String:NULL] [String:NULL] [String:NULL] [String:NULL] [String:len=47 head=Typ=181 Len= hash=322869112] [String:NULL]
+str 51: [100] [tz] [NULL] [NULL] [NULL] [NULL] [NULL] [Typ=181 Len=13: 78,7c,3,5,13,f,10,0,0,0,0,89,90] [NULL]
+row 52: [BigDecimal:101] [String:tz] [String:NULL] [String:NULL] [String:NULL] [String:NULL] [String:NULL] [String:len=47 head=Typ=181 Len= hash=316404390] [String:NULL]
+str 52: [101] [tz] [NULL] [NULL] [NULL] [NULL] [NULL] [Typ=181 Len=13: 78,7c,3,5,13,f,10,0,0,0,0,19,5a] [NULL]
+row 53: [BigDecimal:102] [String:tz] [String:NULL] [String:NULL] [String:NULL] [String:NULL] [String:NULL] [String:NULL] [String:NULL]
+str 53: [102] [tz] [NULL] [NULL] [NULL] [NULL] [NULL] [NULL] [NULL]
+row 54: [BigDecimal:103] [String:tz] [String:NULL] [String:NULL] [String:NULL] [String:NULL] [String:NULL] [String:len=44 head=Typ=181 Len= hash=231540644] [String:NULL]
+str 54: [103] [tz] [NULL] [NULL] [NULL] [NULL] [NULL] [Typ=181 Len=13: 78,7c,7,5,6,3,4,0,0,0,0,d0,4] [NULL]
+row 55: [BigDecimal:104] [String:tz] [String:NULL] [String:NULL] [String:NULL] [String:NULL] [String:NULL] [String:len=47 head=Typ=181 Len= hash=322719991] [String:NULL]
+str 55: [104] [tz] [NULL] [NULL] [NULL] [NULL] [NULL] [Typ=181 Len=13: 78,7c,3,5,13,f,10,0,0,0,0,84,2c] [NULL]
+row 56: [BigDecimal:110] [String:nchar] [String:NULL] [String:NULL] [String:NULL] [String:NULL] [String:NULL] [String:NULL] [String:len=50 head=Typ=1 Len=6  hash=-624223863]
+str 56: [110] [nchar] [NULL] [NULL] [NULL] [NULL] [NULL] [NULL] [Typ=1 Len=6 CharacterSet=AL16UTF16: 0,61,0,62,0,63]
+row 57: [BigDecimal:111] [String:nchar] [String:NULL] [String:NULL] [String:NULL] [String:NULL] [String:NULL] [String:NULL] [String:len=71 head=Typ=1 Len=14 hash=782619240]
+str 57: [111] [nchar] [NULL] [NULL] [NULL] [NULL] [NULL] [NULL] [Typ=1 Len=14 CharacterSet=AL16UTF16: 0,63,0,61,0,66,0,e9,0,2...len=71]
+row 58: [BigDecimal:112] [String:nchar] [String:NULL] [String:NULL] [String:NULL] [String:NULL] [String:NULL] [String:NULL] [String:NULL]
+str 58: [112] [nchar] [NULL] [NULL] [NULL] [NULL] [NULL] [NULL] [NULL]
+row 59: [BigDecimal:113] [String:nchar] [String:NULL] [String:NULL] [String:NULL] [String:NULL] [String:NULL] [String:NULL] [String:len=53 head=Typ=1 Len=6  hash=-229608481]
+str 59: [113] [nchar] [NULL] [NULL] [NULL] [NULL] [NULL] [NULL] [Typ=1 Len=6 CharacterSet=AL16UTF16: 65,e5,67,2c,8a,9e]
+row 60: [BigDecimal:114] [String:nchar] [String:NULL] [String:NULL] [String:NULL] [String:NULL] [String:NULL] [String:NULL] [String:Typ=1 Len=2 CharacterSet=AL16UTF16: 0,78]
+str 60: [114] [nchar] [NULL] [NULL] [NULL] [NULL] [NULL] [NULL] [Typ=1 Len=2 CharacterSet=AL16UTF16: 0,78]
+rows 60
+exec 0
+cols A/VARCHAR2/2000/0
+meta A type=VARCHAR2 code=12 prec=2000 scale=0 class=java.lang.String disp=2000
+row 1: [String:a]
+str 1: [a]
+rows 1
+exec 1
+cols A/VARCHAR2/2000/0
+meta A type=VARCHAR2 code=12 prec=2000 scale=0 class=java.lang.String disp=2000
+row 1: [String:len=70 head=abcdefghijkl hash=-12359741]
+str 1: [abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefgh...len=70]
+rows 1
+exec 2
+cols A/VARCHAR2/2000/0
+meta A type=VARCHAR2 code=12 prec=2000 scale=0 class=java.lang.String disp=2000
+row 1: [NULL]
+str 1: [NULL]
+rows 1
+exec 3
+cols A/VARCHAR2/2000/0
+meta A type=VARCHAR2 code=12 prec=2000 scale=0 class=java.lang.String disp=2000
+row 1: [String:b]
+str 1: [b]
+rows 1
+exec 4
+cols A/VARCHAR2/2000/0
+meta A type=VARCHAR2 code=12 prec=2000 scale=0 class=java.lang.String disp=2000
+row 1: [String:c]
+str 1: [c]
+rows 1
+cols A/VARCHAR2/2000/0
+meta A type=VARCHAR2 code=12 prec=2000 scale=0 class=java.lang.String disp=2000
+row 1: [String:x]
+str 1: [x]
+rows 1
+cols A/VARCHAR2/2000/0
+meta A type=VARCHAR2 code=12 prec=2000 scale=0 class=java.lang.String disp=2000
+row 1: [String:�]
+str 1: [�]
+rows 1
+cols A/VARCHAR2/2000/0
+meta A type=VARCHAR2 code=12 prec=2000 scale=0 class=java.lang.String disp=2000
+row 1: [String:y]
+str 1: [y]
+rows 1
+cols A/VARCHAR2/2000/0
+meta A type=VARCHAR2 code=12 prec=2000 scale=0 class=java.lang.String disp=2000
+row 1: [NULL]
+str 1: [NULL]
+rows 1
+cols A/VARCHAR2/2000/0
+meta A type=VARCHAR2 code=12 prec=2000 scale=0 class=java.lang.String disp=2000
+row 1: [String:len=100 head=abcdefghijkl hash=1347739762]
+str 1: [abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefgh...len=100]
+rows 1
+exit 0

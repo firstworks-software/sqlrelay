@@ -1,0 +1,41 @@
+== prepdate
+insert 1
+insert 1
+insert 1
+insert 1
+insert 1
+insert 1
+cols ID/NUMBER/0/-127 D/DATE/0/0 TS/TIMESTAMP/0/6 DD/VARCHAR2/4000/0 DTS/VARCHAR2/4000/0
+meta ID type=NUMBER code=2 prec=0 scale=-127 class=java.math.BigDecimal disp=22
+meta D type=DATE code=91 prec=0 scale=0 class=java.sql.Timestamp disp=7
+meta TS type=TIMESTAMP code=93 prec=0 scale=6 class=oracle.sql.TIMESTAMP disp=11
+meta DD type=VARCHAR2 code=12 prec=4000 scale=0 class=java.lang.String disp=4000
+meta DTS type=VARCHAR2 code=12 prec=4000 scale=0 class=java.lang.String disp=4000
+row 1: [BigDecimal:1] [Date:2024-03-05] [TIMESTAMP:2024-03-05 00:00:00.0{787c0305010101}] [String:Typ=12 Len=7: 78,7c,3,5,1,1,1] [String:Typ=180 Len=7: 78,7c,3,5,1,1,1]
+str 1: [1] [2024-03-05 00:00:00.0] [2024-3-5.0.0. 0. 0] [Typ=12 Len=7: 78,7c,3,5,1,1,1] [Typ=180 Len=7: 78,7c,3,5,1,1,1]
+row 2: [BigDecimal:2] [Date:1970-01-01] [TIMESTAMP:1970-01-01 00:00:00.0{77aa0101010101}] [String:Typ=12 Len=7: 77,aa,1,1,1,1,1] [String:Typ=180 Len=7: 77,aa,1,1,1,1,1]
+str 2: [2] [1970-01-01 00:00:00.0] [1970-1-1.0.0. 0. 0] [Typ=12 Len=7: 77,aa,1,1,1,1,1] [Typ=180 Len=7: 77,aa,1,1,1,1,1]
+row 3: [BigDecimal:3] [Date:1900-12-31] [TIMESTAMP:1900-12-31 00:00:00.0{77640c1f010101}] [String:Typ=12 Len=7: 77,64,c,1f,1,1,1] [String:Typ=180 Len=7: 77,64,c,1f,1,1,1]
+str 3: [3] [1900-12-31 00:00:00.0] [1900-12-31.0.0. 0. 0] [Typ=12 Len=7: 77,64,c,1f,1,1,1] [Typ=180 Len=7: 77,64,c,1f,1,1,1]
+row 4: [BigDecimal:4] [Date:9999-12-31] [TIMESTAMP:9999-12-31 00:00:00.0{c7c70c1f010101}] [String:Typ=12 Len=7: c7,c7,c,1f,1,1,1] [String:Typ=180 Len=7: c7,c7,c,1f,1,1,1]
+str 4: [4] [9999-12-31 00:00:00.0] [9999-12-31.0.0. 0. 0] [Typ=12 Len=7: c7,c7,c,1f,1,1,1] [Typ=180 Len=7: c7,c7,c,1f,1,1,1]
+row 5: [BigDecimal:5] [Date:2024-02-29] [TIMESTAMP:2024-02-29 00:00:00.0{787c021d010101}] [String:Typ=12 Len=7: 78,7c,2,1d,1,1,1] [String:Typ=180 Len=7: 78,7c,2,1d,1,1,1]
+str 5: [5] [2024-02-29 00:00:00.0] [2024-2-29.0.0. 0. 0] [Typ=12 Len=7: 78,7c,2,1d,1,1,1] [Typ=180 Len=7: 78,7c,2,1d,1,1,1]
+row 6: [BigDecimal:99] [NULL] [NULL] [String:NULL] [String:NULL]
+str 6: [99] [NULL] [NULL] [NULL] [NULL]
+rows 6
+cols D/DATE/0/0
+meta D type=DATE code=91 prec=0 scale=0 class=java.sql.Timestamp disp=7
+row 1: [Date:2024-03-05]
+str 1: [2024-03-05 00:00:00.0]
+rows 1
+cols D/DATE/0/0 DD/VARCHAR2/4000/0
+meta D type=DATE code=91 prec=0 scale=0 class=java.sql.Timestamp disp=7
+meta DD type=VARCHAR2 code=12 prec=4000 scale=0 class=java.lang.String disp=4000
+row 1: [Date:2024-03-05] [String:Typ=12 Len=7: 78,7c,3,5,1,1,1]
+str 1: [2024-03-05 00:00:00.0] [Typ=12 Len=7: 78,7c,3,5,1,1,1]
+rows 1
+cols ID/NUMBER/0/-127
+row 1: [BigDecimal:1]
+rows 1
+exit 0

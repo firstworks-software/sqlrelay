@@ -1,0 +1,17 @@
+== prepncharnc
+insert 1
+cols A/VARCHAR2/16/0 D/VARCHAR2/4000/0
+meta A type=VARCHAR2 code=12 prec=16 scale=0 class=java.lang.String disp=16
+meta D type=VARCHAR2 code=12 prec=4000 scale=0 class=java.lang.String disp=4000
+row 1: [String:café üñ] [String:len=71 head=Typ=1 Len=14 hash=782619240]
+str 1: [café üñ] [Typ=1 Len=14 CharacterSet=AL16UTF16: 0,63,0,61,0,66,0,e9,0,2...len=71]
+rows 1
+cols ID/NUMBER/0/-127 NC/CHAR/10/0 NV/VARCHAR2/100/0 V/VARCHAR2/100/0
+meta ID type=NUMBER code=2 prec=0 scale=-127 class=java.math.BigDecimal disp=22
+meta NC type=CHAR code=1 prec=10 scale=0 class=java.lang.String disp=10
+meta NV type=VARCHAR2 code=12 prec=100 scale=0 class=java.lang.String disp=100
+meta V type=VARCHAR2 code=12 prec=100 scale=0 class=java.lang.String disp=100
+row 1: [BigDecimal:200] [String:café üñ   ] [String:日本語] [String:abc]
+str 1: [200] [café üñ   ] [日本語] [abc]
+rows 1
+exit 0

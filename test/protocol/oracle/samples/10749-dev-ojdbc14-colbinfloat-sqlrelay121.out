@@ -1,0 +1,88 @@
+== colbinfloat
+insert 1
+insert 1
+insert 1
+insert 1
+insert 1
+insert 1
+insert 1
+insert 1
+insert 1
+insert 1
+insert 1
+cols ID/NUMBER/0/-127 F/BINARY_FLOAT/0/0 D/BINARY_DOUBLE/0/0
+meta ID type=NUMBER code=2 prec=0 scale=-127 class=java.math.BigDecimal disp=22
+meta F type=BINARY_FLOAT code=100 prec=0 scale=0 class=null disp=4
+meta D type=BINARY_DOUBLE code=101 prec=0 scale=0 class=null disp=8
+row 1: [BigDecimal:1] [Float:1.5] [Double:1.5]
+str 1: [1] [1.5] [1.5]
+row 2: [BigDecimal:2] [Float:NaN] [Double:NaN]
+str 2: [2] [NaN] [NaN]
+row 3: [BigDecimal:3] [Float:Infinity] [Double:Infinity]
+str 3: [3] [Infinity] [Infinity]
+row 4: [BigDecimal:4] [Float:-Infinity] [Double:-Infinity]
+str 4: [4] [-Infinity] [-Infinity]
+row 5: [BigDecimal:5] [Float:0.0] [Double:0.0]
+str 5: [5] [0.0] [0.0]
+row 6: [BigDecimal:6] [Float:3.4028235E38] [Double:1.7976931348623157E308]
+str 6: [6] [3.4028235E38] [1.7976931348623157E308]
+row 7: [BigDecimal:7] [Float:1.1754944E-38] [Double:2.2250738585072014E-308]
+str 7: [7] [1.1754944E-38] [2.2250738585072014E-308]
+row 8: [BigDecimal:8] [Float:1.4E-45] [Double:4.9E-324]
+str 8: [8] [1.4E-45] [4.9E-324]
+row 9: [BigDecimal:9] [Float:-3.4028235E38] [Double:-1.7976931348623157E308]
+str 9: [9] [-3.4028235E38] [-1.7976931348623157E308]
+row 10: [BigDecimal:10] [Float:0.0] [Double:0.0]
+str 10: [10] [0.0] [0.0]
+row 11: [BigDecimal:11] [NULL] [NULL]
+str 11: [11] [NULL] [NULL]
+rows 11
+cols ID/NUMBER/0/-127 DF/VARCHAR2/4000/0 DD/VARCHAR2/4000/0
+meta ID type=NUMBER code=2 prec=0 scale=-127 class=java.math.BigDecimal disp=22
+meta DF type=VARCHAR2 code=12 prec=4000 scale=0 class=java.lang.String disp=4000
+meta DD type=VARCHAR2 code=12 prec=4000 scale=0 class=java.lang.String disp=4000
+row 1: [BigDecimal:1] [String:Typ=100 Len=4: bf,c0,0,0] [String:Typ=101 Len=8: bf,f8,0,0,0,0,0,0]
+str 1: [1] [Typ=100 Len=4: bf,c0,0,0] [Typ=101 Len=8: bf,f8,0,0,0,0,0,0]
+row 2: [BigDecimal:2] [String:Typ=100 Len=4: ff,c0,0,0] [String:Typ=101 Len=8: ff,f8,0,0,0,0,0,0]
+str 2: [2] [Typ=100 Len=4: ff,c0,0,0] [Typ=101 Len=8: ff,f8,0,0,0,0,0,0]
+row 3: [BigDecimal:3] [String:Typ=100 Len=4: ff,80,0,0] [String:Typ=101 Len=8: ff,f0,0,0,0,0,0,0]
+str 3: [3] [Typ=100 Len=4: ff,80,0,0] [Typ=101 Len=8: ff,f0,0,0,0,0,0,0]
+row 4: [BigDecimal:4] [String:Typ=100 Len=4: 0,7f,ff,ff] [String:Typ=101 Len=8: 0,f,ff,ff,ff,ff,ff,ff]
+str 4: [4] [Typ=100 Len=4: 0,7f,ff,ff] [Typ=101 Len=8: 0,f,ff,ff,ff,ff,ff,ff]
+row 5: [BigDecimal:5] [String:Typ=100 Len=4: 80,0,0,0] [String:Typ=101 Len=8: 80,0,0,0,0,0,0,0]
+str 5: [5] [Typ=100 Len=4: 80,0,0,0] [Typ=101 Len=8: 80,0,0,0,0,0,0,0]
+row 6: [BigDecimal:6] [String:Typ=100 Len=4: ff,7f,ff,ff] [String:Typ=101 Len=8: ff,ef,ff,ff,ff,ff,ff,ff]
+str 6: [6] [Typ=100 Len=4: ff,7f,ff,ff] [Typ=101 Len=8: ff,ef,ff,ff,ff,ff,ff,ff]
+row 7: [BigDecimal:7] [String:Typ=100 Len=4: 80,80,0,0] [String:Typ=101 Len=8: 80,10,0,0,0,0,0,0]
+str 7: [7] [Typ=100 Len=4: 80,80,0,0] [Typ=101 Len=8: 80,10,0,0,0,0,0,0]
+row 8: [BigDecimal:8] [String:Typ=100 Len=4: 80,0,0,1] [String:Typ=101 Len=8: 80,0,0,0,0,0,0,1]
+str 8: [8] [Typ=100 Len=4: 80,0,0,1] [Typ=101 Len=8: 80,0,0,0,0,0,0,1]
+row 9: [BigDecimal:9] [String:Typ=100 Len=4: 0,80,0,0] [String:Typ=101 Len=8: 0,10,0,0,0,0,0,0]
+str 9: [9] [Typ=100 Len=4: 0,80,0,0] [Typ=101 Len=8: 0,10,0,0,0,0,0,0]
+row 10: [BigDecimal:10] [String:Typ=100 Len=4: 80,0,0,0] [String:Typ=101 Len=8: 80,0,0,0,0,0,0,0]
+str 10: [10] [Typ=100 Len=4: 80,0,0,0] [Typ=101 Len=8: 80,0,0,0,0,0,0,0]
+row 11: [BigDecimal:11] [String:NULL] [String:NULL]
+str 11: [11] [NULL] [NULL]
+rows 11
+cols A/BINARY_FLOAT/0/0 B/BINARY_DOUBLE/0/0 C/BINARY_FLOAT/0/0 D/BINARY_DOUBLE/0/0
+meta A type=BINARY_FLOAT code=100 prec=0 scale=0 class=null disp=4
+meta B type=BINARY_DOUBLE code=101 prec=0 scale=0 class=null disp=8
+meta C type=BINARY_FLOAT code=100 prec=0 scale=0 class=null disp=4
+meta D type=BINARY_DOUBLE code=101 prec=0 scale=0 class=null disp=8
+row 1: [Float:1.5] [Double:1.5] [Float:2.5] [Double:2.5]
+str 1: [1.5] [1.5] [2.5] [2.5]
+rows 1
+cols A/BINARY_FLOAT/0/0 B/BINARY_DOUBLE/0/0
+meta A type=BINARY_FLOAT code=100 prec=0 scale=0 class=null disp=4
+meta B type=BINARY_DOUBLE code=101 prec=0 scale=0 class=null disp=8
+row 1: [NULL] [NULL]
+str 1: [NULL] [NULL]
+rows 1
+cols F2/BINARY_FLOAT/0/0 D2/BINARY_DOUBLE/0/0 F+1/BINARY_FLOAT/0/0
+meta F2 type=BINARY_FLOAT code=100 prec=0 scale=0 class=null disp=4
+meta D2 type=BINARY_DOUBLE code=101 prec=0 scale=0 class=null disp=8
+meta F+1 type=BINARY_FLOAT code=100 prec=0 scale=0 class=null disp=4
+row 1: [Float:3.0] [Double:3.0] [Float:2.5]
+str 1: [3.0] [3.0] [2.5]
+rows 1
+exit 0

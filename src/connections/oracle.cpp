@@ -87,9 +87,10 @@ struct describe {
 	ub1		nullok;
 	// descriptor type of a column defined as an OCIDateTime, or 0
 	ub4		datetimetype;
-	// whether a clob column is an nclob, which oracle describes as a
-	// clob with the national character set form
-	bool		nclob;
+	// whether a clob, char or varchar2 column is in the national
+	// character set form - an nclob, nchar or nvarchar2, which oracle
+	// describes as a clob, char or varchar2
+	bool		ncharform;
 };
 
 struct datebind {
@@ -5185,19 +5186,28 @@ bool oraclecursor::executeQueryOrFetchFromBindCursor(const char *query,
 			desc[i].scale=(ub1)scale;
 			desc[i].datetimetype=0;
 
-			// oracle describes an nclob as a clob, the national
+			// oracle describes an nclob as a clob, an nchar as a
+			// char and an nvarchar2 as a varchar2, the national
 			// character set form being what tells them apart
-			desc[i].nclob=false;
-			if (desc[i].dbtype==CLOB_TYPE) {
+			desc[i].ncharform=false;
+			if (desc[i].dbtype==CLOB_TYPE ||
+				desc[i].dbtype==CHAR_TYPE ||
+				desc[i].dbtype==VARCHAR2_TYPE) {
+				// A char or varchar2 whose form can't be read
+				// is taken for the database character set's,
+				// rather than failing the describe.
 				ub1	csfrm=SQLCS_IMPLICIT;
 				if (OCIAttrGet((dvoid *)desc[i].paramd,
 					OCI_DTYPE_PARAM,
 					(dvoid *)&csfrm,(ub4 *)NULL,
 					(ub4)OCI_ATTR_CHARSET_FORM,
 					oracleconn->err)!=OCI_SUCCESS) {
-					return false;
+					if (desc[i].dbtype==CLOB_TYPE) {
+						return false;
+					}
+					csfrm=SQLCS_IMPLICIT;
 				}
-				desc[i].nclob=(csfrm==SQLCS_NCHAR);
+				desc[i].ncharform=(csfrm==SQLCS_NCHAR);
 			}
 
 			// get whether the column is nullable
@@ -5569,13 +5579,21 @@ uint16_t oraclecursor::getColumnType(uint32_t col) {
 
 const char *oraclecursor::getColumnTypeName(uint32_t col) {
 
-	// an nclob is a clob as far as the datatype ids go, but its name is
-	// the one thing that tells the protocol modules it is a national
-	// character set lob.  it is spelled with a parenthesized qualifier,
-	// like CHAR(40), so a protocol module that sets the qualifier aside
-	// still sees a clob
-	if (desc[col].nclob) {
-		return "CLOB(NCHAR)";
+	// an nclob, nchar or nvarchar2 is a clob, char or varchar2 as far as
+	// the datatype ids go, but its name is the one thing that tells the
+	// protocol modules it is in the national character set.  it is
+	// spelled with a parenthesized qualifier, like CHAR(40), so a
+	// protocol module that sets the qualifier aside still sees a clob,
+	// char or varchar2
+	if (desc[col].ncharform) {
+		switch (desc[col].dbtype) {
+			case CLOB_TYPE:
+				return "CLOB(NCHAR)";
+			case CHAR_TYPE:
+				return "CHAR(NCHAR)";
+			case VARCHAR2_TYPE:
+				return "VARCHAR2(NCHAR)";
+		}
 	}
 	return sqlrservercursor::getColumnTypeName(col);
 }
@@ -5816,7 +5834,8 @@ bool oraclecursor::getLobFieldSegment(uint32_t col,
 				NULL,
 				(sb4(*)(dvoid *,CONST dvoid *,ub4,ub1))NULL,
 				0,
-				(desc[col].nclob)?SQLCS_NCHAR:SQLCS_IMPLICIT);
+				(desc[col].ncharform)?
+					SQLCS_NCHAR:SQLCS_IMPLICIT);
 	closeBfile(col,opened);
 
 	// A read past the end of a table-column lob (including a genuinely

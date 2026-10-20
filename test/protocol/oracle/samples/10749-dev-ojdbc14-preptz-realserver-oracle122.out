@@ -1,0 +1,89 @@
+== preptz
+insert 1
+cols A/TIMESTAMPTZ/0/9 D/VARCHAR2/4000/0
+meta A type=TIMESTAMPTZ code=-101 prec=0 scale=9 class=oracle.sql.TIMESTAMPTZ disp=13
+meta D type=VARCHAR2 code=12 prec=4000 scale=0 class=java.lang.String disp=4000
+row 1: [TIMESTAMPTZ:2024-3-5 13.14.15.123456000 US/Eastern] [String:len=49 head=Typ=181 Len= hash=-946569816]
+str 1: [2024-3-5 13.14.15.123456000 US/Eastern] [Typ=181 Len=13: 78,7c,3,5,13,f,10,7,5b,ca,0,89,90]
+rows 1
+insert 1
+cols A/TIMESTAMPTZ/0/9 D/VARCHAR2/4000/0
+meta A type=TIMESTAMPTZ code=-101 prec=0 scale=9 class=oracle.sql.TIMESTAMPTZ disp=13
+meta D type=VARCHAR2 code=12 prec=4000 scale=0 class=java.lang.String disp=4000
+row 1: [TIMESTAMPTZ:2024-3-5 23.44.15.123456000 5:30] [String:len=49 head=Typ=181 Len= hash=-953034538]
+str 1: [2024-3-5 23.44.15.123456000 5:30] [Typ=181 Len=13: 78,7c,3,5,13,f,10,7,5b,ca,0,19,5a]
+rows 1
+insert 1
+cols A/TIMESTAMPTZ/0/9 D/VARCHAR2/4000/0
+meta A type=TIMESTAMPTZ code=-101 prec=0 scale=9 class=oracle.sql.TIMESTAMPTZ disp=13
+meta D type=VARCHAR2 code=12 prec=4000 scale=0 class=java.lang.String disp=4000
+row 1: [TIMESTAMPTZ:2024-3-5 18.14.15.123456000 UTC] [String:len=48 head=Typ=181 Len= hash=-306327026]
+str 1: [2024-3-5 18.14.15.123456000 UTC] [Typ=181 Len=13: 78,7c,3,5,13,f,10,7,5b,ca,0,d0,4]
+rows 1
+insert 1
+cols A/TIMESTAMPTZ/0/9 D/VARCHAR2/4000/0
+meta A type=TIMESTAMPTZ code=-101 prec=0 scale=9 class=oracle.sql.TIMESTAMPTZ disp=13
+meta D type=VARCHAR2 code=12 prec=4000 scale=0 class=java.lang.String disp=4000
+row 1: [TIMESTAMPTZ:2024-7-6 2.14.15.0 Asia/Tokyo] [String:len=47 head=Typ=181 Len= hash=1012641436]
+str 1: [2024-7-6 2.14.15.0 Asia/Tokyo] [Typ=181 Len=13: 78,7c,7,5,12,f,10,0,0,0,0,84,2c]
+rows 1
+insert 1
+insert 1
+cols A/TIMESTAMPLTZ/0/9 D/VARCHAR2/4000/0
+meta A type=TIMESTAMPLTZ code=-102 prec=0 scale=9 class=oracle.sql.TIMESTAMPLTZ disp=11
+meta D type=VARCHAR2 code=12 prec=4000 scale=0 class=java.lang.String disp=4000
+row 1: [TIMESTAMPLTZ:<SQLException>] [String:len=42 head=Typ=231 Len= hash=-825069152]
+str 1: [2024-3-5 14.14.15.123456000] [Typ=231 Len=11: 78,7c,3,5,f,f,10,7,5b,ca,0]
+rows 1
+insert 1
+insert 1
+cols A/INTERVALYM/9/0 D/VARCHAR2/4000/0
+meta A type=INTERVALYM code=-103 prec=9 scale=0 class=oracle.sql.INTERVALYM disp=11
+meta D type=VARCHAR2 code=12 prec=4000 scale=0 class=java.lang.String disp=4000
+row 1: [INTERVALYM:12-5{8000000c41}] [String:Typ=182 Len=5: 80,0,0,c,41]
+str 1: [12-5] [Typ=182 Len=5: 80,0,0,c,41]
+rows 1
+insert 1
+insert 1
+cols A/INTERVALDS/9/9 D/VARCHAR2/4000/0
+meta A type=INTERVALDS code=-104 prec=9 scale=9 class=oracle.sql.INTERVALDS disp=11
+meta D type=VARCHAR2 code=12 prec=4000 scale=0 class=java.lang.String disp=4000
+row 1: [INTERVALDS:3 4:5:6.123456789{80000003404142875bcd15}] [String:len=45 head=Typ=183 Len= hash=1793810143]
+str 1: [3 4:5:6.123456789] [Typ=183 Len=11: 80,0,0,3,40,41,42,87,5b,cd,15]
+rows 1
+insert 1
+insert 1
+cols ID/NUMBER/0/-127 TZ/TIMESTAMPTZ/0/6 LTZ/TIMESTAMPLTZ/0/6 YM/INTERVALYM/2/0 DS/INTERVALDS/2/6 DTZ/VARCHAR2/4000/0 DLTZ/VARCHAR2/4000/0
+meta ID type=NUMBER code=2 prec=0 scale=-127 class=java.math.BigDecimal disp=22
+meta TZ type=TIMESTAMPTZ code=-101 prec=0 scale=6 class=oracle.sql.TIMESTAMPTZ disp=13
+meta LTZ type=TIMESTAMPLTZ code=-102 prec=0 scale=6 class=oracle.sql.TIMESTAMPLTZ disp=11
+meta YM type=INTERVALYM code=-103 prec=2 scale=0 class=oracle.sql.INTERVALYM disp=11
+meta DS type=INTERVALDS code=-104 prec=2 scale=6 class=oracle.sql.INTERVALDS disp=11
+meta DTZ type=VARCHAR2 code=12 prec=4000 scale=0 class=java.lang.String disp=4000
+meta DLTZ type=VARCHAR2 code=12 prec=4000 scale=0 class=java.lang.String disp=4000
+row 1: [BigDecimal:1] [TIMESTAMPTZ:2024-3-5 13.14.15.123456000 US/Eastern] [NULL] [NULL] [NULL] [String:len=49 head=Typ=181 Len= hash=-946569816] [String:NULL]
+str 1: [1] [2024-3-5 13.14.15.123456000 US/Eastern] [NULL] [NULL] [NULL] [Typ=181 Len=13: 78,7c,3,5,13,f,10,7,5b,ca,0,89,90] [NULL]
+row 2: [BigDecimal:2] [TIMESTAMPTZ:2024-3-5 23.44.15.123456000 5:30] [NULL] [NULL] [NULL] [String:len=49 head=Typ=181 Len= hash=-953034538] [String:NULL]
+str 2: [2] [2024-3-5 23.44.15.123456000 5:30] [NULL] [NULL] [NULL] [Typ=181 Len=13: 78,7c,3,5,13,f,10,7,5b,ca,0,19,5a] [NULL]
+row 3: [BigDecimal:3] [TIMESTAMPTZ:2024-3-5 18.14.15.123456000 UTC] [NULL] [NULL] [NULL] [String:len=48 head=Typ=181 Len= hash=-306327026] [String:NULL]
+str 3: [3] [2024-3-5 18.14.15.123456000 UTC] [NULL] [NULL] [NULL] [Typ=181 Len=13: 78,7c,3,5,13,f,10,7,5b,ca,0,d0,4] [NULL]
+row 4: [BigDecimal:4] [TIMESTAMPTZ:2024-7-6 2.14.15.0 Asia/Tokyo] [NULL] [NULL] [NULL] [String:len=47 head=Typ=181 Len= hash=1012641436] [String:NULL]
+str 4: [4] [2024-7-6 2.14.15.0 Asia/Tokyo] [NULL] [NULL] [NULL] [Typ=181 Len=13: 78,7c,7,5,12,f,10,0,0,0,0,84,2c] [NULL]
+row 5: [BigDecimal:10] [TIMESTAMPTZ:2024-3-5 13.14.15.123456000 GMT] [NULL] [NULL] [NULL] [String:len=47 head=Typ=181 Len= hash=955848363] [String:NULL]
+str 5: [10] [2024-3-5 13.14.15.123456000 GMT] [NULL] [NULL] [NULL] [Typ=181 Len=13: 78,7c,3,5,e,f,10,7,5b,ca,0,88,4] [NULL]
+row 6: [BigDecimal:11] [NULL] [TIMESTAMPLTZ:<SQLException>] [NULL] [NULL] [String:NULL] [String:len=42 head=Typ=231 Len= hash=-825069152]
+str 6: [11] [NULL] [2024-3-5 14.14.15.123456000] [NULL] [NULL] [NULL] [Typ=231 Len=11: 78,7c,3,5,f,f,10,7,5b,ca,0]
+row 7: [BigDecimal:12] [NULL] [NULL] [INTERVALYM:12-5{8000000c41}] [NULL] [String:NULL] [String:NULL]
+str 7: [12] [NULL] [NULL] [12-5] [NULL] [NULL] [NULL]
+row 8: [BigDecimal:13] [NULL] [NULL] [INTERVALYM:-1-2{7fffffff3a}] [NULL] [String:NULL] [String:NULL]
+str 8: [13] [NULL] [NULL] [-1-2] [NULL] [NULL] [NULL]
+row 9: [BigDecimal:14] [NULL] [NULL] [NULL] [INTERVALDS:3 4:5:6.123457000{80000003404142875bcde8}] [String:NULL] [String:NULL]
+str 9: [14] [NULL] [NULL] [NULL] [3 4:5:6.123457000] [NULL] [NULL]
+row 10: [BigDecimal:15] [NULL] [NULL] [NULL] [INTERVALDS:-1 0:0:0.0{7fffffff3c3c3c80000000}] [String:NULL] [String:NULL]
+str 10: [15] [NULL] [NULL] [NULL] [-1 0:0:0.0] [NULL] [NULL]
+row 11: [BigDecimal:16] [TIMESTAMPTZ:2024-3-5 13.14.15.123456000 US/Eastern] [NULL] [INTERVALYM:1-1{800000013d}] [INTERVALDS:1 1:1:1.0{800000013d3d3d80000000}] [String:len=49 head=Typ=181 Len= hash=-946569816] [String:NULL]
+str 11: [16] [2024-3-5 13.14.15.123456000 US/Eastern] [NULL] [1-1] [1 1:1:1.0] [Typ=181 Len=13: 78,7c,3,5,13,f,10,7,5b,ca,0,89,90] [NULL]
+row 12: [BigDecimal:17] [NULL] [NULL] [NULL] [NULL] [String:NULL] [String:NULL]
+str 12: [17] [NULL] [NULL] [NULL] [NULL] [NULL] [NULL]
+rows 12
+exit 0

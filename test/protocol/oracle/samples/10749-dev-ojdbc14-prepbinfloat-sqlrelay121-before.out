@@ -1,0 +1,163 @@
+== prepbinfloat
+step insert setBinaryFloat/Double 1.5 threw SQLException 1722 ORA-01722: invalid number
+insert 1
+cols F/VARCHAR2/32/0 D/VARCHAR2/32/0 DF/VARCHAR2/4000/0 DD/VARCHAR2/4000/0
+meta F type=VARCHAR2 code=12 prec=32 scale=0 class=java.lang.String disp=32
+meta D type=VARCHAR2 code=12 prec=32 scale=0 class=java.lang.String disp=32
+meta DF type=VARCHAR2 code=12 prec=4000 scale=0 class=java.lang.String disp=4000
+meta DD type=VARCHAR2 code=12 prec=4000 scale=0 class=java.lang.String disp=4000
+row 1: [String:??] [String:??] [String:Typ=1 Len=6: ef,bf,bd,ef,bf,bd] [String:Typ=1 Len=6: ef,bf,bd,ef,bf,bd]
+str 1: [??] [??] [Typ=1 Len=6: ef,bf,bd,ef,bf,bd] [Typ=1 Len=6: ef,bf,bd,ef,bf,bd]
+rows 1
+cols F/VARCHAR2/32/0 D/VARCHAR2/32/0 DF/VARCHAR2/4000/0 DD/VARCHAR2/4000/0
+meta F type=VARCHAR2 code=12 prec=32 scale=0 class=java.lang.String disp=32
+meta D type=VARCHAR2 code=12 prec=32 scale=0 class=java.lang.String disp=32
+meta DF type=VARCHAR2 code=12 prec=4000 scale=0 class=java.lang.String disp=4000
+meta DD type=VARCHAR2 code=12 prec=4000 scale=0 class=java.lang.String disp=4000
+row 1: [String:1.5] [String:1.5] [String:Typ=1 Len=3: 31,2e,35] [String:Typ=1 Len=3: 31,2e,35]
+str 1: [1.5] [1.5] [Typ=1 Len=3: 31,2e,35] [Typ=1 Len=3: 31,2e,35]
+rows 1
+step insert setBinaryFloat/Double NaN threw SQLException 1722 ORA-01722: invalid number
+step insert setFloat/Double NaN threw SQLException 0 Overflow Exception trying to bind NaN
+cols F/VARCHAR2/32/0 D/VARCHAR2/32/0 DF/VARCHAR2/4000/0 DD/VARCHAR2/4000/0
+meta F type=VARCHAR2 code=12 prec=32 scale=0 class=java.lang.String disp=32
+meta D type=VARCHAR2 code=12 prec=32 scale=0 class=java.lang.String disp=32
+meta DF type=VARCHAR2 code=12 prec=4000 scale=0 class=java.lang.String disp=4000
+meta DD type=VARCHAR2 code=12 prec=4000 scale=0 class=java.lang.String disp=4000
+row 1: [String:??] [String:??] [String:Typ=1 Len=6: ef,bf,bd,ef,bf,bd] [String:Typ=1 Len=6: ef,bf,bd,ef,bf,bd]
+str 1: [??] [??] [Typ=1 Len=6: ef,bf,bd,ef,bf,bd] [Typ=1 Len=6: ef,bf,bd,ef,bf,bd]
+rows 1
+step select ? setFloat/Double NaN threw SQLException 0 Overflow Exception trying to bind NaN
+step insert setBinaryFloat/Double Infinity threw SQLException 1722 ORA-01722: invalid number
+insert 1
+cols F/VARCHAR2/32/0 D/VARCHAR2/32/0 DF/VARCHAR2/4000/0 DD/VARCHAR2/4000/0
+meta F type=VARCHAR2 code=12 prec=32 scale=0 class=java.lang.String disp=32
+meta D type=VARCHAR2 code=12 prec=32 scale=0 class=java.lang.String disp=32
+meta DF type=VARCHAR2 code=12 prec=4000 scale=0 class=java.lang.String disp=4000
+meta DD type=VARCHAR2 code=12 prec=4000 scale=0 class=java.lang.String disp=4000
+row 1: [String:??] [String:??] [String:Typ=1 Len=6: ef,bf,bd,ef,bf,bd] [String:Typ=1 Len=6: ef,bf,bd,ef,bf,bd]
+str 1: [??] [??] [Typ=1 Len=6: ef,bf,bd,ef,bf,bd] [Typ=1 Len=6: ef,bf,bd,ef,bf,bd]
+rows 1
+cols F/VARCHAR2/32/0 D/VARCHAR2/32/0 DF/VARCHAR2/4000/0 DD/VARCHAR2/4000/0
+meta F type=VARCHAR2 code=12 prec=32 scale=0 class=java.lang.String disp=32
+meta D type=VARCHAR2 code=12 prec=32 scale=0 class=java.lang.String disp=32
+meta DF type=VARCHAR2 code=12 prec=4000 scale=0 class=java.lang.String disp=4000
+meta DD type=VARCHAR2 code=12 prec=4000 scale=0 class=java.lang.String disp=4000
+row 1: [NULL] [NULL] [String:NULL] [String:NULL]
+str 1: [NULL] [NULL] [NULL] [NULL]
+rows 1
+insert 1
+insert 1
+cols F/VARCHAR2/32/0 D/VARCHAR2/32/0 DF/VARCHAR2/4000/0 DD/VARCHAR2/4000/0
+meta F type=VARCHAR2 code=12 prec=32 scale=0 class=java.lang.String disp=32
+meta D type=VARCHAR2 code=12 prec=32 scale=0 class=java.lang.String disp=32
+meta DF type=VARCHAR2 code=12 prec=4000 scale=0 class=java.lang.String disp=4000
+meta DD type=VARCHAR2 code=12 prec=4000 scale=0 class=java.lang.String disp=4000
+row 1: [NULL] [NULL] [String:NULL] [String:NULL]
+str 1: [NULL] [NULL] [NULL] [NULL]
+rows 1
+cols F/VARCHAR2/32/0 D/VARCHAR2/32/0 DF/VARCHAR2/4000/0 DD/VARCHAR2/4000/0
+meta F type=VARCHAR2 code=12 prec=32 scale=0 class=java.lang.String disp=32
+meta D type=VARCHAR2 code=12 prec=32 scale=0 class=java.lang.String disp=32
+meta DF type=VARCHAR2 code=12 prec=4000 scale=0 class=java.lang.String disp=4000
+meta DD type=VARCHAR2 code=12 prec=4000 scale=0 class=java.lang.String disp=4000
+row 1: [NULL] [NULL] [String:NULL] [String:NULL]
+str 1: [NULL] [NULL] [NULL] [NULL]
+rows 1
+step insert setBinaryFloat/Double -0.0 threw SQLException 1722 ORA-01722: invalid number
+insert 1
+cols F/VARCHAR2/32/0 D/VARCHAR2/32/0 DF/VARCHAR2/4000/0 DD/VARCHAR2/4000/0
+meta F type=VARCHAR2 code=12 prec=32 scale=0 class=java.lang.String disp=32
+meta D type=VARCHAR2 code=12 prec=32 scale=0 class=java.lang.String disp=32
+meta DF type=VARCHAR2 code=12 prec=4000 scale=0 class=java.lang.String disp=4000
+meta DD type=VARCHAR2 code=12 prec=4000 scale=0 class=java.lang.String disp=4000
+row 1: [String:?] [String:?] [String:Typ=1 Len=3: ef,bf,bd] [String:Typ=1 Len=3: ef,bf,bd]
+str 1: [?] [?] [Typ=1 Len=3: ef,bf,bd] [Typ=1 Len=3: ef,bf,bd]
+rows 1
+cols F/VARCHAR2/32/0 D/VARCHAR2/32/0 DF/VARCHAR2/4000/0 DD/VARCHAR2/4000/0
+meta F type=VARCHAR2 code=12 prec=32 scale=0 class=java.lang.String disp=32
+meta D type=VARCHAR2 code=12 prec=32 scale=0 class=java.lang.String disp=32
+meta DF type=VARCHAR2 code=12 prec=4000 scale=0 class=java.lang.String disp=4000
+meta DD type=VARCHAR2 code=12 prec=4000 scale=0 class=java.lang.String disp=4000
+row 1: [String:0] [String:0] [String:Typ=1 Len=1: 30] [String:Typ=1 Len=1: 30]
+str 1: [0] [0] [Typ=1 Len=1: 30] [Typ=1 Len=1: 30]
+rows 1
+step insert setBinaryFloat/Double 3.4028235E38 threw SQLException 1722 ORA-01722: invalid number
+step insert setFloat/Double 3.4028235E38 threw SQLException 0 Overflow Exception trying to bind 1.7976931348623157E308
+cols F/VARCHAR2/32/0 D/VARCHAR2/32/0 DF/VARCHAR2/4000/0 DD/VARCHAR2/4000/0
+meta F type=VARCHAR2 code=12 prec=32 scale=0 class=java.lang.String disp=32
+meta D type=VARCHAR2 code=12 prec=32 scale=0 class=java.lang.String disp=32
+meta DF type=VARCHAR2 code=12 prec=4000 scale=0 class=java.lang.String disp=4000
+meta DD type=VARCHAR2 code=12 prec=4000 scale=0 class=java.lang.String disp=4000
+row 1: [String:???] [String:????????] [String:len=43 head=Typ=1 Len=10 hash=798091246] [String:len=85 head=Typ=1 Len=24 hash=-184744837]
+str 1: [???] [????????] [Typ=1 Len=10: ef,bf,bd,7f,ef,bf,bd,ef,bf,bd] [Typ=1 Len=24: ef,bf,bd,ef,bf,bd,ef,bf,bd,ef,bf,bd,ef,bf,bd,e...len=85]
+rows 1
+step select ? setFloat/Double 3.4028235E38 threw SQLException 0 Overflow Exception trying to bind 1.7976931348623157E308
+step insert setBinaryFloat/Double 1.4E-45 threw SQLException 1722 ORA-01722: invalid number
+step insert setFloat/Double 1.4E-45 threw SQLException 0 Underflow Exception trying to bind 4.9E-324
+cols F/VARCHAR2/32/0 D/VARCHAR2/32/0 DF/VARCHAR2/4000/0 DD/VARCHAR2/4000/0
+meta F type=VARCHAR2 code=12 prec=32 scale=0 class=java.lang.String disp=32
+meta D type=VARCHAR2 code=12 prec=32 scale=0 class=java.lang.String disp=32
+meta DF type=VARCHAR2 code=12 prec=4000 scale=0 class=java.lang.String disp=4000
+meta DD type=VARCHAR2 code=12 prec=4000 scale=0 class=java.lang.String disp=4000
+row 1: [String:?] [String:?] [String:Typ=1 Len=3: ef,bf,bd] [String:Typ=1 Len=3: ef,bf,bd]
+str 1: [?] [?] [Typ=1 Len=3: ef,bf,bd] [Typ=1 Len=3: ef,bf,bd]
+rows 1
+step select ? setFloat/Double 1.4E-45 threw SQLException 0 Underflow Exception trying to bind 4.9E-324
+step insert setBinaryFloat/Double 1.1754944E-38 threw SQLException 1722 ORA-01722: invalid number
+step insert setFloat/Double 1.1754944E-38 threw SQLException 0 Underflow Exception trying to bind 2.2250738585072014E-308
+cols F/VARCHAR2/32/0 D/VARCHAR2/32/0 DF/VARCHAR2/4000/0 DD/VARCHAR2/4000/0
+meta F type=VARCHAR2 code=12 prec=32 scale=0 class=java.lang.String disp=32
+meta D type=VARCHAR2 code=12 prec=32 scale=0 class=java.lang.String disp=32
+meta DF type=VARCHAR2 code=12 prec=4000 scale=0 class=java.lang.String disp=4000
+meta DD type=VARCHAR2 code=12 prec=4000 scale=0 class=java.lang.String disp=4000
+row 1: [String:??] [String:?] [String:Typ=1 Len=6: ef,bf,bd,ef,bf,bd] [String:Typ=1 Len=4: ef,bf,bd,10]
+str 1: [??] [?] [Typ=1 Len=6: ef,bf,bd,ef,bf,bd] [Typ=1 Len=4: ef,bf,bd,10]
+rows 1
+step select ? setFloat/Double 1.1754944E-38 threw SQLException 0 Underflow Exception trying to bind 2.2250738585072014E-308
+step insert setBinaryFloat/Double 0.0 threw SQLException 1722 ORA-01722: invalid number
+insert 1
+cols F/VARCHAR2/32/0 D/VARCHAR2/32/0 DF/VARCHAR2/4000/0 DD/VARCHAR2/4000/0
+meta F type=VARCHAR2 code=12 prec=32 scale=0 class=java.lang.String disp=32
+meta D type=VARCHAR2 code=12 prec=32 scale=0 class=java.lang.String disp=32
+meta DF type=VARCHAR2 code=12 prec=4000 scale=0 class=java.lang.String disp=4000
+meta DD type=VARCHAR2 code=12 prec=4000 scale=0 class=java.lang.String disp=4000
+row 1: [String:?] [String:?] [String:Typ=1 Len=3: ef,bf,bd] [String:Typ=1 Len=3: ef,bf,bd]
+str 1: [?] [?] [Typ=1 Len=3: ef,bf,bd] [Typ=1 Len=3: ef,bf,bd]
+rows 1
+cols F/VARCHAR2/32/0 D/VARCHAR2/32/0 DF/VARCHAR2/4000/0 DD/VARCHAR2/4000/0
+meta F type=VARCHAR2 code=12 prec=32 scale=0 class=java.lang.String disp=32
+meta D type=VARCHAR2 code=12 prec=32 scale=0 class=java.lang.String disp=32
+meta DF type=VARCHAR2 code=12 prec=4000 scale=0 class=java.lang.String disp=4000
+meta DD type=VARCHAR2 code=12 prec=4000 scale=0 class=java.lang.String disp=4000
+row 1: [String:0] [String:0] [String:Typ=1 Len=1: 30] [String:Typ=1 Len=1: 30]
+str 1: [0] [0] [Typ=1 Len=1: 30] [Typ=1 Len=1: 30]
+rows 1
+insert 1
+insert 1
+cols ID/NUMBER/0/-127 F/VARCHAR2/4000/0 D/VARCHAR2/4000/0 N/NUMBER/0/-127 DF/VARCHAR2/4000/0 DD/VARCHAR2/4000/0
+meta ID type=NUMBER code=2 prec=0 scale=-127 class=java.math.BigDecimal disp=22
+meta F type=VARCHAR2 code=12 prec=4000 scale=0 class=java.lang.String disp=4000
+meta D type=VARCHAR2 code=12 prec=4000 scale=0 class=java.lang.String disp=4000
+meta N type=NUMBER code=2 prec=0 scale=-127 class=java.math.BigDecimal disp=22
+meta DF type=VARCHAR2 code=12 prec=4000 scale=0 class=java.lang.String disp=4000
+meta DD type=VARCHAR2 code=12 prec=4000 scale=0 class=java.lang.String disp=4000
+row 1: [BigDecimal:4] [NULL] [NULL] [NULL] [String:NULL] [String:NULL]
+str 1: [4] [NULL] [NULL] [NULL] [NULL] [NULL]
+row 2: [BigDecimal:100] [String:1.5E+000] [String:1.5E+000] [BigDecimal:1.5] [String:Typ=100 Len=4: bf,c0,0,0] [String:Typ=101 Len=8: bf,f8,0,0,0,0,0,0]
+str 2: [100] [1.5E+000] [1.5E+000] [1.5] [Typ=100 Len=4: bf,c0,0,0] [Typ=101 Len=8: bf,f8,0,0,0,0,0,0]
+row 3: [BigDecimal:102] [NULL] [NULL] [NULL] [String:NULL] [String:NULL]
+str 3: [102] [NULL] [NULL] [NULL] [NULL] [NULL]
+row 4: [BigDecimal:103] [NULL] [NULL] [NULL] [String:NULL] [String:NULL]
+str 4: [103] [NULL] [NULL] [NULL] [NULL] [NULL]
+row 5: [BigDecimal:104] [String:0] [String:0] [BigDecimal:0] [String:Typ=100 Len=4: 80,0,0,0] [String:Typ=101 Len=8: 80,0,0,0,0,0,0,0]
+str 5: [104] [0] [0] [0] [Typ=100 Len=4: 80,0,0,0] [Typ=101 Len=8: 80,0,0,0,0,0,0,0]
+row 6: [BigDecimal:108] [String:0] [String:0] [BigDecimal:0] [String:Typ=100 Len=4: 80,0,0,0] [String:Typ=101 Len=8: 80,0,0,0,0,0,0,0]
+str 6: [108] [0] [0] [0] [Typ=100 Len=4: 80,0,0,0] [Typ=101 Len=8: 80,0,0,0,0,0,0,0]
+row 7: [BigDecimal:200] [NULL] [NULL] [NULL] [String:NULL] [String:NULL]
+str 7: [200] [NULL] [NULL] [NULL] [NULL] [NULL]
+row 8: [BigDecimal:201] [NULL] [NULL] [NULL] [String:NULL] [String:NULL]
+str 8: [201] [NULL] [NULL] [NULL] [NULL] [NULL]
+rows 8
+steps that threw 16
+exit 0

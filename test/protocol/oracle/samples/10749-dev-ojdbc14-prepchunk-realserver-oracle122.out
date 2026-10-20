@@ -1,0 +1,14 @@
+== prepchunk
+cols V/VARCHAR2/2000/0 R/RAW/0/0
+meta V type=VARCHAR2 code=12 prec=2000 scale=0 class=java.lang.String disp=2000
+meta R type=RAW code=-3 prec=0 scale=0 class=byte[] disp=2000
+row 1: [String:len=128 head=abcdefghijkl hash=1247178432] [raw:05121f2c394653606d7a8794a1aebbc8d5e2effc...len=128]
+str 1: [abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefgh...len=128] [05121F2C394653606D7A8794A1AEBBC8D5E2EFFC091623303D4A5764717E...len=256]
+rows 1
+cols V/VARCHAR2/2000/0 R/RAW/0/0
+meta V type=VARCHAR2 code=12 prec=2000 scale=0 class=java.lang.String disp=2000
+meta R type=RAW code=-3 prec=0 scale=0 class=byte[] disp=2000
+row 1: [String:len=192 head=abcdefghijkl hash=-2070666400] [raw:05121f2c394653606d7a8794a1aebbc8d5e2effc...len=192]
+str 1: [abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefgh...len=192] [05121F2C394653606D7A8794A1AEBBC8D5E2EFFC091623303D4A5764717E...len=384]
+rows 1
+exit 0

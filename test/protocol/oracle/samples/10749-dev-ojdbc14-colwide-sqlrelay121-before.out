@@ -1,0 +1,558 @@
+== colwide
+insert literal 1
+insert bound 1
+insert null 1
+cols ID/NUMBER/0/-127 V/VARCHAR2/63/0
+meta ID type=NUMBER code=2 prec=0 scale=-127 class=java.math.BigDecimal disp=22
+meta V type=VARCHAR2 code=12 prec=63 scale=0 class=java.lang.String disp=63
+row 1: [BigDecimal:1] [String:len=63 head=xxxxxxxxxxxx hash=-108785800]
+str 1: [1] [xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx...len=63]
+row 2: [BigDecimal:2] [String:len=63 head=abcdefghijkl hash=1403473676]
+str 2: [2] [abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefgh...len=63]
+row 3: [BigDecimal:3] [NULL]
+str 3: [3] [NULL]
+rows 3
+cols ID/NUMBER/0/-127 C/CHAR/63/0
+meta ID type=NUMBER code=2 prec=0 scale=-127 class=java.math.BigDecimal disp=22
+meta C type=CHAR code=1 prec=63 scale=0 class=java.lang.String disp=63
+row 1: [BigDecimal:1] [String:len=63 head=yyyyyyyyyyyy hash=-1899262055]
+str 1: [1] [yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy...len=63]
+row 2: [BigDecimal:2] [String:len=63 head=ABCDEFGHIJKL hash=-1430828308]
+str 2: [2] [ABCDEFGHIJKLMNOPQRSTUVWXYZABCDEFGHIJKLMNOPQRSTUVWXYZABCDEFGH...len=63]
+row 3: [BigDecimal:3] [NULL]
+str 3: [3] [NULL]
+rows 3
+cols ID/NUMBER/0/-127 R/RAW/0/0
+meta ID type=NUMBER code=2 prec=0 scale=-127 class=java.math.BigDecimal disp=22
+meta R type=RAW code=-3 prec=0 scale=0 class=byte[] disp=63
+row 1: [BigDecimal:1] [raw:6161616161616161616161616161616161616161...len=63]
+str 1: [1] [616161616161616161616161616161616161616161616161616161616161...len=126]
+row 2: [BigDecimal:2] [raw:01080f161d242b323940474e555c636a71787f86...len=63]
+str 2: [2] [01080F161D242B323940474E555C636A71787F868D949BA2A9B0B7BEC5CC...len=126]
+row 3: [BigDecimal:3] [NULL]
+str 3: [3] [NULL]
+rows 3
+cols ID/NUMBER/0/-127 V2/VARCHAR2/252/0
+meta ID type=NUMBER code=2 prec=0 scale=-127 class=java.math.BigDecimal disp=22
+meta V2 type=VARCHAR2 code=12 prec=252 scale=0 class=java.lang.String disp=252
+row 1: [BigDecimal:1] [String:len=63 head=zzzzzzzzzzzz hash=605228986]
+str 1: [1] [zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz...len=63]
+row 2: [BigDecimal:2] [String:len=63 head=abcdefghijkl hash=1403473676]
+str 2: [2] [abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefgh...len=63]
+row 3: [BigDecimal:3] [NULL]
+str 3: [3] [NULL]
+rows 3
+cols ID/NUMBER/0/-127 V/VARCHAR2/63/0 C/CHAR/63/0 R/RAW/0/0 V2/VARCHAR2/252/0
+meta ID type=NUMBER code=2 prec=0 scale=-127 class=java.math.BigDecimal disp=22
+meta V type=VARCHAR2 code=12 prec=63 scale=0 class=java.lang.String disp=63
+meta C type=CHAR code=1 prec=63 scale=0 class=java.lang.String disp=63
+meta R type=RAW code=-3 prec=0 scale=0 class=byte[] disp=63
+meta V2 type=VARCHAR2 code=12 prec=252 scale=0 class=java.lang.String disp=252
+row 1: [BigDecimal:1] [String:len=63 head=xxxxxxxxxxxx hash=-108785800] [String:len=63 head=yyyyyyyyyyyy hash=-1899262055] [raw:6161616161616161616161616161616161616161...len=63] [String:len=63 head=zzzzzzzzzzzz hash=605228986]
+str 1: [1] [xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx...len=63] [yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy...len=63] [616161616161616161616161616161616161616161616161616161616161...len=126] [zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz...len=63]
+row 2: [BigDecimal:2] [String:len=63 head=abcdefghijkl hash=1403473676] [String:len=63 head=ABCDEFGHIJKL hash=-1430828308] [raw:01080f161d242b323940474e555c636a71787f86...len=63] [String:len=63 head=abcdefghijkl hash=1403473676]
+str 2: [2] [abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefgh...len=63] [ABCDEFGHIJKLMNOPQRSTUVWXYZABCDEFGHIJKLMNOPQRSTUVWXYZABCDEFGH...len=63] [01080F161D242B323940474E555C636A71787F868D949BA2A9B0B7BEC5CC...len=126] [abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefgh...len=63]
+row 3: [BigDecimal:3] [NULL] [NULL] [NULL] [NULL]
+str 3: [3] [NULL] [NULL] [NULL] [NULL]
+rows 3
+cols ID/NUMBER/0/-127 LV/NUMBER/0/0 LC/NUMBER/0/0 LBC/NUMBER/0/0 LR/NUMBER/0/0
+meta ID type=NUMBER code=2 prec=0 scale=-127 class=java.math.BigDecimal disp=22
+meta LV type=NUMBER code=2 prec=0 scale=0 class=java.math.BigDecimal disp=22
+meta LC type=NUMBER code=2 prec=0 scale=0 class=java.math.BigDecimal disp=22
+meta LBC type=NUMBER code=2 prec=0 scale=0 class=java.math.BigDecimal disp=22
+meta LR type=NUMBER code=2 prec=0 scale=0 class=java.math.BigDecimal disp=22
+row 1: [BigDecimal:1] [BigDecimal:63] [BigDecimal:63] [BigDecimal:63] [BigDecimal:63]
+str 1: [1] [63] [63] [63] [63]
+row 2: [BigDecimal:2] [BigDecimal:63] [BigDecimal:63] [BigDecimal:63] [BigDecimal:63]
+str 2: [2] [63] [63] [63] [63]
+row 3: [BigDecimal:3] [NULL] [NULL] [NULL] [NULL]
+str 3: [3] [NULL] [NULL] [NULL] [NULL]
+rows 3
+cols A/VARCHAR2/63/0
+meta A type=VARCHAR2 code=12 prec=63 scale=0 class=java.lang.String disp=63
+row 1: [String:len=63 head=qqqqqqqqqqqq hash=-460353903]
+str 1: [qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq...len=63]
+rows 1
+cols B/CHAR/63/0
+meta B type=CHAR code=1 prec=63 scale=0 class=java.lang.String disp=63
+row 1: [String:len=63 head=qqqqqqqqqqqq hash=-460353903]
+str 1: [qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq...len=63]
+rows 1
+insert literal 1
+insert bound 1
+insert null 1
+cols ID/NUMBER/0/-127 V/VARCHAR2/64/0
+meta ID type=NUMBER code=2 prec=0 scale=-127 class=java.math.BigDecimal disp=22
+meta V type=VARCHAR2 code=12 prec=64 scale=0 class=java.lang.String disp=64
+row 1: [BigDecimal:1] [String:len=64 head=xxxxxxxxxxxx hash=922607616]
+str 1: [1] [xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx...len=64]
+row 2: [BigDecimal:2] [String:len=64 head=abcdefghijkl hash=558011104]
+str 2: [2] [abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefgh...len=64]
+row 3: [BigDecimal:3] [NULL]
+str 3: [3] [NULL]
+rows 3
+cols ID/NUMBER/0/-127 C/CHAR/64/0
+meta ID type=NUMBER code=2 prec=0 scale=-127 class=java.math.BigDecimal disp=22
+meta C type=CHAR code=1 prec=64 scale=0 class=java.lang.String disp=64
+row 1: [BigDecimal:1] [String:len=64 head=yyyyyyyyyyyy hash=1252418560]
+str 1: [1] [yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy...len=64]
+row 2: [BigDecimal:2] [String:len=64 head=ABCDEFGHIJKL hash=-1406004512]
+str 2: [2] [ABCDEFGHIJKLMNOPQRSTUVWXYZABCDEFGHIJKLMNOPQRSTUVWXYZABCDEFGH...len=64]
+row 3: [BigDecimal:3] [NULL]
+str 3: [3] [NULL]
+rows 3
+cols ID/NUMBER/0/-127 R/RAW/0/0
+meta ID type=NUMBER code=2 prec=0 scale=-127 class=java.math.BigDecimal disp=22
+meta R type=RAW code=-3 prec=0 scale=0 class=byte[] disp=64
+row 1: [BigDecimal:1] [raw:6161616161616161616161616161616161616161...len=64]
+str 1: [1] [616161616161616161616161616161616161616161616161616161616161...len=128]
+row 2: [BigDecimal:2] [raw:01080f161d242b323940474e555c636a71787f86...len=64]
+str 2: [2] [01080F161D242B323940474E555C636A71787F868D949BA2A9B0B7BEC5CC...len=128]
+row 3: [BigDecimal:3] [NULL]
+str 3: [3] [NULL]
+rows 3
+cols ID/NUMBER/0/-127 V2/VARCHAR2/256/0
+meta ID type=NUMBER code=2 prec=0 scale=-127 class=java.math.BigDecimal disp=22
+meta V2 type=VARCHAR2 code=12 prec=256 scale=0 class=java.lang.String disp=256
+row 1: [BigDecimal:1] [String:len=64 head=zzzzzzzzzzzz hash=1582229504]
+str 1: [1] [zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz...len=64]
+row 2: [BigDecimal:2] [String:len=64 head=abcdefghijkl hash=558011104]
+str 2: [2] [abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefgh...len=64]
+row 3: [BigDecimal:3] [NULL]
+str 3: [3] [NULL]
+rows 3
+cols ID/NUMBER/0/-127 V/VARCHAR2/64/0 C/CHAR/64/0 R/RAW/0/0 V2/VARCHAR2/256/0
+meta ID type=NUMBER code=2 prec=0 scale=-127 class=java.math.BigDecimal disp=22
+meta V type=VARCHAR2 code=12 prec=64 scale=0 class=java.lang.String disp=64
+meta C type=CHAR code=1 prec=64 scale=0 class=java.lang.String disp=64
+meta R type=RAW code=-3 prec=0 scale=0 class=byte[] disp=64
+meta V2 type=VARCHAR2 code=12 prec=256 scale=0 class=java.lang.String disp=256
+row 1: [BigDecimal:1] [String:len=64 head=xxxxxxxxxxxx hash=922607616] [String:len=64 head=yyyyyyyyyyyy hash=1252418560] [raw:6161616161616161616161616161616161616161...len=64] [String:len=64 head=zzzzzzzzzzzz hash=1582229504]
+str 1: [1] [xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx...len=64] [yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy...len=64] [616161616161616161616161616161616161616161616161616161616161...len=128] [zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz...len=64]
+row 2: [BigDecimal:2] [String:len=64 head=abcdefghijkl hash=558011104] [String:len=64 head=ABCDEFGHIJKL hash=-1406004512] [raw:01080f161d242b323940474e555c636a71787f86...len=64] [String:len=64 head=abcdefghijkl hash=558011104]
+str 2: [2] [abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefgh...len=64] [ABCDEFGHIJKLMNOPQRSTUVWXYZABCDEFGHIJKLMNOPQRSTUVWXYZABCDEFGH...len=64] [01080F161D242B323940474E555C636A71787F868D949BA2A9B0B7BEC5CC...len=128] [abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefgh...len=64]
+row 3: [BigDecimal:3] [NULL] [NULL] [NULL] [NULL]
+str 3: [3] [NULL] [NULL] [NULL] [NULL]
+rows 3
+cols ID/NUMBER/0/-127 LV/NUMBER/0/0 LC/NUMBER/0/0 LBC/NUMBER/0/0 LR/NUMBER/0/0
+meta ID type=NUMBER code=2 prec=0 scale=-127 class=java.math.BigDecimal disp=22
+meta LV type=NUMBER code=2 prec=0 scale=0 class=java.math.BigDecimal disp=22
+meta LC type=NUMBER code=2 prec=0 scale=0 class=java.math.BigDecimal disp=22
+meta LBC type=NUMBER code=2 prec=0 scale=0 class=java.math.BigDecimal disp=22
+meta LR type=NUMBER code=2 prec=0 scale=0 class=java.math.BigDecimal disp=22
+row 1: [BigDecimal:1] [BigDecimal:64] [BigDecimal:64] [BigDecimal:64] [BigDecimal:64]
+str 1: [1] [64] [64] [64] [64]
+row 2: [BigDecimal:2] [BigDecimal:64] [BigDecimal:64] [BigDecimal:64] [BigDecimal:64]
+str 2: [2] [64] [64] [64] [64]
+row 3: [BigDecimal:3] [NULL] [NULL] [NULL] [NULL]
+str 3: [3] [NULL] [NULL] [NULL] [NULL]
+rows 3
+cols A/VARCHAR2/64/0
+meta A type=VARCHAR2 code=12 prec=64 scale=0 class=java.lang.String disp=64
+row 1: [String:len=64 head=qqqqqqqqqqqq hash=-1386068992]
+str 1: [qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq...len=64]
+rows 1
+cols B/CHAR/64/0
+meta B type=CHAR code=1 prec=64 scale=0 class=java.lang.String disp=64
+row 1: [String:len=64 head=qqqqqqqqqqqq hash=-1386068992]
+str 1: [qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq...len=64]
+rows 1
+insert literal 1
+insert bound 1
+insert null 1
+cols ID/NUMBER/0/-127 V/VARCHAR2/65/0
+meta ID type=NUMBER code=2 prec=0 scale=-127 class=java.math.BigDecimal disp=22
+meta V type=VARCHAR2 code=12 prec=65 scale=0 class=java.lang.String disp=65
+row 1: [BigDecimal:1] [String:len=65 head=xxxxxxxxxxxx hash=-1463934856]
+str 1: [1] [xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx...len=65]
+row 2: [BigDecimal:2] [String:len=65 head=abcdefghijkl hash=118475149]
+str 2: [2] [abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefgh...len=65]
+row 3: [BigDecimal:3] [NULL]
+str 3: [3] [NULL]
+rows 3
+cols ID/NUMBER/0/-127 C/CHAR/65/0
+meta ID type=NUMBER code=2 prec=0 scale=-127 class=java.math.BigDecimal disp=22
+meta C type=CHAR code=1 prec=65 scale=0 class=java.lang.String disp=65
+row 1: [BigDecimal:1] [String:len=65 head=yyyyyyyyyyyy hash=170269817]
+str 1: [1] [yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy...len=65]
+row 2: [BigDecimal:2] [String:len=65 head=ABCDEFGHIJKL hash=-636466835]
+str 2: [2] [ABCDEFGHIJKLMNOPQRSTUVWXYZABCDEFGHIJKLMNOPQRSTUVWXYZABCDEFGH...len=65]
+row 3: [BigDecimal:3] [NULL]
+str 3: [3] [NULL]
+rows 3
+cols ID/NUMBER/0/-127 R/RAW/0/0
+meta ID type=NUMBER code=2 prec=0 scale=-127 class=java.math.BigDecimal disp=22
+meta R type=RAW code=-3 prec=0 scale=0 class=byte[] disp=65
+row 1: [BigDecimal:1] [raw:6161616161616161616161616161616161616161...len=65]
+str 1: [1] [616161616161616161616161616161616161616161616161616161616161...len=130]
+row 2: [BigDecimal:2] [raw:01080f161d242b323940474e555c636a71787f86...len=65]
+str 2: [2] [01080F161D242B323940474E555C636A71787F868D949BA2A9B0B7BEC5CC...len=130]
+row 3: [BigDecimal:3] [NULL]
+str 3: [3] [NULL]
+rows 3
+cols ID/NUMBER/0/-127 V2/VARCHAR2/260/0
+meta ID type=NUMBER code=2 prec=0 scale=-127 class=java.math.BigDecimal disp=22
+meta V2 type=VARCHAR2 code=12 prec=260 scale=0 class=java.lang.String disp=260
+row 1: [BigDecimal:1] [String:len=65 head=zzzzzzzzzzzz hash=1804474490]
+str 1: [1] [zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz...len=65]
+row 2: [BigDecimal:2] [String:len=65 head=abcdefghijkl hash=118475149]
+str 2: [2] [abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefgh...len=65]
+row 3: [BigDecimal:3] [NULL]
+str 3: [3] [NULL]
+rows 3
+cols ID/NUMBER/0/-127 V/VARCHAR2/65/0 C/CHAR/65/0 R/RAW/0/0 V2/VARCHAR2/260/0
+meta ID type=NUMBER code=2 prec=0 scale=-127 class=java.math.BigDecimal disp=22
+meta V type=VARCHAR2 code=12 prec=65 scale=0 class=java.lang.String disp=65
+meta C type=CHAR code=1 prec=65 scale=0 class=java.lang.String disp=65
+meta R type=RAW code=-3 prec=0 scale=0 class=byte[] disp=65
+meta V2 type=VARCHAR2 code=12 prec=260 scale=0 class=java.lang.String disp=260
+row 1: [BigDecimal:1] [String:len=65 head=xxxxxxxxxxxx hash=-1463934856] [String:len=65 head=yyyyyyyyyyyy hash=170269817] [raw:6161616161616161616161616161616161616161...len=65] [String:len=65 head=zzzzzzzzzzzz hash=1804474490]
+str 1: [1] [xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx...len=65] [yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy...len=65] [616161616161616161616161616161616161616161616161616161616161...len=130] [zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz...len=65]
+row 2: [BigDecimal:2] [String:len=65 head=abcdefghijkl hash=118475149] [String:len=65 head=ABCDEFGHIJKL hash=-636466835] [raw:01080f161d242b323940474e555c636a71787f86...len=65] [String:len=65 head=abcdefghijkl hash=118475149]
+str 2: [2] [abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefgh...len=65] [ABCDEFGHIJKLMNOPQRSTUVWXYZABCDEFGHIJKLMNOPQRSTUVWXYZABCDEFGH...len=65] [01080F161D242B323940474E555C636A71787F868D949BA2A9B0B7BEC5CC...len=130] [abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefgh...len=65]
+row 3: [BigDecimal:3] [NULL] [NULL] [NULL] [NULL]
+str 3: [3] [NULL] [NULL] [NULL] [NULL]
+rows 3
+cols ID/NUMBER/0/-127 LV/NUMBER/0/0 LC/NUMBER/0/0 LBC/NUMBER/0/0 LR/NUMBER/0/0
+meta ID type=NUMBER code=2 prec=0 scale=-127 class=java.math.BigDecimal disp=22
+meta LV type=NUMBER code=2 prec=0 scale=0 class=java.math.BigDecimal disp=22
+meta LC type=NUMBER code=2 prec=0 scale=0 class=java.math.BigDecimal disp=22
+meta LBC type=NUMBER code=2 prec=0 scale=0 class=java.math.BigDecimal disp=22
+meta LR type=NUMBER code=2 prec=0 scale=0 class=java.math.BigDecimal disp=22
+row 1: [BigDecimal:1] [BigDecimal:65] [BigDecimal:65] [BigDecimal:65] [BigDecimal:65]
+str 1: [1] [65] [65] [65] [65]
+row 2: [BigDecimal:2] [BigDecimal:65] [BigDecimal:65] [BigDecimal:65] [BigDecimal:65]
+str 2: [2] [65] [65] [65] [65]
+row 3: [BigDecimal:3] [NULL] [NULL] [NULL] [NULL]
+str 3: [3] [NULL] [NULL] [NULL] [NULL]
+rows 3
+cols A/VARCHAR2/65/0
+meta A type=VARCHAR2 code=12 prec=65 scale=0 class=java.lang.String disp=65
+row 1: [String:len=65 head=qqqqqqqqqqqq hash=-18465679]
+str 1: [qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq...len=65]
+rows 1
+cols B/CHAR/65/0
+meta B type=CHAR code=1 prec=65 scale=0 class=java.lang.String disp=65
+row 1: [String:len=65 head=qqqqqqqqqqqq hash=-18465679]
+str 1: [qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq...len=65]
+rows 1
+insert literal 1
+insert bound 1
+insert null 1
+cols ID/NUMBER/0/-127 V/VARCHAR2/127/0
+meta ID type=NUMBER code=2 prec=0 scale=-127 class=java.math.BigDecimal disp=22
+meta V type=VARCHAR2 code=12 prec=127 scale=0 class=java.lang.String disp=127
+row 1: [BigDecimal:1] [String:len=127 head=xxxxxxxxxxxx hash=-1169543304]
+str 1: [1] [xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx...len=127]
+row 2: [BigDecimal:2] [String:len=127 head=abcdefghijkl hash=1702799544]
+str 2: [2] [abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefgh...len=127]
+row 3: [BigDecimal:3] [NULL]
+str 3: [3] [NULL]
+rows 3
+cols ID/NUMBER/0/-127 C/CHAR/127/0
+meta ID type=NUMBER code=2 prec=0 scale=-127 class=java.math.BigDecimal disp=22
+meta C type=CHAR code=1 prec=127 scale=0 class=java.lang.String disp=127
+row 1: [BigDecimal:1] [String:len=127 head=yyyyyyyyyyyy hash=1827187609]
+str 1: [1] [yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy...len=127]
+row 2: [BigDecimal:2] [String:len=127 head=ABCDEFGHIJKL hash=296690840]
+str 2: [2] [ABCDEFGHIJKLMNOPQRSTUVWXYZABCDEFGHIJKLMNOPQRSTUVWXYZABCDEFGH...len=127]
+row 3: [BigDecimal:3] [NULL]
+str 3: [3] [NULL]
+rows 3
+cols ID/NUMBER/0/-127 R/RAW/0/0
+meta ID type=NUMBER code=2 prec=0 scale=-127 class=java.math.BigDecimal disp=22
+meta R type=RAW code=-3 prec=0 scale=0 class=byte[] disp=127
+row 1: [BigDecimal:1] [raw:6161616161616161616161616161616161616161...len=127]
+str 1: [1] [616161616161616161616161616161616161616161616161616161616161...len=254]
+row 2: [BigDecimal:2] [raw:01080f161d242b323940474e555c636a71787f86...len=127]
+str 2: [2] [01080F161D242B323940474E555C636A71787F868D949BA2A9B0B7BEC5CC...len=254]
+row 3: [BigDecimal:3] [NULL]
+str 3: [3] [NULL]
+rows 3
+cols ID/NUMBER/0/-127 V2/VARCHAR2/508/0
+meta ID type=NUMBER code=2 prec=0 scale=-127 class=java.math.BigDecimal disp=22
+meta V2 type=VARCHAR2 code=12 prec=508 scale=0 class=java.lang.String disp=508
+row 1: [BigDecimal:1] [String:len=127 head=zzzzzzzzzzzz hash=528951226]
+str 1: [1] [zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz...len=127]
+row 2: [BigDecimal:2] [String:len=127 head=abcdefghijkl hash=1702799544]
+str 2: [2] [abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefgh...len=127]
+row 3: [BigDecimal:3] [NULL]
+str 3: [3] [NULL]
+rows 3
+cols ID/NUMBER/0/-127 V/VARCHAR2/127/0 C/CHAR/127/0 R/RAW/0/0 V2/VARCHAR2/508/0
+meta ID type=NUMBER code=2 prec=0 scale=-127 class=java.math.BigDecimal disp=22
+meta V type=VARCHAR2 code=12 prec=127 scale=0 class=java.lang.String disp=127
+meta C type=CHAR code=1 prec=127 scale=0 class=java.lang.String disp=127
+meta R type=RAW code=-3 prec=0 scale=0 class=byte[] disp=127
+meta V2 type=VARCHAR2 code=12 prec=508 scale=0 class=java.lang.String disp=508
+row 1: [BigDecimal:1] [String:len=127 head=xxxxxxxxxxxx hash=-1169543304] [String:len=127 head=yyyyyyyyyyyy hash=1827187609] [raw:6161616161616161616161616161616161616161...len=127] [String:len=127 head=zzzzzzzzzzzz hash=528951226]
+str 1: [1] [xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx...len=127] [yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy...len=127] [616161616161616161616161616161616161616161616161616161616161...len=254] [zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz...len=127]
+row 2: [BigDecimal:2] [String:len=127 head=abcdefghijkl hash=1702799544] [String:len=127 head=ABCDEFGHIJKL hash=296690840] [raw:01080f161d242b323940474e555c636a71787f86...len=127] [String:len=127 head=abcdefghijkl hash=1702799544]
+str 2: [2] [abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefgh...len=127] [ABCDEFGHIJKLMNOPQRSTUVWXYZABCDEFGHIJKLMNOPQRSTUVWXYZABCDEFGH...len=127] [01080F161D242B323940474E555C636A71787F868D949BA2A9B0B7BEC5CC...len=254] [abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefgh...len=127]
+row 3: [BigDecimal:3] [NULL] [NULL] [NULL] [NULL]
+str 3: [3] [NULL] [NULL] [NULL] [NULL]
+rows 3
+cols ID/NUMBER/0/-127 LV/NUMBER/0/0 LC/NUMBER/0/0 LBC/NUMBER/0/0 LR/NUMBER/0/0
+meta ID type=NUMBER code=2 prec=0 scale=-127 class=java.math.BigDecimal disp=22
+meta LV type=NUMBER code=2 prec=0 scale=0 class=java.math.BigDecimal disp=22
+meta LC type=NUMBER code=2 prec=0 scale=0 class=java.math.BigDecimal disp=22
+meta LBC type=NUMBER code=2 prec=0 scale=0 class=java.math.BigDecimal disp=22
+meta LR type=NUMBER code=2 prec=0 scale=0 class=java.math.BigDecimal disp=22
+row 1: [BigDecimal:1] [BigDecimal:127] [BigDecimal:127] [BigDecimal:127] [BigDecimal:127]
+str 1: [1] [127] [127] [127] [127]
+row 2: [BigDecimal:2] [BigDecimal:127] [BigDecimal:127] [BigDecimal:127] [BigDecimal:127]
+str 2: [2] [127] [127] [127] [127]
+row 3: [BigDecimal:3] [NULL] [NULL] [NULL] [NULL]
+str 3: [3] [NULL] [NULL] [NULL] [NULL]
+rows 3
+cols A/VARCHAR2/127/0
+meta A type=VARCHAR2 code=12 prec=127 scale=0 class=java.lang.String disp=127
+row 1: [String:len=127 head=qqqqqqqqqqqq hash=-671823215]
+str 1: [qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq...len=127]
+rows 1
+cols B/CHAR/127/0
+meta B type=CHAR code=1 prec=127 scale=0 class=java.lang.String disp=127
+row 1: [String:len=127 head=qqqqqqqqqqqq hash=-671823215]
+str 1: [qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq...len=127]
+rows 1
+insert literal 1
+insert bound 1
+insert null 1
+cols ID/NUMBER/0/-127 V/VARCHAR2/128/0
+meta ID type=NUMBER code=2 prec=0 scale=-127 class=java.math.BigDecimal disp=22
+meta V type=VARCHAR2 code=12 prec=128 scale=0 class=java.lang.String disp=128
+row 1: [BigDecimal:1] [String:len=128 head=xxxxxxxxxxxx hash=-1896103936]
+str 1: [1] [xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx...len=128]
+row 2: [BigDecimal:2] [String:len=128 head=abcdefghijkl hash=1247178432]
+str 2: [2] [abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefgh...len=128]
+row 3: [BigDecimal:3] [NULL]
+str 3: [3] [NULL]
+rows 3
+cols ID/NUMBER/0/-127 C/CHAR/128/0
+meta ID type=NUMBER code=2 prec=0 scale=-127 class=java.math.BigDecimal disp=22
+meta C type=CHAR code=1 prec=128 scale=0 class=java.lang.String disp=128
+row 1: [BigDecimal:1] [String:len=128 head=yyyyyyyyyyyy hash=808241152]
+str 1: [1] [yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy...len=128]
+row 2: [BigDecimal:2] [String:len=128 head=ABCDEFGHIJKL hash=607481536]
+str 2: [2] [ABCDEFGHIJKLMNOPQRSTUVWXYZABCDEFGHIJKLMNOPQRSTUVWXYZABCDEFGH...len=128]
+row 3: [BigDecimal:3] [NULL]
+str 3: [3] [NULL]
+rows 3
+cols ID/NUMBER/0/-127 R/RAW/0/0
+meta ID type=NUMBER code=2 prec=0 scale=-127 class=java.math.BigDecimal disp=22
+meta R type=RAW code=-3 prec=0 scale=0 class=byte[] disp=128
+row 1: [BigDecimal:1] [raw:6161616161616161616161616161616161616161...len=128]
+str 1: [1] [616161616161616161616161616161616161616161616161616161616161...len=256]
+row 2: [BigDecimal:2] [raw:01080f161d242b323940474e555c636a71787f86...len=128]
+str 2: [2] [01080F161D242B323940474E555C636A71787F868D949BA2A9B0B7BEC5CC...len=256]
+row 3: [BigDecimal:3] [NULL]
+str 3: [3] [NULL]
+rows 3
+cols ID/NUMBER/0/-127 V2/VARCHAR2/512/0
+meta ID type=NUMBER code=2 prec=0 scale=-127 class=java.math.BigDecimal disp=22
+meta V2 type=VARCHAR2 code=12 prec=512 scale=0 class=java.lang.String disp=512
+row 1: [BigDecimal:1] [String:len=128 head=zzzzzzzzzzzz hash=-782381056]
+str 1: [1] [zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz...len=128]
+row 2: [BigDecimal:2] [String:len=128 head=abcdefghijkl hash=1247178432]
+str 2: [2] [abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefgh...len=128]
+row 3: [BigDecimal:3] [NULL]
+str 3: [3] [NULL]
+rows 3
+cols ID/NUMBER/0/-127 V/VARCHAR2/128/0 C/CHAR/128/0 R/RAW/0/0 V2/VARCHAR2/512/0
+meta ID type=NUMBER code=2 prec=0 scale=-127 class=java.math.BigDecimal disp=22
+meta V type=VARCHAR2 code=12 prec=128 scale=0 class=java.lang.String disp=128
+meta C type=CHAR code=1 prec=128 scale=0 class=java.lang.String disp=128
+meta R type=RAW code=-3 prec=0 scale=0 class=byte[] disp=128
+meta V2 type=VARCHAR2 code=12 prec=512 scale=0 class=java.lang.String disp=512
+row 1: [BigDecimal:1] [String:len=128 head=xxxxxxxxxxxx hash=-1896103936] [String:len=128 head=yyyyyyyyyyyy hash=808241152] [raw:6161616161616161616161616161616161616161...len=128] [String:len=128 head=zzzzzzzzzzzz hash=-782381056]
+str 1: [1] [xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx...len=128] [yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy...len=128] [616161616161616161616161616161616161616161616161616161616161...len=256] [zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz...len=128]
+row 2: [BigDecimal:2] [String:len=128 head=abcdefghijkl hash=1247178432] [String:len=128 head=ABCDEFGHIJKL hash=607481536] [raw:01080f161d242b323940474e555c636a71787f86...len=128] [String:len=128 head=abcdefghijkl hash=1247178432]
+str 2: [2] [abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefgh...len=128] [ABCDEFGHIJKLMNOPQRSTUVWXYZABCDEFGHIJKLMNOPQRSTUVWXYZABCDEFGH...len=128] [01080F161D242B323940474E555C636A71787F868D949BA2A9B0B7BEC5CC...len=256] [abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefgh...len=128]
+row 3: [BigDecimal:3] [NULL] [NULL] [NULL] [NULL]
+str 3: [3] [NULL] [NULL] [NULL] [NULL]
+rows 3
+cols ID/NUMBER/0/-127 LV/NUMBER/0/0 LC/NUMBER/0/0 LBC/NUMBER/0/0 LR/NUMBER/0/0
+meta ID type=NUMBER code=2 prec=0 scale=-127 class=java.math.BigDecimal disp=22
+meta LV type=NUMBER code=2 prec=0 scale=0 class=java.math.BigDecimal disp=22
+meta LC type=NUMBER code=2 prec=0 scale=0 class=java.math.BigDecimal disp=22
+meta LBC type=NUMBER code=2 prec=0 scale=0 class=java.math.BigDecimal disp=22
+meta LR type=NUMBER code=2 prec=0 scale=0 class=java.math.BigDecimal disp=22
+row 1: [BigDecimal:1] [BigDecimal:128] [BigDecimal:128] [BigDecimal:128] [BigDecimal:128]
+str 1: [1] [128] [128] [128] [128]
+row 2: [BigDecimal:2] [BigDecimal:128] [BigDecimal:128] [BigDecimal:128] [BigDecimal:128]
+str 2: [2] [128] [128] [128] [128]
+row 3: [BigDecimal:3] [NULL] [NULL] [NULL] [NULL]
+str 3: [3] [NULL] [NULL] [NULL] [NULL]
+rows 3
+cols A/VARCHAR2/128/0
+meta A type=VARCHAR2 code=12 prec=128 scale=0 class=java.lang.String disp=128
+row 1: [String:len=128 head=qqqqqqqqqqqq hash=648316928]
+str 1: [qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq...len=128]
+rows 1
+cols B/CHAR/128/0
+meta B type=CHAR code=1 prec=128 scale=0 class=java.lang.String disp=128
+row 1: [String:len=128 head=qqqqqqqqqqqq hash=648316928]
+str 1: [qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq...len=128]
+rows 1
+insert literal 1
+insert bound 1
+insert null 1
+cols ID/NUMBER/0/-127 V/VARCHAR2/252/0
+meta ID type=NUMBER code=2 prec=0 scale=-127 class=java.math.BigDecimal disp=22
+meta V type=VARCHAR2 code=12 prec=252 scale=0 class=java.lang.String disp=252
+row 1: [BigDecimal:1] [String:len=252 head=xxxxxxxxxxxx hash=312484352]
+str 1: [1] [xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx...len=252]
+row 2: [BigDecimal:2] [String:len=252 head=abcdefghijkl hash=1574548478]
+str 2: [2] [abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefgh...len=252]
+row 3: [BigDecimal:3] [NULL]
+str 3: [3] [NULL]
+rows 3
+cols ID/NUMBER/0/-127 C/CHAR/252/0
+meta ID type=NUMBER code=2 prec=0 scale=-127 class=java.math.BigDecimal disp=22
+meta C type=CHAR code=1 prec=252 scale=0 class=java.lang.String disp=252
+row 1: [BigDecimal:1] [String:len=252 head=yyyyyyyyyyyy hash=1317247424]
+str 1: [1] [yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy...len=252]
+row 2: [BigDecimal:2] [String:len=252 head=ABCDEFGHIJKL hash=-513098754]
+str 2: [2] [ABCDEFGHIJKLMNOPQRSTUVWXYZABCDEFGHIJKLMNOPQRSTUVWXYZABCDEFGH...len=252]
+row 3: [BigDecimal:3] [NULL]
+str 3: [3] [NULL]
+rows 3
+cols ID/NUMBER/0/-127 R/RAW/0/0
+meta ID type=NUMBER code=2 prec=0 scale=-127 class=java.math.BigDecimal disp=22
+meta R type=RAW code=-3 prec=0 scale=0 class=byte[] disp=252
+row 1: [BigDecimal:1] [raw:6161616161616161616161616161616161616161...len=252]
+str 1: [1] [616161616161616161616161616161616161616161616161616161616161...len=504]
+row 2: [BigDecimal:2] [raw:01080f161d242b323940474e555c636a71787f86...len=252]
+str 2: [2] [01080F161D242B323940474E555C636A71787F868D949BA2A9B0B7BEC5CC...len=504]
+row 3: [BigDecimal:3] [NULL]
+str 3: [3] [NULL]
+rows 3
+cols ID/NUMBER/0/-127 V2/VARCHAR2/1008/0
+meta ID type=NUMBER code=2 prec=0 scale=-127 class=java.math.BigDecimal disp=22
+meta V2 type=VARCHAR2 code=12 prec=1008 scale=0 class=java.lang.String disp=1008
+row 1: [BigDecimal:1] [String:len=252 head=zzzzzzzzzzzz hash=-1972956800]
+str 1: [1] [zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz...len=252]
+row 2: [BigDecimal:2] [String:len=252 head=abcdefghijkl hash=1574548478]
+str 2: [2] [abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefgh...len=252]
+row 3: [BigDecimal:3] [NULL]
+str 3: [3] [NULL]
+rows 3
+cols ID/NUMBER/0/-127 V/VARCHAR2/252/0 C/CHAR/252/0 R/RAW/0/0 V2/VARCHAR2/1008/0
+meta ID type=NUMBER code=2 prec=0 scale=-127 class=java.math.BigDecimal disp=22
+meta V type=VARCHAR2 code=12 prec=252 scale=0 class=java.lang.String disp=252
+meta C type=CHAR code=1 prec=252 scale=0 class=java.lang.String disp=252
+meta R type=RAW code=-3 prec=0 scale=0 class=byte[] disp=252
+meta V2 type=VARCHAR2 code=12 prec=1008 scale=0 class=java.lang.String disp=1008
+row 1: [BigDecimal:1] [String:len=252 head=xxxxxxxxxxxx hash=312484352] [String:len=252 head=yyyyyyyyyyyy hash=1317247424] [raw:6161616161616161616161616161616161616161...len=252] [String:len=252 head=zzzzzzzzzzzz hash=-1972956800]
+str 1: [1] [xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx...len=252] [yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy...len=252] [616161616161616161616161616161616161616161616161616161616161...len=504] [zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz...len=252]
+row 2: [BigDecimal:2] [String:len=252 head=abcdefghijkl hash=1574548478] [String:len=252 head=ABCDEFGHIJKL hash=-513098754] [raw:01080f161d242b323940474e555c636a71787f86...len=252] [String:len=252 head=abcdefghijkl hash=1574548478]
+str 2: [2] [abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefgh...len=252] [ABCDEFGHIJKLMNOPQRSTUVWXYZABCDEFGHIJKLMNOPQRSTUVWXYZABCDEFGH...len=252] [01080F161D242B323940474E555C636A71787F868D949BA2A9B0B7BEC5CC...len=504] [abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefgh...len=252]
+row 3: [BigDecimal:3] [NULL] [NULL] [NULL] [NULL]
+str 3: [3] [NULL] [NULL] [NULL] [NULL]
+rows 3
+cols ID/NUMBER/0/-127 LV/NUMBER/0/0 LC/NUMBER/0/0 LBC/NUMBER/0/0 LR/NUMBER/0/0
+meta ID type=NUMBER code=2 prec=0 scale=-127 class=java.math.BigDecimal disp=22
+meta LV type=NUMBER code=2 prec=0 scale=0 class=java.math.BigDecimal disp=22
+meta LC type=NUMBER code=2 prec=0 scale=0 class=java.math.BigDecimal disp=22
+meta LBC type=NUMBER code=2 prec=0 scale=0 class=java.math.BigDecimal disp=22
+meta LR type=NUMBER code=2 prec=0 scale=0 class=java.math.BigDecimal disp=22
+row 1: [BigDecimal:1] [BigDecimal:252] [BigDecimal:252] [BigDecimal:252] [BigDecimal:252]
+str 1: [1] [252] [252] [252] [252]
+row 2: [BigDecimal:2] [BigDecimal:252] [BigDecimal:252] [BigDecimal:252] [BigDecimal:252]
+str 2: [2] [252] [252] [252] [252]
+row 3: [BigDecimal:3] [NULL] [NULL] [NULL] [NULL]
+str 3: [3] [NULL] [NULL] [NULL] [NULL]
+rows 3
+cols A/VARCHAR2/252/0
+meta A type=VARCHAR2 code=12 prec=252 scale=0 class=java.lang.String disp=252
+row 1: [String:len=252 head=qqqqqqqqqqqq hash=1869077440]
+str 1: [qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq...len=252]
+rows 1
+cols B/CHAR/252/0
+meta B type=CHAR code=1 prec=252 scale=0 class=java.lang.String disp=252
+row 1: [String:len=252 head=qqqqqqqqqqqq hash=1869077440]
+str 1: [qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq...len=252]
+rows 1
+insert literal 1
+insert bound 1
+insert null 1
+cols ID/NUMBER/0/-127 V/VARCHAR2/253/0
+meta ID type=NUMBER code=2 prec=0 scale=-127 class=java.math.BigDecimal disp=22
+meta V type=VARCHAR2 code=12 prec=253 scale=0 class=java.lang.String disp=253
+row 1: [BigDecimal:1] [String:len=253 head=xxxxxxxxxxxx hash=1097080440]
+str 1: [1] [xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx...len=253]
+row 2: [BigDecimal:2] [String:len=253 head=abcdefghijkl hash=1566362677]
+str 2: [2] [abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefgh...len=253]
+row 3: [BigDecimal:3] [NULL]
+str 3: [3] [NULL]
+rows 3
+cols ID/NUMBER/0/-127 C/CHAR/253/0
+meta ID type=NUMBER code=2 prec=0 scale=-127 class=java.math.BigDecimal disp=22
+meta C type=CHAR code=1 prec=253 scale=0 class=java.lang.String disp=253
+row 1: [BigDecimal:1] [String:len=253 head=yyyyyyyyyyyy hash=-2115002695]
+str 1: [1] [yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy...len=253]
+row 2: [BigDecimal:2] [String:len=253 head=ABCDEFGHIJKL hash=1273807893]
+str 2: [2] [ABCDEFGHIJKLMNOPQRSTUVWXYZABCDEFGHIJKLMNOPQRSTUVWXYZABCDEFGH...len=253]
+row 3: [BigDecimal:3] [NULL]
+str 3: [3] [NULL]
+rows 3
+cols ID/NUMBER/0/-127 R/RAW/0/0
+meta ID type=NUMBER code=2 prec=0 scale=-127 class=java.math.BigDecimal disp=22
+meta R type=RAW code=-3 prec=0 scale=0 class=byte[] disp=253
+row 1: [BigDecimal:1] [raw:6161616161616161616161616161616161616161...len=253]
+str 1: [1] [616161616161616161616161616161616161616161616161616161616161...len=506]
+row 2: [BigDecimal:2] [raw:01080f161d242b323940474e555c636a71787f86...len=253]
+str 2: [2] [01080F161D242B323940474E555C636A71787F868D949BA2A9B0B7BEC5CC...len=506]
+row 3: [BigDecimal:3] [NULL]
+str 3: [3] [NULL]
+rows 3
+cols ID/NUMBER/0/-127 V2/VARCHAR2/1012/0
+meta ID type=NUMBER code=2 prec=0 scale=-127 class=java.math.BigDecimal disp=22
+meta V2 type=VARCHAR2 code=12 prec=1012 scale=0 class=java.lang.String disp=1012
+row 1: [BigDecimal:1] [String:len=253 head=zzzzzzzzzzzz hash=-1032118534]
+str 1: [1] [zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz...len=253]
+row 2: [BigDecimal:2] [String:len=253 head=abcdefghijkl hash=1566362677]
+str 2: [2] [abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefgh...len=253]
+row 3: [BigDecimal:3] [NULL]
+str 3: [3] [NULL]
+rows 3
+cols ID/NUMBER/0/-127 V/VARCHAR2/253/0 C/CHAR/253/0 R/RAW/0/0 V2/VARCHAR2/1012/0
+meta ID type=NUMBER code=2 prec=0 scale=-127 class=java.math.BigDecimal disp=22
+meta V type=VARCHAR2 code=12 prec=253 scale=0 class=java.lang.String disp=253
+meta C type=CHAR code=1 prec=253 scale=0 class=java.lang.String disp=253
+meta R type=RAW code=-3 prec=0 scale=0 class=byte[] disp=253
+meta V2 type=VARCHAR2 code=12 prec=1012 scale=0 class=java.lang.String disp=1012
+row 1: [BigDecimal:1] [String:len=253 head=xxxxxxxxxxxx hash=1097080440] [String:len=253 head=yyyyyyyyyyyy hash=-2115002695] [raw:6161616161616161616161616161616161616161...len=253] [String:len=253 head=zzzzzzzzzzzz hash=-1032118534]
+str 1: [1] [xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx...len=253] [yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy...len=253] [616161616161616161616161616161616161616161616161616161616161...len=506] [zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz...len=253]
+row 2: [BigDecimal:2] [String:len=253 head=abcdefghijkl hash=1566362677] [String:len=253 head=ABCDEFGHIJKL hash=1273807893] [raw:01080f161d242b323940474e555c636a71787f86...len=253] [String:len=253 head=abcdefghijkl hash=1566362677]
+str 2: [2] [abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefgh...len=253] [ABCDEFGHIJKLMNOPQRSTUVWXYZABCDEFGHIJKLMNOPQRSTUVWXYZABCDEFGH...len=253] [01080F161D242B323940474E555C636A71787F868D949BA2A9B0B7BEC5CC...len=506] [abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefgh...len=253]
+row 3: [BigDecimal:3] [NULL] [NULL] [NULL] [NULL]
+str 3: [3] [NULL] [NULL] [NULL] [NULL]
+rows 3
+cols ID/NUMBER/0/-127 LV/NUMBER/0/0 LC/NUMBER/0/0 LBC/NUMBER/0/0 LR/NUMBER/0/0
+meta ID type=NUMBER code=2 prec=0 scale=-127 class=java.math.BigDecimal disp=22
+meta LV type=NUMBER code=2 prec=0 scale=0 class=java.math.BigDecimal disp=22
+meta LC type=NUMBER code=2 prec=0 scale=0 class=java.math.BigDecimal disp=22
+meta LBC type=NUMBER code=2 prec=0 scale=0 class=java.math.BigDecimal disp=22
+meta LR type=NUMBER code=2 prec=0 scale=0 class=java.math.BigDecimal disp=22
+row 1: [BigDecimal:1] [BigDecimal:253] [BigDecimal:253] [BigDecimal:253] [BigDecimal:253]
+str 1: [1] [253] [253] [253] [253]
+row 2: [BigDecimal:2] [BigDecimal:253] [BigDecimal:253] [BigDecimal:253] [BigDecimal:253]
+str 2: [2] [253] [253] [253] [253]
+row 3: [BigDecimal:3] [NULL] [NULL] [NULL] [NULL]
+str 3: [3] [NULL] [NULL] [NULL] [NULL]
+rows 3
+cols A/VARCHAR2/253/0
+meta A type=VARCHAR2 code=12 prec=253 scale=0 class=java.lang.String disp=253
+row 1: [String:len=253 head=qqqqqqqqqqqq hash=2106825905]
+str 1: [qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq...len=253]
+rows 1
+cols B/CHAR/253/0
+meta B type=CHAR code=1 prec=253 scale=0 class=java.lang.String disp=253
+row 1: [String:len=253 head=qqqqqqqqqqqq hash=2106825905]
+str 1: [qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq...len=253]
+rows 1
+insert literal 1
+step len 4000 threw SQLException 12899 ORA-12899: value too large for column "DEV"."PROTOCOLTEST10749MCWIDE"."C" (actual: 4000, maximum: 2000)
+steps that threw 1
+exit 0

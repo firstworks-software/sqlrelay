@@ -408,19 +408,21 @@ error, success iterations 1 in every error object and a row number of the
 0x8068 re-execute counted over the cursor; the module now follows the real
 servers in all three, see below.) So are two scripts and one step:
 newline, a text whose first byte is a newline; null, select null, which the
-module describes as a VARCHAR2 of 4000; and the rollback in dmlauto, which
-finds nothing to undo. The commitfirst script, a commit before any 0x5e
-answered 09 01 04, is measured on real oracle102 and oracle122
-(10745-dev-ojdbc14-commitfirst-realserver-*). The prepared script's int
-comes back as the text "10" in a VARCHAR2, since the module binds it to the
-backend as text. Against a scratch module
-built from HEAD's oracle.cpp 56 checks fail (52 sessions, which drop at
-their first 0x5e, and the 4 commitfirst ones, which get 09 01 05 where 09 01
-04 is expected) and the rest pass, since a session stops at its first failed
-call; against the new module the portable run passed 4692 checks and the
--native run 812 (it skips the query sessions), with 0 failures in both. With
-#10750 the portable run had 7565 checks, and it has 7578 since the 11.2
-follow-up, below.
+module described as a VARCHAR2 of 4000 until #10749 (now width 0 like the
+real servers', see "ojdbc14 column and bind types (#10749)" below); and the
+rollback in dmlauto, which finds nothing to undo. The commitfirst script, a
+commit before any 0x5e answered 09 01 04, is measured on real oracle102 and
+oracle122 (10745-dev-ojdbc14-commitfirst-realserver-*). The prepared
+script's int comes back as the text "10" in a VARCHAR2, since the module
+binds it to the backend as text. Against a scratch module built from HEAD's
+oracle.cpp 56 checks fail (52 sessions, which drop at their first 0x5e, and
+the 4 commitfirst ones, which get 09 01 05 where 09 01 04 is expected) and the
+rest pass, since a session stops at its first failed call; against the new
+module the portable run passed 4692 checks and the -native run 812 (it skips
+the query sessions), with 0 failures in both. With #10750 the portable run had
+7565 checks, and it has 7578 since the 11.2 follow-up, below. #10749 added 9
+column scripts, 14 bind scripts and the gatepin session (31711 portable
+checks), see "ojdbc14 column and bind types (#10749)" below.
 
 Its -native run does the same in the native encoding for the tagged logins
 with the 10g and later verifiers, and runs twice: once with the client
@@ -8499,6 +8501,466 @@ and T (timeout), as in the other real server files.
                                       what the module sends now
                                       (#10750 follow-up)
 
+The 10749 captures below are the genuine ojdbc14 10.2.0.5 thin driver running
+the column and bind actions that Conn14 gained for #10749 (see "ojdbc14 column
+and bind types (#10749)" below). There are 92 files: 46 .oraproxy captures,
+each with a .out beside it (what Conn14 printed). 28 are of the real
+oracle102 and oracle122 servers, 3 of HEAD's module before the change (the
+-before ones) and 15 of the module after it, all at the 12.1 listener but two
+at the AL32UTF8 one (-sqlrelayutf8). A [NNNN] below is a message of the
+capture counted from 0, with the data packets of one call or answer joined;
+it is not oradecode's packet number, which is one higher for the first
+messages and further off after the first call that spans several packets
+([0017] of selectnull is oradecode's [0018]). Offsets are into the message
+body behind the two data flag bytes. C is a message to the server and S one
+from it. The runs used scratch tables, so the .out files of one action can
+differ by name: PROTOCOLTEST10749BBYTES in the real server prepbytes runs,
+PROTOCOLTEST10749MCWIDE in the module's colwide run.
+
+    10749-dev-ojdbc14-selectnull-realserver-oracle102.oraproxy
+    10749-dev-ojdbc14-selectnull-realserver-oracle122.oraproxy
+    (each with a matching .out - Conn14's own stdout for that run)
+                                     select null from dual, then select null
+                                      a, 1 b, null c, 'x' d from dual. The
+                                      describe of the untyped null is dty 1,
+                                      flags 80, width 0, charset id 1, form 1,
+                                      mxlc 0, nullable 1 ([0017] S off 29,
+                                      same bytes at both servers), the max row
+                                      size 0 and 3, and no value byte is sent
+                                      for it: the fetch of the first is a bare
+                                      07 and then the 04 with ORA-01403
+                                      ([0019] S off 10), and the second
+                                      query's row is 07 02 c1 02 01 78 ([0023]
+                                      S off 10). 27 packets. The module's
+                                      10745 selectnull captures show the old
+                                      describe, VARCHAR2 4000 and a 00 value.
+                                      oracleverifiernegotiation cites both
+                                      (#10749)
+
+    10749-dev-ojdbc14-colbinfloat-realserver-oracle102.oraproxy
+    10749-dev-ojdbc14-colbinfloat-realserver-oracle122.oraproxy
+    (each with a matching .out - Conn14's own stdout for that run)
+                                     a table of BINARY_FLOAT and BINARY_DOUBLE
+                                      columns with 11 rows (1.5, NaN, +Inf,
+                                      -Inf, 0, the maxima, the minimum
+                                      normals, the minimum subnormals, the
+                                      negative maxima, 0 again and a null)
+                                      read in two fetches, then dump() of the
+                                      same values and some binary float
+                                      arithmetic. The describe is dty 100 and
+                                      101, flags 00 (abbreviated), precision
+                                      0, scale 0, width 1 ([0046] S off 54 and
+                                      77; max row size 34, 01 22, at off 25);
+                                      a value is the length 04 or 08 and the
+                                      canonical bytes, the sign bit set for a
+                                      positive number and every bit inverted
+                                      for a negative one: 1.5 is 04 bf c0 00
+                                      00 and 08 bf f8 00 00 00 00 00 00, NaN
+                                      04 ff c0 00 00, -Inf 04 00 7f ff ff
+                                      ([0048] S off 14, 32, 76, 125, 164,
+                                      169 at oracle122; oracle102 is 4 bytes
+                                      further on from the second row, NaN at
+                                      off 36 and -Inf at off 80). 74 packets.
+                                      The module used to
+                                      describe them VARCHAR2 4000 and send the
+                                      OCI text (#10749)
+
+    10749-dev-ojdbc14-colnchar-realserver-oracle102.oraproxy
+    10749-dev-ojdbc14-colnchar-realserver-oracle122.oraproxy
+    (each with a matching .out - Conn14's own stdout for that run)
+                                     NCHAR(10), NVARCHAR2(40) and VARCHAR2(40)
+                                      columns and the literals n'abc',
+                                      cast('abc' as nchar(10)) and cast('abc
+                                      def' as nvarchar2(40)). The NCHAR
+                                      describe has flags 80, fl2 0x1000 (02 10
+                                      00), charset id 2000 (02 07 d0), form 2
+                                      and mxlc half the width: 60 80 00 00 01
+                                      14 00 02 10 00 00 00 02 07 d0 02 01 0a
+                                      for NCHAR(10), 01 80 00 00 01 50 00 02
+                                      10 00 00 00 02 07 d0 02 01 28 for
+                                      NVARCHAR2(40) ([0034] S off 54 and 83,
+                                      the same at both servers; the n'abc'
+                                      literal is 6 wide, [0042] S off 30). The
+                                      values are UTF-16BE, NCHAR padded with
+                                      blanks: 14 00 61 00 62 00 63 00 20 ...
+                                      ([0036] S off 14), CJK and 40 e-acute in
+                                      the same form (off 110 and 175 at
+                                      oracle122; at oracle102 the bit vectors
+                                      start a row sooner and they are at off
+                                      114 and 179). 50 packets (#10749)
+
+    10749-dev-ojdbc14-colscale-realserver-oracle102.oraproxy
+    10749-dev-ojdbc14-colscale-realserver-oracle122.oraproxy
+    (each with a matching .out - Conn14's own stdout for that run)
+                                     NUMBER columns of many precisions and
+                                      scales (NUMBER, NUMBER(10,2),
+                                      NUMBER(38,5), NUMBER(5,-2), FLOAT), a
+                                      NOT NULL column, INTEGER and SMALLINT,
+                                      and number literals and functions. The
+                                      NUMBER scale is a UB2 (81 02 for -2, 81
+                                      7f for -127), the nullable byte is 00
+                                      for a NOT NULL column ([0028] S off
+                                      514), INTEGER has fl2 0x40000 (03 04 00
+                                      00, off 387). The scale of a number
+                                      literal is 00 at oracle102 and 81 7f at
+                                      oracle122, the one difference between
+                                      the two. 60 packets (#10749)
+
+    10749-dev-ojdbc14-colrowid-realserver-oracle122.oraproxy
+    (each with a matching .out - Conn14's own stdout for that run)
+                                     the ROWID pseudo-column, a ROWID column,
+                                      a UROWID column, an IOT's rowid and
+                                      cast(rowid as urowid). The pseudo-column
+                                      has nullable 00 ([0040] S off 30) and
+                                      the value 0e 03 4a c5 72 01 05 00 02 04
+                                      0e 00, each of the four numbers in its
+                                      minimal width ([0042] S off 11). A
+                                      UROWID or IOT rowid is dty 208 (d0 00 00
+                                      00 01 1f ... for an IOT, [0048] S off
+                                      30), with an LPI length and a CLR: 01 0a
+                                      0a 02 04 01 40 04 13 02 c1 02 fe for a
+                                      logical one ([0050] S off 11) and 01 0d
+                                      0d 01 00 4a c5 72 00 05 00 00 04 0e 00
+                                      00 for a physical one ([0058] S off 11).
+                                      93 packets (#10749)
+
+    10749-dev-ojdbc14-collong-realserver-oracle122.oraproxy
+    (each with a matching .out - Conn14's own stdout for that run)
+                                     a LONG and a LONG RAW column. The
+                                      describe is dty 8 and 24 with width 0
+                                      and the max row size 0 ([0055] S off 53
+                                      and [0093] S off 53); the driver asks
+                                      for 1 row per fetch whenever a LONG is
+                                      in the select list; a value is the long
+                                      form, the text, a 00 and two LPIs, the
+                                      indicator and the return code: fe 0a 73
+                                      68 6f 72 74 20 74 65 78 74 00 00 00
+                                      ([0057] S off 14), and a null 00 81 01
+                                      02 05 7d ([0067] S off 14). The row
+                                      header of [0061] carries a bit vector
+                                      of its own (01 01 01 03 at S off 8,
+                                      where the other answers have 00 00),
+                                      which the module does not send and the
+                                      driver does not need. 169 packets
+                                      (#10749)
+
+    10749-dev-ojdbc14-colinterval-realserver-oracle122.oraproxy
+    (each with a matching .out - Conn14's own stdout for that run)
+                                     INTERVAL YEAR TO MONTH and DAY TO SECOND
+                                      columns and the literals interval '2-3'
+                                      year to month, interval '5' day,
+                                      interval '1 2:3:4.5' day to second,
+                                      numtoyminterval and numtodsinterval. The
+                                      describe is dty 182 and 183 with the
+                                      precision and the UB2 scale (b6 00 02 00
+                                      01 01 ... , [0040] S off 30), the values
+                                      05 80 00 00 02 3f and 0b 80 00 00 05 3c
+                                      3c 3c 80 00 00 00 ([0042] S off 11,
+                                      behind the 07); max row size 76 for the
+                                      table ([0032] S off 25) and 43 for the
+                                      literals ([0040] S off 25). The module
+                                      already answered these as a real server
+                                      does (regression only). 52 packets
+                                      (#10749)
+
+    10749-dev-ojdbc14-coltz-realserver-oracle122.oraproxy
+    (each with a matching .out - Conn14's own stdout for that run)
+                                     TIMESTAMP WITH TIME ZONE (a region and an
+                                      offset), WITH LOCAL TIME ZONE and
+                                      TIMESTAMP columns, and systimestamp.
+                                      Described b5 (181), e7 (231) and b4
+                                      (180) with a UB2 scale 01 06 ([0050] S
+                                      off 54 and 105), values of 13 bytes for
+                                      a TSTZ (0d 78 7c 03 05 13 0f 10 07 5b ca
+                                      00 89 90 for US/Eastern, ... 19 5a for
+                                      an offset) and 11 for the others ([0052]
+                                      S off 14, 42 and 154); max row size 81.
+                                      The driver also runs begin
+                                      dbms_utility.get_tz_transitions(:1,:2);
+                                      end; with a RAW out bind before it
+                                      builds a region value: the module still
+                                      answers it ORA-06502 (#10747). 103
+                                      packets (#10749)
+
+    10749-dev-ojdbc14-colwide-realserver-oracle102.oraproxy
+    10749-dev-ojdbc14-colwide-realserver-oracle122.oraproxy
+    (each with a matching .out - Conn14's own stdout for that run)
+                                     VARCHAR2, CHAR, RAW and VARCHAR2(63 CHAR)
+                                      columns holding values of 63 to 4000
+                                      bytes, and the inserts that fill them.
+                                      The values are 252 = fc and the bytes,
+                                      253 = fe fd and the bytes and 00, 4000 =
+                                      fe ff ... af 00 ([0289] S off 14, [0331]
+                                      S off 14); VARCHAR2(63 CHAR) is 01 80 00
+                                      00 01 fc 00 02 10 00 00 00 02 03 69 01
+                                      01 3f at oracle122 (width 252, fl2
+                                      0x1000, mxlc 63) and width 63 with
+                                      charset id 1f at oracle102 ([0047] S off
+                                      55). [0324] C is the insert of 4000
+                                      characters, 2000 upper case characters,
+                                      2000 bytes and 4000 characters with five
+                                      placeholders: at oracle122 the widths
+                                      are 16000, 8000, 2000 and 16000 and the
+                                      values go out as :1, :4 (the RAW), then
+                                      :2, :3 and :5 (descriptors at off 128,
+                                      the 07 at off 195, the RAW at off 199);
+                                      at oracle102 the widths are 4000, 2000,
+                                      2000 and 4000 and nothing is postponed.
+                                      400 packets each.
+                                      oracleverifiernegotiation cites both
+                                      (#10749)
+
+    10749-dev-ojdbc14-prepdate-realserver-oracle122.oraproxy
+    10749-dev-ojdbc14-preptimestamp-realserver-oracle122.oraproxy
+    (each with a matching .out - Conn14's own stdout for that run)
+                                     setDate() (prepdate: six inserts of dates
+                                      from 1900 to 9999, a leap day and a
+                                      null) and setTimestamp() (preptimestamp:
+                                      seven inserts with 9, 6 and 0 digits of
+                                      fraction, 1 nanosecond, a year 9999 edge
+                                      and a null), each read back with dump()
+                                      and as a select ? bind. A DATE bind is
+                                      dty 12, width 7, flags 03, charset id 02
+                                      03 69, value 07 78 7c 03 05 01 01 01
+                                      ([0023] C off 134 and 168); a Timestamp
+                                      is dty 180, width 11, 0b 78 7c 03 05 0e
+                                      0f 10 07 5b cd 15 for nine digits and 7
+                                      bytes for none ([0023] C off 140 and 189
+                                      of the timestamp one). 56 and 58 packets
+                                      (#10749)
+
+    10749-dev-ojdbc14-preptz-realserver-oracle122.oraproxy
+    (each with a matching .out - Conn14's own stdout for that run)
+                                     setTIMESTAMPTZ (a region and an offset),
+                                      setTIMESTAMPLTZ, setINTERVALYM and
+                                      setINTERVALDS as select ? binds and in
+                                      an insert of 12 rows read back with
+                                      dump(). dty 181 / 231 / 182 / 183 with
+                                      widths 13 / 11 / 5 / 11, scale byte 00
+                                      ([0031] C off 126, [0037] C, [0061] C,
+                                      [0071] C, [0079] C); an interval is 05
+                                      80 00 00 0c 41 for +12-05, 05 7f ff ff
+                                      ff 3a for -01-02 and 0b 80 00 00 03 40
+                                      41 42 87 5b cd 15 for +3
+                                      04:05:06.123456789. [0029] C is the
+                                      driver's own get_tz_transitions block,
+                                      options 0x0529 (PL/SQL: no 0x8000), max
+                                      long 32760, a NUMBER region id and a RAW
+                                      of width 32767 bound null, answered at
+                                      [0030] S with the 0b out value in the
+                                      long form (2502 bytes) and at [0044] S
+                                      (78 bytes, the UTC table): the reference
+                                      for #10747. 103 packets (#10749)
+
+    10749-dev-ojdbc14-prepbinfloat-realserver-oracle122.oraproxy
+    (each with a matching .out - Conn14's own stdout for that run)
+                                     setBinaryFloat() / setBinaryDouble() (dty
+                                      100 and 101, width 4 and 8, the
+                                      canonical bytes: 1.5 is bf c0 00 00, NaN
+                                      ff c0 00 00, -Inf 00 7f ff ff) and
+                                      setFloat() / setDouble() into NUMBER
+                                      columns. +Infinity goes out as 02 ff 65
+                                      and -Infinity as 01 00 (the one byte
+                                      NUMBER 0, [0043] C off 187 and [0055] C
+                                      off 187); NaN, 1e300 and
+                                      Double.MAX_VALUE make the driver throw
+                                      before it sends anything. 122 packets
+                                      (#10749)
+
+    10749-dev-ojdbc14-prepbytes-realserver-oracle122.oraproxy
+    (each with a matching .out - Conn14's own stdout for that run)
+                                     setBytes() of 3, 2000, 2001 and 4000
+                                      bytes and setBinaryStream() into RAW and
+                                      LONG RAW columns and as select ? binds:
+                                      up to 2000 bytes is dty 23 with width
+                                      2000 (17 03 00 00 02 07 d0 ...), 2001
+                                      and more is dty 24 with width 0x7fffffff
+                                      and the value inline in the same 0x5e
+                                      ([0030] C off 128, [0046] C off 128).
+                                      165 packets. A 2001 or 4000 byte insert
+                                      into the RAW column fails ORA-12899, and
+                                      oracle122 answers a select ? of a 2001
+                                      or 4000 byte RAW with ORA-24920 (#10749)
+
+    10749-dev-ojdbc14-prepstring-realserver-oracle122.oraproxy
+    (each with a matching .out - Conn14's own stdout for that run)
+                                     setString() of 0 to 4000 characters
+                                      into VARCHAR2 columns, as inserts and
+                                      select ? binds, then 4000 characters into
+                                      a CHAR(2000), 4001 and 32767 characters
+                                      into VARCHAR2 and CHAR columns, and as
+                                      select ? binds. Each error comes behind a
+                                      break and a reset marker: ORA-12899
+                                      ([0086] S), ORA-01461 for 4001 and 32767
+                                      characters ([0097], [0102], [0115] and
+                                      [0121] S) and ORA-01460 for select ? of
+                                      them ([0109] and [0129] S, error position
+                                      0 for 4001 characters and 31 for 32767,
+                                      at off 11). The 04 objects end in
+                                      success iterations 0 (the 00 before the
+                                      message length). 288 packets, 277 KB, the
+                                      largest of the 10749 captures (#10749)
+
+    10749-dev-ojdbc14-prepchunk-realserver-oracle122.oraproxy
+    (each with a matching .out - Conn14's own stdout for that run)
+                                     setString() and setBytes() of 128 and 192
+                                      values into a VARCHAR2 and a RAW column:
+                                      a value over 64 bytes goes out as fe, 64
+                                      byte chunks each behind a length byte,
+                                      and 00 ([0016] C off 108, fe 40 61 62 63
+                                      64 ...); an exact multiple of 64 ends 40
+                                      <64 bytes> 00 with no empty chunk. 27
+                                      packets (#10749)
+
+    10749-dev-ojdbc14-prepnull-realserver-oracle122.oraproxy
+    (each with a matching .out - Conn14's own stdout for that run)
+                                     setNull() of nine types (VARCHAR,
+                                      NUMERIC, INTEGER, DATE, TIMESTAMP,
+                                      BINARY, ...) in one insert, as select ?
+                                      binds and in a re-execute (0x8120). A
+                                      null is the one byte 00 for every type
+                                      and the descriptor keeps the type and
+                                      the width of its type ([0099] C is the
+                                      insert, 295 bytes, [0105] C the
+                                      re-execute, 54 bytes). 116 packets
+                                      (#10749)
+
+    10749-dev-ojdbc14-prepnchar-realserver-oracle122.oraproxy
+    10749-dev-ojdbc14-prepncharnc-realserver-oracle122.oraproxy
+    (each with a matching .out - Conn14's own stdout for that run)
+                                     setFormOfUse(FORM_NCHAR) strings
+                                      (prepnchar) and a connection with
+                                      defaultNChar set (prepncharnc). An NCHAR
+                                      bind is dty 1, width 2 per character,
+                                      fl2 0x10, charset id 2000 and form 2: 01
+                                      03 00 00 01 0e 00 01 10 00 00 02 07 d0
+                                      02 00, the value UTF-16BE (00 63 00 61
+                                      00 66 00 e9 ...) ([0031] C off 142 and
+                                      194). With defaultNChar every bind
+                                      carries 02 07 d0 and form 2, even
+                                      setInt()'s dty 6 ([0023] C off 129 of
+                                      prepncharnc). 70 and 38 packets (#10749)
+
+    10749-dev-ojdbc14-preprowid-realserver-oracle102.oraproxy
+    10749-dev-ojdbc14-preprowid-realserver-oracle122.oraproxy
+    (each with a matching .out - Conn14's own stdout for that run)
+                                     setROWID() in the where clause of a
+                                      select and of an update. The bind is dty
+                                      11, width 130, and its value is not a
+                                      CLR: it is 0e and four count prefixed
+                                      numbers with a 00 between the file and
+                                      the block, 0e 03 4a c5 89 01 05 00 02 01
+                                      56 01 01 at oracle122 (oracle102's table
+                                      has other numbers, 0e 03 03 bc 52 01 06
+                                      00 01 4e 01 01) at [0029] C off 121 and
+                                      120, behind the 07; the 0e is not a
+                                      length, and the descriptor 0b 03 00 00
+                                      01 82 is at off 105 in both. 74 packets
+                                      each (#10749)
+
+    10749-dev-ojdbc14-preprexec-realserver-oracle122.oraproxy
+    (each with a matching .out - Conn14's own stdout for that run)
+                                     a PreparedStatement re-executed in the
+                                      four ways: 0x8120 (DML, nothing grew, no
+                                      descriptors, 57 bytes at [0027]), 0x8128
+                                      (an mxl grew, every descriptor again, no
+                                      text, 179 bytes at [0025]), 0x8068
+                                      (query re-execute and fetch, al8i4
+                                      [0,10,0,...,1], every descriptor with
+                                      the width recomputed, no describe in the
+                                      answer, [0185]) and 0x8069 (a bind
+                                      changed type: the text again, [0197]).
+                                      217 packets. oracleverifiernegotiation
+                                      cites all four (#10749)
+
+    10749-dev-ojdbc14-prepstrlimit-realserver-oracle122.oraproxy
+    (each with a matching .out - Conn14's own stdout for that run)
+                                     setString() of 32766 and 32767 characters
+                                      into a LONG column. 32766 is dty 1 with
+                                      width 131064 (01 03 00 00 03 01 ff f8,
+                                      [0023] C off 129), 32767 is dty 8 with
+                                      width 0x7fffffff (08 03 00 00 04 7f ff
+                                      ff ff, [0025] C off 129) and the value
+                                      inline in the same call across many TNS
+                                      packets. 104 packets, 140 KB (#10749)
+
+    10749-dev-ojdbc14-selectnull-sqlrelay121.oraproxy
+    10749-dev-ojdbc14-colbinfloat-sqlrelay121.oraproxy
+    10749-dev-ojdbc14-colnchar-sqlrelay121.oraproxy
+    10749-dev-ojdbc14-colrowid-sqlrelay121.oraproxy
+    10749-dev-ojdbc14-colscale-sqlrelay121.oraproxy
+    10749-dev-ojdbc14-collong-sqlrelay121.oraproxy
+    (each with a matching .out - Conn14's own stdout for that run)
+                                     the module after #10749 at the 12.1
+                                      listener (backend oracle122), the column
+                                      actions against the real server ones
+                                      above: the same describe and value
+                                      bytes, found at the real server's
+                                      messages and offsets or shifted by the
+                                      rows' missing bit vectors, with the
+                                      known differences: no 0x15 bit vectors
+                                      in the rows, INTEGER's fl2 0 and a
+                                      NUMBER literal's width 22 (colscale),
+                                      the non-ASCII NCHAR data lost to the
+                                      backend session's charset (colnchar,
+                                      below), and the fresh table's rowid
+                                      numbers (colrowid). 27, 74, 50, 93, 60
+                                      and 166 packets (#10749)
+
+    10749-dev-ojdbc14-colnchar-sqlrelayutf8.oraproxy
+    10749-dev-ojdbc14-prepnchar-sqlrelayutf8.oraproxy
+    (each with a matching .out - Conn14's own stdout for that run)
+                                     the NCHAR actions at the AL32UTF8
+                                      listener (nls_lang
+                                      AMERICAN_AMERICA.AL32UTF8 on the backend
+                                      session): the e-acute, CJK and 40
+                                      character NVARCHAR2 values arrive and
+                                      are found again, as the real server's.
+                                      50 and 70 packets (#10749)
+
+    10749-dev-ojdbc14-prepbinfloat-sqlrelay121.oraproxy
+    10749-dev-ojdbc14-prepbytes-sqlrelay121.oraproxy
+    10749-dev-ojdbc14-prepnull-sqlrelay121.oraproxy
+    10749-dev-ojdbc14-preprowid-sqlrelay121.oraproxy
+    10749-dev-ojdbc14-preprexec-sqlrelay121.oraproxy
+    10749-dev-ojdbc14-preptz-sqlrelay121.oraproxy
+    10749-dev-ojdbc14-colwide-sqlrelay121.oraproxy
+    (each with a matching .out - Conn14's own stdout for that run)
+                                     the module after #10749, the bind actions
+                                      against the real server ones: the same
+                                      descriptor bytes, values and re-execute
+                                      shapes in, and what the backend stored
+                                      equal to what a real server stored (the
+                                      dump() columns of the .out files) except
+                                      where the section below lists a
+                                      difference. preprowid is the select with
+                                      setROWID() that used to drop the
+                                      connection, colwide the insert whose
+                                      values come out of order. 130, 165, 116,
+                                      74, 201, 112 and 397 packets (#10749)
+
+    10749-dev-ojdbc14-preprowid-sqlrelay121-before.oraproxy
+    10749-dev-ojdbc14-prepbinfloat-sqlrelay121-before.oraproxy
+    10749-dev-ojdbc14-colwide-sqlrelay121-before.oraproxy
+    (each with a matching .out - Conn14's own stdout for that run)
+                                     HEAD's module (9b2f4bedc) at the 12.1
+                                      listener, the same actions before the
+                                      change: preprowid drops the connection
+                                      at the first setROWID() select (28
+                                      packets; the driver reports 17410 No
+                                      more data to read from socket and every
+                                      later step 17008 Closed Connection),
+                                      prepbinfloat fails every
+                                      setBinaryFloat() / setBinaryDouble()
+                                      insert with ORA-01722 (the bytes were
+                                      taken as a NUMBER), and colwide fails
+                                      the insert of 4000 characters, 2000
+                                      characters, 2000 bytes and 4000
+                                      characters with ORA-12899 because the
+                                      RAW's bytes reach :2 (the values are
+                                      read in wire order). Taken in step 2c of
+                                      #10749 as the baseline (#10749)
+
 The genuine 10g OCI client and the logon version floors (#10545)
 ----------------------------------------------------------------
 
@@ -9059,8 +9521,9 @@ measured doing it differently:
 * The prepared script's int. The module binds it to the backend as text and
   describes N as a VARCHAR2 of 32, so the driver reads the String "10"
   where a real server describes a NUMBER and gives a BigDecimal.
-* Select null. The module describes an untyped null as a VARCHAR2 of 4000
-  and sends a 00 value byte; real oracle102 and oracle122 describe it as
+* Select null (fixed in #10749, see below; this is how it was). The module
+  described an untyped null as a VARCHAR2 of 4000
+  and sent a 00 value byte; real oracle102 and oracle122 describe it as
   dty 1 with width 0 and charset id 1 and send no value byte at all for it.
   The driver reads both (NULL, and 1 and x beside it), and getPrecision()
   says 4000 against the real servers' 0, which is cosmetic. Measured in
@@ -9083,6 +9546,8 @@ Not covered, follow-ups:
   BINARY_DOUBLE, INTERVAL, the time zone types, ROWID, LONG and LONG RAW,
   setDate(), setTimestamp(), setBytes(), setBigDecimal() and setNull(), bind
   values over 64 bytes (chunked), and charsets other than 31 and 873
+  (all measured in #10749, below, except the charsets, which are still the
+  ones of the three servers: 31, 178 and 873)
 The last item of this list when #10745 was written, the break and reset
 markers before an error, errors at execute time and in the middle of a
 fetch, Statement.cancel() and setFetchSize() above 65535, was measured
@@ -9338,7 +9803,7 @@ exit 0, every proxied .out the same as the direct one):
   rows before ORA-01476 where oracle122 delivers 2 (with fetchatonce=1,
   size 1 gives 1 row); cancel and timeout complete after 6 s; fetchsizes
   and prepfetchsizes at 100001 get ORA-20004; and the #10745 ones (banner,
-  prepared N as a VARCHAR2, select null precision 4000).
+  prepared N as a VARCHAR2, select null precision 4000, which #10749 fixed).
 * The error object differs from a real server's only in the fields on the
   keep list: the error position (0), the cursor id numbering, the rowid
   and array error fields, curRowNumber (0 where a real server says 2 for a
@@ -9658,7 +10123,8 @@ iterations and the statement type of the ORA-00942. The challenge is the real
 one in shape (one pair, a 16 hex AUTH_SESSKEY and the 25 byte trailer); the
 session key itself is random for each login, so its bytes differ. Still
 different, all of them known: the prepared N described as a VARCHAR2 and the
-select null precision (#10745); 0 rows before ORA-01476 (#10756); cancel and
+select null precision (#10745, fixed since by #10749); 0 rows before ORA-01476
+(#10756); cancel and
 timeout ignored (#10759); the 100001 row refusal (#10764). The driver ignores
 the rest: the login answer's 9 pairs where the real one has 35; the TTIPRO
 answer (banner "SQLRelay/PortableTTC", character set 873, the compile caps at
@@ -9704,6 +10170,818 @@ ORA-00942 statement types); the -native run is unchanged. The older
 -sqlrelay121 captures of fetcherr and
 fetcherr at fetchatonce=1 still show 1 in the ORA-01403 answers at 12.1; the
 -after112 ones show what the module sends now.
+
+ojdbc14 column and bind types (#10749)
+---------------------------------------
+
+#10745 and #10750 left the column and bind types of the genuine ojdbc14
+10.2.0.5 thin driver unmeasured: NCHAR and NVARCHAR2, BINARY_FLOAT and
+BINARY_DOUBLE, ROWID, LONG and LONG RAW, NOT NULL columns, select null, and
+setDate(), setTimestamp(), the time zone types, setBytes(), setNull(),
+setROWID(), values over 64 bytes and over 4000. #10749 measured them with the
+driver against the real oracle102, oracle112 and oracle122 servers (the
+10749-dev-ojdbc14-*-realserver captures, not all kept: see "Kept and not
+kept" below), changed the module and the tests to
+follow, and checked the result with the driver against the module. All of it
+is behind use8iQueryObjects() (see "The gate" above) in
+src/protocols/oracle.cpp, so no other client sees a change on the wire or in
+what reaches the backend, apart from one additive change in the oracle
+connection: src/connections/oracle.cpp reads the character set form of CHAR
+and VARCHAR2 columns, as it did for CLOB since #10698, and names a national
+one CHAR(NCHAR) or VARCHAR2(NCHAR), as it names an NCLOB CLOB(NCHAR). Type
+ids, sizes and values are unchanged. The protocol modules read type names
+as follows: oracle and mysql strip the qualifier, postgresql, tds and
+firebird use type ids, sqlrclient sends names only to a client that asks
+for them (the oracle connection returns ids), and teradata compares names
+exactly, so an oracle NCHAR column there moves from its CHAR handling to its
+default for an unknown type; no test covers it.
+
+Labels in this section: MEASURED is a capture or a run (named), CROSS-CHECK
+is read from ojdbc14's own bytecode (javap of T4CTTIrxd, T4C8Oall,
+T4CTTIoac, T4CTTIiov and the accessors; what a reader takes never says what
+a server sends), INFERRED is reasoning only. A [NNNN] is a message of a
+capture as numbered in the sample list above.
+
+Kept and not kept. The sample list above holds the captures of oracle122
+and, for selectnull, colbinfloat, colnchar, colscale, colwide and preprowid,
+of oracle102. The others were taken the same way and not kept: every
+oracle112 capture, the oracle102 ones of colinterval, collong, colrowid,
+coltz and every bind action but preprowid, and the prepstream, prepobject
+and prepared ones of oracle122. What rests on them alone says "measured in
+captures not kept" below, and can be checked only by running the action
+again.
+
+Running the new actions. Conn14 (still not checked in; the jar comes from
+vmi9 as before, see "ojdbc14 queries (#10745)") has these actions beyond
+the tables above and below. Each prints, per result set, "cols
+NAME/TYPENAME/PRECISION/SCALE", "meta NAME type= code= prec= scale= class=
+disp=", "row N: ...", "str N: ..." (getString) and "rows N", and for an
+oracle.sql.Datum the hex of getBytes(); the columns named d* hold dump(x,16)
+of the value, which shows what the server stored. Each step runs in a
+wrapper: an exception is printed as "step LABEL threw ..." (it is a
+measurement), the action goes on, and the run ends with "steps that threw N"
+and "exit 0". The old actions keep their old behaviour.
+
+    action          what it runs
+    colnchar        NCHAR(10), NVARCHAR2(40), VARCHAR2(40), n'abc' and two
+                    casts to nchar and nvarchar2, ASCII, CJK and 40 e-acute
+    colbinfloat     BINARY_FLOAT and BINARY_DOUBLE: 1.5, NaN, +-Inf, 0, the
+                    maxima, minimum normals, minimum subnormals, a null,
+                    dump() of each and binary float arithmetic
+    colinterval     INTERVAL YEAR TO MONTH and DAY TO SECOND columns and
+                    literals, numtoyminterval and numtodsinterval
+    coltz           TIMESTAMP WITH TIME ZONE (a region and an offset),
+                    WITH LOCAL TIME ZONE, TIMESTAMP and systimestamp
+    colrowid        the ROWID pseudo-column, a ROWID column, a UROWID column,
+                    an IOT's rowid and cast(rowid as urowid)
+    collong         LONG and LONG RAW columns, values and nulls
+    colscale        NUMBER of many precisions and scales, a NOT NULL
+                    column, INTEGER, SMALLINT and number literals
+    colwide         values of 63 to 4000 bytes, VARCHAR2(63 CHAR), and an
+                    insert of 4000 characters, 2000 characters, 2000 bytes
+                    and 4000 characters with five placeholders
+    selectnull      (since #10745) select null from dual, then null a, 1 b,
+                    null c, 'x' d
+    prepdate        setInt() with setDate(), six inserts and a null
+    preptimestamp   setTimestamp(), seven inserts, nanoseconds, a null
+    prepbytes       setBytes() of 3, 2000, 2001 and 4000 bytes, setBinary
+                    Stream(), RAW and LONG RAW columns, select ?
+    prepstring      setString() of 0 to 32767 characters, in inserts and
+                    select ?, and the errors above 4000 bytes
+    prepnull        setNull() of nine types, in an insert, select ? and a
+                    re-execute
+    prepobject      setObject() of the Java types
+    prepnchar       FORM_NCHAR setString(), inserts, select ? and where
+                    nv = ?
+    prepncharnc     the same with defaultNChar=true (ORA14_DEFAULTNCHAR=1)
+    prepbinfloat    setBinaryFloat(), setBinaryDouble(), setFloat() and
+                    setDouble() into BINARY_FLOAT, BINARY_DOUBLE and NUMBER
+    preptz          setTIMESTAMPTZ(), setTIMESTAMPLTZ(), setINTERVALYM() and
+                    setINTERVALDS(), select ? and an insert of 12 rows
+    preprowid       setROWID() in where rowid = ?, an update, an insert into
+                    ROWID and UROWID columns, select ?, nulls
+    preprexec       one PreparedStatement re-executed: 0x8120, 0x8128,
+                    0x8068 and 0x8069, with every bind type
+    prepchunk       setString() and setBytes() of 128 and 192 values
+    prepstrlimit    setString() of 32766 and 32767 characters into a LONG
+    prepstream      the stream setters at 10 and 5000
+
+The step-2b copy of Conn14 that took the bind captures also had prepchunk,
+prepstrlimit and prepstream; the step-0 one, which took the column captures
+and the module runs, had the rest. Tables are protocoltest10749c* (columns)
+and protocoltest10749b* (binds) in Conn14, protocoltest10749tb* in the test,
+all dropped first and at the end. A password is never in a file: the
+testuser password of test/sqlrelay.conf.d/oracle.conf.in goes in
+ORA14_PASSWORD for the run, the oracle_connectstrings listener needs the
+user TESTUSER, and the listeners of the live runs had maxcursors="1000"
+(see "The cursor leak" below). Run direct, through oraproxy or against a
+listener as in the #10745 section; one action per capture.
+
+What the driver shows on the wire (MEASURED unless marked)
+
+The describe, in putColumnMetadata()'s order, parsed to the byte in all 27
+column captures: dty, flags (80 full, 00 abbreviated), precision, scale (a
+UB2 for dty 2, 180, 181, 231 and 183: sign in the 0x80 bit, then the
+magnitude, so -127 is 81 7f; a raw byte for the rest, which cannot be told
+from a UB2 since every other type's scale is 0; the UB2 for dty 181, 231 and
+183 is MEASURED at oracle122, coltz [0051] and colinterval [0033]), width,
+mal, fl2, toid,
+vsn, charset id, form, mxlc, nullable, name, schema, type name, position.
+Two of the fields the module wrote as constants are not: fl2 is 0x1000 (02
+10 00) for NCHAR, NVARCHAR2 and any VARCHAR2(n CHAR), and 0x40000 (03 04 00
+00) for INTEGER and SMALLINT; nullable is 0 for a NOT NULL column, an IOT
+key and the ROWID pseudo-column.
+
+* NCHAR, NVARCHAR2. Flags 80, fl2 0x1000, charset id 2000 (02 07 d0), form 2,
+  width twice the characters, mxlc the characters. NCHAR(10) is 60 80 00 00 01
+  14 00 02 10 00 00 00 02 07 d0 02 01 0a, NVARCHAR2(40) 01 80 00 00 01 50 00
+  02 10 00 00 00 02 07 d0 02 01 28, n'abc' 60 80 00 00 01 06 00 02 10 00 00 00
+  02 07 d0 02 01 03. The values are UTF-16BE behind a length byte (the short
+  form up to 252 bytes, 255 byte chunks above), NCHAR padded with blanks: 14
+  00 61 00 62 00 63 00 20 x 7. Identical at oracle102 and oracle122 (colnchar
+  [0034], [0036] and [0042], the values at offsets that the bit vectors
+  move); the national character set is AL16UTF16 at both and at oracle112
+  (measured in captures not kept).
+* BINARY_FLOAT, BINARY_DOUBLE. Dty 100 and 101, abbreviated, precision 0,
+  scale 0, width 1, mxlc 0; the value is 04 or 08 and the canonical bytes
+  (the sign bit set for a positive number, every bit inverted for a negative
+  one). 1.5 is bf c0 00 00 and bf f8 00 00 00 00 00 00, NaN ff c0 00 00 and
+  ff f8 00 ..., +Inf ff 80 00 00, -Inf 00 7f ff ff, 0 80 00 00 00, the
+  maximum ff 7f ff ff and ff ef ff ff ff ff ff ff, the smallest subnormal 80
+  00 00 01 and 80 00 00 00 00 00 00 01 (colbinfloat [0046], [0048]).
+* INTERVAL, TIMESTAMP WITH TIME ZONE, WITH LOCAL TIME ZONE. Already right
+  in the module (regression only): intervals b6 and b7 with the UB2 scale
+  (dty 183 MEASURED, colinterval [0033]; dty 181 and 231, coltz [0051]),
+  TSTZ 13 bytes (region 0d 78 7c 03 05 13 0f 10 07 5b ca 00 89 90 for
+  US/Eastern, offset ... 19 5a), LTZ 11. The DB time zone is UTC on all
+  three servers (oracle112: measured in captures not kept), so an LTZ value is
+  the same bytes everywhere (INFERRED for any other).
+* ROWID, UROWID. The pseudo-column is dty 11 with nullable 0 and a value of
+  0e 03 4a c5 72 01 05 00 02 04 0e 00: 0e, then the data object number, the
+  file, a 00, the block and the row, each a count prefixed number in its
+  minimal width. A UROWID column, cast(rowid as urowid) and an IOT's rowid are
+  dty 208 (d0 00 00 00 01 1f ... for an IOT), abbreviated, with the declared
+  width, and a value of an LPI byte count and a CLR: a logical rowid 01 0a
+  0a 02 04 01 40 04 13 02 c1 02 fe, a physical one 01 0d 0d 01 00 4a c5 72
+  00 05 00 00 04 0e 00 00 (colrowid [0040] to [0058]).
+* LONG, LONG RAW. Dty 8 (full, flags 80) and 24 (abbreviated, flags 00), width
+  0, and the driver asks for 1 row per fetch whenever one is in the select
+  list. A value is the long form, the text, a 00 and two LPIs, the indicator
+  and the return code: fe 0a 73 68 6f 72 74 20 74 65 78 74 00 00 00; a null is
+  00 81 01 02 05 7d. The row header of one such answer carries a bit vector
+  of its own, 01 01 01 03 where the others have 00 00 (collong [0061]); it is
+  not the 0x15 bit vector of the row data.
+* NUMBER. Precision, scale and width as before; the nullable byte is 0 for
+  NOT NULL; INTEGER has fl2 0x40000. The scale of a number literal is 00 at
+  oracle102 and 81 7f at oracle122 and, measured in captures not kept,
+  oracle112.
+* DATE is described with width 1 and abbreviated (0c 00 00 00 01 01 00 ...),
+  not 7 and full (types, colscale). The max row size is the sum the
+  server computes: a TSTZ 13, an LTZ or TIMESTAMP 11, an INTERVAL YM 5 and DS
+  11, BINARY_FLOAT 4 and BINARY_DOUBLE 8, ROWID 16, DATE 7, a NUMBER its
+  width, an untyped null 0, and the whole sum 0 when a LONG or LONG RAW is
+  in the list (colnchar 162, coltz 81, colinterval 76, colbinfloat 34,
+  colrowid 38 and 16, selectnull 0 and 3, collong 0, types 84).
+* Select null. Dty 1, flags 80, width 0, charset id 1, form 1, mxlc 0: no
+  value byte is sent. select null from dual fetches as a bare 07 and then the
+  04, and null a, 1 b, null c, 'x' d as 07 02 c1 02 01 78. The same at the
+  three servers (oracle112: measured in captures not kept).
+* Values of 63 to 4000 bytes: 252 bytes is fc and the bytes, 253 is fe fd
+  and the bytes and 00, 4000 is fe ff x 15 af 00. VARCHAR2(63 CHAR) is 01 80
+  00 00 01 fc 00 02 10 00 00 00 02 03 69 01 01 3f at oracle122 (width 252, fl2
+  0x1000, mxlc 63) and width 63 at oracle102 (colwide [0047]).
+* Rows. The 0x15 bit vector (15, a column count, the bit bytes) starts at the
+  second row of the first fetch answer at oracle102 and the third at oracle122
+  and, measured in captures not kept, oracle112; a column whose bit is clear
+  repeats the previous row's value, nulls included. The module sends none and
+  the driver reads the rows without them (#10745).
+
+Differences between the servers (the complete list for columns; what it says
+of oracle112, and of the oracle102 actions not kept, is measured in captures
+not kept): the scale of number literals (00 at oracle102, 81 7f at 112 and
+122), the first row with a bit vector (2 against 3), the success iterations
+of fetch answers (1 against 0 at oracle122, per ceiling since #10750), the
+byte after the column count (0x39 against 0x51), the flag after the closing
+DATE, the width of VARCHAR2(n CHAR) (n against 4n, the database charset's
+maximum bytes per character) and the charset id (31, 178, 873). Nothing else
+differs: every other describe field and value byte of the nine column
+actions is identical at the three servers.
+
+Binds. The 0x5e call is 03 5e, a sequence number (always 00), the options,
+the cursor, the text length, the vector length 0d, the pointers, the bind
+count, the max long (04 7f ff ff ff, or 02 7f f8 = 32760 for a PL/SQL block),
+the text raw, 13 al8i4 entries, a descriptor per bind, then 07 and a value per
+bind. A descriptor, in T4CTTIoac's order: dty, flags (03), precision (00),
+scale (00, a raw byte, also for the timestamp and interval types), width
+(mxl) as a count prefixed number, max elements (0), fl2 (01 10 = 0x10 for
+dty 1, which includes NCHAR; 0 for the rest), toid length 0, version 0,
+charset id, form, mxlc (0). A bind sends no collation id at the three
+ceilings. The charset id is the database charset's (01 1f at oracle102, 01 b2
+at oracle112, measured in captures not kept, 02 03 69 at oracle122) in every
+descriptor, numbers and dates included, and 02 07 d0 (2000) with form 2 for
+FORM_NCHAR; with defaultNChar=true every bind, setInt()'s dty 6 too, carries
+02 07 d0 and form 2 (prepncharnc). Options: 0x8129 and 0x8029 first execute of
+a DML and of a query, 0x8120 DML re-execute, 0x8128 DML re-execute after a
+width grew, 0x8068 query re-execute and fetch, 0x8069 query re-parse after a
+bind changed type, 0x0529 the driver's own PL/SQL blocks (no 0x8000 bit),
+0x8121 and 0x8021 no binds.
+
+The dty map (identical at the three servers except the width factor R, 1 at
+oracle102 and oracle112 and 4 at oracle122, the database charset's maximum
+bytes per character; for oracle102 and oracle112 it is measured in captures
+not kept, apart from preprowid at oracle102):
+
+    Java                                 dty  width        value
+    setInt, setLong, setShort, setByte,
+      setBigDecimal, setBoolean,
+      setFloat, setDouble                  6  22           Oracle NUMBER
+    setString up to 32766 characters       1  chars x R    database charset
+    setString over 32766 characters        8  0x7fffffff   inline, chunked
+    setString with FORM_NCHAR              1  chars x 2    UTF-16BE, 2000/2
+    setDate, setNull(DATE or TIME)        12  7            7 bytes
+    setTimestamp                         180  11           11 bytes, or 7
+    setTIMESTAMPTZ                       181  13           13 bytes
+    setTIMESTAMPLTZ                      231  11           11 bytes
+    setINTERVALYM                        182  5            5 bytes
+    setINTERVALDS                        183  11           11 bytes
+    setBinaryFloat                       100  4            canonical
+    setBinaryDouble                      101  8            canonical
+    setBytes up to 2000 bytes             23  2000         raw bytes
+    setBytes over 2000 bytes              24  0x7fffffff   inline, chunked
+    setROWID                              11  130          0e form, not a CLR
+    setNull(VARCHAR, CHAR, ...)            1  1 x R        00
+    setNull(NUMERIC, INTEGER, ...)         6  22           00
+    setNull(OTHER)                         -  -            SQLException 17004
+
+CHAR, LONGVARCHAR and Types.NULL go out as dty 1 (the driver never sends 96
+for a CHAR bind and never 8 for a LONGVARCHAR), and LONGVARBINARY as 23. A
+setFloat() or setDouble() goes out as NUMBER; +Infinity is 02 ff 65 and
+-Infinity the one byte 01 00, and NaN, Float.MAX_VALUE, Double.MAX_VALUE and
+the minima make the driver throw before it sends anything. The dty 1 and 8
+boundary is 32766 and 32767 characters whatever the byte count, and the
+dty 23 and 24 one 2000 and 2001 bytes. The stream setters use the same
+thresholds. Nothing is sent piecewise: a value of 33421 or 66689 bytes
+arrives inline in the same 0x5e across many TNS packets.
+
+Values. A CLR of up to 64 bytes is a length byte and the bytes; over 64 it is
+fe, 64 byte chunks (40 and 64 bytes), the last partial chunk and 00; an exact
+multiple ends 40 <64> 00 with no empty chunk (prepchunk 128 and 192). That
+holds for dty 1, 8, 23, 24 and NCHAR. A null is the one byte 00 for every
+type, and an empty string is a null; a value of the one byte 00 (NUMBER
+-Infinity) is not. There are no bit vectors and no per value type tags, and a
+re-execute's block carries a value for every bind. A number is its Oracle
+bytes (1 is c1 02, 1.5 c1 02 33, 0 80, +Inf ff 65), a DATE 7 bytes (2024-03-05
+is 78 7c 03 05 01 01 01), a TIMESTAMP the date bytes and four bytes of
+nanoseconds (or the 7 bytes alone), a TSTZ 13 bytes (the UTC time, the
+nanoseconds, then hour + 20 and minute + 60 for an offset, or 0x80 and a
+region id for a region: 89 90 is US/Eastern), an INTERVAL YM the years minus
+0x80000000 and the months + 60 (+12-05 is 05 80 00 00 0c 41), an INTERVAL DS
+the days minus 0x80000000, hour, minute and second + 60 and the nanoseconds
+minus 0x80000000 (0b 80 00 00 03 40 41 42 87 5b cd 15), BINARY_FLOAT and
+DOUBLE the canonical bytes above (-0.0 goes out as +0.0), and a ROWID the
+KGRD form: 0e, the data object number, the file, a 00, the block and the
+row, each a minimal count prefixed number, 13 bytes for the 18 character
+AASsWJAAFAAAAFWAAB (0e 03 4a c5 89 01 05 00 02 01 56 01 01). The 0e is not a
+length: the generic reader took it for one and ate a byte of the next value.
+Binds sent to a server are always read back by it as sent: dump() of every
+bound value equals the bytes of the call at oracle122, and at oracle102 and
+oracle112 in captures not kept.
+
+The order of the values. The driver sends the values of a LONG (dty 8) and
+LONG RAW (24) bind, and of every bind whose width is over 4000 outside
+PL/SQL, after all the others, in bind order (MEASURED, [0324] of colwide at
+oracle122: five placeholders, widths 16000, 8000, 2000 for the RAW and 16000
+behind the number, and the values go out as :1, :4 (the RAW), then :2, :3 and
+:5; at oracle102 the widths are 4000, 2000, 2000 and 4000 and nothing is
+postponed). CROSS-CHECK T4CTTIrxd.marshal: dty 8 or 24, or (not PL/SQL and
+oacmxl > 4000, so a width of exactly 4000 is not postponed, MEASURED at
+oracle102 above);
+the width is the one in the descriptors last sent, so a 0x8120 re-execute
+after a value grew still postpones by the saved width. PL/SQL is the
+statement types that send options without the 0x8000 bit (0x0529 in the
+preptz block), and there every setString has width 32512 (CROSS-CHECK), so
+getting the exemption wrong misorders nearly every PL/SQL call with a
+string bind that is not last.
+
+Re-executes (prepnull, preprexec, prepared; all three servers, oracle102
+and oracle112 measured in captures not kept): 0x8120 has
+the cursor, no text, a bind count of 0, al8i4 [0,1,0,...] and a value per
+bind (57 bytes in preprexec [0027]); a value that outgrew its width makes it
+0x8128, with every descriptor again and no text (179 bytes, [0025]); a null
+keeps the previous descriptor and width, and a shorter value afterwards goes
+back to 0x8120 with the larger width. 0x8068 always carries all descriptors,
+with the width recomputed (it can shrink), al8i4 [0,10,0,0,0,0,0,1,0,...] and
+no describe in the answer ([0185]); a bind that changes type makes it 0x8069,
+the text again, the same cursor, al8i4 [1,10,...], answered with a describe
+([0197]). A DML re-execute with a changed bind type was not measured
+(INFERRED: a 0x8129 re-parse).
+
+What a server answers (MEASURED at oracle122, prepstring and prepbytes): break
+and reset markers ahead of every error, then the 04 object. ORA-12899 for a
+string of 4000 characters into CHAR(2000) or 2001 or 4000 bytes into
+RAW(2000); ORA-01461 for a dty 1 over 4000 bytes or a dty 8 into a VARCHAR2
+column ("can bind a LONG value only for insert into a LONG column", success
+iterations 0 at oracle122 and 1 at the others); ORA-01460 for select ? of one
+(position 0 at oracle122 for 4001 characters and 31 for 32767, 31 at the
+others); ORA-24920 at oracle122 only, on the fetch of a select of a 2001 or
+4000 byte RAW bind. What it says of oracle102 and oracle112 is measured in
+captures not kept. The server describes select ? from dual by what it was
+bound: NUMBER (precision 0, scale 0) for dty 6, DATE width 1 for 12, TIMESTAMP
+scale 9 for 180, the time zone and interval types, BINARY_FLOAT, ROWID and RAW
+at their widths, and for dty 1 a VARCHAR2 of 32, 128, 2000 or 4000: the
+smallest of those at least as wide as the widest bind the shared cursor has
+seen (INFERRED from every pair measured), so the width depends on the cursor's
+history, not on this execute.
+
+What the module does now
+
+Columns (src/protocols/oracle.cpp; each is behind the gate):
+* An oracle backend's character column of size 0 is null by describe for
+  8i too: dty 1, width 0, charset 1, form 1, no value byte, the bare 07. The
+  rule that sends no rows when every column is null by describe is off for
+  8i, since a real server sends the row.
+* The nullable byte is the backend's (OCI_ATTR_IS_NULL), 0 for NOT NULL
+  columns, the ROWID pseudo-column and an IOT key.
+* BINARY_FLOAT and BINARY_DOUBLE: the oracle connection reports them with the
+  type UNKNOWN and the size 4 or 8 (MEASURED with sqlrsh columninfo before
+  coding), which getUnknownColumnType() turns into dty 100 and 101. The
+  values are parsed from the backend's text ("1.5E+000", "Nan", "Inf", "-Inf",
+  nine digits for a float, 17 for a double, enough to round trip: every
+  vector of colbinfloat is byte for byte the real server's) and written
+  canonical by putBinaryFloatField().
+* NCHAR and NVARCHAR2: the connection's CHAR(NCHAR) and VARCHAR2(NCHAR)
+  names (isNcharColumn()). The describe is the one above, with the width the
+  backend reports (AL16UTF16 bytes, MEASURED: nchar(10) is 20) and mxlc half
+  of it (INFERRED for a national character set other than AL16UTF16), and
+  putNcharField() writes the values in UTF-16BE from the backend's text, as
+  UTF-8 when the client charset is UTF-8 (characters above U+FFFF as surrogate
+  pairs) and one byte per character otherwise. Non-ASCII data only survives
+  where the backend session is AL32UTF8 (nls_lang), as for every other
+  column.
+* ROWID values in minimal width numbers. UROWID: the backend reports a UROWID
+  column as size 4000 (urowid(100): 100) and an IOT's rowid as 31, against 8
+  for a heap ROWID (MEASURED), so getUrowidColumnType() describes them dty 208
+  (abbreviated, the backend size as width) and putUrowidField() writes a
+  logical rowid ("*" and base 64, MEASURED with IOT keys of 1 to 5 bytes) or
+  a physical one (18 base 64 characters) as the real server does. A UROWID(n)
+  of 8 or less stays ROWID (INFERRED).
+* DATE width 1 and abbreviated, and the max row size as the servers compute
+  it (getRowSize8i()).
+* Not changed, with the follow-up: VARCHAR2(n CHAR) and CHAR(n CHAR) keep the
+  byte width, fl2 0 and mxlc = width, so getPrecision() says 252 for a
+  VARCHAR2(63 CHAR) at an AL32UTF8 backend (the connection exposes neither
+  OCI_ATTR_CHAR_USED nor CHAR_SIZE; #10770). INTEGER and SMALLINT keep fl2 0
+  (no channel, no driver visible effect), and a NUMBER literal keeps the
+  backend's width (22, a real server sends the value's width, so a literal
+  select's max row size differs: 23 against 3 in selectnull, 176 against
+  50 in colscale). Other clients keep every describe as it was; extending
+  these describes to them is #10771.
+
+Binds (the same file):
+* oraclequery3bind keeps every field of the descriptor, for every client, and
+  a framing (below). getQuery3BindDescriptor() fills it; the parse is the
+  same bytes as before.
+* getQuery3BindValues8i() reads the values: per block, the binds that are not
+  postponed in descriptor order, then the postponed ones (isPostponedBind8i():
+  dty 8 and 24 always, a width over 4000 only when the call's options have
+  OPTION_NOPLSQL), each stored at its descriptor index, so
+  installQuery3Binds() is unchanged. getQuery3BindValue8i() reads one value: a
+  locator as the generic reader does, a ROWID in its 0e form (a lone 00 is
+  null), anything else through getLenBytes().
+* decode8iBind() is the one place an ojdbc14 value becomes a
+  sqlrserverbindvar. By dty (OK means decoded here, GENERIC the shared arms of
+  installQuery3Binds()):
+    1, 96, 8, form 1               GENERIC (database charset bytes)
+    1, 96, 8, form 2, charset 2000 getNcharBindValue(): UTF-16BE to UTF-8 (or
+                                   one byte per character, '?' above U+00FF),
+                                   a lone surrogate U+FFFD, an odd size is
+                                   BADVALUE
+    1, 96, 8, form 2, UTF8         as is, or down-mapped
+    1, 96, 8, form 2, other        UNSUPPORTED
+    2, 6                           getNumberField() as a string; infinity or
+                                   an undecodable number is BADVALUE
+    12                             the date decoder; under 7 bytes BADVALUE
+    180, 181, 231                  the timestamp decoder (microseconds; LTZ at
+                                   +00:00; a region in UTC form keeps the
+                                   instant at +00:00); a region in local form
+                                   the table lacks is LOCALREGION
+    182, 183                       getIntervalBindValue(): "+12-05" and
+                                   "+3 04:05:06.123456789" text; mixed signs,
+                                   out of range or the wrong size BADVALUE
+    100, 101                       getBinaryFloatBindValue(): the shortest
+                                   digits that parse back to the same double,
+                                   as digits and an exponent ("15E-1"), NaN,
+                                   INF, -INF
+    23                             getRawBindValue(): upper case hex, a STRING
+    24                             GENERIC (a BLOB, as before)
+    11                             getRowidBindValue(): the 18 base 64
+                                   characters, STRING; an 18 character CLR as
+                                   is; anything else UNSUPPORTED
+    102, 112, 113, 114             GENERIC (ref cursors and lobs)
+    anything else                  UNSUPPORTED
+* ORA-20008 (unsupported bind data type) and ORA-20009 (bind value could not
+  be decoded) are the module's own errors, in the range of ORA-20007 (a
+  local region TSTZ), sent after the 8i break and reset by
+  sendUnsupportedBindError() and sendUndecodableBindError(). Only 8i ever sets
+  the flags (query3unsupportedbind, query3badbindvalue); other clients keep a
+  raw byte STRING or a NULL.
+* The saved descriptors of a cursor (saveQuery3Binds() and
+  restoreQuery3Binds(), copies of the whole struct) carry every new field, so
+  the 0x8120, 0x8128, 0x8068 and 0x8069 re-executes need no more code.
+  reexecute() and reexecuteAndFetch() (the 0x04 and 0x4e calls) keep the
+  generic reader: ojdbc14 never sends them.
+
+Bound to the backend, the values are what a real server would store and, for
+the types the server API cannot carry, text the backend converts. MEASURED
+(dump() of the stored value equal to the real server's, at the 12.1 and
+10.2 backends): NCHAR and NVARCHAR2 including e-acute and CJK; BINARY_FLOAT
+and BINARY_DOUBLE of every vector (1.5, NaN, +-Inf, 0, maxima, minimum normal,
+minimum subnormal); INTERVAL YM and DS; offset TSTZ; LTZ; RAW up to 2000
+bytes, in inserts and in where r = ?; ROWID, in select and update where
+rowid = ?; postponed values in the right columns (colwide, a 40000 character
+LONG first, a PL/SQL block with a long string first).
+
+Differences that remain (each with its cause, none a regression):
+* select ? from dual describes what the backend was bound: VARCHAR2 for a
+  number, an interval, a BINARY_FLOAT or DOUBLE, a RAW and a typed null,
+  TIMESTAMP(9) for a DATE; a RAW comes back as its hex text; TIMESTAMP
+  nanoseconds are cut to microseconds; a region TSTZ bind is stored at +00:00;
+  CHAR binds compare as VARCHAR2; a LONG RAW (dty 24) bind is a BLOB and fails
+  ORA-22835 into a LONG RAW column; NUMBER infinity is ORA-20009 where a real
+  server stores it; a string over 4000 bytes gets ORA-12899 where a real
+  server says ORA-01461, and a select ? of one comes back cut to 4000 where a
+  real server says ORA-01460. All of it is the server API's binds, #10769.
+* The select ? width buckets (32, 128, 2000, 4000) follow the backend's own
+  cursor history, and a select re-executed (0x8068) with a longer string than
+  its first describe's width comes back cut to it, because an 0x8068 answer
+  has no describe (70 characters cut to 32 at the 12.1 and charset 31
+  listeners; whether a real server does the same for a fresh statement text is
+  not measured): #10774.
+* The values of dty 8 and 24, of over 4000 byte binds and the ROWID form are
+  read for ojdbc14 only; the other clients are not measured: #10772 and
+  #10773.
+* Region TSTZ and LTZ reads and binds need the driver's own call, begin
+  dbms_utility.get_tz_transitions(:1,:2); end; with a RAW out bind, which it
+  runs once per region before it builds a region value; the module answers
+  it ORA-06502, so those values are #10747's. The column bytes themselves
+  are already the real server's, and offset TSTZ and LTZ binds work (an LTZ
+  insert with -Duser.timezone=GMT-04:00 stores the real server's bytes).
+* The cursor leak. The driver does not close the CallableStatement of a
+  failed get_tz_transitions, and Conn14 skips ps.close() when an execute
+  throws, so cursors leak; with the module's default maxcursors=5 four
+  leaks give ORA-01000 for the rest of the session (the ORA-01000 in the
+  runs at the maxcursors-5 listeners). With a real server the call succeeds
+  and the driver closes a failed statement's cursor. An application that
+  leaks statements needs a larger maxcursors, as it would need open_cursors
+  on a real server; the live runs used maxcursors="1000". Documented only.
+* Observed, not bind related: a LONG or LONG RAW of 32768 bytes or more is
+  fetched as NULL through any client (stored whole; the connection defines
+  such columns as a string of getMaxFieldSize() = 32768 bytes with a ub2
+  length and treats a truncation indicator as NULL; with maxfieldlength
+  100000 values up to 65535 bytes come back): #10775.
+
+The tests.
+* oracleprotocolclient: readOjdbc14Answer() reads every column by its describe
+  as the driver's accessors do (width 0 and not LONG: no bytes, null by
+  describe; LONG and LONG RAW: the long form and two LPIs; ROWID: 00 or 0e and
+  four numbers; UROWID: an LPI and a CLR), keeps each cursor's layout so that
+  a fetch is read by the describe of its cursor, reads a 0x0b io vector
+  (T4CTTIiov) and the out values behind it, and decodes a kept value the way
+  the driver's accessors do (UTF-16BE text, BINARY_FLOAT and DOUBLE, the
+  intervals, the dates and time zones, a rowid's 18 characters). The limits
+  are 32 columns and 65536 bytes of value data. setOjdbc14Answer() puts a
+  captured answer in the response so that the reader can be checked against
+  real servers' bytes.
+* The bind base for #10746 to #10748, built from the captures: the struct
+  oracleprotocolojdbc14bind (every descriptor field of the driver's order -
+  type, flags, precision, scale, width, max elements, fl2, version, charset
+  id, form, mxlc - the value, and the four numbers of a ROWID) and the struct
+  oracleprotocolojdbc14bindcall (options, cursor, text or NULL, al8i4, max
+  long, binds, descriptors yes or no, values yes or no), and
+  buildOjdbc14BindCall(), which writes any of the first execute, 0x8120,
+  0x8128, 0x8068 and 0x8069 shapes. Its parts are static: putOjdbc14Number()
+  (a count prefixed number in minimal width), putOjdbc14BindDescriptor(),
+  putOjdbc14Clr() (the 64 byte chunks), putOjdbc14Rowid() (the 0e form),
+  putOjdbc14Null(), isOjdbc14PostponedBind() and putOjdbc14BindRow() (the
+  07, then the values in the driver's order); setOjdbc14Bind() makes a bind
+  as the driver describes one (flags 03, fl2 0x10 for dty 1, every other field
+  0) and setOjdbc14RowidBind() a ROWID bind (dty 11, width 130).
+  oracleprotocolojdbc14query has a max long (0 means 0x7fffffff;
+  ORA_8I_MAX_LONG_PLSQL is 32760).
+* oracleverifiernegotiation, columns (4b): the scripts colnull, colbinfloat,
+  colnchar, colrowid, colscale, collong, colinterval and coltz at the 12.1,
+  11.2 and 10.2 listeners and the connectstrings one, colnchar also at the
+  AL32UTF8 listener (with a supplementary character row, INFERRED: the
+  surrogate pair is not in a capture), colnull, colbinfloat, colnchar and
+  colscale at the charset 31 listener (backend oracle102, whose references
+  are the oracle102 captures) and coldb2 at the db2 listener (select null
+  and the nullable byte as the db2 connection reports them; the oracle only
+  gates hold). They check the describe blocks, the max row size, the row
+  bytes and the fetch answers against the captures; runNull now expects the
+  real select null shape; DATE (12) is in ojdbc14AbbreviatedType.
+  checkOjdbc14AnswerReader() reads 10 real server answers offline.
+* oracleverifiernegotiation, binds (6b): checkOjdbc14BindBuilders() rebuilds
+  27 captured 0x5e calls byte for byte before any connection (5 big ones by
+  size, head and tail): prepdate, preptimestamp, prepnchar, preprowid at
+  oracle122 and oracle102, prepnull and its 0x8120, prepbytes at 3, 2000 and
+  2001 bytes, prepchunk 128, prepstrlimit 32767 (dty 8), preptz (the PL/SQL
+  block, TSTZ, LTZ, YM and its 0x8120, DS), preprexec (0x8128, 0x8120,
+  0x8068, 0x8069), prepbinfloat and NUMBER infinity, prepncharnc and
+  colwide's [0324] at oracle122 (postponed) and oracle102 (in order).
+  checkOjdbc14AnswerReader() has the real io vector answer, [0044] of preptz.
+  The 14 scripts bindnumber, binddate, bindtz, bindbinfloat, bindraw,
+  bindstring, bindnchar, bindnull, bindrowid, bindorder, bindplsql,
+  bindreexec, binderrors and bindselect run at the 12.1, 11.2 and 10.2
+  listeners, the connectstrings one and the charset 31 listener, and
+  bindstring and bindnchar at the AL32UTF8 listener too: 72 sessions. Each
+  creates a protocoltest10749tb* table through the module, inserts every
+  type from the captured bytes (with the listener's charset id in the
+  descriptors), reads it back with nvl2(c,dump(c,16),'null') (1016 for
+  NCHAR) and compares the dump with the bytes sent, which is the measured
+  rule, or reads RAW and VARCHAR2 directly; a session that stops early is
+  followed by a cleanup session that drops its tables. bindorder replays
+  colwide's five bind insert (postponed at 873, in order at 31), a
+  string of 4001 bytes ahead of a number and the same at exactly 4000 (not
+  postponed, MEASURED, oracle102 colwide [0324]), a dty 8 first, and a dty 8
+  of width 100 sent first whose value goes last, outside PL/SQL (CROSS-CHECK,
+  T4CTTIrxd); bindplsql a PL/SQL block with options 0x0529, max long 32760
+  and a 32512 byte string first, and one with a dty 8 (width 0x7fffffff)
+  ahead of a number, its value last (CROSS-CHECK); bindrowid selects a rowid
+  through the module,
+  binds it back in the 0e form and expects the row, and a null; bindraw
+  inserts RAW through hex and reads it with where r = ?; bindreexec plays the
+  four re-execute shapes with the captures' values; binderrors sends a dty 109
+  descriptor (ORA-20008), NUMBER infinity (ORA-20009) and mixed-sign
+  INTERVAL YEAR TO MONTH (+1 year -2 months) and DAY TO SECOND (+1 day -1
+  hour) binds (ORA-20009; the shapes are INFERRED, the driver never sends
+  them), each after the break and reset; bindselect the select ?
+  differences above, labelled. Large
+  calls are split at the negotiated sdu.
+* gatepin (oracleverifiernegotiation, 12.1 and 11.2 listeners): a hand
+  built field version 11.2 client, portable, with the table
+  protocoltest10749gp (nchar(3), nvarchar2(5), binary_float, binary_double,
+  number(5) not null, date). It pins the describe (from the max row size to
+  the DATE; the prologue is skipped, it ends in the current time) and the
+  first fetch rows of three selects, and the ROWID number widths (2 or 4
+  bytes, computed from rowidtochar()), for NCHAR and NVARCHAR2, BINARY_FLOAT
+  and DOUBLE, a NOT NULL column, DATE, select null and ROWID. The expected
+  bytes are the module's own known answers of HEAD 9b2f4bedc, taken by
+  running the session against a module built from HEAD: they are NOT real
+  server bytes, they only prove that the gate keeps every other client's
+  bytes as they were. Field version 4 exactly is not pinned: the hand built
+  client cannot answer the 10g verifier. Removing a gate (nullable, the
+  BINARY types, DATE width 1, NCHAR, minimal ROWID, select null at every
+  field version) fails 2 to 4 checks, all here; none failed before.
+* Counts. The work came in two halves, the column types first and the bind
+  types after, so counts are given for each. The portable run now has 31711
+  checks, 0 failed (31490 before the review fixes), and the -native run
+  812, 0 failed (7578 and 812 before
+  #10749; 15388 after the column half).
+  Against a scratch module built from HEAD's oracle.cpp (9b2f4bedc), 498
+  portable checks of the column half fail and the rest pass (the -native run
+  is unchanged). Against the module of the column half alone (the bind half
+  not yet in it), 27922 checks pass and 2893 fail, all in bind sessions:
+  bindbinfloat 1025, bindreexec 1050, bindtz 420, binderrors 175, bindorder
+  108, bindraw 70, bindnchar 35, bindrowid 5 (a dropped connection) and
+  bindselect 5; 15 sessions stopped early and were cleaned up. bindnumber,
+  binddate, bindstring, bindnull and bindplsql pass on both, being paths that
+  already worked (regression guards for the new reader). Between the column
+  half and the DATE describe fix, 16 checks failed (the DATE describe in
+  colscale's types select and in the types session at four listeners); the
+  column half passes now. test.sh -buildtree -randomports oracleprotocol ends
+  "all tests passed" (about 13 minutes, 34646 success lines, 0 failures;
+  earlier run: 35 suites succeeded, 151 skipped lines, all portable only
+  checks in the native run). oratoolstest.py passes
+  over all the samples, and a password scan (ASCII, UTF-16 and hex) of every
+  new sample found nothing.
+* Mutation check. 45 mutants of src/protocols/oracle.cpp, each run against
+  the whole portable run (31711 checks): 44 fail and one does not. The one is M06, a typed null bound as an empty string, which
+  is equivalent because Oracle reads '' as NULL. Failing checks, by mutant:
+  NCHAR bind not converted from UTF-16 90, raw scale byte for dty 181 9,
+  select null as VARCHAR2 4000 67, LONG trailer dropped 9, BINARY_FLOAT bind
+  decode swapped 115 and column encode swapped 114, ROWID bind as a CLR 5,
+  RAW hex in lower case 20, 0x8120 restore losing the charset id 85 or the
+  form 10, nullable forced to 1 22, DATE full block 16, postponement off
+  221, threshold >= 4000 44, PL/SQL exemption off 10, surrogate pairs off 1
+  (binds) and 2 (columns), NCHAR describe fl2, form or charset dropped 42
+  each, DATE width 7 8, 8i row size rule off 61, ORA-20008 as a raw string
+  35, ORA-20009 as NULL 60, interval month bias 15, interval DS sign 15,
+  UROWID off 52, BINARY type mapping off 216, ROWID not minimal 12, float
+  bind exponent sign 50, odd size NCHAR bind accepted 35, ROWID bind file
+  and block swapped 43, non-canonical NaN 5, all-null no-rows rule 20.
+  Three groups closed gaps of the first review, where 0 checks failed: the
+  gate removals (X10 to X16: 4, 4, 2, 2, 2, 4, 2, all in gatepin), LONG not
+  postponed (M07: 70, bindorder 45 and bindplsql 25) and the mixed-sign
+  interval checks (YM 10 and DS 10, binderrors).
+* One flake was seen and not reproduced: "failed to read packet header" on the
+  drop after a fetch to ORA-01403, once in the column half's first run, not in
+  10 portable runs afterwards (5 back to back, 3 right after a stop and start,
+  1 after switching modules, 1 under valgrind, whose reports were all inside
+  libclntsh). The client's header read waits 30 seconds, so the module closed
+  the connection or sent nothing for 30 s; a DDL drop blocked by another
+  session's scratch table is the INFERRED cause.
+
+Measured with the genuine driver against the module, the 10749 -sqlrelay
+captures and the live runs (step 8, 48 actions at eight listeners: 12.1 with
+maxcursors 5 and 1000, 12.1 with fetchatonce=1, 11.2, 10.2, connectstrings,
+AL32UTF8, and charset 31 with the oracle102 backend; 384 runs, outputs
+compared with the real servers' after normalizing table names, rowid
+numbers, hashes and the time stamps). No difference was unexpected:
+* The old actions match the real server, apart from the known ones: prepared
+  (#10745), execerr and prepexecerr (the backend user's schema name in the
+  constraint), fetcherr and prepfetcherr (rows before a mid-fetch error,
+  #10756), fetchbig, fetchsizes and prepfetchsizes (ORA-20004 above 100000
+  rows, #10764), cancel and timeout (run at the connectstrings listener
+  only, the cancel ignored, #10759) and the oracle102 pair (the NUMBER scale
+  -127 against 0, and the banner).
+* The new actions give the same output as the earlier steps' runs of the same
+  module. Against the real servers they differ in colnchar's non-ASCII data
+  (the backend session's charset; right at the AL32UTF8 listener), coltz,
+  preptz and preprexec's time zone steps (ORA-06502, #10747), colrowid and
+  preprowid's fresh table rowid numbers, colwide's VARCHAR2(n CHAR) precision
+  (#10770), and the select ? and bind items listed above.
+* Fixed against the baseline of the module before the change (2c, the -before
+  captures): preprowid no longer drops the connection; colwide's 4000
+  character insert lands in the right columns; every prepbinfloat insert
+  stores the real server's bytes (HEAD's failed ORA-01722); RAW up to 2000
+  bytes inserts and where r = ? works (it was ORA-00932); the interval,
+  offset TSTZ and LTZ inserts store the real server's bytes; NCHAR and
+  NVARCHAR2 values including e-acute and CJK are stored and found at the
+  AL32UTF8 listener; a PL/SQL block with a long string first and a LONG
+  first insert come out right.
+* Byte level: 79 known answer vectors of the real oracle122 captures against
+  the module's captures: 51 at the same message and offset, 14 moved but byte
+  for byte equal (the rows without the 0x15 vector shift offsets, INTEGER's
+  fl2, message numbers after the time zone failures), 14 missing, each
+  explained (the backend's charset, fresh rowid values, the real row's bit
+  vector, F2's VARCHAR2(n CHAR), the binds the driver never sends after
+  get_tz_transitions fails, and V12c and V12d, present at [0170] and [0182]
+  and equal but for the cursor id).
+* Remaining module only differences of the describe, none read by the driver:
+  the NUMBER literal width, INTEGER's fl2, the row header flags 02 against
+  22, no 0x15 vectors, the constant 0x39 against 0x51, the closing flag 0,
+  and the data type negotiation answer (62 rows differ, 100 and 101 are
+  declined; the driver does not check it, and 9i clients share it).
+
+Regressions (the same module against the module of the column half, which
+was identical to HEAD's for these clients), none taken by the gate:
+* ojdbc8 23.x (NCHAR, NVARCHAR2, BINARY_FLOAT, DOUBLE, DATE, a NOT NULL
+  catalog query, select null, rowid; setString, setInt, setBigDecimal,
+  setFloat, setDouble, setDate, setTimestamp, setBytes, setNString, typed
+  nulls, a 5 to 15 KB string, select ? of eight types, where binds) at 12.1,
+  AL32UTF8, charset 31 and 11.2: identical output, and equal to HEAD's at
+  12.1. Pre-existing and also at HEAD: setNString values are stored as NULL
+  (#10776) and setBytes() binds as a BLOB (#10777: select ? of RAW is a
+  BLOB, where r = ? fails ORA-00932).
+* OCI 23: the oci8 suite (default and sqlrelay10g listeners) all succeeded
+  with identical output, the oci7 (olog) suite 110 checks all succeeded,
+  ociselect of five column queries at three listeners identical, and the
+  proxied captures differ only in login keys and dates. Pre-existing: select
+  dummy, rowid r from dual hangs OCI 23 (rowid alone works, a real oracle122
+  answers it): #10778.
+* The genuine 9.2.0.4 clients on redhat9x86 (the oci7 suite on the
+  sqlrelayoci7 listener, 13 oci7bind variants, oci7describe and sqlplus at
+  charset 31 and 12.1): byte identical output. oci7 has one failing check
+  ("oexec - error mid-fetch") and oci7bind's datebind a "row length=7
+  (MISMATCH)", both with the earlier module too.
+* The genuine 10.2.0.5 OCI client on fedora9x86 (both the oci8 and olog forms,
+  and a scratch bind program) at 12.1, 10.2, 11.2 and charset 31: login and
+  select work, binds identical. Pre-existing: select :1 of a SQLT_BIN raw gets
+  ORA-00932 and a SQLT_ODT date comes back as TIMESTAMP text: #10779. The
+  hosts were woken for the runs and put back to sleep.
+
+Not done, documented, with the ticket that carries it:
+* #10769: the server API's typed binds (select ? describes, nanoseconds,
+  region TSTZ, LONG RAW as BLOB, strings over 4000 bytes, NUMBER infinity)
+* #10770: VARCHAR2(n CHAR) and CHAR(n CHAR) length semantics in the describe
+* #10771: the new column describes for clients other than ojdbc14
+* #10772: postponed LONG and over 4000 byte values for other clients
+* #10773: ROWID binds from other clients
+* #10774: a select re-executed with a longer string bind returns it cut
+* #10775: LONG and LONG RAW of 32768 bytes or more come back NULL
+* #10776: ojdbc8 setNString stores NULL
+* #10777: ojdbc8 setBytes binds as a BLOB
+* #10778: OCI 23 hangs on select dummy, rowid r from dual
+* #10779: the genuine 10.2 OCI client's SQLT_BIN and SQLT_ODT binds
+* #10747: region TSTZ and LTZ reads and binds (get_tz_transitions and the
+  RAW out bind)
+The cursor leak is the driver's and is only documented (maxcursors).
+Unmeasured or inferred, as above: the 12.1 ceiling (from 12.2, as for every
+#10745 and #10750 fact), national character sets other than AL16UTF16 and
+database charsets other than 31, 178 and 873, an LTZ in a database whose
+DBTIMEZONE is not +00:00, a DML re-execute with a changed bind type, the
+server's CLR long form for a value of exactly 254 or 255 bytes (252 bytes is
+short and 253 is long, MEASURED, colwide at oracle122 [0263] and [0289]),
+UROWID(n) of 8 or less, -0 as a BINARY_FLOAT (the driver sends +0), the
+surrogate pair row at the AL32UTF8 listener, the one byte NCHAR mapping at the
+charset 31 listener (the backend session is not Latin-1, so non-ASCII cannot
+be tested there), and whether a lob bind is ever postponed.
+
+What #10746, #10747 and #10748 can rely on
+
+The descriptor. query3binds[i] (and the cursor's saved copy, restored by
+restoreQuery3Binds()) carries every field of the descriptor for every client:
+type, flags, buffersize (the width), precision, scale, maxelements (mal),
+contflags (fl2), oidlength, version, charsetid, csfrm, maxdatasize (mxlc) and
+oaccolid (12.2 and later only), plus the direction (worked out from the
+statement), outindex and framing. csfrm and charsetid say a bind is national,
+maxelements an index-by table. framing says how its value was read:
+ORACLEBINDFRAMING_CLR (a length byte and the bytes, or the fe form),
+ORACLEBINDFRAMING_LOCATOR (a ub4 length, then the locator: 112, 113, 114) or
+ORACLEBINDFRAMING_ROWID (an 8i dty 11: 0e and four numbers, or a lone 00). A
+new value layout is a new framing value; the generic reader ignores the field.
+
+The values. getQuery3BindValues8i() stores a value at query3bindvalues[block *
+bindcount + i] by its descriptor index whatever the wire order. The
+postponement of isPostponedBind8i() is applied per block, so each block of a
+batch (#10748) gets it; it is decided from the saved width and the current
+call's options. PL/SQL is told by the options word alone (no 0x8000 bit, such
+as 0x0529; the max long of 32760 is not looked at), and there only dty 8 and
+24 are postponed, the rest positional. The al8i4[1] blocks are already read
+per iteration, except an execute-and-fetch, which reads one. The 07 marker,
+the block bounds and MAX_QUERY3_BIND_VALUES are the generic reader's.
+allocQuery3BindValues() is the shared sizing of both readers.
+
+The decoder. decode8iBind() is called by installQuery3Binds() for a value
+that is not null (null values keep the existing NULL arm and never reach it)
+and fills type, value and valuesize only (installQuery3Binds() sets isnull
+before the call); the name, the segment
+fields and the in-out slot stay where they are. A new type is a new arm in
+its switch. GENERIC hands a type to the shared arms (lobs and ref cursors
+today). The helpers getNcharBindValue(), getIntervalBindValue(),
+getBinaryFloatBindValue(), getRawBindValue() and getRowidBindValue() decode
+in one direction; for out values (#10747) they are references only, and
+setStringBindValue() and putBindChar() are the small writers they share. The
+table above lists the dty values and their results; a dty that is not in it
+is UNSUPPORTED, which is ORA-20008, and RAW (23) is a hex STRING, not a BLOB,
+while LONG RAW (24) is still a BLOB.
+
+The errors. ORA-20008 for an unsupported type, ORA-20009 for a value that
+cannot be decoded (including NUMBER infinity), ORA-20007 (a TSTZ in a region
+the table lacks and in local time) and ORA-22275 (a bad locator) as before,
+all through sendBindFailureError(), after the 8i break and reset.
+
+The re-execute rules. The saved descriptors carry the new fields, so the
+0x8120 (bind count 0), 0x8128 (every descriptor again, no text), 0x8068
+(every descriptor, width recomputed, no describe in the answer) and 0x8069
+(text again, a describe in the answer) shapes of "Re-executes" above need
+nothing more: a null keeps the previous width, and the postponement is
+recomputed from the saved type and width.
+
+The test builders (see "The tests"): the descriptor struct, the call struct
+and buildOjdbc14BindCall(), putOjdbc14Clr(), putOjdbc14Rowid() and the other
+static writers, setOjdbc14Bind() and setOjdbc14RowidBind(), the value encoders
+in the verifier (NUMBER, DATE, TIMESTAMP, TSTZ, the intervals, BINARY_FLOAT
+and DOUBLE canonical, UTF-16BE), readOjdbc14Answer() with its io vector and
+out values, and buildOjdbc14Query()'s max long. #10747 also has the reference
+bytes of get_tz_transitions: the call (options 0x0529, max long 32760, a dty 6
+region id such as 612 for US/Eastern, 5121 for UTC and 267 for Asia/Tokyo (a
+column read of UTC asks for 513, coltz [0059]), a dty 23 width 32767 null
+in-value; preptz [0029]) and its answers, a 0x0b out value in the long form
+([0030], 2502 bytes, beginning 0b 05 01 02 00 01 01 00 00 00 20 10 07 fe ff
+...; [0044], 78 bytes, the UTC table). #10746 also has csfrm and charsetid on
+a CLOB bind and the LOCATOR framing. #10748 also has the per block
+postponement.
+
+What they must not assume:
+* A PL/SQL in-bind is marked 0x30 (in/out) by the module in its 0x0b io vector
+  and its value sent back; a real server marks an in bind 0x20 (MEASURED only
+  for get_tz_transitions: 20 10). The genuine driver accepted the module's
+  (6a), and the direction is #10747's to settle.
+* get_tz_transitions is a hidden call the driver makes for region time zones,
+  once per region, and a failing one leaks a cursor; it belongs to #10747.
+* The driver sends the values of dty 8 and 24, and of over 4000 byte binds
+  outside PL/SQL, last: a reader that takes values in descriptor order is
+  wrong for them. Other clients were not measured (#10772), so the order is
+  gated to ojdbc14, and so is the ROWID framing (#10773).
+* A RAW bind arrives as text. A decoder that expects dty 23 to be a BLOB
+  will not see one, and a select ? of it returns the hex.
+* Every setString bind in PL/SQL has width 32512, and a LONG-sized value
+  (dty 8) is inline in the same call, however many TNS packets it spans.
+* The module's break and reset come first on every error, then the 04 alone.
+* The cursor's saved descriptors are used by the 0x8120 path only; the
+  0x04 and 0x4e reexecute calls are not sent by ojdbc14.
+* The descriptor sends no collation id at the ceilings measured; oaccolid
+  is 0 unless the client is 12.2 or later.
+
+INFERRED items they rely on: a lob bind's width is under 4000 (so it is
+never postponed), the 12.1 ceiling behaves like the 12.2 server measured, a
+DML re-execute after a bind changed type is a 0x8129 re-parse, and the
+national character set is AL16UTF16.
+
+Capture files. The 10749-dev-ojdbc14 captures are listed in the sample list
+above, 92 files (about 1.9 MB). The large ones are prepstring (277 KB),
+prepstrlimit (140 KB), the three colwide captures (127 to 131 KB),
+colwide-before (70 KB) and prepbytes (62 KB and 56 KB); preprexec is 40 KB.
+The ones that oracleverifiernegotiation cites by name without reading them
+(colwide at oracle102 and oracle122, prepstrlimit and prepstring at
+oracle122) are checked in too. The real server captures of oracle112 for
+these actions, those of oracle102 other than selectnull, colbinfloat,
+colnchar, colscale, colwide and preprowid, those of oracle122 of prepstream,
+prepobject and prepared, and the module captures of the other listeners were
+taken and not kept. oradecode prints "legacy call decode failed ... falling
+back to hex dump" for all 46 captures, as for #10745 and #10750, and the run
+ends cleanly in every one.
 
 The v11 time zone file for the oci8 run
 ---------------------------------------

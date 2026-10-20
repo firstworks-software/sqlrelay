@@ -47,6 +47,7 @@
 #include <rudiments/bytebuffer.h>
 #include <rudiments/bytestring.h>
 #include <rudiments/charstring.h>
+#include <rudiments/stringbuffer.h>
 #include <rudiments/sha1.h>
 #include <rudiments/md5.h>
 #include <rudiments/aes192.h>
@@ -512,23 +513,26 @@ struct oracleprotocolquery3offsets {
 static const unsigned char	ORA_8I_TTC_PIGGYBACK=0x11;
 static const unsigned char	ORA_8I_TTC_STATUS=0x09;
 static const unsigned char	ORA_8I_TTC_BIT_VECTOR=0x15;
+static const unsigned char	ORA_8I_TTC_IO_VECTOR=0x0b;
 static const unsigned char	ORA_8I_TTI_CLOSE_CURSORS=0x69;
 static const unsigned char	ORA_8I_TTI_COMMIT=0x0e;
 static const unsigned char	ORA_8I_TTI_ROLLBACK=0x0f;
 static const uint32_t		ORA_8I_AL8I4_SIZE=13;
 static const uint32_t		ORA_8I_MAX_LONG=0x7fffffff;
 static const size_t		ORA_8I_MAX_OBJECTS=96;
-static const size_t		ORA_8I_MAX_COLUMNS=16;
+static const size_t		ORA_8I_MAX_COLUMNS=32;
 static const size_t		ORA_8I_MAX_ROWS=32;
 static const size_t		ORA_8I_MAX_NAME=64;
-static const size_t		ORA_8I_MAX_VALUE_DATA=16384;
+static const size_t		ORA_8I_MAX_VALUE_DATA=65536;
 static const size_t		ORA_8I_MAX_MESSAGE=512;
 static const size_t		ORA_8I_MAX_AL8O4=16;
 
 // one ojdbc14 TTI_QUERY3 (0x5e) call.  "query" is NULL for a re-execute,
 // which sends no text.  "descriptors" are the bind descriptors as ojdbc14
 // wrote them, "bindcount" of them, or NULL where it doesn't resend them.
-// "bindrow" is the raw 07 block of bind values, or NULL
+// "bindrow" is the raw 07 block of bind values, or NULL.  "maxlong" is the
+// max long size, 0 for ORA_8I_MAX_LONG, which every call but a PL/SQL one
+// carries (a PL/SQL call carries ORA_8I_MAX_LONG_PLSQL)
 struct oracleprotocolojdbc14query {
 	uint32_t		options;
 	uint32_t		cursorid;
@@ -539,6 +543,95 @@ struct oracleprotocolojdbc14query {
 	size_t			descriptorssize;
 	const unsigned char	*bindrow;
 	size_t			bindrowsize;
+	uint32_t		maxlong;
+};
+
+// the max long size of a PL/SQL call - "begin ... end;" - where every other
+// call has ORA_8I_MAX_LONG (MEASURED, step 2b of #10749: 02 7f f8 in the
+// get_tz_transitions call of 10749-dev-ojdbc14-preptz-realserver-*)
+static const uint32_t		ORA_8I_MAX_LONG_PLSQL=32760;
+
+// the bind descriptor flags ojdbc14 sets on every bind, the cont flag it
+// sets on a character bind (dty 1, implicit or national), and the form of
+// use of an implicit and a national bind (MEASURED, step 2b of #10749,
+// every descriptor of the 10749-dev-ojdbc14-prep*-realserver captures)
+static const unsigned char	ORA_8I_BIND_FLAGS=0x03;
+static const uint32_t		ORA_8I_BIND_CONTFLAG_CHARACTER=0x10;
+static const unsigned char	ORA_8I_FORM_IMPLICIT=1;
+static const unsigned char	ORA_8I_FORM_NCHAR=2;
+static const uint32_t		ORA_8I_CHARSET_AL16UTF16=2000;
+
+// the largest value ojdbc14 sends in a clr's short form, and the size of
+// every chunk of the long form (MEASURED, 10749-dev-ojdbc14-prepchunk-
+// realserver-*: 64 bytes is 40 and the bytes, 128 is fe 40 <64> 40 <64> 00)
+static const size_t		ORA_8I_CLR_CHUNK=64;
+
+// the first byte of a ROWID bind value that isn't null, which is not its
+// length (MEASURED, 10749-dev-ojdbc14-preprowid-realserver-*)
+static const unsigned char	ORA_8I_ROWID_MARKER=0x0e;
+static const unsigned char	ORA_8I_TYPE_ROWID=11;
+
+// the mxl above which a bind's value comes after the others' outside
+// PL/SQL (CROSS-CHECK, T4CTTIrxd.marshal; MEASURED for 16000 and 8000 in
+// [0324] of 10749-dev-ojdbc14-colwide-realserver-oracle122, and that
+// exactly 4000 is not, in [0324] of -oracle102)
+static const uint32_t		ORA_8I_MAX_INLINE_BIND=4000;
+
+// one bind of an ojdbc14 0x5e: every field of its descriptor in T4CTTIoac's
+// order - the type, the flags, the precision, the scale (one raw byte), the
+// size (mxl), the max array elements, the cont flags, the toid (always
+// empty), the version, the charset id, the form of use and the size in
+// characters (mxlc) - and its value.  "value" is NULL for a null.  a ROWID
+// (dty 11) with "rowid" set is sent in its 0e form from the four numbers
+// rather than as a clr of "value".
+//
+// This, setOjdbc14Bind() and buildOjdbc14BindCall() are the base the lob,
+// PL/SQL and batch work on ojdbc14 binds builds on
+struct oracleprotocolojdbc14bind {
+	unsigned char		type;
+	unsigned char		flags;
+	unsigned char		precision;
+	unsigned char		scale;
+	uint32_t		maxlength;
+	uint32_t		maxelements;
+	uint32_t		contflags;
+	uint32_t		version;
+	uint32_t		charsetid;
+	unsigned char		formofuse;
+	uint32_t		maxcharlength;
+	const unsigned char	*value;
+	size_t			valuesize;
+	bool			rowid;
+	uint32_t		rowidobject;
+	uint32_t		rowidfile;
+	uint32_t		rowidblock;
+	uint32_t		rowidrow;
+};
+
+// a 0x5e with binds, in the shapes ojdbc14 sends (MEASURED, section 5 of
+// step 2b of #10749, the preprexec, prepnull and prepared captures):
+//	- a first execute (0x8129 dml, 0x8029 query): the text, cursor 0,
+//	  every descriptor and the values
+//	- a dml re-execute whose descriptors didn't change (0x8120): the
+//	  cursor, no text, no descriptors (a bind count of 0) and the values
+//	- a dml re-execute after a value outgrew its mxl (0x8128): the
+//	  cursor, no text, every descriptor again and the values
+//	- a query re-execute with fetch (0x8068): the cursor, no text, every
+//	  descriptor with its mxl recomputed and the values
+//	- a query re-parse after a bind's type changed (0x8069): the text, the
+//	  cursor, every descriptor and the values
+// "query" NULL sends no text, "descriptors" false no descriptors, and
+// "values" false no 07 block.  "maxlong" is as in oracleprotocolojdbc14query
+struct oracleprotocolojdbc14bindcall {
+	uint32_t				options;
+	uint32_t				cursorid;
+	const char				*query;
+	const uint32_t				*al8i4;
+	uint32_t				maxlong;
+	const oracleprotocolojdbc14bind		*binds;
+	uint32_t				bindcount;
+	bool					descriptors;
+	bool					values;
 };
 
 // where one object of an answer is, from its ttc code on, counted from the
@@ -571,11 +664,36 @@ struct oracleprotocolojdbc14column {
 	int64_t		position;
 };
 
-// one value of a row, in the answer's value data
+// one value of a row, in the answer's value data.  "wireoffset" and
+// "wiresize" are where its bytes are in the response, length bytes and all,
+// and "wiresize" is 0 for a column described 0 bytes wide
+// ("nullbydescribe"), which has no bytes on the wire.  a LONG or LONG RAW
+// value keeps the indicator and the return code behind it, and a ROWID the
+// four numbers it is made of; a ROWID's value data is its wire bytes
 struct oracleprotocolojdbc14value {
 	size_t	offset;
 	size_t	size;
 	bool	isnull;
+	size_t	wireoffset;
+	size_t	wiresize;
+	bool	nullbydescribe;
+	int64_t	indicator;
+	int64_t	returncode;
+	int64_t	rowidobject;
+	int64_t	rowidfile;
+	int64_t	rowidblock;
+	int64_t	rowidrow;
+};
+
+// the columns of a cursor's last describe, which readOjdbc14Answer() reads
+// the rows of a fetch or a re-execute by, as ojdbc14 keeps an accessor per
+// column for a statement
+static const size_t		ORA_8I_MAX_LAYOUTS=16;
+struct oracleprotocolojdbc14layout {
+	uint32_t	cursorid;
+	int64_t		columncount;
+	unsigned char	types[ORA_8I_MAX_COLUMNS];
+	int64_t		maxlengths[ORA_8I_MAX_COLUMNS];
 };
 
 // an answer to one of ojdbc14's calls, as readOjdbc14Answer() found it.  each
@@ -613,6 +731,15 @@ struct oracleprotocolojdbc14answer {
 	int64_t				iterationsthistime;
 	int64_t				uacbufferlength;
 	size_t				bitvectorsize;
+
+	// TTC_IO_VECTOR (0x0b), ojdbc14's T4CTTIiov, ahead of the out values
+	// of a PL/SQL call: a row header, then a raw byte per bind, 0x20 for
+	// an in bind and 0x10 for an out one.  the rows behind it carry the
+	// values of the out binds alone, in "iovoutcount" columns
+	bool				iov;
+	int64_t				iovcount;
+	unsigned char			iovector[ORA_8I_MAX_COLUMNS];
+	int64_t				iovoutcount;
 
 	// TTC_ROW_DATA (0x07), every row, a column suppressed by a bit
 	// vector carrying the row above's value.  the first ORA_8I_MAX_ROWS
@@ -955,6 +1082,95 @@ class oracleprotocolclient {
 		bool	ojdbc14Query(const oracleprotocolojdbc14query *q,
 					const uint32_t *closecursors=NULL,
 					uint32_t closecount=0);
+
+		// a 0x5e with binds, built from the binds' fields - see
+		// oracleprotocolojdbc14bindcall.  the descriptors go out in
+		// bind order and the values in ojdbc14's order - see
+		// putOjdbc14BindRow()
+		void	buildOjdbc14BindCall(
+				const oracleprotocolojdbc14bindcall *c,
+				const uint32_t *closecursors=NULL,
+				uint32_t closecount=0);
+
+		// the writers buildOjdbc14BindCall() is made of, each into
+		// "out", for a test that builds a call's parts itself.
+		//
+		// putOjdbc14Number() writes a count prefixed int in ojdbc14's
+		// minimal width - see appendOjdbc14Number().
+		//
+		// putOjdbc14BindDescriptor() writes one descriptor, every
+		// field as the bind has it: the type, flags, precision and
+		// scale raw, then the size, max elements and cont flags as
+		// counts, an empty toid, the version and charset id as
+		// counts, the form of use raw and the size in characters as
+		// a count.
+		//
+		// putOjdbc14Clr() writes a value the way ojdbc14's
+		// T4CMAREngine.marshalCLR() does: a length byte and the bytes
+		// up to 64 bytes, and over 64 fe, 64-byte chunks each behind
+		// a raw length byte, the partial last chunk, and 00 - an
+		// exact multiple of 64 with no empty chunk ahead of the 00.
+		// NULL writes a null.
+		//
+		// putOjdbc14Rowid() writes a ROWID bind value: 0e, the data
+		// object number, the relative file, a 00, the block and the
+		// row, each number a minimal count prefixed int.
+		//
+		// putOjdbc14Null() writes the null every bind type sends, a
+		// lone 00.
+		//
+		// isOjdbc14PostponedBind() says whether ojdbc14 sends the
+		// bind's value after every other one: a LONG (8) or LONG RAW
+		// (24), and, in a call whose options have ORA_OPTION_NOPLSQL,
+		// a bind whose mxl is over 4000 (CROSS-CHECK,
+		// T4CTTIrxd.marshal; MEASURED, [0324] of 10749-dev-ojdbc14-
+		// colwide-realserver-oracle122).
+		//
+		// putOjdbc14BindRow() writes the 07 and the values: first
+		// every bind that isn't postponed, in bind order, then every
+		// postponed one, in bind order
+		static void	putOjdbc14Number(bytebuffer *out,
+							uint32_t value);
+		static void	putOjdbc14BindDescriptor(bytebuffer *out,
+				const oracleprotocolojdbc14bind *b);
+		static void	putOjdbc14Clr(bytebuffer *out,
+						const unsigned char *value,
+						size_t size);
+		static void	putOjdbc14Rowid(bytebuffer *out,
+						uint32_t object,
+						uint32_t file,
+						uint32_t block,
+						uint32_t row);
+		static void	putOjdbc14Null(bytebuffer *out);
+		static bool	isOjdbc14PostponedBind(
+				const oracleprotocolojdbc14bind *b,
+				uint32_t options);
+		static void	putOjdbc14BindRow(bytebuffer *out,
+				const oracleprotocolojdbc14bind *binds,
+				uint32_t bindcount,
+				uint32_t options);
+
+		// a bind as ojdbc14 describes one: "type", "maxlength",
+		// "charsetid" and "formofuse" as given, the flags 03, the cont
+		// flag 0x10 for a dty 1 and 0 for the rest, and every other
+		// field 0 (MEASURED, every descriptor of step 2b of #10749).
+		// "value" and "size" are its value, NULL for a null.
+		// setOjdbc14RowidBind() makes a ROWID bind of the four numbers
+		// (dty 11, mxl 130)
+		static void	setOjdbc14Bind(oracleprotocolojdbc14bind *b,
+						unsigned char type,
+						uint32_t maxlength,
+						uint32_t charsetid,
+						unsigned char formofuse,
+						const unsigned char *value,
+						size_t size);
+		static void	setOjdbc14RowidBind(
+					oracleprotocolojdbc14bind *b,
+					uint32_t charsetid,
+					uint32_t object,
+					uint32_t file,
+					uint32_t block,
+					uint32_t row);
 		bool	ojdbc14Fetch(uint32_t cursorid, uint32_t rowstofetch,
 					const uint32_t *closecursors=NULL,
 					uint32_t closecount=0);
@@ -989,6 +1205,43 @@ class oracleprotocolclient {
 		bool	readOjdbc14Answer(oracleprotocolojdbc14answer *answer,
 						uint32_t columncount,
 						bool statuscall);
+
+		// a captured answer, its bytes behind the data flags, put in
+		// the response as a data packet the way recvPacket() leaves
+		// one, for readOjdbc14Answer() to be checked against real
+		// servers' answers.  "cursorid" is the cursor the call it
+		// answers named, whose last describe a fetch answer is read by
+		void	setOjdbc14Answer(const unsigned char *bytes,
+						size_t size, uint32_t cursorid);
+
+		// what a value readOjdbc14Answer() kept means, the way
+		// ojdbc14's accessors read it (#10749): NCHAR and NVARCHAR2
+		// text, utf-16be, as utf-8; a BINARY_FLOAT or BINARY_DOUBLE's
+		// 4 or 8 bytes in their sortable form; an INTERVAL YEAR TO
+		// MONTH (182) or DAY TO SECOND (183) as "+1-02" or
+		// "+3 04:05:06.123456000"; a DATE (12), TIMESTAMP (180), WITH
+		// TIME ZONE (181) or WITH LOCAL TIME ZONE (231) as
+		// "2024-03-05 18:14:15.123456000", with " +05:30" or
+		// " region 612" behind a time zone's; and a ROWID's numbers
+		// as its 18 character text.  each is false for bytes that
+		// aren't one
+		static bool	decodeOjdbc14Utf16(const unsigned char *bytes,
+						size_t size,
+						stringbuffer *utf8);
+		static bool	decodeOjdbc14BinaryFloat(
+						const unsigned char *bytes,
+						size_t size, double *value);
+		static bool	decodeOjdbc14Interval(unsigned char type,
+						const unsigned char *bytes,
+						size_t size,
+						stringbuffer *text);
+		static bool	decodeOjdbc14Timestamp(unsigned char type,
+						const unsigned char *bytes,
+						size_t size,
+						stringbuffer *text);
+		static void	decodeOjdbc14Rowid(
+					const oracleprotocolojdbc14value *v,
+					char *text);
 
 		// the AUTH_ pairs in the answer to either phase, and the
 		// trailer behind them.  "flags" may be NULL
@@ -1307,6 +1560,15 @@ class oracleprotocolclient {
 					size_t *size, const char *field);
 		bool	readOjdbc14Describe(oracleprotocolojdbc14answer *a);
 		bool	readOjdbc14Summary(oracleprotocolojdbc14answer *a);
+		bool	readOjdbc14Value(oracleprotocolojdbc14answer *a,
+					unsigned char type, int64_t maxlength,
+					oracleprotocolojdbc14value *v,
+					unsigned char *scratch,
+					size_t scratchsize, bool keep);
+		const oracleprotocolojdbc14layout
+			*findOjdbc14Layout(uint32_t cursorid);
+		void	saveOjdbc14Layout(uint32_t cursorid,
+					const oracleprotocolojdbc14answer *a);
 
 		inetsocketclient	sock;
 		bool			connected;
@@ -1323,6 +1585,12 @@ class oracleprotocolclient {
 		bool			gotbreak;
 		unsigned char		breakflags;
 		unsigned char		resetflags;
+
+		// the cursor the last ojdbc14 call named, and each cursor's
+		// last describe
+		uint32_t			ojdbc14callcursor;
+		oracleprotocolojdbc14layout	ojdbc14layouts[ORA_8I_MAX_LAYOUTS];
+		size_t				ojdbc14layoutcount;
 
 		// what the connect packet asks for, and what the accept
 		// answered with
@@ -1555,6 +1823,8 @@ oracleprotocolclient::oracleprotocolclient() {
 	gotbreak=false;
 	breakflags=0;
 	resetflags=0;
+	ojdbc14callcursor=0;
+	ojdbc14layoutcount=0;
 	connectversion=0;
 	acceptversion=0;
 	anonegotiation=false;
@@ -3438,6 +3708,7 @@ void oracleprotocolclient::buildOjdbc14Query(
 	size_t	querysize=charstring::getLength(q->query);
 	bool	descriptors=(q->descriptors!=NULL);
 
+	ojdbc14callcursor=q->cursorid;
 	beginOjdbc14Call(ORA_TTI_QUERY3,closecursors,closecount);
 	appendOjdbc14Number(q->options);
 	appendOjdbc14Number(q->cursorid);
@@ -3449,7 +3720,7 @@ void oracleprotocolclient::buildOjdbc14Query(
 	appendByte(0);
 	appendOjdbc14Number(0);
 	appendOjdbc14Number(0);
-	appendOjdbc14Number(ORA_8I_MAX_LONG);
+	appendOjdbc14Number((q->maxlong)?q->maxlong:ORA_8I_MAX_LONG);
 	appendByte((descriptors)?1:0);
 	appendOjdbc14Number((descriptors)?q->bindcount:0);
 	for (uint8_t i=0; i<5; i++) {
@@ -3476,6 +3747,7 @@ void oracleprotocolclient::buildOjdbc14Fetch(uint32_t cursorid,
 						uint32_t rowstofetch,
 						const uint32_t *closecursors,
 						uint32_t closecount) {
+	ojdbc14callcursor=cursorid;
 	beginOjdbc14Call(ORA_TTI_FETCH,closecursors,closecount);
 	appendOjdbc14Number(cursorid);
 	appendOjdbc14Number(rowstofetch);
@@ -3485,6 +3757,7 @@ void oracleprotocolclient::buildOjdbc14Fetch(uint32_t cursorid,
 void oracleprotocolclient::buildOjdbc14Call(unsigned char ttifunction,
 						const uint32_t *closecursors,
 						uint32_t closecount) {
+	ojdbc14callcursor=0;
 	beginOjdbc14Call(ttifunction,closecursors,closecount);
 }
 
@@ -3493,6 +3766,168 @@ bool oracleprotocolclient::ojdbc14Query(const oracleprotocolojdbc14query *q,
 						uint32_t closecount) {
 	buildOjdbc14Query(q,closecursors,closecount);
 	return sendPacket() && recvOjdbc14Answer();
+}
+
+void oracleprotocolclient::buildOjdbc14BindCall(
+				const oracleprotocolojdbc14bindcall *c,
+				const uint32_t *closecursors,
+				uint32_t closecount) {
+
+	bytebuffer	descriptors;
+	bytebuffer	row;
+	if (c->descriptors) {
+		for (uint32_t i=0; i<c->bindcount; i++) {
+			putOjdbc14BindDescriptor(&descriptors,&c->binds[i]);
+		}
+	}
+	if (c->values) {
+		putOjdbc14BindRow(&row,c->binds,c->bindcount,c->options);
+	}
+
+	oracleprotocolojdbc14query	q;
+	q.options=c->options;
+	q.cursorid=c->cursorid;
+	q.query=c->query;
+	q.al8i4=c->al8i4;
+	q.bindcount=c->bindcount;
+	q.descriptors=(c->descriptors)?
+			(const unsigned char *)descriptors.getBuffer():NULL;
+	q.descriptorssize=descriptors.getSize();
+	q.bindrow=(c->values)?(const unsigned char *)row.getBuffer():NULL;
+	q.bindrowsize=row.getSize();
+	q.maxlong=c->maxlong;
+	buildOjdbc14Query(&q,closecursors,closecount);
+}
+
+void oracleprotocolclient::putOjdbc14Number(bytebuffer *out, uint32_t value) {
+	unsigned char	count=0;
+	while (count<4 && (value>>(8*count))) {
+		count++;
+	}
+	out->append(count);
+	for (unsigned char i=count; i>0; i--) {
+		out->append((unsigned char)((value>>(8*(i-1)))&0xff));
+	}
+}
+
+void oracleprotocolclient::putOjdbc14BindDescriptor(bytebuffer *out,
+					const oracleprotocolojdbc14bind *b) {
+	out->append(b->type);
+	out->append(b->flags);
+	out->append(b->precision);
+	out->append(b->scale);
+	putOjdbc14Number(out,b->maxlength);
+	putOjdbc14Number(out,b->maxelements);
+	putOjdbc14Number(out,b->contflags);
+	putOjdbc14Number(out,0);
+	putOjdbc14Number(out,b->version);
+	putOjdbc14Number(out,b->charsetid);
+	out->append(b->formofuse);
+	putOjdbc14Number(out,b->maxcharlength);
+}
+
+void oracleprotocolclient::putOjdbc14Clr(bytebuffer *out,
+						const unsigned char *value,
+						size_t size) {
+	if (!value || !size) {
+		putOjdbc14Null(out);
+		return;
+	}
+	if (size<=ORA_8I_CLR_CHUNK) {
+		out->append((unsigned char)size);
+		out->append(value,size);
+		return;
+	}
+	out->append((unsigned char)ORA_CLR_LONG_FORM_MARKER);
+	for (size_t offset=0; offset<size; offset+=ORA_8I_CLR_CHUNK) {
+		size_t	chunk=size-offset;
+		if (chunk>ORA_8I_CLR_CHUNK) {
+			chunk=ORA_8I_CLR_CHUNK;
+		}
+		out->append((unsigned char)chunk);
+		out->append(value+offset,chunk);
+	}
+	out->append((unsigned char)0);
+}
+
+void oracleprotocolclient::putOjdbc14Rowid(bytebuffer *out,
+						uint32_t object,
+						uint32_t file,
+						uint32_t block,
+						uint32_t row) {
+	out->append(ORA_8I_ROWID_MARKER);
+	putOjdbc14Number(out,object);
+	putOjdbc14Number(out,file);
+	out->append((unsigned char)0);
+	putOjdbc14Number(out,block);
+	putOjdbc14Number(out,row);
+}
+
+void oracleprotocolclient::putOjdbc14Null(bytebuffer *out) {
+	out->append((unsigned char)0);
+}
+
+bool oracleprotocolclient::isOjdbc14PostponedBind(
+					const oracleprotocolojdbc14bind *b,
+					uint32_t options) {
+	return (b->type==8 || b->type==24 ||
+		((options&ORA_OPTION_NOPLSQL) &&
+			b->maxlength>ORA_8I_MAX_INLINE_BIND));
+}
+
+void oracleprotocolclient::putOjdbc14BindRow(bytebuffer *out,
+				const oracleprotocolojdbc14bind *binds,
+				uint32_t bindcount,
+				uint32_t options) {
+	out->append(ORA_TTC_ROW_DATA);
+	for (uint8_t pass=0; pass<2; pass++) {
+		for (uint32_t i=0; i<bindcount; i++) {
+			const oracleprotocolojdbc14bind	*b=&binds[i];
+			if (isOjdbc14PostponedBind(b,options)!=(pass==1)) {
+				continue;
+			}
+			if (b->rowid) {
+				putOjdbc14Rowid(out,b->rowidobject,b->rowidfile,
+						b->rowidblock,b->rowidrow);
+			} else {
+				putOjdbc14Clr(out,b->value,b->valuesize);
+			}
+		}
+	}
+}
+
+void oracleprotocolclient::setOjdbc14Bind(oracleprotocolojdbc14bind *b,
+						unsigned char type,
+						uint32_t maxlength,
+						uint32_t charsetid,
+						unsigned char formofuse,
+						const unsigned char *value,
+						size_t size) {
+	bytestring::zero(b,sizeof(*b));
+	b->type=type;
+	b->flags=ORA_8I_BIND_FLAGS;
+	b->maxlength=maxlength;
+	b->contflags=(type==ORA_TYPE_VARCHAR)?
+				ORA_8I_BIND_CONTFLAG_CHARACTER:0;
+	b->charsetid=charsetid;
+	b->formofuse=formofuse;
+	b->value=value;
+	b->valuesize=(value)?size:0;
+}
+
+void oracleprotocolclient::setOjdbc14RowidBind(oracleprotocolojdbc14bind *b,
+						uint32_t charsetid,
+						uint32_t object,
+						uint32_t file,
+						uint32_t block,
+						uint32_t row) {
+	setOjdbc14Bind(b,ORA_8I_TYPE_ROWID,130,charsetid,ORA_8I_FORM_IMPLICIT,
+								NULL,0);
+	b->rowid=true;
+	b->rowidobject=object;
+	b->rowidfile=file;
+	b->rowidblock=block;
+	b->rowidrow=row;
 }
 
 bool oracleprotocolclient::ojdbc14Fetch(uint32_t cursorid,
@@ -3816,14 +4251,16 @@ bool oracleprotocolclient::readOjdbc14Summary(
 // 0x05, T4C7Ocommoncall.receive() for a commit or a rollback, at a version
 // number of 10000 and up.  T4C8Oall.receive() takes 0x10 describe, 0x08
 // return parameters, 0x06 row header, 0x15 bit vector and 0x07 row objects in
-// any number, and the 0x04 error object ends the call.  any other ttc code,
+// any number, and a 0x0b io vector ahead of a PL/SQL call's out values, and
+// the 0x04 error object ends the call.  any other ttc code,
 // 0x09 among them, is internalClose() and ORA-17401 there.
 // T4C7Ocommoncall.receive() takes one 0x09 and its end to end field, or one
 // 0x04.  anything behind the object that ends the call would be read as the
-// start of the next answer, so it fails here too.  it reads one value per
-// column, which is not what ojdbc14 does for a column described 0 bytes wide
-// (mxl 0): ojdbc14 skips it, and a real server sends no value byte for it.
-// so it would mis-walk those answers, such as a real server's select null
+// start of the next answer, so it fails here too.  each row value is read
+// by its column's describe, as ojdbc14's accessors read it - see
+// readOjdbc14Value() - from the describe in the answer, or else from the
+// last describe of the cursor the call named, or else as one clr per column
+// of "columncount" (#10749)
 bool oracleprotocolclient::readOjdbc14Answer(
 				oracleprotocolojdbc14answer *a,
 				uint32_t columncount,
@@ -3843,6 +4280,22 @@ bool oracleprotocolclient::readOjdbc14Answer(
 	unsigned char	bitvector[ORA_8I_MAX_COLUMNS];
 	bool		usebitvector=false;
 	unsigned char	scratch[ORA_8I_MAX_VALUE_DATA];
+
+	// how each column's values are read: by the describe in this
+	// answer, or by the cursor's last one, or as clrs
+	unsigned char	types[ORA_8I_MAX_COLUMNS];
+	int64_t		maxlengths[ORA_8I_MAX_COLUMNS];
+	bool		typed=false;
+	bool		described=false;
+	const oracleprotocolojdbc14layout	*layout=
+				findOjdbc14Layout(ojdbc14callcursor);
+	if (layout) {
+		ncols=layout->columncount;
+		bytestring::copy(types,layout->types,sizeof(types));
+		bytestring::copy(maxlengths,layout->maxlengths,
+							sizeof(maxlengths));
+		typed=true;
+	}
 
 	for (;;) {
 
@@ -3886,6 +4339,12 @@ bool oracleprotocolclient::readOjdbc14Answer(
 				return false;
 			}
 			ncols=a->columncount;
+			for (int64_t i=0; i<ncols; i++) {
+				types[i]=a->columns[i].type;
+				maxlengths[i]=a->columns[i].maxlength;
+			}
+			typed=true;
+			described=true;
 		} else if (o->code==ORA_TTC_OK) {
 
 			// return parameters: al8o4, al8txl, then the key/value
@@ -3922,6 +4381,11 @@ bool oracleprotocolclient::readOjdbc14Answer(
 					return false;
 				}
 			}
+
+			// the cursor the describe is about
+			if (described && a->al8o4count>2) {
+				saveOjdbc14Layout((uint32_t)a->al8o4[2],a);
+			}
 		} else if (o->code==ORA_TTC_ROW_HEADER) {
 
 			// T4C8TTIrxh: a uac buffer length other than 0 is
@@ -3952,6 +4416,74 @@ bool oracleprotocolclient::readOjdbc14Answer(
 				return false;
 			}
 			usebitvector=(a->bitvectorsize>0);
+		} else if (o->code==ORA_8I_TTC_IO_VECTOR) {
+
+			// T4CTTIiov.unmarshalV10(): T4C8TTIrxh's fields, then
+			// a raw byte per bind, none 0 (ORA-17401 there).  the
+			// bind count is the statement's, which this takes from
+			// the row header's request count, the same in every
+			// io vector measured (INFERRED)
+			unsigned char	other[255];
+			size_t		othersize=0;
+			if (!readByte(&a->rowheaderflags) ||
+				!readOjdbc14Number(&a->numrequests,2,
+					"the io vector's request count") ||
+				!readOjdbc14Number(&a->iterationnumber,2,
+					"the io vector's iteration number") ||
+				!readOjdbc14Number(&a->iterationsthistime,2,
+					"the io vector's iteration count") ||
+				!readOjdbc14Number(&a->uacbufferlength,2,
+					"the io vector's uac buffer size") ||
+				!readOjdbc14Dalc(bitvector,sizeof(bitvector),
+						&a->bitvectorsize,
+						"the io vector's bit vector") ||
+				!readOjdbc14Dalc(other,sizeof(other),&othersize,
+						"the io vector's last field")) {
+				return false;
+			}
+			if (a->numrequests<0 || a->numrequests>
+					(int64_t)ORA_8I_MAX_COLUMNS ||
+				!readBytes(a->iovector,
+						(size_t)a->numrequests)) {
+				setError("bad io vector");
+				return false;
+			}
+			a->iov=true;
+			a->iovcount=a->numrequests;
+			a->iovoutcount=0;
+			for (int64_t i=0; i<a->iovcount; i++) {
+				if (!a->iovector[i]) {
+					setError("ojdbc14 would close the "
+						"connection","a bind of type 0 "
+						"in the io vector (ORA-17401)");
+					return false;
+				}
+				if (a->iovector[i]&0x10) {
+					a->iovoutcount++;
+				}
+			}
+		} else if (o->code==ORA_TTC_ROW_DATA && a->iov) {
+
+			// the out values of a PL/SQL call, each a clr and, as
+			// an accessor's processIndicator() reads behind the
+			// value of a PL/SQL statement's bind, a ub2 indicator
+			bool	keep=(a->rowcount<ORA_8I_MAX_ROWS);
+			for (int64_t c=0; c<a->iovoutcount; c++) {
+				oracleprotocolojdbc14value	skipped;
+				oracleprotocolojdbc14value	*v=(keep)?
+						&a->values[a->rowcount][c]:
+						&skipped;
+				if (!readOjdbc14Value(a,ORA_TYPE_VARCHAR,-1,v,
+						scratch,sizeof(scratch),keep) ||
+					!readOjdbc14Number(&v->indicator,2,
+						"an out value's indicator")) {
+					return false;
+				}
+			}
+			if (keep) {
+				a->rowcount++;
+			}
+			a->totalrowcount++;
 		} else if (o->code==ORA_8I_TTC_BIT_VECTOR) {
 			int64_t	count=0;
 			size_t	size=(size_t)((ncols+7)/8);
@@ -3964,9 +4496,9 @@ bool oracleprotocolclient::readOjdbc14Answer(
 			usebitvector=true;
 		} else if (o->code==ORA_TTC_ROW_DATA) {
 
-			// T4CTTIrxd: a clr for each column, except one a bit
-			// vector says repeats the row above.  a row past the
-			// ones kept is read the same way and not kept
+			// T4CTTIrxd: a value for each column, except one a
+			// bit vector says repeats the row above.  a row past
+			// the ones kept is read the same way and not kept
 			bool	keep=(a->rowcount<ORA_8I_MAX_ROWS);
 			for (int64_t c=0; c<ncols; c++) {
 				if (usebitvector &&
@@ -3983,28 +4515,16 @@ bool oracleprotocolclient::readOjdbc14Answer(
 					}
 					continue;
 				}
-				if (!keep) {
-					size_t	size=0;
-					bool	isnull=false;
-					if (!readOjdbc14Clr(scratch,
-							sizeof(scratch),
-							&size,&isnull,
-							"a row value")) {
-						return false;
-					}
-					continue;
-				}
-				oracleprotocolojdbc14value	*v=
-						&a->values[a->rowcount][c];
-				v->offset=a->valuedatasize;
-				if (!readOjdbc14Clr(
-					a->valuedata+a->valuedatasize,
-					ORA_8I_MAX_VALUE_DATA-
-						a->valuedatasize,
-					&v->size,&v->isnull,"a row value")) {
+				oracleprotocolojdbc14value	skipped;
+				oracleprotocolojdbc14value	*v=(keep)?
+						&a->values[a->rowcount][c]:
+						&skipped;
+				if (!readOjdbc14Value(a,
+						(typed)?types[c]:ORA_TYPE_VARCHAR,
+						(typed)?maxlengths[c]:-1,
+						v,scratch,sizeof(scratch),keep)) {
 					return false;
 				}
-				a->valuedatasize+=v->size;
 			}
 			if (keep) {
 				a->rowcount++;
@@ -4034,6 +4554,345 @@ bool oracleprotocolclient::readOjdbc14Answer(
 			return true;
 		}
 	}
+}
+
+// one row value, the way ojdbc14's accessor for the column's type reads it
+// (#10749; CROSS-CHECK, the T4C*Accessor unmarshalOneRow() methods, and
+// MEASURED in the 10749-dev-ojdbc14-col*-realserver captures):
+//	- a column described 0 bytes wide (mxl 0) that isn't a LONG or a LONG
+//	  RAW has no bytes at all and is null - a real server's select null
+//	- a LONG (8) or LONG RAW (24) is a clr, the long form for anything
+//	  but a null, then two ub4s, the indicator and the return code: 00 00,
+//	  or 81 01 02 05 7d (-1 and 1405) for a null
+//	- a ROWID (11) is a length byte, 00 for a null and 0e otherwise, then
+//	  the data object number (ub4), the relative file (ub2), a raw byte,
+//	  the block (ub4) and the row (ub2), each but the raw byte count
+//	  prefixed
+//	- a UROWID (208) is a ub4 byte count, 0 for a null, then a clr
+//	- anything else is a clr
+// "maxlength" is -1 for a column with no describe, which is read as a clr.
+// a value that isn't kept is read into "scratch"
+bool oracleprotocolclient::readOjdbc14Value(oracleprotocolojdbc14answer *a,
+						unsigned char type,
+						int64_t maxlength,
+						oracleprotocolojdbc14value *v,
+						unsigned char *scratch,
+						size_t scratchsize,
+						bool keep) {
+
+	bytestring::zero(v,sizeof(*v));
+	v->wireoffset=respposition;
+	unsigned char	*value=(keep)?a->valuedata+a->valuedatasize:scratch;
+	size_t		room=(keep)?ORA_8I_MAX_VALUE_DATA-a->valuedatasize:
+								scratchsize;
+	v->offset=(keep)?a->valuedatasize:0;
+
+	if (!maxlength && type!=8 && type!=24) {
+		v->isnull=true;
+		v->nullbydescribe=true;
+		return true;
+	}
+
+	if (type==11) {
+		unsigned char	length=0;
+		if (!readByte(&length)) {
+			setError("the answer ends inside a rowid");
+			return false;
+		}
+		if (!length) {
+			v->isnull=true;
+		} else {
+			unsigned char	pad=0;
+			if (!readOjdbc14Number(&v->rowidobject,4,
+						"a rowid's object number") ||
+				!readOjdbc14Number(&v->rowidfile,2,
+						"a rowid's file number") ||
+				!readByte(&pad) ||
+				!readOjdbc14Number(&v->rowidblock,4,
+						"a rowid's block number") ||
+				!readOjdbc14Number(&v->rowidrow,2,
+						"a rowid's row number")) {
+				if (respposition>=respsize) {
+					setError("the answer ends inside "
+								"a rowid");
+				}
+				return false;
+			}
+			v->size=respposition-v->wireoffset;
+			if (v->size>room) {
+				setError("too much row data");
+				return false;
+			}
+			bytestring::copy(value,resppacket+v->wireoffset,v->size);
+		}
+	} else if (type==208) {
+		int64_t	count=0;
+		if (!readOjdbc14Number(&count,4,"a urowid's size")) {
+			return false;
+		}
+		if (!count) {
+			v->isnull=true;
+		} else if (!readOjdbc14Clr(value,room,&v->size,&v->isnull,
+							"a urowid value")) {
+			return false;
+		}
+	} else {
+		if (!readOjdbc14Clr(value,room,&v->size,&v->isnull,
+							"a row value")) {
+			return false;
+		}
+		if ((type==8 || type==24) && maxlength>=0 &&
+			(!readOjdbc14Number(&v->indicator,4,
+					"a long value's indicator") ||
+			!readOjdbc14Number(&v->returncode,4,
+					"a long value's return code"))) {
+			return false;
+		}
+	}
+
+	v->wiresize=respposition-v->wireoffset;
+	if (keep) {
+		a->valuedatasize+=v->size;
+	}
+	return true;
+}
+
+const oracleprotocolojdbc14layout *oracleprotocolclient::findOjdbc14Layout(
+							uint32_t cursorid) {
+	if (!cursorid) {
+		return NULL;
+	}
+	for (size_t i=0; i<ojdbc14layoutcount; i++) {
+		if (ojdbc14layouts[i].cursorid==cursorid) {
+			return &ojdbc14layouts[i];
+		}
+	}
+	return NULL;
+}
+
+// the describe in "a" as the layout of "cursorid", over the one it had, or
+// in a new slot, or over the oldest one when every slot is taken
+void oracleprotocolclient::saveOjdbc14Layout(uint32_t cursorid,
+				const oracleprotocolojdbc14answer *a) {
+	oracleprotocolojdbc14layout	*l=
+		(oracleprotocolojdbc14layout *)findOjdbc14Layout(cursorid);
+	if (!l) {
+		if (ojdbc14layoutcount<ORA_8I_MAX_LAYOUTS) {
+			l=&ojdbc14layouts[ojdbc14layoutcount++];
+		} else {
+			for (size_t i=1; i<ORA_8I_MAX_LAYOUTS; i++) {
+				ojdbc14layouts[i-1]=ojdbc14layouts[i];
+			}
+			l=&ojdbc14layouts[ORA_8I_MAX_LAYOUTS-1];
+		}
+	}
+	l->cursorid=cursorid;
+	l->columncount=a->columncount;
+	for (int64_t i=0; i<a->columncount; i++) {
+		l->types[i]=a->columns[i].type;
+		l->maxlengths[i]=a->columns[i].maxlength;
+	}
+}
+
+void oracleprotocolclient::setOjdbc14Answer(const unsigned char *bytes,
+							size_t size,
+							uint32_t cursorid) {
+	if (size+ORA_DATA_FLAGS_SIZE>ORA_MAX_RESPONSE_SIZE) {
+		size=ORA_MAX_RESPONSE_SIZE-ORA_DATA_FLAGS_SIZE;
+	}
+	bytestring::zero(resppacket,ORA_DATA_FLAGS_SIZE);
+	bytestring::copy(resppacket+ORA_DATA_FLAGS_SIZE,bytes,size);
+	respsize=size+ORA_DATA_FLAGS_SIZE;
+	resppackettype=ORA_PACKET_DATA;
+	resppacketflags=0;
+	respposition=0;
+	ojdbc14callcursor=cursorid;
+}
+
+// utf-16be, a supplementary character as a surrogate pair, to utf-8
+bool oracleprotocolclient::decodeOjdbc14Utf16(const unsigned char *bytes,
+							size_t size,
+							stringbuffer *utf8) {
+	utf8->clear();
+	if (size%2) {
+		return false;
+	}
+	for (size_t i=0; i<size; i+=2) {
+		uint32_t	c=(bytes[i]<<8)|bytes[i+1];
+		if (c>=0xd800 && c<=0xdbff) {
+			if (i+3>=size) {
+				return false;
+			}
+			uint32_t	low=(bytes[i+2]<<8)|bytes[i+3];
+			if (low<0xdc00 || low>0xdfff) {
+				return false;
+			}
+			c=0x10000+((c-0xd800)<<10)+(low-0xdc00);
+			i+=2;
+		} else if (c>=0xdc00 && c<=0xdfff) {
+			return false;
+		}
+		if (c<0x80) {
+			utf8->append((char)c);
+		} else if (c<0x800) {
+			utf8->append((char)(0xc0|(c>>6)));
+			utf8->append((char)(0x80|(c&0x3f)));
+		} else if (c<0x10000) {
+			utf8->append((char)(0xe0|(c>>12)));
+			utf8->append((char)(0x80|((c>>6)&0x3f)));
+			utf8->append((char)(0x80|(c&0x3f)));
+		} else {
+			utf8->append((char)(0xf0|(c>>18)));
+			utf8->append((char)(0x80|((c>>12)&0x3f)));
+			utf8->append((char)(0x80|((c>>6)&0x3f)));
+			utf8->append((char)(0x80|(c&0x3f)));
+		}
+	}
+	return true;
+}
+
+// the sortable form: a positive number has its sign bit set, and a negative
+// one has every bit inverted (MEASURED, 10749-dev-ojdbc14-colbinfloat-
+// realserver-*: 1.5 is bf c0 00 00, -inf 00 7f ff ff)
+bool oracleprotocolclient::decodeOjdbc14BinaryFloat(const unsigned char *bytes,
+							size_t size,
+							double *value) {
+	if (size!=4 && size!=8) {
+		return false;
+	}
+	unsigned char	b[8];
+	bool		positive=((bytes[0]&0x80)!=0);
+	for (size_t i=0; i<size; i++) {
+		b[i]=(positive)?bytes[i]:(unsigned char)~bytes[i];
+	}
+	if (positive) {
+		b[0]&=0x7f;
+	}
+	if (size==4) {
+		uint32_t	bits=((uint32_t)b[0]<<24)|((uint32_t)b[1]<<16)|
+					((uint32_t)b[2]<<8)|b[3];
+		float		f;
+		bytestring::copy(&f,&bits,sizeof(f));
+		*value=f;
+	} else {
+		uint64_t	bits=0;
+		for (size_t i=0; i<8; i++) {
+			bits=(bits<<8)|b[i];
+		}
+		bytestring::copy(value,&bits,sizeof(*value));
+	}
+	return true;
+}
+
+static uint32_t ojdbc14BigEndian32(const unsigned char *b) {
+	return ((uint32_t)b[0]<<24)|((uint32_t)b[1]<<16)|
+					((uint32_t)b[2]<<8)|b[3];
+}
+
+// years and days biased by 0x80000000, months, hours, minutes and seconds by
+// 60, nanoseconds by 0x80000000, all big-endian (MEASURED, 10749-dev-
+// ojdbc14-colinterval-realserver-*)
+bool oracleprotocolclient::decodeOjdbc14Interval(unsigned char type,
+							const unsigned char *bytes,
+							size_t size,
+							stringbuffer *text) {
+	text->clear();
+	char	buffer[64];
+	if (type==182 && size==5) {
+		int64_t	years=(int64_t)ojdbc14BigEndian32(bytes)-0x80000000LL;
+		int64_t	months=(int64_t)bytes[4]-60;
+		bool	negative=(years<0 || months<0);
+		charstring::printf(buffer,sizeof(buffer),"%c%lld-%02lld",
+				(negative)?'-':'+',
+				(long long)((years<0)?-years:years),
+				(long long)((months<0)?-months:months));
+	} else if (type==183 && size==11) {
+		int64_t	days=(int64_t)ojdbc14BigEndian32(bytes)-0x80000000LL;
+		int64_t	hours=(int64_t)bytes[4]-60;
+		int64_t	minutes=(int64_t)bytes[5]-60;
+		int64_t	seconds=(int64_t)bytes[6]-60;
+		int64_t	nanos=(int64_t)ojdbc14BigEndian32(bytes+7)-0x80000000LL;
+		bool	negative=(days<0 || hours<0 || minutes<0 ||
+						seconds<0 || nanos<0);
+		charstring::printf(buffer,sizeof(buffer),
+				"%c%lld %02lld:%02lld:%02lld.%09lld",
+				(negative)?'-':'+',
+				(long long)((days<0)?-days:days),
+				(long long)((hours<0)?-hours:hours),
+				(long long)((minutes<0)?-minutes:minutes),
+				(long long)((seconds<0)?-seconds:seconds),
+				(long long)((nanos<0)?-nanos:nanos));
+	} else {
+		return false;
+	}
+	text->append(buffer);
+	return true;
+}
+
+// century and year plus 100, month, day, then hour, minute and second plus
+// 1, then nanoseconds big-endian if there are 11 or 13 bytes, then a time
+// zone's two bytes: hours plus 20 and minutes plus 60, or a region id with
+// the 0x80 bit, 6 bits and 6 bits (MEASURED, 10749-dev-ojdbc14-coltz-
+// realserver-*: +05:30 is 19 5a, US/Eastern 89 90)
+bool oracleprotocolclient::decodeOjdbc14Timestamp(unsigned char type,
+							const unsigned char *bytes,
+							size_t size,
+							stringbuffer *text) {
+	text->clear();
+	bool	zone=(type==181);
+	if (!((size==7 || size==11) && !zone) && !(size==13 && zone)) {
+		return false;
+	}
+	uint32_t	nanos=(size>7)?ojdbc14BigEndian32(bytes+7):0;
+	char		buffer[96];
+	charstring::printf(buffer,sizeof(buffer),
+			"%04d-%02d-%02d %02d:%02d:%02d.%09d",
+			(bytes[0]-100)*100+(bytes[1]-100),bytes[2],bytes[3],
+			bytes[4]-1,bytes[5]-1,bytes[6]-1,(int)nanos);
+	text->append(buffer);
+	if (zone) {
+		if (bytes[11]&0x80) {
+			charstring::printf(buffer,sizeof(buffer),
+					" region %d",
+					((bytes[11]&0x7f)<<6)|(bytes[12]>>2));
+		} else {
+			int	hours=bytes[11]-20;
+			int	minutes=bytes[12]-60;
+			bool	negative=(hours<0 || minutes<0);
+			charstring::printf(buffer,sizeof(buffer),
+					" %c%02d:%02d",(negative)?'-':'+',
+					(hours<0)?-hours:hours,
+					(minutes<0)?-minutes:minutes);
+		}
+		text->append(buffer);
+	}
+	return true;
+}
+
+// the four numbers as base 64 digits, 6 for the data object number, 3 for
+// the file, 6 for the block and 3 for the row, the way ojdbc14 prints a
+// ROWID (MEASURED: 0e 03 4a c5 72 01 05 00 02 04 0e 00 is
+// AASsVyAAFAAAAQOAAA, 10749-dev-ojdbc14-colrowid-realserver-oracle122).
+// "text" takes 19 bytes
+void oracleprotocolclient::decodeOjdbc14Rowid(
+				const oracleprotocolojdbc14value *v,
+				char *text) {
+	static const char	digits[]=
+		"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+	const int64_t	fields[]={
+		v->rowidobject,v->rowidfile,v->rowidblock,v->rowidrow
+	};
+	const int	widths[]={6,3,6,3};
+	size_t		pos=0;
+	for (size_t f=0; f<4; f++) {
+		uint64_t	n=(uint64_t)fields[f];
+		for (int d=widths[f]-1; d>=0; d--) {
+			text[pos+d]=digits[n&0x3f];
+			n>>=6;
+		}
+		pos+=widths[f];
+	}
+	text[pos]='\0';
 }
 
 void oracleprotocolclient::disconnect() {

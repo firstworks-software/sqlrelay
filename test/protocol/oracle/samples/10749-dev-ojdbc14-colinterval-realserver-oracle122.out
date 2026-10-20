@@ -1,0 +1,52 @@
+== colinterval
+insert 1
+insert 1
+insert 1
+insert 1
+cols ID/NUMBER/0/-127 YM/INTERVALYM/2/0 YM5/INTERVALYM/5/0 DS/INTERVALDS/2/6 DS9/INTERVALDS/9/9 DS0/INTERVALDS/1/0 DS3/INTERVALDS/4/3
+meta ID type=NUMBER code=2 prec=0 scale=-127 class=java.math.BigDecimal disp=22
+meta YM type=INTERVALYM code=-103 prec=2 scale=0 class=oracle.sql.INTERVALYM disp=11
+meta YM5 type=INTERVALYM code=-103 prec=5 scale=0 class=oracle.sql.INTERVALYM disp=11
+meta DS type=INTERVALDS code=-104 prec=2 scale=6 class=oracle.sql.INTERVALDS disp=11
+meta DS9 type=INTERVALDS code=-104 prec=9 scale=9 class=oracle.sql.INTERVALDS disp=11
+meta DS0 type=INTERVALDS code=-104 prec=1 scale=0 class=oracle.sql.INTERVALDS disp=11
+meta DS3 type=INTERVALDS code=-104 prec=4 scale=3 class=oracle.sql.INTERVALDS disp=11
+row 1: [BigDecimal:1] [INTERVALYM:1-2{800000013e}] [INTERVALYM:12345-11{8000303947}] [INTERVALDS:3 4:5:6.123456000{80000003404142875bca00}] [INTERVALDS:123456789 23:59:59.123456789{875bcd15537777875bcd15}] [INTERVALDS:9 1:2:3.0{800000093d3e3f80000000}] [INTERVALDS:1234 12:0:0.1000000{800004d2483c3c800f4240}]
+str 1: [1] [1-2] [12345-11] [3 4:5:6.123456000] [123456789 23:59:59.123456789] [9 1:2:3.0] [1234 12:0:0.1000000]
+row 2: [BigDecimal:2] [INTERVALYM:-5-6{7ffffffb36}] [INTERVALYM:-1-0{7fffffff3c}] [INTERVALDS:-1 0:0:0.500000000{7fffffff3c3c3c62329b00}] [INTERVALDS:-1 0:0:0.1{7fffffff3c3c3c7fffffff}] [INTERVALDS:-1 0:0:0.0{7fffffff3c3c3c80000000}] [INTERVALDS:-0 0:0:0.1000000{800000003c3c3c7ff0bdc0}]
+str 2: [2] [-5-6] [-1-0] [-1 0:0:0.500000000] [-1 0:0:0.1] [-1 0:0:0.0] [-0 0:0:0.1000000]
+row 3: [BigDecimal:3] [INTERVALYM:0-0{800000003c}] [INTERVALYM:0-0{800000003c}] [INTERVALDS:0 0:0:0.0{800000003c3c3c80000000}] [INTERVALDS:0 0:0:0.0{800000003c3c3c80000000}] [INTERVALDS:0 0:0:0.0{800000003c3c3c80000000}] [INTERVALDS:0 0:0:0.0{800000003c3c3c80000000}]
+str 3: [3] [0-0] [0-0] [0 0:0:0.0] [0 0:0:0.0] [0 0:0:0.0] [0 0:0:0.0]
+row 4: [BigDecimal:4] [NULL] [NULL] [NULL] [NULL] [NULL] [NULL]
+str 4: [4] [NULL] [NULL] [NULL] [NULL] [NULL] [NULL]
+rows 4
+cols ID/NUMBER/0/-127 DYM/VARCHAR2/4000/0 DDS/VARCHAR2/4000/0 DDS9/VARCHAR2/4000/0
+meta ID type=NUMBER code=2 prec=0 scale=-127 class=java.math.BigDecimal disp=22
+meta DYM type=VARCHAR2 code=12 prec=4000 scale=0 class=java.lang.String disp=4000
+meta DDS type=VARCHAR2 code=12 prec=4000 scale=0 class=java.lang.String disp=4000
+meta DDS9 type=VARCHAR2 code=12 prec=4000 scale=0 class=java.lang.String disp=4000
+row 1: [BigDecimal:1] [String:Typ=182 Len=5: 80,0,0,1,3e] [String:len=44 head=Typ=183 Len= hash=473503954] [String:len=48 head=Typ=183 Len= hash=-1326915758]
+str 1: [1] [Typ=182 Len=5: 80,0,0,1,3e] [Typ=183 Len=11: 80,0,0,3,40,41,42,87,5b,ca,0] [Typ=183 Len=11: 87,5b,cd,15,53,77,77,87,5b,cd,15]
+row 2: [BigDecimal:2] [String:Typ=182 Len=5: 7f,ff,ff,fb,36] [String:len=47 head=Typ=183 Len= hash=-1124346781] [String:len=48 head=Typ=183 Len= hash=-1989519164]
+str 2: [2] [Typ=182 Len=5: 7f,ff,ff,fb,36] [Typ=183 Len=11: 7f,ff,ff,ff,3c,3c,3c,62,32,9b,0] [Typ=183 Len=11: 7f,ff,ff,ff,3c,3c,3c,7f,ff,ff,ff]
+row 3: [BigDecimal:3] [String:Typ=182 Len=5: 80,0,0,0,3c] [String:len=42 head=Typ=183 Len= hash=-754936180] [String:len=42 head=Typ=183 Len= hash=-754936180]
+str 3: [3] [Typ=182 Len=5: 80,0,0,0,3c] [Typ=183 Len=11: 80,0,0,0,3c,3c,3c,80,0,0,0] [Typ=183 Len=11: 80,0,0,0,3c,3c,3c,80,0,0,0]
+row 4: [BigDecimal:4] [String:NULL] [String:NULL] [String:NULL]
+str 4: [4] [NULL] [NULL] [NULL]
+rows 4
+cols A/INTERVALYM/2/0 B/INTERVALDS/2/0 C/INTERVALDS/2/6 D/INTERVALYM/9/0 E/INTERVALDS/9/9
+meta A type=INTERVALYM code=-103 prec=2 scale=0 class=oracle.sql.INTERVALYM disp=11
+meta B type=INTERVALDS code=-104 prec=2 scale=0 class=oracle.sql.INTERVALDS disp=11
+meta C type=INTERVALDS code=-104 prec=2 scale=6 class=oracle.sql.INTERVALDS disp=11
+meta D type=INTERVALYM code=-103 prec=9 scale=0 class=oracle.sql.INTERVALYM disp=11
+meta E type=INTERVALDS code=-104 prec=9 scale=9 class=oracle.sql.INTERVALDS disp=11
+row 1: [INTERVALYM:2-3{800000023f}] [INTERVALDS:5 0:0:0.0{800000053c3c3c80000000}] [INTERVALDS:1 2:3:4.500000000{800000013e3f409dcd6500}] [INTERVALYM:0-7{8000000043}] [INTERVALDS:0 3:30:0.0{800000003f5a3c80000000}]
+str 1: [2-3] [5 0:0:0.0] [1 2:3:4.500000000] [0-7] [0 3:30:0.0]
+rows 1
+cols A/INTERVALYM/2/0 B/INTERVALDS/2/6
+meta A type=INTERVALYM code=-103 prec=2 scale=0 class=oracle.sql.INTERVALYM disp=11
+meta B type=INTERVALDS code=-104 prec=2 scale=6 class=oracle.sql.INTERVALDS disp=11
+row 1: [NULL] [NULL]
+str 1: [NULL] [NULL]
+rows 1
+exit 0

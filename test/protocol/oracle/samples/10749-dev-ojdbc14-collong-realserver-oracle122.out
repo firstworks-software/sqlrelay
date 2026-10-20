@@ -1,0 +1,96 @@
+== collong
+insert 1
+insert 1
+insert 1
+insert 1
+insert 1
+insert 1
+insert 1
+insert 1
+insert 1
+insert 1
+insert 1
+insert 1
+cols ID/NUMBER/0/-127 L/LONG/2147483647/0
+meta ID type=NUMBER code=2 prec=0 scale=-127 class=java.math.BigDecimal disp=22
+meta L type=LONG code=-1 prec=2147483647 scale=0 class=java.lang.String disp=0
+row 1: [BigDecimal:1] [String:short text]
+str 1: [1]
+row 2: [BigDecimal:2] [String:len=64 head=abbbbbbbbbbb hash=136414241]
+str 2: [2]
+row 3: [BigDecimal:3] [String:len=65 head=abbbbbbbbbbb hash=-66125727]
+str 3: [3]
+row 4: [BigDecimal:4] [String:len=300 head=abbbbbbbbbbb hash=786183201]
+str 4: [4]
+row 5: [BigDecimal:5] [String:len=4000 head=abbbbbbbbbbb hash=775357473]
+str 5: [5]
+row 6: [BigDecimal:6] [NULL]
+str 6: [6]
+rows 6
+cols L/LONG/2147483647/0 ID/NUMBER/0/-127
+meta L type=LONG code=-1 prec=2147483647 scale=0 class=java.lang.String disp=0
+meta ID type=NUMBER code=2 prec=0 scale=-127 class=java.math.BigDecimal disp=22
+row 1: [String:short text] [BigDecimal:1]
+str 1: [1]
+row 2: [String:len=64 head=abbbbbbbbbbb hash=136414241] [BigDecimal:2]
+str 2: [2]
+row 3: [String:len=65 head=abbbbbbbbbbb hash=-66125727] [BigDecimal:3]
+str 3: [3]
+row 4: [String:len=300 head=abbbbbbbbbbb hash=786183201] [BigDecimal:4]
+str 4: [4]
+row 5: [String:len=4000 head=abbbbbbbbbbb hash=775357473] [BigDecimal:5]
+str 5: [5]
+row 6: [NULL] [BigDecimal:6]
+str 6: [6]
+rows 6
+cols ID/NUMBER/0/-127 L/LONG/2147483647/0
+meta ID type=NUMBER code=2 prec=0 scale=-127 class=java.math.BigDecimal disp=22
+meta L type=LONG code=-1 prec=2147483647 scale=0 class=java.lang.String disp=0
+row 1: [BigDecimal:6] [NULL]
+str 1: [6]
+rows 1
+cols ID/NUMBER/0/-127 L/LONG RAW/2147483647/0
+meta ID type=NUMBER code=2 prec=0 scale=-127 class=java.math.BigDecimal disp=22
+meta L type=LONG RAW code=-4 prec=2147483647 scale=0 class=byte[] disp=0
+row 1: [BigDecimal:1] [raw:deadbeef]
+str 1: [1]
+row 2: [BigDecimal:2] [raw:abababababababababababababababababababab...len=64]
+str 2: [2]
+row 3: [BigDecimal:3] [raw:abababababababababababababababababababab...len=65]
+str 3: [3]
+row 4: [BigDecimal:4] [raw:cdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcd...len=300]
+str 4: [4]
+row 5: [BigDecimal:5] [raw:efefefefefefefefefefefefefefefefefefefef...len=1000]
+str 5: [5]
+row 6: [BigDecimal:6] [NULL]
+str 6: [6]
+rows 6
+cols L/LONG RAW/2147483647/0 ID/NUMBER/0/-127
+meta L type=LONG RAW code=-4 prec=2147483647 scale=0 class=byte[] disp=0
+meta ID type=NUMBER code=2 prec=0 scale=-127 class=java.math.BigDecimal disp=22
+row 1: [raw:deadbeef] [BigDecimal:1]
+str 1: [1]
+row 2: [raw:abababababababababababababababababababab...len=64] [BigDecimal:2]
+str 2: [2]
+row 3: [raw:abababababababababababababababababababab...len=65] [BigDecimal:3]
+str 3: [3]
+row 4: [raw:cdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcd...len=300] [BigDecimal:4]
+str 4: [4]
+row 5: [raw:efefefefefefefefefefefefefefefefefefefef...len=1000] [BigDecimal:5]
+str 5: [5]
+row 6: [NULL] [BigDecimal:6]
+str 6: [6]
+rows 6
+long 1 len=10
+long 2 len=64
+long 3 len=65
+long 4 len=300
+long 5 len=4000
+long 6 NULL
+lraw 1 len=4
+lraw 2 len=64
+lraw 3 len=65
+lraw 4 len=300
+lraw 5 len=1000
+lraw 6 NULL
+exit 0

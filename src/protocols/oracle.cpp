@@ -398,6 +398,18 @@
 #define ORA_LOCAL_REGION_BIND_MESSAGE \
 	"ORA-20007: Time zone region bind in local time not supported.\n"
 
+// what an 8i execute gets back when a bind is of a type this module can't
+// bind, or carries a value it can't decode, rather than binding the raw bytes
+// as a string or binding a null.  limits of this module's rather than oracle
+// ones, so they get numbers from the same user-defined range, and for the
+// same reason, as ORA_QUERY_FAILED above - see decode8iBind()
+#define ORA_UNSUPPORTED_BIND_TYPE		20008
+#define ORA_UNSUPPORTED_BIND_TYPE_MESSAGE \
+	"ORA-20008: Bind variable data type not supported.\n"
+#define ORA_UNDECODABLE_BIND_VALUE		20009
+#define ORA_UNDECODABLE_BIND_VALUE_MESSAGE \
+	"ORA-20009: Bind variable value could not be decoded.\n"
+
 // what a request this module could only read part of gets back, just ahead of
 // the session being dropped - a real server's answer to a ttc request it
 // can't parse, and terminal there too.  nothing on the wire says where a
@@ -690,6 +702,12 @@
 // a define descriptor's character set form for the national character set
 #define CSFRM_NCHAR			2
 
+// a describe's continuation flag for a column whose length is counted in
+// characters - every nchar and nvarchar2, and a varchar2(n char).  a real
+// server sends it to an 8i client (MEASURED, [0034] of 10749-dev-ojdbc14-
+// colnchar-realserver-oracle102 and -oracle122)
+#define DESCRIBE_CONTFLAG_CHAR_LENGTH	0x1000
+
 // which way a bind's value travels, as the io vector reports it.  the wire's
 // bind descriptors say nothing about direction - every one of them looks the
 // same whether the client bound it in, out, or both - so the module works it
@@ -772,9 +790,10 @@
 #define MAX_NUMBER_TEXT_SIZE		512
 
 // an oracle date is a fixed 7 bytes, and a column of them is described that
-// wide - except by an oci7 describe, where a real server sends 1 and the
-// client works the 7 back out from the type, the way it does for a rowid,
-// an interval and a timestamp with time zone.  see describe()
+// wide - except by an oci7 describe and an 8i one, where a real server sends
+// 1 and the client works the 7 back out from the type, the way it does for a
+// rowid, an interval and a timestamp with time zone.  see describe() and
+// getWireColumnSize()
 #define ORACLE_DATE_SIZE		7
 #define ORACLE_OCI7_DATE_SIZE		1
 
@@ -792,11 +811,51 @@
 #define ORACLE_ROWID_SIZE		1
 #define ORACLE_ROWID_LENGTH_BYTE	0x0e
 
+// what an oracle backend reports as the size of a heap table's rowid, a rowid
+// column and a rowid pseudo-column alike.  a urowid column reports its
+// declared size (4000 by default) and an index-organized table's rowid 31
+// (MEASURED, sqlrsh columninfo against oracle122)
+#define ORACLE_ROWID_STORAGE_SIZE	8
+
+// what an 8i client gets in a row's width for a rowid, and the bytes of a
+// physical urowid: a type byte, then the four numbers big-endian in 4, 2, 4
+// and 2 bytes (MEASURED, [0058] of 10749-dev-ojdbc14-colrowid-realserver-
+// oracle122).  a logical urowid is a type byte and the bytes the text after
+// its * is the unpadded base 64 of (MEASURED, sqlrsh dump() of index-organized
+// table rowids with 1 to 5 byte keys)
+#define ORACLE_8I_ROWID_ROW_SIZE	16
+#define ORACLE_UROWID_PHYSICAL		0x01
+#define ORACLE_UROWID_LOGICAL		0x02
+#define ORACLE_UROWID_LOGICAL_MARK	'*'
+
+// a binary_float's and a binary_double's binary form is 4 and 8 bytes, and
+// an oracle backend reports those as the sizes of the columns it can only
+// name UNKNOWN (MEASURED, sqlrsh columninfo against oracle122).  a real
+// server describes either 1 byte wide (MEASURED, [0046] of 10749-dev-ojdbc14-
+// colbinfloat-realserver-oracle122)
+#define ORACLE_BINARY_FLOAT_SIZE	4
+#define ORACLE_BINARY_DOUBLE_SIZE	8
+#define ORACLE_BINARY_FLOAT_WIRE_SIZE	1
+
+// the largest binary_float as a double's bits, and the double half way from it
+// to 2^128, from which on a double narrows to infinity rather than to it
+#define ORACLE_FLOAT_MAX_DOUBLE_BITS	((((uint64_t)0x47efffff)<<32)|0xe0000000)
+#define ORACLE_FLOAT_OVERFLOW_DOUBLE_BITS	\
+				((((uint64_t)0x47efffff)<<32)|0xf0000000)
+
 // a raw's external form is two hexadecimal characters per byte
 #define ORACLE_RAW_HEX_PER_BYTE		2
 
 // what a raw column whose width the backend doesn't report is described as
 #define MAX_RAW_SIZE			2000
+
+// the largest buffer size an 8i client sends a sql bind's value in place for -
+// see isPostponedBind8i()
+#define ORACLE_8I_MAX_INLINE_BIND_SIZE	4000
+
+// the utf-16 an nchar value of this many bytes or fewer converts to fits on
+// the stack - see putNcharField()
+#define ORACLE_NCHAR_STACK_SIZE		512
 
 // what a long or a long raw is described as.  neither has a declared width
 // and a live 12.2 server describes both of them 0 bytes wide, and sends 0
@@ -1124,6 +1183,8 @@
 #define ORACLE_TYPE_RAW			23
 #define ORACLE_TYPE_LONG_RAW		24
 #define ORACLE_TYPE_CHAR		96
+#define ORACLE_TYPE_BINARY_FLOAT	100
+#define ORACLE_TYPE_BINARY_DOUBLE	101
 #define ORACLE_TYPE_RESULT_SET		102
 #define ORACLE_TYPE_ROWID		104
 #define ORACLE_TYPE_NAMED_TYPE		109
@@ -1135,6 +1196,7 @@
 #define ORACLE_TYPE_TIMESTAMPTZ		181
 #define ORACLE_TYPE_INTERVALYM		182
 #define ORACLE_TYPE_INTERVALDS		183
+#define ORACLE_TYPE_UROWID		208
 #define ORACLE_TYPE_TIMESTAMPLTZ	231
 // internal sentinels, not wire codes - the describe info and column
 // definition type fields are both ub1, and getWireColumnType() folds these
@@ -1592,18 +1654,68 @@ enum oraclestatementkind_t {
 	ORACLESTATEMENTKIND_TRANSACTION
 };
 
+// how a bind's value is laid out in a row data block
+enum oraclebindframing_t {
+	// a clr: a length byte and the bytes, or the 0xfe long form
+	ORACLEBINDFRAMING_CLR=0,
+	// a ub4 locator length, then the locator - clob, blob, bfile
+	ORACLEBINDFRAMING_LOCATOR,
+	// an 8i rowid: 0x0e and four count-prefixed numbers, or a lone 00
+	ORACLEBINDFRAMING_ROWID
+};
+
+// what decode8iBind() made of a bind
+enum oraclebindresult_t {
+	// decoded
+	ORACLEBINDRESULT_OK=0,
+	// not decoded there - installQuery3Binds()'s own arms handle it
+	ORACLEBINDRESULT_GENERIC,
+	// a type the module can't bind (ORA-20008)
+	ORACLEBINDRESULT_UNSUPPORTED,
+	// a value it can't decode (ORA-20009)
+	ORACLEBINDRESULT_BADVALUE,
+	// a timestamp with time zone in a named region and in local time
+	// (ORA-20007)
+	ORACLEBINDRESULT_LOCALREGION
+};
+
 // what a query3 request's bind section says about one placeholder.  the
 // descriptor carries no name and no position - binds are strictly positional,
-// in the order the placeholders appear in the query text
+// in the order the placeholders appear in the query text.  every field of the
+// descriptor is kept, for every client, though only 8i code reads the ones
+// past buffersize
 struct oraclequery3bind {
+	// dty
 	byte_t		type;
+	// flg
 	byte_t		flags;
+	// mxl
 	uint32_t	buffersize;
 	// BIND_DIRECTION_*, worked out from the statement rather than read
 	// off the wire
 	byte_t		direction;
 	// which of the cursor's output binds this descriptor filled, or -1
 	int16_t		outindex;
+	byte_t		precision;
+	int32_t		scale;
+	// mal - the element count of a pl/sql index-by table
+	uint32_t	maxelements;
+	// fl2 - 0x10 for a character bind
+	uint32_t	contflags;
+	// toid length - the bytes themselves are skipped
+	uint32_t	oidlength;
+	// vsn
+	uint32_t	version;
+	// ncs
+	uint32_t	charsetid;
+	// 1 for the database character set, 2 for the national one
+	byte_t		csfrm;
+	// mxlc
+	uint32_t	maxdatasize;
+	// 12.2 and later only
+	uint32_t	oaccolid;
+	// ORACLEBINDFRAMING_* - how its value is read
+	byte_t		framing;
 };
 
 // what a query3 request's define section says about one column that the rows
@@ -2106,6 +2218,7 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_oracle : public sqlrprotocol {
 							byte_t *flags,
 							uint32_t *buffersize,
 							oraclequery3define *define,
+							oraclequery3bind *bind,
 							const byte_t **rpout);
 		void	saveQuery3Defines(sqlrservercursor *cursor);
 		void	classifyQuery3Binds(uint32_t options,
@@ -2120,6 +2233,58 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_oracle : public sqlrprotocol {
 							const byte_t *end,
 							uint32_t bindcount,
 							uint32_t iterations);
+		bool	allocQuery3BindValues(const byte_t *rp,
+							const byte_t *end,
+							uint32_t bindcount,
+							uint32_t iterations,
+							uint32_t *maxblocks);
+		bool	getQuery3BindValues8i(const byte_t *rp,
+							const byte_t *end,
+							uint32_t bindcount,
+							uint32_t iterations,
+							uint32_t options);
+		bool	isPostponedBind8i(const oraclequery3bind *bd,
+							uint32_t options);
+		bool	getQuery3BindValue8i(const byte_t *rp,
+							const byte_t **end,
+							const oraclequery3bind *bd,
+							oraclequery3bindvalue *v,
+							const byte_t **rpout);
+		oraclebindresult_t	decode8iBind(
+						const oraclequery3bind *bd,
+						const oraclequery3bindvalue *v,
+						memorypool *bindpool,
+						sqlrserverbindvar *bv);
+		void	setStringBindValue(const char *value,
+							uint32_t valuesize,
+							memorypool *bindpool,
+							sqlrserverbindvar *bv);
+		oraclebindresult_t	getNcharBindValue(
+						const oraclequery3bind *bd,
+						const oraclequery3bindvalue *v,
+						memorypool *bindpool,
+						sqlrserverbindvar *bv);
+		void	putBindChar(uint32_t ch, bool utf8,
+							byte_t *out,
+							uint32_t *outsize);
+		oraclebindresult_t	getIntervalBindValue(
+						const oraclequery3bind *bd,
+						const oraclequery3bindvalue *v,
+						memorypool *bindpool,
+						sqlrserverbindvar *bv);
+		oraclebindresult_t	getBinaryFloatBindValue(
+						const oraclequery3bind *bd,
+						const oraclequery3bindvalue *v,
+						memorypool *bindpool,
+						sqlrserverbindvar *bv);
+		oraclebindresult_t	getRawBindValue(
+						const oraclequery3bindvalue *v,
+						memorypool *bindpool,
+						sqlrserverbindvar *bv);
+		oraclebindresult_t	getRowidBindValue(
+						const oraclequery3bindvalue *v,
+						memorypool *bindpool,
+						sqlrserverbindvar *bv);
 		void	saveQuery3Binds(sqlrservercursor *cursor);
 		void	restoreQuery3Binds(sqlrservercursor *cursor);
 		bool	installQuery3Binds(sqlrservercursor *cursor,
@@ -2132,6 +2297,8 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_oracle : public sqlrprotocol {
 		bool	sendNotAllVariablesBoundError(uint32_t cursorid);
 		bool	sendLocalRegionBindError(uint32_t cursorid);
 		bool	sendBadLocatorBindError(uint32_t cursorid);
+		bool	sendUnsupportedBindError(uint32_t cursorid);
+		bool	sendUndecodableBindError(uint32_t cursorid);
 		bool	sendBindFailureError(uint32_t cursorid);
 		bool	isTempLocator(const byte_t *locator, uint32_t size);
 		oracletemplob	*getTempLob(const byte_t *locator,
@@ -2232,6 +2399,10 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_oracle : public sqlrprotocol {
 		bool		isNullByDescribe(sqlrservercursor *cursor,
 							uint32_t column);
 
+		// what an 8i client's describe counts a column of "wiretype"
+		// as in the max row size, given the width it describes it as
+		uint32_t	getRowSize8i(uint16_t wiretype, uint32_t size);
+
 		void	putRowHeader(byte_t flags,
 							uint32_t colcount,
 							uint32_t prefetchrows);
@@ -2239,6 +2410,8 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_oracle : public sqlrprotocol {
 							uint32_t colcount);
 		bool	isLobColumnType(uint16_t columntype);
 		bool	isNclobColumn(sqlrservercursor *cursor,
+						uint32_t column);
+		bool	isNcharColumn(sqlrservercursor *cursor,
 						uint32_t column);
 		bool	isInlineLobColumnType(uint16_t columntype);
 		bool	hasLobColumn(sqlrservercursor *cursor,
@@ -2360,6 +2533,12 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_oracle : public sqlrprotocol {
 		uint32_t	stepUtf8Char(const byte_t *in,
 							const byte_t *end,
 							uint16_t *ch);
+
+		// like stepUtf8Char(), but decodes a character above the
+		// basic multilingual plane too
+		uint32_t	stepUtf8CodePoint(const byte_t *in,
+							const byte_t *end,
+							uint32_t *ch);
 		uint64_t	countUtf8Chars(const char *in, uint64_t insize);
 		bool		clientCharsetIsUtf8();
 		bool		charsetIsMultibyte();
@@ -2421,6 +2600,16 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_oracle : public sqlrprotocol {
 		bool	putRowidField(const char *field,
 							uint64_t fieldsize);
 		int16_t	getRowidDigit(char c);
+
+		// an 8i client's urowid, binary_float or binary_double, and
+		// nchar or nvarchar2 values, from the backend's text
+		bool	putUrowidField(const char *field,
+							uint64_t fieldsize);
+		bool	putBinaryFloatField(const char *field,
+							uint64_t fieldsize,
+							bool isdouble);
+		void	putNcharField(const char *field,
+							uint64_t fieldsize);
 		bool	putRawField(const char *field,
 							uint64_t fieldsize,
 							bool longraw,
@@ -2480,6 +2669,10 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_oracle : public sqlrprotocol {
 						uint16_t columntypesize,
 						uint32_t scale);
 		uint16_t	getUnknownColumnType(
+						sqlrservercursor *cursor,
+						uint32_t column,
+						uint16_t columntype);
+		uint16_t	getUrowidColumnType(
 						sqlrservercursor *cursor,
 						uint32_t column,
 						uint16_t columntype);
@@ -3160,6 +3353,12 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_oracle : public sqlrprotocol {
 		// see installQuery3Binds()
 		bool		query3badlocator;
 
+		// whether an 8i bind was of a type the module can't bind, or
+		// carried a value it couldn't decode, which are an ORA-20008
+		// and an ORA-20009 - see decode8iBind()
+		bool		query3unsupportedbind;
+		bool		query3badbindvalue;
+
 		// whether the request's bind section named more binds than
 		// maxbindcount allows, which ends the call in an error
 		// instead of a statement - see query3() and getQuery3Binds()
@@ -3386,6 +3585,8 @@ sqlrprotocol_oracle::sqlrprotocol_oracle(sqlrservercontroller *cont,
 	lobprefetcherrormessage=NULL;
 	query3unbound=false;
 	query3badlocator=false;
+	query3unsupportedbind=false;
+	query3badbindvalue=false;
 	query3localregion=false;
 	query3toomanybinds=false;
 	query3affectedrows=0;
@@ -12480,6 +12681,15 @@ void sqlrprotocol_oracle::debugColumnType(uint16_t columntype) {
 		case ORACLE_TYPE_CHAR:
 			debugWrite("ORACLE_TYPE_CHAR");
 			break;
+		case ORACLE_TYPE_BINARY_FLOAT:
+			debugWrite("ORACLE_TYPE_BINARY_FLOAT");
+			break;
+		case ORACLE_TYPE_BINARY_DOUBLE:
+			debugWrite("ORACLE_TYPE_BINARY_DOUBLE");
+			break;
+		case ORACLE_TYPE_UROWID:
+			debugWrite("ORACLE_TYPE_UROWID");
+			break;
 		case ORACLE_TYPE_RESULT_SET:
 			debugWrite("ORACLE_TYPE_RESULT_SET");
 			break;
@@ -15556,12 +15766,13 @@ bool sqlrprotocol_oracle::getQuery3Binds(const byte_t *rp,
 		restoreQuery3Binds(reusecursor);
 		debugWrite("re-execute with new values for %d saved binds",
 							query3binddescs);
-		if (!getQuery3BindValues(rp,end,query3binddescs,blockcount)) {
-			debugEnd();
-			return false;
-		}
+		bool	valuesread=(use8iQueryObjects())?
+				getQuery3BindValues8i(rp,end,query3binddescs,
+							blockcount,options):
+				getQuery3BindValues(rp,end,query3binddescs,
+							blockcount);
 		debugEnd();
-		return true;
+		return valuesread;
 	}
 
 	// the bind descriptors
@@ -15575,12 +15786,29 @@ bool sqlrprotocol_oracle::getQuery3Binds(const byte_t *rp,
 						&(query3binds[i].type),
 						&(query3binds[i].flags),
 						&(query3binds[i].buffersize),
-						NULL,&rp)) {
+						NULL,&(query3binds[i]),&rp)) {
 			debugEnd();
 			return false;
 		}
 		query3binds[i].direction=BIND_DIRECTION_IN;
 		query3binds[i].outindex=-1;
+
+		// An 8i client sends a rowid bind as 0x0e and four
+		// count-prefixed numbers rather than as a clr (MEASURED, [0029]
+		// of 10749-dev-ojdbc14-preprowid-realserver-oracle122).  Other
+		// clients' rowid binds haven't been measured, so they keep the
+		// clr reading.
+		byte_t	type=query3binds[i].type;
+		if (type==ORACLE_TYPE_CLOB ||
+				type==ORACLE_TYPE_BLOB ||
+				type==ORACLE_TYPE_BFILE) {
+			query3binds[i].framing=ORACLEBINDFRAMING_LOCATOR;
+		} else if (type==ORACLE_TYPE_ROWID_DEPRECATED &&
+						use8iQueryObjects()) {
+			query3binds[i].framing=ORACLEBINDFRAMING_ROWID;
+		} else {
+			query3binds[i].framing=ORACLEBINDFRAMING_CLR;
+		}
 		if (getDebug()) {
 			debugWrite("bind %d:",i+1);
 			debugColumnType(query3binds[i].type);
@@ -15612,7 +15840,7 @@ bool sqlrprotocol_oracle::getQuery3Binds(const byte_t *rp,
 		byte_t		flags=0;
 		uint32_t	buffersize=0;
 		if (!getQuery3BindDescriptor(rp,end,&type,&flags,&buffersize,
-						&(query3definelist[i]),&rp)) {
+						&(query3definelist[i]),NULL,&rp)) {
 			debugEnd();
 			return false;
 		}
@@ -15638,14 +15866,14 @@ bool sqlrprotocol_oracle::getQuery3Binds(const byte_t *rp,
 		return true;
 	}
 
-	if (!getQuery3BindValues(rp,end,bindcount,blockcount)) {
-		debugEnd();
-		return false;
-	}
+	bool	valuesread=(use8iQueryObjects())?
+			getQuery3BindValues8i(rp,end,bindcount,
+						blockcount,options):
+			getQuery3BindValues(rp,end,bindcount,blockcount);
 
 	debugEnd();
 
-	return true;
+	return valuesread;
 }
 
 bool sqlrprotocol_oracle::getQuery3BindValues(const byte_t *rp,
@@ -15679,35 +15907,9 @@ bool sqlrprotocol_oracle::getQuery3BindValues(const byte_t *rp,
 	// request is dropped without a word.
 	end=resppacket+resppacketsize;
 
-	// some clients claim 0 iterations but send row data anyway, so when
-	// there are binds to fill, the block count has to come from the room
-	// left for the request rather than from the claim.  a block is at
-	// least a marker byte plus 1 byte per value, and no more blocks than
-	// the bind values will fit in.  the room is measured against the
-	// buffer the request is being reassembled in rather than against what
-	// has arrived so far, since the blocks may still be on the wire
-	uint32_t	maxblocks=iterations;
-	if (!iterations && bindcount && rp<end) {
-		uint64_t	byrequest=(uint64_t)
-					(resppacket+maxrequestsize-rp)/
-						((uint64_t)bindcount+1);
-		uint64_t	byvalues=(uint64_t)MAX_QUERY3_BIND_VALUES/
-						(uint64_t)bindcount;
-		maxblocks=(uint32_t)((byrequest<byvalues)?byrequest:byvalues);
-		debugWrite("iterations 0 - row data blocks bounded "
-					"by the request: %d",maxblocks);
-	}
-
-	uint64_t	valuecount=(uint64_t)maxblocks*(uint64_t)bindcount;
-	if (valuecount>MAX_QUERY3_BIND_VALUES) {
-		debugWrite("too many bind values: %lld",(long long)valuecount);
+	uint32_t	maxblocks=0;
+	if (!allocQuery3BindValues(rp,end,bindcount,iterations,&maxblocks)) {
 		return false;
-	}
-	if ((uint32_t)valuecount>query3bindvalueavail) {
-		delete[] query3bindvalues;
-		query3bindvalues=new
-				oraclequery3bindvalue[(uint32_t)valuecount];
-		query3bindvalueavail=(uint32_t)valuecount;
 	}
 
 	// a block boundary is one place a value that pulled another packet in
@@ -15769,21 +15971,250 @@ bool sqlrprotocol_oracle::getQuery3BindValues(const byte_t *rp,
 	return true;
 }
 
+bool sqlrprotocol_oracle::allocQuery3BindValues(const byte_t *rp,
+							const byte_t *end,
+							uint32_t bindcount,
+							uint32_t iterations,
+							uint32_t *maxblocks) {
+
+	// some clients claim 0 iterations but send row data anyway, so when
+	// there are binds to fill, the block count has to come from the room
+	// left for the request rather than from the claim.  a block is at
+	// least a marker byte plus 1 byte per value, and no more blocks than
+	// the bind values will fit in.  the room is measured against the
+	// buffer the request is being reassembled in rather than against what
+	// has arrived so far, since the blocks may still be on the wire
+	*maxblocks=iterations;
+	if (!iterations && bindcount && rp<end) {
+		uint64_t	byrequest=(uint64_t)
+					(resppacket+maxrequestsize-rp)/
+						((uint64_t)bindcount+1);
+		uint64_t	byvalues=(uint64_t)MAX_QUERY3_BIND_VALUES/
+						(uint64_t)bindcount;
+		*maxblocks=(uint32_t)((byrequest<byvalues)?byrequest:byvalues);
+		debugWrite("iterations 0 - row data blocks bounded "
+					"by the request: %d",*maxblocks);
+	}
+
+	uint64_t	valuecount=(uint64_t)*maxblocks*(uint64_t)bindcount;
+	if (valuecount>MAX_QUERY3_BIND_VALUES) {
+		debugWrite("too many bind values: %lld",(long long)valuecount);
+		return false;
+	}
+	if ((uint32_t)valuecount>query3bindvalueavail) {
+		delete[] query3bindvalues;
+		query3bindvalues=new
+				oraclequery3bindvalue[(uint32_t)valuecount];
+		query3bindvalueavail=(uint32_t)valuecount;
+	}
+	return true;
+}
+
+bool sqlrprotocol_oracle::getQuery3BindValues8i(const byte_t *rp,
+							const byte_t *end,
+							uint32_t bindcount,
+							uint32_t iterations,
+							uint32_t options) {
+
+	// The 8i form of getQuery3BindValues(), for the genuine ojdbc14 10.2
+	// driver.  It reads the same row data blocks within the same bounds,
+	// and differs in two ways:
+	// * The values of some binds come after all the others, in descriptor
+	//   order - see isPostponedBind8i().  Every value is still stored at
+	//   its descriptor's index, so installQuery3Binds() gets them in
+	//   descriptor order whatever order the wire had them in.
+	// * A value is read by its descriptor's framing - see
+	//   getQuery3BindValue8i().
+	// Postponement is worked out for each block from the descriptors and
+	// this call's options, so a re-execute with saved descriptors gets it,
+	// and so would each block of an array bind.  Array binds, the out
+	// values of pl/sql binds and the data of lob binds are not read
+	// differently here - a lob bind's locator is read as it is for every
+	// other client.
+	query3blocks=0;
+
+	if (!bindcount) {
+		return true;
+	}
+
+	// see getQuery3BindValues()
+	end=resppacket+resppacketsize;
+
+	uint32_t	maxblocks=0;
+	if (!allocQuery3BindValues(rp,end,bindcount,iterations,&maxblocks)) {
+		return false;
+	}
+
+	if (getDebug()) {
+		for (uint32_t i=0; i<bindcount; i++) {
+			if (isPostponedBind8i(&(query3binds[i]),options)) {
+				debugWrite("bind %d value postponed",i+1);
+			}
+		}
+	}
+
+	// see getQuery3BindValues()
+	while (query3blocks<maxblocks) {
+		end=resppacket+resppacketsize;
+		if (rp>=end && (!iterations || !have(rp,1,&end))) {
+			break;
+		}
+		if (*rp!=TTC_ROW_DATA) {
+			break;
+		}
+		rp++;
+
+		oraclequery3bindvalue	*block=
+				&(query3bindvalues[query3blocks*bindcount]);
+
+		// the values sent in place, then the postponed ones
+		for (uint16_t pass=0; pass<2; pass++) {
+			bool	postponed=(pass==1);
+			for (uint32_t i=0; i<bindcount; i++) {
+				if (isPostponedBind8i(&(query3binds[i]),
+							options)!=postponed) {
+					continue;
+				}
+				if (!getQuery3BindValue8i(rp,&end,
+							&(query3binds[i]),
+							&(block[i]),&rp)) {
+					return false;
+				}
+			}
+		}
+		query3blocks++;
+	}
+	debugWrite("row data blocks: %d",query3blocks);
+
+	return true;
+}
+
+bool sqlrprotocol_oracle::isPostponedBind8i(const oraclequery3bind *bd,
+							uint32_t options) {
+
+	// An 8i client sends the values of long and long raw binds, and
+	// outside pl/sql those of binds whose buffer size is over 4000 bytes,
+	// after all the others.  MEASURED: [0324] of 10749-dev-ojdbc14-colwide-
+	// realserver-oracle122, an insert of a number, two strings of buffer
+	// size 16000 and 8000, a raw of 2000 and a string of 16000, sends the
+	// number, the raw, then the three strings, and the same insert at
+	// oracle102, where the strings are 4000, 2000 and 4000, sends every
+	// value in order, so exactly 4000 is not postponed.  CROSS-CHECK: that
+	// pl/sql is exempt for every type but long and long raw, and that a
+	// long or long raw goes last whatever its size, is ojdbc14's
+	// marshaller (T4CTTIrxd).
+	// A pl/sql call is one whose options lack OPTION_NOPLSQL - ojdbc14
+	// sends 0x0529 for a block (MEASURED, [0029] of 10749-dev-ojdbc14-
+	// preptz-realserver-oracle122).  The buffer size is the one in the
+	// descriptors last sent, which is what a re-execute's saved ones hold.
+	if (bd->type==ORACLE_TYPE_LONG || bd->type==ORACLE_TYPE_LONG_RAW) {
+		return true;
+	}
+	return ((options&OPTION_NOPLSQL) &&
+			bd->buffersize>ORACLE_8I_MAX_INLINE_BIND_SIZE);
+}
+
+bool sqlrprotocol_oracle::getQuery3BindValue8i(const byte_t *rp,
+							const byte_t **end,
+							const oraclequery3bind *bd,
+							oraclequery3bindvalue *v,
+							const byte_t **rpout) {
+
+	// one 8i bind value, read by its descriptor's framing
+	v->value=NULL;
+	v->size=0;
+	v->isnull=false;
+	*rpout=rp;
+
+	// a lob's value is the locator's length and then the locator, or a
+	// zero length alone for a null - see getQuery3BindValues()
+	if (bd->framing==ORACLEBINDFRAMING_LOCATOR) {
+		uint32_t	locatorsize=0;
+		if (!getLenPreInt(rp,end,&locatorsize,&rp)) {
+			debugWrite("truncated bind value");
+			return false;
+		}
+		if (!locatorsize) {
+			v->isnull=true;
+			*rpout=rp;
+			return true;
+		}
+	}
+
+	// An 8i rowid bind is 0x0e, then the data object number, the relative
+	// file number, a raw byte, the block number and the row number, each
+	// count-prefixed: 0e 03 4a c5 89 01 05 00 02 01 56 01 01 (MEASURED,
+	// [0029] of 10749-dev-ojdbc14-preprowid-realserver-oracle122).  The
+	// 0x0e is not a length.  The value is kept whole, 0x0e included, for
+	// getRowidBindValue().  A null is a lone 00, which getLenBytes() reads
+	// below, as it does a value in any other form.
+	if (bd->framing==ORACLEBINDFRAMING_ROWID) {
+		if (!have(rp,1,end)) {
+			debugWrite("truncated bind value");
+			return false;
+		}
+		if (*rp==ORACLE_ROWID_LENGTH_BYTE) {
+			const byte_t	*start=rp;
+			uint32_t	number=0;
+			rp++;
+			if (!getLenPreInt(rp,end,&number,&rp) ||
+				!getLenPreInt(rp,end,&number,&rp) ||
+				!have(rp,1,end)) {
+				debugWrite("truncated rowid bind value");
+				return false;
+			}
+			rp++;
+			if (!getLenPreInt(rp,end,&number,&rp) ||
+				!getLenPreInt(rp,end,&number,&rp)) {
+				debugWrite("truncated rowid bind value");
+				return false;
+			}
+			v->value=start;
+			v->size=(uint32_t)(rp-start);
+			*rpout=rp;
+			return true;
+		}
+	}
+
+	if (!getLenBytes(rp,*end,&(v->value),&(v->size),&(v->isnull),&rp)) {
+		debugWrite("truncated bind value");
+		return false;
+	}
+	*rpout=rp;
+	return true;
+}
+
 bool sqlrprotocol_oracle::getQuery3BindDescriptor(const byte_t *rp,
 						const byte_t *end,
 						byte_t *type,
 						byte_t *flags,
 						uint32_t *buffersize,
 						oraclequery3define *define,
+						oraclequery3bind *bind,
 						const byte_t **rpout) {
 
 	// a bind or define descriptor - twelve fields, no name and no position,
 	// and a thirteenth once the negotiated field version reaches 12.2
 	// see "Oracle Wire Protocol - Query3"
+	// a bind's descriptor is kept whole, in "bind", so later calls can
+	// tell what it is beyond its type and size
 	*type=0;
 	*flags=0;
 	*buffersize=0;
 	*rpout=rp;
+	if (bind) {
+		bind->precision=0;
+		bind->scale=0;
+		bind->maxelements=0;
+		bind->contflags=0;
+		bind->oidlength=0;
+		bind->version=0;
+		bind->charsetid=0;
+		bind->csfrm=0;
+		bind->maxdatasize=0;
+		bind->oaccolid=0;
+		bind->framing=ORACLEBINDFRAMING_CLR;
+	}
 	if (define) {
 		define->contflags=0;
 		define->maxdatasize=0;
@@ -15886,6 +16317,18 @@ bool sqlrprotocol_oracle::getQuery3BindDescriptor(const byte_t *rp,
 		define->maxdatasize=maxdatasize;
 		define->csfrm=csfrm;
 		define->type=*type;
+	}
+	if (bind) {
+		bind->precision=precision;
+		bind->scale=scale;
+		bind->maxelements=maxelements;
+		bind->contflags=contflags;
+		bind->oidlength=oidlength;
+		bind->version=version;
+		bind->charsetid=charsetid;
+		bind->csfrm=csfrm;
+		bind->maxdatasize=maxdatasize;
+		bind->oaccolid=oaccolid;
 	}
 
 	*rpout=rp;
@@ -16130,6 +16573,8 @@ bool sqlrprotocol_oracle::installQuery3Binds(sqlrservercursor *cursor,
 
 	query3localregion=false;
 	query3badlocator=false;
+	query3unsupportedbind=false;
+	query3badbindvalue=false;
 
 	// query3() refuses a request with more descriptors than maxbindcount
 	// before this runs, so the count checks here and below are just bounds
@@ -16237,9 +16682,28 @@ bool sqlrprotocol_oracle::installQuery3Binds(sqlrservercursor *cursor,
 		char		numbertext[MAX_NUMBER_TEXT_SIZE];
 		uint32_t	numbertextlen=0;
 
+		// an 8i value goes through its own decoder first, which ends
+		// the call on a type or a value it refuses
+		oraclebindresult_t	decoded=ORACLEBINDRESULT_GENERIC;
+		if (!v->isnull && use8iQueryObjects()) {
+			decoded=decode8iBind(bd,v,bindpool,bv);
+			if (decoded!=ORACLEBINDRESULT_OK &&
+					decoded!=ORACLEBINDRESULT_GENERIC) {
+				query3unsupportedbind=
+					(decoded==ORACLEBINDRESULT_UNSUPPORTED);
+				query3badbindvalue=
+					(decoded==ORACLEBINDRESULT_BADVALUE);
+				query3localregion=
+					(decoded==ORACLEBINDRESULT_LOCALREGION);
+				debugWrite("bind %d refused",i+1);
+				debugEnd();
+				return false;
+			}
+		}
+
 		if (v->isnull) {
 			bv->type=SQLRSERVERBINDVARTYPE_NULL;
-		} else {
+		} else if (decoded==ORACLEBINDRESULT_GENERIC) {
 			switch (bd->type) {
 				case ORACLE_TYPE_NUMBER:
 				case ORACLE_TYPE_VARNUM:
@@ -16428,6 +16892,535 @@ bool sqlrprotocol_oracle::installQuery3Binds(sqlrservercursor *cursor,
 	debugEnd();
 
 	return true;
+}
+
+oraclebindresult_t sqlrprotocol_oracle::decode8iBind(
+					const oraclequery3bind *bd,
+					const oraclequery3bindvalue *v,
+					memorypool *bindpool,
+					sqlrserverbindvar *bv) {
+
+	// The one place an 8i client's in value - the genuine ojdbc14 10.2
+	// driver's - becomes a bind.  installQuery3Binds() calls it for every
+	// value that isn't null, and it fills in the bind's type and value
+	// only.  The value bytes of every type are MEASURED (the 10749-dev-
+	// ojdbc14-prep*-realserver-oracle122 captures and -preprowid-
+	// realserver-oracle102, and in oracle102 and oracle112 captures not
+	// kept, where "dump" of each bound value equals the bytes sent).  The server side
+	// has no bind for most of oracle's own types, so most go in as text
+	// the backend converts:
+	// * a national character set string is converted to the backend's
+	//   character set, and a database character set string goes as it is
+	// * a number, an interval and a binary_float or binary_double go as
+	//   text, so "select ?" describes them as a varchar2
+	// * a raw goes as upper-case hexadecimal text, which the backend
+	//   converts in an insert or a comparison with a raw column.  "select
+	//   ?" of one gives the hexadecimal characters back, as a varchar2
+	// * a rowid goes as its 18 characters
+	// * a date and the timestamps bind as dates, as for every client
+	// A type it has no decoding for ends the call in ORA-20008, and a value
+	// it can't decode in ORA-20009, rather than going in as raw bytes or a
+	// null.  Long raws, lobs, ref cursors and database character set
+	// strings are left to installQuery3Binds()'s own arms
+	// (ORACLEBINDRESULT_GENERIC).  The out values of pl/sql binds and lob
+	// data are not decoded here.
+	switch (bd->type) {
+
+		case ORACLE_TYPE_VARCHAR:
+		case ORACLE_TYPE_CHAR:
+		case ORACLE_TYPE_LONG:
+			if (bd->csfrm==CSFRM_NCHAR) {
+				return getNcharBindValue(bd,v,bindpool,bv);
+			}
+			return ORACLEBINDRESULT_GENERIC;
+
+		// A number is undecodable when it is an infinity (ff 65 and a
+		// lone 00, MEASURED, [0043] and [0055] of 10749-dev-ojdbc14-
+		// prepbinfloat-realserver-oracle122), which a real server
+		// stores but text can't carry.
+		case ORACLE_TYPE_NUMBER:
+		case ORACLE_TYPE_VARNUM:
+			{
+			char		numbertext[MAX_NUMBER_TEXT_SIZE];
+			uint32_t	numbertextlen=0;
+			if (!getNumberField(v->value,v->size,
+						numbertext,sizeof(numbertext),
+						&numbertextlen)) {
+				debugWrite("undecodable number");
+				return ORACLEBINDRESULT_BADVALUE;
+			}
+			setStringBindValue(numbertext,numbertextlen,
+							bindpool,bv);
+			return ORACLEBINDRESULT_OK;
+			}
+
+		case ORACLE_TYPE_DATE:
+			if (!getOracleDateBindValue(v->value,v->size,bv)) {
+				debugWrite("truncated date");
+				return ORACLEBINDRESULT_BADVALUE;
+			}
+			return ORACLEBINDRESULT_OK;
+
+		// A local time zone timestamp binds at +00:00.  A real server
+		// stores the bytes sent unchanged (MEASURED, 10749-dev-ojdbc14-
+		// preptz-realserver-oracle122), which is the same instant when
+		// the database time zone is +00:00, as it is on every server
+		// measured.  Other database time zones are INFERRED to differ.
+		case ORACLE_TYPE_TIMESTAMP:
+		case ORACLE_TYPE_TIMESTAMPTZ:
+		case ORACLE_TYPE_TIMESTAMPLTZ:
+			{
+			bool	localregion=false;
+			if (getOracleTimestampBindValue(v->value,v->size,
+							bd->type,bindpool,bv,
+							&localregion)) {
+				return ORACLEBINDRESULT_OK;
+			}
+			return (localregion)?ORACLEBINDRESULT_LOCALREGION:
+						ORACLEBINDRESULT_BADVALUE;
+			}
+
+		case ORACLE_TYPE_INTERVALYM:
+		case ORACLE_TYPE_INTERVALDS:
+			return getIntervalBindValue(bd,v,bindpool,bv);
+
+		case ORACLE_TYPE_BINARY_FLOAT:
+		case ORACLE_TYPE_BINARY_DOUBLE:
+			return getBinaryFloatBindValue(bd,v,bindpool,bv);
+
+		case ORACLE_TYPE_RAW:
+			return getRawBindValue(v,bindpool,bv);
+
+		case ORACLE_TYPE_ROWID_DEPRECATED:
+			return getRowidBindValue(v,bindpool,bv);
+
+		case ORACLE_TYPE_LONG_RAW:
+		case ORACLE_TYPE_RESULT_SET:
+		case ORACLE_TYPE_CLOB:
+		case ORACLE_TYPE_BLOB:
+		case ORACLE_TYPE_BFILE:
+			return ORACLEBINDRESULT_GENERIC;
+
+		default:
+			debugWrite("unsupported bind type %d",bd->type);
+			return ORACLEBINDRESULT_UNSUPPORTED;
+	}
+}
+
+void sqlrprotocol_oracle::setStringBindValue(const char *value,
+							uint32_t valuesize,
+							memorypool *bindpool,
+							sqlrserverbindvar *bv) {
+	bv->type=SQLRSERVERBINDVARTYPE_STRING;
+	bv->valuesize=valuesize;
+	bv->value.stringval=(char *)bindpool->allocate(valuesize+1);
+	bytestring::copy(bv->value.stringval,value,(size_t)valuesize);
+	bv->value.stringval[valuesize]='\0';
+}
+
+oraclebindresult_t sqlrprotocol_oracle::getNcharBindValue(
+					const oraclequery3bind *bd,
+					const oraclequery3bindvalue *v,
+					memorypool *bindpool,
+					sqlrserverbindvar *bv) {
+
+	// An 8i national character set string is utf-16 big endian when its
+	// charset id is AL16UTF16: 0e 00 63 00 61 00 66 00 e9 00 20 00 fc 00 f1
+	// (MEASURED, [0035] of 10749-dev-ojdbc14-prepnchar-realserver-
+	// oracle122).  The backend takes text in its session character set,
+	// utf-8 or one byte per character - see putNcharField().  A surrogate
+	// pair becomes one character and a lone surrogate U+FFFD.  A utf-8
+	// national character set (UTF8, AL32UTF8) has never been seen and is
+	// INFERRED to be sent as utf-8.  Any other is refused.
+	bool		utf8=clientCharsetIsUtf8();
+	const byte_t	*in=v->value;
+	uint32_t	insize=v->size;
+
+	if (bd->charsetid!=CHARSET_AL16UTF16 &&
+			bd->charsetid!=CHARSET_AL32UTF8 &&
+			bd->charsetid!=CHARSET_UTF8) {
+		debugWrite("unsupported national charset %d",bd->charsetid);
+		return ORACLEBINDRESULT_UNSUPPORTED;
+	}
+
+	if (bd->charsetid!=CHARSET_AL16UTF16) {
+		if (utf8) {
+			setStringBindValue((const char *)in,insize,
+							bindpool,bv);
+			return ORACLEBINDRESULT_OK;
+		}
+		char		*out=(char *)bindpool->allocate(insize+1);
+		uint32_t	outsize=0;
+		const byte_t	*end=in+insize;
+		while (in<end) {
+			uint32_t	ch=0;
+			in+=stepUtf8CodePoint(in,end,&ch);
+			putBindChar(ch,false,(byte_t *)out,&outsize);
+		}
+		out[outsize]='\0';
+		bv->type=SQLRSERVERBINDVARTYPE_STRING;
+		bv->value.stringval=out;
+		bv->valuesize=outsize;
+		return ORACLEBINDRESULT_OK;
+	}
+
+	if (insize%2) {
+		debugWrite("odd utf-16 size %d",insize);
+		return ORACLEBINDRESULT_BADVALUE;
+	}
+
+	// a utf-16 unit takes at most 3 utf-8 bytes, and a pair of them 4
+	char		*out=(char *)bindpool->allocate((insize/2)*3+1);
+	uint32_t	outsize=0;
+	for (uint32_t i=0; i<insize; i+=2) {
+		uint32_t	ch=((uint32_t)in[i]<<8)|in[i+1];
+		if (ch>=0xd800 && ch<=0xdbff && i+3<insize) {
+			uint32_t	low=((uint32_t)in[i+2]<<8)|in[i+3];
+			if (low>=0xdc00 && low<=0xdfff) {
+				ch=0x10000+((ch-0xd800)<<10)+(low-0xdc00);
+				i+=2;
+			}
+		}
+		if (ch>=0xd800 && ch<=0xdfff) {
+			ch=0xfffd;
+		}
+		putBindChar(ch,utf8,(byte_t *)out,&outsize);
+	}
+	out[outsize]='\0';
+	bv->type=SQLRSERVERBINDVARTYPE_STRING;
+	bv->value.stringval=out;
+	bv->valuesize=outsize;
+	return ORACLEBINDRESULT_OK;
+}
+
+void sqlrprotocol_oracle::putBindChar(uint32_t ch, bool utf8,
+							byte_t *out,
+							uint32_t *outsize) {
+
+	// one character, in utf-8, or else in one byte with '?' for anything
+	// one byte can't hold
+	if (!utf8) {
+		out[(*outsize)++]=(byte_t)((ch>0xff)?'?':ch);
+	} else if (ch<0x80) {
+		out[(*outsize)++]=(byte_t)ch;
+	} else if (ch<0x800) {
+		out[(*outsize)++]=(byte_t)(0xc0|(ch>>6));
+		out[(*outsize)++]=(byte_t)(0x80|(ch&0x3f));
+	} else if (ch<0x10000) {
+		out[(*outsize)++]=(byte_t)(0xe0|(ch>>12));
+		out[(*outsize)++]=(byte_t)(0x80|((ch>>6)&0x3f));
+		out[(*outsize)++]=(byte_t)(0x80|(ch&0x3f));
+	} else {
+		out[(*outsize)++]=(byte_t)(0xf0|(ch>>18));
+		out[(*outsize)++]=(byte_t)(0x80|((ch>>12)&0x3f));
+		out[(*outsize)++]=(byte_t)(0x80|((ch>>6)&0x3f));
+		out[(*outsize)++]=(byte_t)(0x80|(ch&0x3f));
+	}
+}
+
+oraclebindresult_t sqlrprotocol_oracle::getIntervalBindValue(
+					const oraclequery3bind *bd,
+					const oraclequery3bindvalue *v,
+					memorypool *bindpool,
+					sqlrserverbindvar *bv) {
+
+	// the inverse of putIntervalField(), to the text the backend converts.
+	// +12-05 is 05 80 00 00 0c 41, and +3 04:05:06.123456789 is 0b 80 00
+	// 00 03 40 41 42 87 5b cd 15 (MEASURED, 10749-dev-ojdbc14-preptz-
+	// realserver-oracle122).  A negative interval has every field
+	// negative.  Fields that disagree in sign, or are out of range, are
+	// refused rather than passed on.
+	const byte_t	*rp=v->value;
+	char		text[64];
+	ssize_t		textlen=0;
+
+	if (bd->type==ORACLE_TYPE_INTERVALYM) {
+
+		if (v->size!=ORACLE_INTERVALYM_SIZE) {
+			debugWrite("bad interval size %d",v->size);
+			return ORACLEBINDRESULT_BADVALUE;
+		}
+		uint32_t	biased=0;
+		readBE(rp,&biased,&rp);
+		int64_t	years=(int64_t)biased-
+				(int64_t)ORACLE_INTERVAL_LEADING_BIAS;
+		int32_t	months=(int32_t)rp[0]-ORACLE_INTERVAL_FIELD_BIAS;
+		bool	negative=(years<0 || months<0);
+		if (negative) {
+			years=-years;
+			months=-months;
+		}
+		if (years>MAX_INTERVAL_LEADING || months>11 ||
+			(negative && (biased>ORACLE_INTERVAL_LEADING_BIAS ||
+				rp[0]>ORACLE_INTERVAL_FIELD_BIAS))) {
+			debugWrite("bad interval");
+			return ORACLEBINDRESULT_BADVALUE;
+		}
+		textlen=charstring::printf(text,sizeof(text),"%c%lld-%02d",
+						(negative)?'-':'+',
+						(long long)years,(int)months);
+
+	} else {
+
+		if (v->size!=ORACLE_INTERVALDS_SIZE) {
+			debugWrite("bad interval size %d",v->size);
+			return ORACLEBINDRESULT_BADVALUE;
+		}
+		uint32_t	biaseddays=0;
+		readBE(rp,&biaseddays,&rp);
+		int32_t		fields[3];
+		for (uint16_t i=0; i<3; i++) {
+			fields[i]=(int32_t)rp[i]-ORACLE_INTERVAL_FIELD_BIAS;
+		}
+		rp+=3;
+		uint32_t	biasednanos=0;
+		readBE(rp,&biasednanos,&rp);
+		int64_t	days=(int64_t)biaseddays-
+				(int64_t)ORACLE_INTERVAL_LEADING_BIAS;
+		int64_t	nanos=(int64_t)biasednanos-
+				(int64_t)ORACLE_INTERVAL_LEADING_BIAS;
+
+		// every field is the same sign, or zero
+		bool	negative=(days<0 || nanos<0 ||
+				fields[0]<0 || fields[1]<0 || fields[2]<0);
+		bool	positive=(days>0 || nanos>0 ||
+				fields[0]>0 || fields[1]>0 || fields[2]>0);
+		if (negative && positive) {
+			debugWrite("interval fields of mixed sign");
+			return ORACLEBINDRESULT_BADVALUE;
+		}
+		if (negative) {
+			days=-days;
+			nanos=-nanos;
+			for (uint16_t i=0; i<3; i++) {
+				fields[i]=-fields[i];
+			}
+		}
+		if (days>MAX_INTERVAL_LEADING || fields[0]>23 ||
+			fields[1]>59 || fields[2]>59 || nanos>999999999) {
+			debugWrite("interval field out of range");
+			return ORACLEBINDRESULT_BADVALUE;
+		}
+		textlen=charstring::printf(text,sizeof(text),
+						"%c%lld %02d:%02d:%02d.%09lld",
+						(negative)?'-':'+',
+						(long long)days,
+						(int)fields[0],(int)fields[1],
+						(int)fields[2],
+						(long long)nanos);
+	}
+
+	if (textlen<=0 || (size_t)textlen>=sizeof(text)) {
+		return ORACLEBINDRESULT_BADVALUE;
+	}
+	setStringBindValue(text,(uint32_t)textlen,bindpool,bv);
+	return ORACLEBINDRESULT_OK;
+}
+
+oraclebindresult_t sqlrprotocol_oracle::getBinaryFloatBindValue(
+					const oraclequery3bind *bd,
+					const oraclequery3bindvalue *v,
+					memorypool *bindpool,
+					sqlrserverbindvar *bv) {
+
+	// The inverse of putBinaryFloatField(): the canonical form, 04 bf c0
+	// 00 00 for a binary_float 1.5 and 08 bf f8 00 00 00 00 00 00 for a
+	// binary_double one (MEASURED, [0027] of 10749-dev-ojdbc14-
+	// prepbinfloat-realserver-oracle122), to text the backend converts.
+	// It isn't bound as a double, since the backend would take that as a
+	// number, which has no NaN or infinity and a narrower range.  The text
+	// is the fewest significant digits that read back as the same double,
+	// as digits and an exponent with no decimal point ("15E-1" for 1.5),
+	// so the session's decimal character doesn't matter.  A binary_float
+	// is widened to a double first, which is exact.
+	bool		isdouble=(bd->type==ORACLE_TYPE_BINARY_DOUBLE);
+	uint16_t	size=(isdouble)?ORACLE_BINARY_DOUBLE_SIZE:
+					ORACLE_BINARY_FLOAT_SIZE;
+	if (v->size!=size) {
+		debugWrite("bad binary float size %d",v->size);
+		return ORACLEBINDRESULT_BADVALUE;
+	}
+
+	// undo the canonical form
+	uint64_t	bits=0;
+	for (uint16_t i=0; i<size; i++) {
+		bits=(bits<<8)|v->value[i];
+	}
+	uint64_t	signbit=((uint64_t)1)<<(size*8-1);
+	if (bits&signbit) {
+		bits&=~signbit;
+	} else {
+		bits=~bits;
+		if (!isdouble) {
+			bits&=0xffffffff;
+		}
+	}
+
+	// to a double, and the special values to their text
+	double		d=0.0;
+	uint64_t	exponentbits=(isdouble)?
+				(((uint64_t)0x7ff00000)<<32):0x7f800000;
+	uint64_t	magnitude=bits&~signbit;
+	const char	*special=NULL;
+	if (magnitude>exponentbits) {
+		special="NaN";
+	} else if (magnitude==exponentbits) {
+		special=(bits&signbit)?"-INF":"INF";
+	} else if (!magnitude) {
+		special="0";
+	} else if (isdouble) {
+		bytestring::copy(&d,&bits,sizeof(d));
+	} else {
+		uint32_t	fbits=(uint32_t)bits;
+		float		f;
+		bytestring::copy(&f,&fbits,sizeof(f));
+		d=(double)f;
+	}
+	if (special) {
+		setStringBindValue(special,charstring::getLength(special),
+							bindpool,bv);
+		return ORACLEBINDRESULT_OK;
+	}
+
+	// the fewest significant digits that read back the same
+	char	text[64];
+	for (int k=1; k<=17; k++) {
+		charstring::printf(text,sizeof(text),"%.*e",k-1,d);
+		if ((double)charstring::convertToFloat(text)==d) {
+			break;
+		}
+	}
+
+	// rewrite d.ddde+xx as dddd and an exponent
+	char		out[64];
+	uint32_t	outsize=0;
+	const char	*t=text;
+	if (*t=='-') {
+		out[outsize++]='-';
+		t++;
+	}
+	int32_t	digits=0;
+	while (*t && *t!='e' && *t!='E') {
+		if (character::isDigit(*t)) {
+			out[outsize++]=*t;
+			digits++;
+		}
+		t++;
+	}
+	if (!digits || !*t) {
+		debugWrite("unexpected float text: %s",text);
+		return ORACLEBINDRESULT_BADVALUE;
+	}
+	t++;
+	int32_t	exponent=(int32_t)charstring::convertToInteger(t);
+	exponent-=digits-1;
+	if (exponent) {
+		outsize+=(uint32_t)charstring::printf(out+outsize,
+						sizeof(out)-outsize,
+						"E%d",(int)exponent);
+	}
+	out[outsize]='\0';
+	debugWrite("binary float text: %s",out);
+
+	setStringBindValue(out,outsize,bindpool,bv);
+	return ORACLEBINDRESULT_OK;
+}
+
+oraclebindresult_t sqlrprotocol_oracle::getRawBindValue(
+					const oraclequery3bindvalue *v,
+					memorypool *bindpool,
+					sqlrserverbindvar *bv) {
+
+	// A raw goes in as upper-case hexadecimal text, which the backend
+	// converts to a raw in an insert or a comparison with a raw column,
+	// rather than as a blob, which it compares with nothing.  So "select
+	// ?" of a raw bind gives the hexadecimal characters back, as a
+	// varchar2, where a real server gives the bytes back as a raw.
+	static const char	hexdigits[]="0123456789ABCDEF";
+	char	*out=(char *)bindpool->allocate((size_t)v->size*2+1);
+	for (uint32_t i=0; i<v->size; i++) {
+		out[i*2]=hexdigits[v->value[i]>>4];
+		out[i*2+1]=hexdigits[v->value[i]&0x0f];
+	}
+	out[v->size*2]='\0';
+	bv->type=SQLRSERVERBINDVARTYPE_STRING;
+	bv->value.stringval=out;
+	bv->valuesize=v->size*2;
+	return ORACLEBINDRESULT_OK;
+}
+
+oraclebindresult_t sqlrprotocol_oracle::getRowidBindValue(
+					const oraclequery3bindvalue *v,
+					memorypool *bindpool,
+					sqlrserverbindvar *bv) {
+
+	// The inverse of putRowidField(): the four numbers of an 8i rowid bind
+	// (see getQuery3BindValue8i()) to the 18 base 64 characters the
+	// backend converts to a rowid.  0e 03 4a c5 72 01 05 00 02 04 0e 00 is
+	// AASsVyAAFAAAAQOAAA (MEASURED, [0042] of 10749-dev-ojdbc14-colrowid-
+	// realserver-oracle122).  A rowid sent as a clr of its 18 characters
+	// goes in as it is (INFERRED, never seen).  Anything else is refused.
+	static const char	rowiddigits[]=
+				"ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+				"abcdefghijklmnopqrstuvwxyz"
+				"0123456789+/";
+
+	if (!v->size || v->value[0]!=ORACLE_ROWID_LENGTH_BYTE) {
+		if (v->size!=ORACLE_ROWID_TEXT_SIZE) {
+			debugWrite("unsupported rowid form");
+			return ORACLEBINDRESULT_UNSUPPORTED;
+		}
+		for (uint32_t i=0; i<v->size; i++) {
+			if (getRowidDigit((char)v->value[i])<0) {
+				debugWrite("unsupported rowid form");
+				return ORACLEBINDRESULT_UNSUPPORTED;
+			}
+		}
+		setStringBindValue((const char *)v->value,v->size,bindpool,bv);
+		return ORACLEBINDRESULT_OK;
+	}
+
+	// the four numbers
+	const byte_t	*rp=v->value+1;
+	const byte_t	*end=v->value+v->size;
+	uint32_t	parts[ORACLE_ROWID_PARTS];
+	if (!readLenPreInt(rp,end,&(parts[0]),&rp) ||
+		!readLenPreInt(rp,end,&(parts[1]),&rp) ||
+		rp>=end) {
+		debugWrite("bad rowid");
+		return ORACLEBINDRESULT_BADVALUE;
+	}
+	rp++;
+	if (!readLenPreInt(rp,end,&(parts[2]),&rp) ||
+		!readLenPreInt(rp,end,&(parts[3]),&rp)) {
+		debugWrite("bad rowid");
+		return ORACLEBINDRESULT_BADVALUE;
+	}
+
+	// each to its digits, most significant first
+	static const uint16_t	partdigits[ORACLE_ROWID_PARTS]={
+					ORACLE_ROWID_OBJECT_DIGITS,
+					ORACLE_ROWID_FILE_DIGITS,
+					ORACLE_ROWID_BLOCK_DIGITS,
+					ORACLE_ROWID_ROW_DIGITS};
+	char		text[ORACLE_ROWID_TEXT_SIZE+1];
+	uint16_t	pos=0;
+	for (uint16_t i=0; i<ORACLE_ROWID_PARTS; i++) {
+		if (partdigits[i]<6 &&
+			parts[i]>=(((uint32_t)1)<<(partdigits[i]*6))) {
+			debugWrite("rowid number out of range");
+			return ORACLEBINDRESULT_BADVALUE;
+		}
+		for (uint16_t j=partdigits[i]; j>0; j--) {
+			text[pos++]=rowiddigits[
+				((uint64_t)parts[i]>>((j-1)*6))&0x3f];
+		}
+	}
+	text[pos]='\0';
+	debugWrite("rowid: %s",text);
+
+	setStringBindValue(text,ORACLE_ROWID_TEXT_SIZE,bindpool,bv);
+	return ORACLEBINDRESULT_OK;
 }
 
 bool sqlrprotocol_oracle::fetchFromRefCursors(sqlrservercursor *cursor,
@@ -16701,8 +17694,14 @@ bool sqlrprotocol_oracle::sendQuery3Response(sqlrservercursor *cursor,
 		// defines.  a 9i OCI8 execute with a define gets the row -
 		// [0016] of test/protocol/oracle/samples/10538-redhat9x86-
 		// oci8-ociselect-null-realserver-oracle102.oraproxy - and
-		// fetches it again as a second row when it doesn't
-		if (rowstofetch && (options&OPTION_EXECUTE) && !query3defines) {
+		// fetches it again as a second row when it doesn't.  An 8i
+		// client gets the row: a real server answers ojdbc14's fetch of
+		// "select null from dual" with a row header, a bare row and
+		// ORA-01403 (MEASURED, [0019] of 10749-dev-ojdbc14-selectnull-
+		// realserver-oracle122).  INFERRED: the same for an execute
+		// that fetches.
+		if (rowstofetch && (options&OPTION_EXECUTE) && !query3defines &&
+							!use8iQueryObjects()) {
 			bool	allnull=true;
 			for (uint32_t i=0; i<colcount && allnull; i++) {
 				allnull=isNullByDescribe(cursor,i);
@@ -17279,14 +18278,26 @@ void sqlrprotocol_oracle::putDescribeInfoBody(sqlrservercursor *cursor,
 	uint16_t	curid=cont->getId(cursor);
 	bool		haslob=hasLobColumn(cursor,colcount);
 	uint32_t	maxrowsize=0;
-	for (uint32_t i=0; i<colcount && !haslob; i++) {
+	//
+	// An 8i client gets 0 for one with a long or a long raw in it too, and
+	// otherwise each column counted by getRowSize8i() (MEASURED, [0055]
+	// and [0046] of 10749-dev-ojdbc14-collong- and -colbinfloat-
+	// realserver-oracle122).
+	bool		rowsize8i=use8iQueryObjects();
+	bool		norowsize=(haslob ||
+				(rowsize8i && hasLongColumn(cursor,colcount)));
+	for (uint32_t i=0; i<colcount && !norowsize; i++) {
 		if (isNullByDescribe(cursor,i)) {
 			continue;
 		}
-		maxrowsize+=getWireColumnSize(cursor,i,
-				cont->getColumnTypeName(cursor,i),
-				columntypes[curid][i],
-				getWireColumnType(columntypes[curid][i]));
+		uint16_t	wiretype=getWireColumnType(columntypes[curid][i]);
+		uint32_t	size=getWireColumnSize(cursor,i,
+					cont->getColumnTypeName(cursor,i),
+					columntypes[curid][i],wiretype);
+		if (rowsize8i) {
+			size=getRowSize8i(wiretype,size);
+		}
+		maxrowsize+=size;
 	}
 
 	// below field version 4, a real 10.2 server sends a pre-10g client
@@ -17384,7 +18395,17 @@ void sqlrprotocol_oracle::putColumnMetadata(sqlrservercursor *cursor,
 				wiretype!=ORACLE_TYPE_TIMESTAMPTZ &&
 				wiretype!=ORACLE_TYPE_TIMESTAMPLTZ &&
 				wiretype!=ORACLE_TYPE_BLOB &&
-				wiretype!=ORACLE_TYPE_BFILE);
+				wiretype!=ORACLE_TYPE_BFILE &&
+				wiretype!=ORACLE_TYPE_BINARY_FLOAT &&
+				wiretype!=ORACLE_TYPE_BINARY_DOUBLE &&
+				wiretype!=ORACLE_TYPE_UROWID);
+
+	// A real server sends an 8i client a date abbreviated too (MEASURED,
+	// [0017] of 10745-dev-ojdbc14-types-realserver-oracle102 and -oracle122:
+	// 0c 00 00 00 01 01 00 00 00 00 00 00 00).
+	if (use8iQueryObjects() && wiretype==ORACLE_TYPE_DATE) {
+		fullencoding=false;
+	}
 
 	const char	*name=cont->getColumnName(cursor,column);
 	uint32_t	namesize=cont->getColumnNameSize(cursor,column);
@@ -17402,8 +18423,12 @@ void sqlrprotocol_oracle::putColumnMetadata(sqlrservercursor *cursor,
 		precision=127;
 	}
 
-	// a long and a long raw have no precision or scale
-	if (isInlineLobColumnType(columntype)) {
+	// a long and a long raw have no precision or scale, and neither do
+	// the types only an 8i client gets
+	if (isInlineLobColumnType(columntype) ||
+			wiretype==ORACLE_TYPE_BINARY_FLOAT ||
+			wiretype==ORACLE_TYPE_BINARY_DOUBLE ||
+			wiretype==ORACLE_TYPE_UROWID) {
 		precision=0;
 		wirescale=0;
 	}
@@ -17414,6 +18439,32 @@ void sqlrprotocol_oracle::putColumnMetadata(sqlrservercursor *cursor,
 		columncharset=CHARSET_AL16UTF16;
 	}
 
+	// So is an nchar or an nvarchar2 to an 8i client, with its length
+	// counted in characters as well as bytes (MEASURED, [0034] of
+	// 10749-dev-ojdbc14-colnchar-realserver-oracle102 and -oracle122:
+	// 60 80 00 00 01 14 00 02 10 00 00 00 02 07 d0 02 01 0a for an
+	// nchar(10)).  INFERRED: the halved byte count assumes the backend's
+	// national character set is AL16UTF16.
+	bool		nchar=(use8iQueryObjects() &&
+				isNcharColumn(cursor,column));
+	uint32_t	contflags=0;
+	uint32_t	maxchars=size;
+	if (nchar) {
+		columncharset=CHARSET_AL16UTF16;
+		contflags=DESCRIBE_CONTFLAG_CHAR_LENGTH;
+		maxchars=size/2;
+	}
+
+	// An 8i client gets whether the column is nullable, where every other
+	// one gets 1: a real server sends it 0 for a not null column, a rowid
+	// pseudo-column and an index-organized table's key (MEASURED, [0028]
+	// and [0040] of 10749-dev-ojdbc14-colscale- and -colrowid-realserver-
+	// oracle122).
+	byte_t	nullable=1;
+	if (use8iQueryObjects()) {
+		nullable=(cont->getColumnIsNullable(cursor,column))?1:0;
+	}
+
 	write(&reqpacket,(byte_t)wiretype);
 	write(&reqpacket,(byte_t)((fullencoding)?0x80:0x00));
 
@@ -17422,10 +18473,11 @@ void sqlrprotocol_oracle::putColumnMetadata(sqlrservercursor *cursor,
 	// high bit, any other as a raw byte.  It drops the connection on the
 	// 4-byte form putColumnPrecisionScale() sends a negative scale in.
 	// MEASURED: number 81 7f and 00, timestamp 01 09, the others a raw 00
-	// (10745-dev-ojdbc14-types-realserver-oracle102 and -oracle122).
-	// INFERRED: the ub2 for the timestamp with time zone, local time zone
-	// and day-second interval types (dty 181, 231, 183), read from the
-	// driver's bytecode and not seen on the wire.
+	// (10745-dev-ojdbc14-types-realserver-oracle102 and -oracle122), and
+	// timestamp with time zone 01 06 and 01 03, with local time zone 01 06
+	// and 01 09 ([0051] of 10749-dev-ojdbc14-coltz-realserver-oracle122),
+	// day-second interval 01 06, 01 09 and 00 ([0033] of 10749-dev-ojdbc14-
+	// colinterval-realserver-oracle122).
 	if (use8iQueryObjects()) {
 		write(&reqpacket,(byte_t)precision);
 		if (wiretype==ORACLE_TYPE_NUMBER ||
@@ -17459,13 +18511,14 @@ void sqlrprotocol_oracle::putColumnMetadata(sqlrservercursor *cursor,
 	writeLenPreInt(&reqpacket,size);
 
 	writeLenPreInt(&reqpacket,0);
-	writeLenPreInt(&reqpacket,0);
+	writeLenPreInt(&reqpacket,contflags);
 	writeLenPreInt(&reqpacket,0);
 	writeLenPreInt(&reqpacket,0);
 	writeLenPreInt(&reqpacket,(fullencoding)?columncharset:0);
-	write(&reqpacket,(byte_t)((fullencoding)?((nclob)?CSFRM_NCHAR:1):0));
-	writeLenPreInt(&reqpacket,(fullencoding)?size:0);
-	write(&reqpacket,(byte_t)1);
+	write(&reqpacket,(byte_t)((fullencoding)?
+				((nclob || nchar)?CSFRM_NCHAR:1):0));
+	writeLenPreInt(&reqpacket,(fullencoding)?maxchars:0);
+	write(&reqpacket,nullable);
 	write(&reqpacket,(byte_t)namesize);
 	putDalc(name,namesize);
 	writeLenPreInt(&reqpacket,0);
@@ -17490,6 +18543,12 @@ void sqlrprotocol_oracle::putColumnMetadata(sqlrservercursor *cursor,
 	debugStart("column %d",column);
 	debugColumnType(columntypestring,wiretype);
 	debugWrite("size: %d",size);
+	if (nchar) {
+		debugWrite("national character set: %d characters",maxchars);
+	}
+	if (!nullable) {
+		debugWrite("not nullable");
+	}
 	debugWrite("name: %.*s",(int)namesize,name);
 	debugEnd();
 }
@@ -17564,6 +18623,13 @@ uint16_t sqlrprotocol_oracle::getWireColumnType(uint16_t columntype) {
 			break;
 		case ORACLE_TYPE_LONG_RAW:
 			wiretype=ORACLE_TYPE_LONG_RAW;
+			break;
+		case ORACLE_TYPE_BINARY_FLOAT:
+		case ORACLE_TYPE_BINARY_DOUBLE:
+		case ORACLE_TYPE_UROWID:
+			// only an 8i client's columns get these - see
+			// getUnknownColumnType() and getUrowidColumnType()
+			wiretype=columntype;
 			break;
 		case ORACLE_TYPE_LONG:
 			wiretype=ORACLE_TYPE_LONG;
@@ -17709,7 +18775,20 @@ uint32_t sqlrprotocol_oracle::getWireColumnSize(sqlrservercursor *cursor,
 	if (wiretype==ORACLE_TYPE_NUMBER) {
 		size=MAX_NUMBER_SIZE;
 	} else if (wiretype==ORACLE_TYPE_DATE) {
-		size=ORACLE_DATE_SIZE;
+		// A real server describes a date 1 byte wide to an 8i client,
+		// which reads the 7 from the type (MEASURED, [0017] of
+		// 10745-dev-ojdbc14-types-realserver-oracle122).
+		size=(use8iQueryObjects())?ORACLE_OCI7_DATE_SIZE:
+						ORACLE_DATE_SIZE;
+	} else if (wiretype==ORACLE_TYPE_BINARY_FLOAT ||
+			wiretype==ORACLE_TYPE_BINARY_DOUBLE) {
+		size=ORACLE_BINARY_FLOAT_WIRE_SIZE;
+	} else if (wiretype==ORACLE_TYPE_UROWID) {
+		// as wide as the backend reports - see getUrowidColumnType()
+		size=cont->getColumnSize(cursor,column);
+		if (size>MAX_VARCHAR_SIZE) {
+			size=MAX_VARCHAR_SIZE;
+		}
 	} else if (wiretype==ORACLE_TYPE_ROWID_DEPRECATED) {
 		// not the 18 characters a rowid prints as, and not the 8
 		// bytes it stores in - a live 12.2 server describes one as 1
@@ -17803,14 +18882,13 @@ bool sqlrprotocol_oracle::isNullByDescribe(sqlrservercursor *cursor,
 	// oracle backend reports the same 0, which no real character column
 	// has.  the size another backend reports isn't dependable enough to
 	// go by, and a client at field version 4 or later gets the column 4000
-	// bytes wide.  so does an 8i client, though a real server describes
-	// the untyped null to ojdbc14 as a varchar2 with dty 1, mxl 0 and
-	// character set 1 and sends no value byte, which it reads correctly
-	// (MEASURED, 10745-dev-ojdbc14-selectnull-realserver-oracle102 and
-	// -oracle122).  the 4000 bytes and a 00 value byte are the module's own
-	// choice, and cosmetic: getPrecision is 4000 rather than 0
+	// bytes wide.  An 8i client, at field version 3, gets it null by
+	// describe too: a real server describes the untyped null to ojdbc14 as
+	// a varchar2 with dty 1, mxl 0 and character set 1 and sends no value
+	// byte (MEASURED, [0017] and [0019] of 10749-dev-ojdbc14-selectnull-
+	// realserver-oracle102 and -oracle122, and at oracle112 in a capture
+	// not kept).
 	if (fieldversion>=CCAP_FIELD_VERSION_10_2 ||
-		use8iQueryObjects() ||
 		charstring::compare(cont->getNativeDbType(),"oracle")) {
 		return false;
 	}
@@ -17818,6 +18896,33 @@ bool sqlrprotocol_oracle::isNullByDescribe(sqlrservercursor *cursor,
 	return (isCharacterColumn(cont->getColumnTypeName(cursor,column),
 						columntypes[curid][column]) &&
 		!cont->getColumnSize(cursor,column));
+}
+
+uint32_t sqlrprotocol_oracle::getRowSize8i(uint16_t wiretype, uint32_t size) {
+
+	// A real server counts the types it describes 1 byte wide, a date and
+	// a rowid at their binary sizes, and every other type as wide as its
+	// describe (MEASURED, the describes of the 10749-dev-ojdbc14-col*-
+	// realserver-oracle122 captures: colnchar 162, coltz 81, colinterval
+	// 76, colbinfloat 34, colrowid 38 and 16).
+	switch (wiretype) {
+		case ORACLE_TYPE_BINARY_FLOAT:
+			return ORACLE_BINARY_FLOAT_SIZE;
+		case ORACLE_TYPE_BINARY_DOUBLE:
+			return ORACLE_BINARY_DOUBLE_SIZE;
+		case ORACLE_TYPE_TIMESTAMPTZ:
+			return ORACLE_TIMESTAMPTZ_SIZE;
+		case ORACLE_TYPE_INTERVALDS:
+			return ORACLE_INTERVALDS_SIZE;
+		case ORACLE_TYPE_INTERVALYM:
+			return ORACLE_INTERVALYM_SIZE;
+		case ORACLE_TYPE_ROWID_DEPRECATED:
+			return ORACLE_8I_ROWID_ROW_SIZE;
+		case ORACLE_TYPE_DATE:
+			return ORACLE_DATE_SIZE;
+		default:
+			return size;
+	}
 }
 
 void sqlrprotocol_oracle::putRowHeader(byte_t flags,
@@ -18003,6 +19108,20 @@ bool sqlrprotocol_oracle::putRowData(sqlrservercursor *cursor,
 				// to the client than a null
 				write(&reqpacket,(byte_t)0);
 			}
+		} else if (wiretype==ORACLE_TYPE_UROWID) {
+			debugWrite("urowid: %.*s",(int)fieldsize,field);
+			if (!putUrowidField(field,fieldsize)) {
+				// same as a rowid that won't parse
+				write(&reqpacket,(byte_t)0);
+			}
+		} else if (wiretype==ORACLE_TYPE_BINARY_FLOAT ||
+				wiretype==ORACLE_TYPE_BINARY_DOUBLE) {
+			debugWrite("binary float: %.*s",(int)fieldsize,field);
+			if (!putBinaryFloatField(field,fieldsize,
+					(wiretype==ORACLE_TYPE_BINARY_DOUBLE))) {
+				// same as a date that won't parse
+				write(&reqpacket,(byte_t)0);
+			}
 		} else if (wiretype==ORACLE_TYPE_RAW ||
 				wiretype==ORACLE_TYPE_LONG_RAW) {
 			debugWrite("raw: %.*s",(int)fieldsize,field);
@@ -18072,6 +19191,9 @@ bool sqlrprotocol_oracle::putRowData(sqlrservercursor *cursor,
 				// no more use to the client than a null
 				write(&reqpacket,(byte_t)0);
 			}
+		} else if (use8iQueryObjects() && isNcharColumn(cursor,i)) {
+			debugWrite("nchar: \"%.*s\"",(int)fieldsize,field);
+			putNcharField(field,fieldsize);
 		} else {
 			debugWrite("\"%.*s\"",(int)fieldsize,field);
 			putLenBytes(field,(uint32_t)fieldsize);
@@ -19645,6 +20767,46 @@ uint32_t sqlrprotocol_oracle::stepUtf8Char(const byte_t *in,
 	if (ch) {
 		*ch=(uint16_t)c;
 	}
+	return (uint32_t)(in-start);
+}
+
+uint32_t sqlrprotocol_oracle::stepUtf8CodePoint(const byte_t *in,
+							const byte_t *end,
+							uint32_t *ch) {
+
+	// a byte that doesn't start a valid sequence, and a sequence past
+	// U+10FFFF, take one byte and decode to that byte's own value
+	const byte_t	*start=in;
+	uint32_t	c=*in;
+	uint16_t	extra=0;
+	if ((c&0xe0)==0xc0) {
+		c=c&0x1f;
+		extra=1;
+	} else if ((c&0xf0)==0xe0) {
+		c=c&0x0f;
+		extra=2;
+	} else if ((c&0xf8)==0xf0) {
+		c=c&0x07;
+		extra=3;
+	}
+	in++;
+
+	bool	valid=true;
+	for (uint16_t e=0; e<extra; e++) {
+		if (in>=end || ((*in)&0xc0)!=0x80) {
+			valid=false;
+			break;
+		}
+		c=(c<<6)|((*in)&0x3f);
+		in++;
+	}
+
+	if (!valid || c>0x10ffff) {
+		in=start+1;
+		c=*start;
+	}
+
+	*ch=c;
 	return (uint32_t)(in-start);
 }
 
@@ -21510,12 +22672,23 @@ bool sqlrprotocol_oracle::putRowidField(const char *field,
 		}
 	}
 
+	// An 8i client gets each number in its narrowest form, as a real
+	// server sends it: 0e 03 4a c5 72 01 05 00 02 04 0e 00 (MEASURED,
+	// [0042] of 10749-dev-ojdbc14-colrowid-realserver-oracle122).
 	write(&reqpacket,(byte_t)ORACLE_ROWID_LENGTH_BYTE);
-	writeLenPreInt(&reqpacket,parts[0]);
-	writeLenPreInt(&reqpacket,parts[1]);
-	write(&reqpacket,(byte_t)0);
-	writeLenPreInt(&reqpacket,parts[2]);
-	writeLenPreInt(&reqpacket,parts[3]);
+	if (use8iQueryObjects()) {
+		writeMinimalLenPreInt(&reqpacket,parts[0]);
+		writeMinimalLenPreInt(&reqpacket,parts[1]);
+		write(&reqpacket,(byte_t)0);
+		writeMinimalLenPreInt(&reqpacket,parts[2]);
+		writeMinimalLenPreInt(&reqpacket,parts[3]);
+	} else {
+		writeLenPreInt(&reqpacket,parts[0]);
+		writeLenPreInt(&reqpacket,parts[1]);
+		write(&reqpacket,(byte_t)0);
+		writeLenPreInt(&reqpacket,parts[2]);
+		writeLenPreInt(&reqpacket,parts[3]);
+	}
 
 	debugWrite("object: %d",parts[0]);
 	debugWrite("file: %d",parts[1]);
@@ -21524,6 +22697,225 @@ bool sqlrprotocol_oracle::putRowidField(const char *field,
 	debugEnd();
 
 	return true;
+}
+
+bool sqlrprotocol_oracle::putUrowidField(const char *field,
+						uint64_t fieldsize) {
+
+	debugStart("urowid field");
+	debugWrite("input: %.*s",(int)fieldsize,field);
+
+	// A real server sends an 8i client a urowid as a count of its bytes,
+	// then the bytes as a clr: 01 0d 0d 01 00 4a c5 72 00 05 00 00 04 0e
+	// 00 00 for a physical one, 01 0a 0a 02 04 01 40 04 13 02 c1 02 fe for
+	// a logical one (MEASURED, [0058] and [0050] of 10749-dev-ojdbc14-
+	// colrowid-realserver-oracle122).  The backend hands a physical one
+	// over in a rowid's 18 characters and a logical one as a * and base 64.
+	byte_t		bytes[MAX_VARCHAR_SIZE];
+	uint32_t	size=0;
+	if (fieldsize==ORACLE_ROWID_TEXT_SIZE) {
+
+		static const uint16_t	partdigits[ORACLE_ROWID_PARTS]={
+						ORACLE_ROWID_OBJECT_DIGITS,
+						ORACLE_ROWID_FILE_DIGITS,
+						ORACLE_ROWID_BLOCK_DIGITS,
+						ORACLE_ROWID_ROW_DIGITS};
+		static const uint16_t	partbytes[ORACLE_ROWID_PARTS]={
+						4,2,4,2};
+
+		// type, then each number big-endian
+		bytes[size++]=ORACLE_UROWID_PHYSICAL;
+		uint16_t	pos=0;
+		for (uint16_t i=0; i<ORACLE_ROWID_PARTS; i++) {
+			uint32_t	part=0;
+			for (uint16_t j=0; j<partdigits[i]; j++) {
+				int16_t	digit=getRowidDigit(field[pos]);
+				if (digit<0) {
+					debugWrite("bad character at %d",
+							(uint32_t)pos);
+					debugEnd();
+					return false;
+				}
+				part=(part<<6)+(uint32_t)digit;
+				pos++;
+			}
+			for (uint16_t j=partbytes[i]; j>0; j--) {
+				bytes[size++]=(byte_t)((part>>((j-1)*8))&0xff);
+			}
+		}
+
+	} else if (fieldsize>1 && field[0]==ORACLE_UROWID_LOGICAL_MARK &&
+					fieldsize*6/8<sizeof(bytes)) {
+
+		// type, then the unpadded base 64 decoded
+		bytes[size++]=ORACLE_UROWID_LOGICAL;
+		uint32_t	bits=0;
+		uint16_t	bitcount=0;
+		for (uint64_t pos=1; pos<fieldsize; pos++) {
+			int16_t	digit=getRowidDigit(field[pos]);
+			if (digit<0) {
+				debugWrite("bad character at %d",
+							(uint32_t)pos);
+				debugEnd();
+				return false;
+			}
+			bits=(bits<<6)|(uint32_t)digit;
+			bitcount+=6;
+			if (bitcount>=8) {
+				bitcount-=8;
+				bytes[size++]=(byte_t)((bits>>bitcount)&0xff);
+			}
+		}
+
+	} else {
+		debugWrite("neither physical nor logical");
+		debugEnd();
+		return false;
+	}
+
+	writeLenPreInt(&reqpacket,size);
+	putLenBytes((const char *)bytes,size);
+
+	debugWrite("%d bytes",size);
+	debugEnd();
+
+	return true;
+}
+
+bool sqlrprotocol_oracle::putBinaryFloatField(const char *field,
+						uint64_t fieldsize,
+						bool isdouble) {
+
+	debugStart("binary float field");
+	debugWrite("input: %.*s",(int)fieldsize,field);
+
+	// The backend hands a binary_float or a binary_double over as text -
+	// 1.5E+000, Nan, Inf, -Inf, 3.40282347E+038 - with 9 or 17 significant
+	// digits, which is enough to get the same value back (MEASURED, sqlrsh
+	// against oracle122).  The decimal character can be a comma, depending
+	// on the backend session's territory.
+	char	text[64];
+	if (!fieldsize || fieldsize>=sizeof(text)) {
+		debugWrite("bad size");
+		debugEnd();
+		return false;
+	}
+	for (uint64_t i=0; i<fieldsize; i++) {
+		text[i]=(field[i]==',')?'.':field[i];
+	}
+	text[fieldsize]='\0';
+
+	// the ieee bits
+	uint64_t	bits=0;
+	if (!charstring::compareIgnoringCase(text,"nan")) {
+		bits=(isdouble)?(((uint64_t)0x7ff80000)<<32):0x7fc00000;
+	} else if (!charstring::compareIgnoringCase(text,"inf") ||
+			!charstring::compareIgnoringCase(text,"+inf")) {
+		bits=(isdouble)?(((uint64_t)0x7ff00000)<<32):0x7f800000;
+	} else if (!charstring::compareIgnoringCase(text,"-inf")) {
+		bits=(isdouble)?(((uint64_t)0xfff00000)<<32):0xff800000;
+	} else {
+
+		const char	*end=NULL;
+		double		d=(double)charstring::convertToFloat(text,&end);
+		if (end!=text+fieldsize) {
+			debugWrite("not a number");
+			debugEnd();
+			return false;
+		}
+		uint64_t	dbits;
+		bytestring::copy(&dbits,&d,sizeof(dbits));
+
+		if (isdouble) {
+			bits=dbits;
+		} else {
+
+			// narrow to a float, rounding past the largest one the
+			// way an ieee conversion would rather than leaving it
+			// to an out of range cast
+			uint64_t	dsign=dbits&(((uint64_t)0x80000000)<<32);
+			uint64_t	dmag=dbits&~(((uint64_t)0x80000000)<<32);
+			uint32_t	fbits;
+			if (dmag>=ORACLE_FLOAT_OVERFLOW_DOUBLE_BITS) {
+				fbits=0x7f800000;
+			} else if (dmag>ORACLE_FLOAT_MAX_DOUBLE_BITS) {
+				fbits=0x7f7fffff;
+			} else {
+				double	ad;
+				bytestring::copy(&ad,&dmag,sizeof(ad));
+				float	f=(float)ad;
+				bytestring::copy(&fbits,&f,sizeof(fbits));
+			}
+			if (dsign) {
+				fbits|=0x80000000;
+			}
+			bits=fbits;
+		}
+	}
+
+	// The wire carries the canonical form, which sorts as bytes: a
+	// positive value with its sign bit set, a negative one with every bit
+	// inverted (MEASURED, [0048] of 10749-dev-ojdbc14-colbinfloat-
+	// realserver-oracle122: 04 bf c0 00 00 for 1.5, 04 00 7f ff ff for
+	// -Inf).
+	uint16_t	size=(isdouble)?ORACLE_BINARY_DOUBLE_SIZE:
+					ORACLE_BINARY_FLOAT_SIZE;
+	uint64_t	signbit=((uint64_t)1)<<(size*8-1);
+	if (bits&signbit) {
+		bits=~bits;
+	} else {
+		bits|=signbit;
+	}
+	byte_t	bytes[ORACLE_BINARY_DOUBLE_SIZE];
+	for (uint16_t i=0; i<size; i++) {
+		bytes[i]=(byte_t)((bits>>((size-1-i)*8))&0xff);
+	}
+	putLenBytes((const char *)bytes,size);
+
+	debugEnd();
+
+	return true;
+}
+
+void sqlrprotocol_oracle::putNcharField(const char *field,
+						uint64_t fieldsize) {
+
+	// A real server sends an 8i client an nchar or an nvarchar2 in
+	// utf-16 big endian (MEASURED, [0036] of 10749-dev-ojdbc14-colnchar-
+	// realserver-oracle122: 14 00 61 00 62 00 63 00 20 ... for 'abc' in an
+	// nchar(10)).  The backend hands it over in its session character set,
+	// utf-8 or one byte per character.
+	bool		utf8=clientCharsetIsUtf8();
+	const byte_t	*in=(const byte_t *)field;
+	const byte_t	*end=in+fieldsize;
+	byte_t		stackout[ORACLE_NCHAR_STACK_SIZE*2];
+	byte_t		*out=(fieldsize<=ORACLE_NCHAR_STACK_SIZE)?
+					stackout:new byte_t[fieldsize*2];
+	uint64_t	outsize=0;
+	while (in<end) {
+		uint32_t	ch=*in;
+		if (utf8) {
+			in+=stepUtf8CodePoint(in,end,&ch);
+		} else {
+			in++;
+		}
+		if (ch>0xffff) {
+			ch-=0x10000;
+			uint16_t	high=(uint16_t)(0xd800+(ch>>10));
+			uint16_t	low=(uint16_t)(0xdc00+(ch&0x3ff));
+			out[outsize++]=(byte_t)(high>>8);
+			out[outsize++]=(byte_t)(high&0xff);
+			out[outsize++]=(byte_t)(low>>8);
+			out[outsize++]=(byte_t)(low&0xff);
+		} else {
+			out[outsize++]=(byte_t)(ch>>8);
+			out[outsize++]=(byte_t)(ch&0xff);
+		}
+	}
+	putLenBytes((const char *)out,(uint32_t)outsize);
+	if (out!=stackout) {
+		delete[] out;
+	}
 }
 
 int16_t sqlrprotocol_oracle::getRawDigit(char c) {
@@ -24405,6 +25797,7 @@ void sqlrprotocol_oracle::cacheColumnDefinitions(sqlrservercursor *cursor,
 					cont->getColumnTypeNameSize(cursor,i),
 					cont->getColumnScale(cursor,i));
 		ct[i]=getUnknownColumnType(cursor,i,ct[i]);
+		ct[i]=getUrowidColumnType(cursor,i,ct[i]);
 		ct[i]=getLongColumnType(cursor,i,ct[i]);
 		ct[i]=getLobColumnType(cursor,i,ct[i]);
 		ct[i]=getInlineLobColumnType(cursor,i,ct[i]);
@@ -24558,7 +25951,44 @@ uint16_t sqlrprotocol_oracle::getUnknownColumnType(sqlrservercursor *cursor,
 	if (size==ORACLE_TIMESTAMPTZ_SIZE) {
 		return ORACLE_TYPE_TIMESTAMPTZ;
 	}
+
+	// An 8i client gets a binary_float and a binary_double as their own
+	// types, which come through UNKNOWN 4 and 8 bytes wide.  Every other
+	// client still gets them as varchar2 text.
+	if (use8iQueryObjects()) {
+		if (size==ORACLE_BINARY_FLOAT_SIZE) {
+			return ORACLE_TYPE_BINARY_FLOAT;
+		}
+		if (size==ORACLE_BINARY_DOUBLE_SIZE) {
+			return ORACLE_TYPE_BINARY_DOUBLE;
+		}
+	}
 	return columntype;
+}
+
+uint16_t sqlrprotocol_oracle::getUrowidColumnType(sqlrservercursor *cursor,
+							uint32_t column,
+							uint16_t columntype) {
+
+	// An oracle backend names a urowid column, a cast to urowid and an
+	// index-organized table's rowid ROWID too, but reports them wider
+	// than a heap rowid (see ORACLE_ROWID_STORAGE_SIZE).  A real server
+	// describes them to an 8i client as dty 208, as wide as that size
+	// (MEASURED, [0048] of 10749-dev-ojdbc14-colrowid-realserver-
+	// oracle122: 31 for an index-organized table, 4000 for a urowid
+	// column).  Every other client still gets a rowid.  INFERRED: a
+	// urowid(n) declared 8 bytes or narrower is taken for a rowid.
+	if (!use8iQueryObjects() ||
+		(columntype!=ORACLE_TYPE_ROWID &&
+			columntype!=ORACLE_TYPE_ROWID_DEPRECATED) ||
+		charstring::compare(cont->getNativeDbType(),"oracle")) {
+		return columntype;
+	}
+	uint32_t	size=cont->getColumnSize(cursor,column);
+	if (size<=ORACLE_ROWID_STORAGE_SIZE) {
+		return columntype;
+	}
+	return ORACLE_TYPE_UROWID;
 }
 
 uint16_t sqlrprotocol_oracle::getLongColumnType(sqlrservercursor *cursor,
@@ -24643,6 +26073,19 @@ bool sqlrprotocol_oracle::isNclobColumn(sqlrservercursor *cursor,
 	return !charstring::compareIgnoringCase(
 			cont->getColumnTypeName(cursor,column),
 			"CLOB(NCHAR)");
+}
+
+bool sqlrprotocol_oracle::isNcharColumn(sqlrservercursor *cursor,
+							uint32_t column) {
+
+	// likewise, an nchar and an nvarchar2 are a char and a varchar2 that
+	// the connection module names CHAR(NCHAR) and VARCHAR2(NCHAR)
+	if (charstring::compare(cont->getNativeDbType(),"oracle")) {
+		return false;
+	}
+	const char	*name=cont->getColumnTypeName(cursor,column);
+	return (!charstring::compareIgnoringCase(name,"CHAR(NCHAR)") ||
+		!charstring::compareIgnoringCase(name,"VARCHAR2(NCHAR)"));
 }
 
 uint16_t sqlrprotocol_oracle::getInlineLobColumnType(sqlrservercursor *cursor,
@@ -27051,7 +28494,63 @@ bool sqlrprotocol_oracle::sendBindFailureError(uint32_t cursorid) {
 	if (query3badlocator) {
 		return sendBadLocatorBindError(cursorid);
 	}
+	if (query3unsupportedbind) {
+		return sendUnsupportedBindError(cursorid);
+	}
+	if (query3badbindvalue) {
+		return sendUndecodableBindError(cursorid);
+	}
 	return sendNotAllVariablesBoundError(cursorid);
+}
+
+bool sqlrprotocol_oracle::sendUnsupportedBindError(uint32_t cursorid) {
+
+	// answers an 8i execute with a bind of a type that can't be bound -
+	// see decode8iBind()
+
+	if (!sendErrorBreak()) {
+		return false;
+	}
+
+	resetSendPacketBuffer(PACKET_DATA);
+
+	uint16_t	dataflags=0;
+	writeBE(&reqpacket,dataflags);
+
+	debugStart("unsupported bind type error");
+	debugWrite("data flags: 0x%04x",dataflags);
+	debugWrite("cursor id: %d",cursorid);
+	debugEnd();
+
+	putSummary(cursorid,ORA_UNSUPPORTED_BIND_TYPE,0,
+				ORA_UNSUPPORTED_BIND_TYPE_MESSAGE);
+
+	return sendPacket(true);
+}
+
+bool sqlrprotocol_oracle::sendUndecodableBindError(uint32_t cursorid) {
+
+	// answers an 8i execute with a bind value that can't be decoded - see
+	// decode8iBind()
+
+	if (!sendErrorBreak()) {
+		return false;
+	}
+
+	resetSendPacketBuffer(PACKET_DATA);
+
+	uint16_t	dataflags=0;
+	writeBE(&reqpacket,dataflags);
+
+	debugStart("undecodable bind value error");
+	debugWrite("data flags: 0x%04x",dataflags);
+	debugWrite("cursor id: %d",cursorid);
+	debugEnd();
+
+	putSummary(cursorid,ORA_UNDECODABLE_BIND_VALUE,0,
+				ORA_UNDECODABLE_BIND_VALUE_MESSAGE);
+
+	return sendPacket(true);
 }
 
 bool sqlrprotocol_oracle::sendNotAllVariablesBoundError(uint32_t cursorid) {

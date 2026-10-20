@@ -1,0 +1,46 @@
+== preptimestamp
+insert 1
+insert 1
+insert 1
+insert 1
+insert 1
+insert 1
+insert 1
+cols ID/NUMBER/0/-127 D/DATE/0/0 TS/TIMESTAMP/0/6 TS9/TIMESTAMP/0/9 DD/VARCHAR2/4000/0 DTS/VARCHAR2/4000/0 DTS9/VARCHAR2/4000/0
+meta ID type=NUMBER code=2 prec=0 scale=-127 class=java.math.BigDecimal disp=22
+meta D type=DATE code=91 prec=0 scale=0 class=java.sql.Timestamp disp=7
+meta TS type=TIMESTAMP code=93 prec=0 scale=6 class=oracle.sql.TIMESTAMP disp=11
+meta TS9 type=TIMESTAMP code=93 prec=0 scale=9 class=oracle.sql.TIMESTAMP disp=11
+meta DD type=VARCHAR2 code=12 prec=4000 scale=0 class=java.lang.String disp=4000
+meta DTS type=VARCHAR2 code=12 prec=4000 scale=0 class=java.lang.String disp=4000
+meta DTS9 type=VARCHAR2 code=12 prec=4000 scale=0 class=java.lang.String disp=4000
+row 1: [BigDecimal:1] [Date:2024-03-05] [TIMESTAMP:2024-03-05 13:14:15.123457{787c03050e0f10075bcde8}] [TIMESTAMP:2024-03-05 13:14:15.123456789{787c03050e0f10075bcd15}] [String:Typ=12 Len=7: 78,7c,3,5,e,f,10] [String:len=43 head=Typ=180 Len= hash=-993555336] [String:len=43 head=Typ=180 Len= hash=-993556951]
+str 1: [1] [2024-03-05 13:14:15.0] [2024-3-5.13.14. 15. 123457000] [2024-3-5.13.14. 15. 123456789] [Typ=12 Len=7: 78,7c,3,5,e,f,10] [Typ=180 Len=11: 78,7c,3,5,e,f,10,7,5b,cd,e8] [Typ=180 Len=11: 78,7c,3,5,e,f,10,7,5b,cd,15]
+row 2: [BigDecimal:2] [Date:2024-03-05] [TIMESTAMP:2024-03-05 13:14:15.0{787c03050e0f10}] [TIMESTAMP:2024-03-05 13:14:15.0{787c03050e0f10}] [String:Typ=12 Len=7: 78,7c,3,5,e,f,10] [String:Typ=180 Len=7: 78,7c,3,5,e,f,10] [String:Typ=180 Len=7: 78,7c,3,5,e,f,10]
+str 2: [2] [2024-03-05 13:14:15.0] [2024-3-5.13.14. 15. 0] [2024-3-5.13.14. 15. 0] [Typ=12 Len=7: 78,7c,3,5,e,f,10] [Typ=180 Len=7: 78,7c,3,5,e,f,10] [Typ=180 Len=7: 78,7c,3,5,e,f,10]
+row 3: [BigDecimal:3] [Date:1970-01-01] [TIMESTAMP:1970-01-01 00:00:00.0{77aa0101010101}] [TIMESTAMP:1970-01-01 00:00:00.000000001{77aa010101010100000001}] [String:Typ=12 Len=7: 77,aa,1,1,1,1,1] [String:Typ=180 Len=7: 77,aa,1,1,1,1,1] [String:Typ=180 Len=11: 77,aa,1,1,1,1,1,0,0,0,1]
+str 3: [3] [1970-01-01 00:00:00.0] [1970-1-1.0.0. 0. 0] [1970-1-1.0.0. 0. 1] [Typ=12 Len=7: 77,aa,1,1,1,1,1] [Typ=180 Len=7: 77,aa,1,1,1,1,1] [Typ=180 Len=11: 77,aa,1,1,1,1,1,0,0,0,1]
+row 4: [BigDecimal:4] [Date:2024-03-05] [TIMESTAMP:2024-03-05 00:00:00.5{787c03050101011dcd6500}] [TIMESTAMP:2024-03-05 00:00:00.5{787c03050101011dcd6500}] [String:Typ=12 Len=7: 78,7c,3,5,1,1,1] [String:len=42 head=Typ=180 Len= hash=-335463454] [String:len=42 head=Typ=180 Len= hash=-335463454]
+str 4: [4] [2024-03-05 00:00:00.0] [2024-3-5.0.0. 0. 500000000] [2024-3-5.0.0. 0. 500000000] [Typ=12 Len=7: 78,7c,3,5,1,1,1] [Typ=180 Len=11: 78,7c,3,5,1,1,1,1d,cd,65,0] [Typ=180 Len=11: 78,7c,3,5,1,1,1,1d,cd,65,0]
+row 5: [BigDecimal:5] [Date:9999-12-31] [TIMESTAMP:10000-01-01 00:00:00.0{c8640101010101}] [TIMESTAMP:9999-12-31 23:59:59.999999999{c7c70c1f183c3c3b9ac9ff}] [String:Typ=12 Len=7: c7,c7,c,1f,18,3c,3c] [String:Typ=180 Len=7: c8,64,1,1,1,1,1] [String:len=47 head=Typ=180 Len= hash=1070504289]
+str 5: [5] [9999-12-31 23:59:59.0] [10000-1-1.0.0. 0. 0] [9999-12-31.23.59. 59. 999999999] [Typ=12 Len=7: c7,c7,c,1f,18,3c,3c] [Typ=180 Len=7: c8,64,1,1,1,1,1] [Typ=180 Len=11: c7,c7,c,1f,18,3c,3c,3b,9a,c9,ff]
+row 6: [BigDecimal:6] [Date:1900-01-01] [TIMESTAMP:1900-01-01 00:00:00.0{77640101010101}] [TIMESTAMP:1900-01-01 00:00:00.0{77640101010101}] [String:Typ=12 Len=7: 77,64,1,1,1,1,1] [String:Typ=180 Len=7: 77,64,1,1,1,1,1] [String:Typ=180 Len=7: 77,64,1,1,1,1,1]
+str 6: [6] [1900-01-01 00:00:00.0] [1900-1-1.0.0. 0. 0] [1900-1-1.0.0. 0. 0] [Typ=12 Len=7: 77,64,1,1,1,1,1] [Typ=180 Len=7: 77,64,1,1,1,1,1] [Typ=180 Len=7: 77,64,1,1,1,1,1]
+row 7: [BigDecimal:99] [NULL] [NULL] [NULL] [String:NULL] [String:NULL] [String:NULL]
+str 7: [99] [NULL] [NULL] [NULL] [NULL] [NULL] [NULL]
+rows 7
+cols TS/TIMESTAMP/0/9
+meta TS type=TIMESTAMP code=93 prec=0 scale=9 class=oracle.sql.TIMESTAMP disp=11
+row 1: [TIMESTAMP:2024-03-05 13:14:15.123456789{787c03050e0f10075bcd15}]
+str 1: [2024-3-5.13.14. 15. 123456789]
+rows 1
+cols TS/TIMESTAMP/0/9 DD/VARCHAR2/4000/0
+meta TS type=TIMESTAMP code=93 prec=0 scale=9 class=oracle.sql.TIMESTAMP disp=11
+meta DD type=VARCHAR2 code=12 prec=4000 scale=0 class=java.lang.String disp=4000
+row 1: [TIMESTAMP:2024-03-05 13:14:15.123456789{787c03050e0f10075bcd15}] [String:len=43 head=Typ=180 Len= hash=-993556951]
+str 1: [2024-3-5.13.14. 15. 123456789] [Typ=180 Len=11: 78,7c,3,5,e,f,10,7,5b,cd,15]
+rows 1
+cols ID/NUMBER/0/-127
+row 1: [BigDecimal:1]
+rows 1
+exit 0

@@ -1,0 +1,112 @@
+== coltz
+insert 1
+insert 1
+insert 1
+insert 1
+insert 1
+insert 1
+insert 1
+insert 1
+insert 1
+insert 1
+cols ID/NUMBER/0/-127 TZ/TIMESTAMPTZ/0/6 TZ3/TIMESTAMPTZ/0/3 LTZ/TIMESTAMPLTZ/0/6 LTZ9/TIMESTAMPLTZ/0/9 TS/TIMESTAMP/0/6
+meta ID type=NUMBER code=2 prec=0 scale=-127 class=java.math.BigDecimal disp=22
+meta TZ type=TIMESTAMPTZ code=-101 prec=0 scale=6 class=oracle.sql.TIMESTAMPTZ disp=13
+meta TZ3 type=TIMESTAMPTZ code=-101 prec=0 scale=3 class=oracle.sql.TIMESTAMPTZ disp=13
+meta LTZ type=TIMESTAMPLTZ code=-102 prec=0 scale=6 class=oracle.sql.TIMESTAMPLTZ disp=11
+meta LTZ9 type=TIMESTAMPLTZ code=-102 prec=0 scale=9 class=oracle.sql.TIMESTAMPLTZ disp=11
+meta TS type=TIMESTAMP code=93 prec=0 scale=6 class=oracle.sql.TIMESTAMP disp=11
+row 1: [BigDecimal:1] [TIMESTAMPTZ:2024-3-5 13.14.15.123456000 US/Eastern] [TIMESTAMPTZ:2024-3-5 13.14.15.123000000 US/Eastern] [TIMESTAMPLTZ:<SQLException>] [TIMESTAMPLTZ:<SQLException>] [TIMESTAMP:2024-03-05 13:14:15.123456{787c03050e0f10075bca00}]
+str 1: [1] [2024-3-5 13.14.15.123456000 US/Eastern] [2024-3-5 13.14.15.123000000 US/Eastern] [2024-3-5 18.14.15.123456000] [2024-3-5 18.14.15.123456000] [2024-3-5.13.14. 15. 123456000]
+row 2: [BigDecimal:2] [TIMESTAMPTZ:2024-7-5 13.14.15.123456000 US/Eastern] [TIMESTAMPTZ:2024-7-5 13.14.15.123000000 US/Eastern] [TIMESTAMPLTZ:<SQLException>] [TIMESTAMPLTZ:<SQLException>] [TIMESTAMP:2024-07-05 13:14:15.123456{787c07050e0f10075bca00}]
+str 2: [2] [2024-7-5 13.14.15.123456000 US/Eastern] [2024-7-5 13.14.15.123000000 US/Eastern] [2024-7-5 17.14.15.123456000] [2024-7-5 17.14.15.123456000] [2024-7-5.13.14. 15. 123456000]
+row 3: [BigDecimal:3] [TIMESTAMPTZ:2024-3-5 13.14.15.123456000 5:30] [TIMESTAMPTZ:2024-3-5 13.14.15.123000000 5:30] [TIMESTAMPLTZ:<SQLException>] [TIMESTAMPLTZ:<SQLException>] [TIMESTAMP:2024-03-05 13:14:15.123456{787c03050e0f10075bca00}]
+str 3: [3] [2024-3-5 13.14.15.123456000 5:30] [2024-3-5 13.14.15.123000000 5:30] [2024-3-5 7.44.15.123456000] [2024-3-5 7.44.15.123456000] [2024-3-5.13.14. 15. 123456000]
+row 4: [BigDecimal:4] [TIMESTAMPTZ:2024-3-5 13.14.15.123456000 -8:0] [TIMESTAMPTZ:2024-3-5 13.14.15.123000000 -8:0] [TIMESTAMPLTZ:<SQLException>] [TIMESTAMPLTZ:<SQLException>] [TIMESTAMP:2024-03-05 13:14:15.123456{787c03050e0f10075bca00}]
+str 4: [4] [2024-3-5 13.14.15.123456000 -8:0] [2024-3-5 13.14.15.123000000 -8:0] [2024-3-5 21.14.15.123456000] [2024-3-5 21.14.15.123456000] [2024-3-5.13.14. 15. 123456000]
+row 5: [BigDecimal:5] [TIMESTAMPTZ:2024-3-5 13.14.15.123456000 UTC] [TIMESTAMPTZ:2024-3-5 13.14.15.123000000 UTC] [TIMESTAMPLTZ:<SQLException>] [TIMESTAMPLTZ:<SQLException>] [TIMESTAMP:2024-03-05 13:14:15.123456{787c03050e0f10075bca00}]
+str 5: [5] [2024-3-5 13.14.15.123456000 UTC] [2024-3-5 13.14.15.123000000 UTC] [2024-3-5 13.14.15.123456000] [2024-3-5 13.14.15.123456000] [2024-3-5.13.14. 15. 123456000]
+row 6: [BigDecimal:6] [TIMESTAMPTZ:2024-3-5 13.14.15.123456000 Asia/Tokyo] [TIMESTAMPTZ:2024-3-5 13.14.15.123000000 Asia/Tokyo] [TIMESTAMPLTZ:<SQLException>] [TIMESTAMPLTZ:<SQLException>] [TIMESTAMP:2024-03-05 13:14:15.123456{787c03050e0f10075bca00}]
+str 6: [6] [2024-3-5 13.14.15.123456000 Asia/Tokyo] [2024-3-5 13.14.15.123000000 Asia/Tokyo] [2024-3-5 4.14.15.123456000] [2024-3-5 4.14.15.123456000] [2024-3-5.13.14. 15. 123456000]
+row 7: [BigDecimal:7] [TIMESTAMPTZ:1970-1-1 0.0.0.0 0:0] [TIMESTAMPTZ:1970-1-1 0.0.0.0 0:0] [TIMESTAMPLTZ:<SQLException>] [TIMESTAMPLTZ:<SQLException>] [TIMESTAMP:1970-01-01 00:00:00.0{77aa0101010101}]
+str 7: [7] [1970-1-1 0.0.0.0 0:0] [1970-1-1 0.0.0.0 0:0] [1970-1-1 0.0.0.0] [1970-1-1 0.0.0.0] [1970-1-1.0.0. 0. 0]
+row 8: [BigDecimal:8] [TIMESTAMPTZ:2024-11-3 1.30.0.0 US/Eastern] [TIMESTAMPTZ:2024-11-3 1.30.0.0 US/Eastern] [TIMESTAMPLTZ:<SQLException>] [TIMESTAMPLTZ:<SQLException>] [TIMESTAMP:2024-11-03 01:30:00.0{787c0b03021f01}]
+str 8: [8] [2024-11-3 1.30.0.0 US/Eastern] [2024-11-3 1.30.0.0 US/Eastern] [2024-11-3 6.30.0.0] [2024-11-3 6.30.0.0] [2024-11-3.1.30. 0. 0]
+row 9: [BigDecimal:9] [TIMESTAMPTZ:2024-11-3 0.30.0.0 US/Eastern] [TIMESTAMPTZ:2024-11-3 0.30.0.0 US/Eastern] [TIMESTAMPLTZ:<SQLException>] [TIMESTAMPLTZ:<SQLException>] [TIMESTAMP:2024-11-03 01:30:00.0{787c0b03021f01}]
+str 9: [9] [2024-11-3 0.30.0.0 US/Eastern] [2024-11-3 0.30.0.0 US/Eastern] [2024-11-3 5.30.0.0] [2024-11-3 5.30.0.0] [2024-11-3.1.30. 0. 0]
+row 10: [BigDecimal:99] [NULL] [NULL] [NULL] [NULL] [NULL]
+str 10: [99] [NULL] [NULL] [NULL] [NULL] [NULL]
+rows 10
+cols ID/NUMBER/0/-127 DTZ/VARCHAR2/4000/0 DLTZ/VARCHAR2/4000/0
+meta ID type=NUMBER code=2 prec=0 scale=-127 class=java.math.BigDecimal disp=22
+meta DTZ type=VARCHAR2 code=12 prec=4000 scale=0 class=java.lang.String disp=4000
+meta DLTZ type=VARCHAR2 code=12 prec=4000 scale=0 class=java.lang.String disp=4000
+row 1: [BigDecimal:1] [String:len=49 head=Typ=181 Len= hash=-946569816] [String:len=43 head=Typ=231 Len= hash=1276315418]
+str 1: [1] [Typ=181 Len=13: 78,7c,3,5,13,f,10,7,5b,ca,0,89,90] [Typ=231 Len=11: 78,7c,3,5,13,f,10,7,5b,ca,0]
+row 2: [BigDecimal:2] [String:len=49 head=Typ=181 Len= hash=642975245] [String:len=43 head=Typ=231 Len= hash=-1662714049]
+str 2: [2] [Typ=181 Len=13: 78,7c,7,5,12,f,10,7,5b,ca,0,89,90] [Typ=231 Len=11: 78,7c,7,5,12,f,10,7,5b,ca,0]
+row 3: [BigDecimal:3] [String:len=49 head=Typ=181 Len= hash=-1657338996] [String:len=43 head=Typ=231 Len= hash=-1390153136]
+str 3: [3] [Typ=181 Len=13: 78,7c,3,5,8,2d,10,7,5b,ca,0,19,5a] [Typ=231 Len=11: 78,7c,3,5,8,2d,10,7,5b,ca,0]
+row 4: [BigDecimal:4] [String:len=48 head=Typ=181 Len= hash=327692342] [String:len=43 head=Typ=231 Len= hash=-255287113]
+str 4: [4] [Typ=181 Len=13: 78,7c,3,5,16,f,10,7,5b,ca,0,c,3c] [Typ=231 Len=11: 78,7c,3,5,16,f,10,7,5b,ca,0]
+row 5: [BigDecimal:5] [String:len=47 head=Typ=181 Len= hash=957151479] [String:len=42 head=Typ=231 Len= hash=-314534975]
+str 5: [5] [Typ=181 Len=13: 78,7c,3,5,e,f,10,7,5b,ca,0,d0,4] [Typ=231 Len=11: 78,7c,3,5,e,f,10,7,5b,ca,0]
+row 6: [BigDecimal:6] [String:len=48 head=Typ=181 Len= hash=-1391136882] [String:len=42 head=Typ=231 Len= hash=-1578698255]
+str 6: [6] [Typ=181 Len=13: 78,7c,3,5,5,f,10,7,5b,ca,0,84,2c] [Typ=231 Len=11: 78,7c,3,5,5,f,10,7,5b,ca,0]
+row 7: [BigDecimal:7] [String:len=45 head=Typ=181 Len= hash=1521860746] [String:Typ=231 Len=7: 77,aa,1,1,1,1,1]
+str 7: [7] [Typ=181 Len=13: 77,aa,1,1,1,1,1,0,0,0,0,14,3c] [Typ=231 Len=7: 77,aa,1,1,1,1,1]
+row 8: [BigDecimal:8] [String:len=46 head=Typ=181 Len= hash=735985861] [String:Typ=231 Len=7: 78,7c,b,3,7,1f,1]
+str 8: [8] [Typ=181 Len=13: 78,7c,b,3,7,1f,1,0,0,0,0,89,90] [Typ=231 Len=7: 78,7c,b,3,7,1f,1]
+row 9: [BigDecimal:9] [String:len=46 head=Typ=181 Len= hash=1144810086] [String:Typ=231 Len=7: 78,7c,b,3,6,1f,1]
+str 9: [9] [Typ=181 Len=13: 78,7c,b,3,6,1f,1,0,0,0,0,89,90] [Typ=231 Len=7: 78,7c,b,3,6,1f,1]
+row 10: [BigDecimal:99] [String:NULL] [String:NULL]
+str 10: [99] [NULL] [NULL]
+rows 10
+cols A/TIMESTAMPTZ/0/6 B/TIMESTAMPTZ/0/6 C/TIMESTAMP/0/6 D/TIMESTAMPTZ/0/6 E/TIMESTAMPLTZ/0/6
+meta A type=TIMESTAMPTZ code=-101 prec=0 scale=6 class=oracle.sql.TIMESTAMPTZ disp=13
+meta B type=TIMESTAMPTZ code=-101 prec=0 scale=6 class=oracle.sql.TIMESTAMPTZ disp=13
+meta C type=TIMESTAMP code=93 prec=0 scale=6 class=oracle.sql.TIMESTAMP disp=11
+meta D type=TIMESTAMPTZ code=-101 prec=0 scale=6 class=oracle.sql.TIMESTAMPTZ disp=13
+meta E type=TIMESTAMPLTZ code=-102 prec=0 scale=6 class=oracle.sql.TIMESTAMPLTZ disp=11
+row 1: [TIMESTAMPTZ:2026-10-19 20.5.58.40008000 -4:0] [TIMESTAMPTZ:2026-10-19 20.5.58.40012000 -4:0] [TIMESTAMP:2026-10-19 20:05:58.040012{787e0a1315063b026288e0}] [NULL] [NULL]
+str 1: [2026-10-19 20.5.58.40008000 -4:0] [2026-10-19 20.5.58.40012000 -4:0] [2026-10-19.20.5. 58. 40012000] [NULL] [NULL]
+rows 1
+cols ST/VARCHAR2/75/0 DT/VARCHAR2/6/0
+meta ST type=VARCHAR2 code=12 prec=75 scale=0 class=java.lang.String disp=75
+meta DT type=VARCHAR2 code=12 prec=6 scale=0 class=java.lang.String disp=6
+row 1: [String:-04:00] [String:+00:00]
+str 1: [-04:00] [+00:00]
+rows 1
+cols ID/NUMBER/0/-127 LTZ/TIMESTAMPLTZ/0/6 D/VARCHAR2/4000/0
+meta ID type=NUMBER code=2 prec=0 scale=-127 class=java.math.BigDecimal disp=22
+meta LTZ type=TIMESTAMPLTZ code=-102 prec=0 scale=6 class=oracle.sql.TIMESTAMPLTZ disp=11
+meta D type=VARCHAR2 code=12 prec=4000 scale=0 class=java.lang.String disp=4000
+row 1: [BigDecimal:1] [TIMESTAMPLTZ:<SQLException>] [String:len=43 head=Typ=231 Len= hash=1276315418]
+str 1: [1] [2024-3-5 18.14.15.123456000] [Typ=231 Len=11: 78,7c,3,5,13,f,10,7,5b,ca,0]
+row 2: [BigDecimal:3] [TIMESTAMPLTZ:<SQLException>] [String:len=43 head=Typ=231 Len= hash=-1390153136]
+str 2: [3] [2024-3-5 7.44.15.123456000] [Typ=231 Len=11: 78,7c,3,5,8,2d,10,7,5b,ca,0]
+row 3: [BigDecimal:99] [NULL] [String:NULL]
+str 3: [99] [NULL] [NULL]
+rows 3
+cols ID/NUMBER/0/-127 TZ/TIMESTAMPTZ/0/6
+meta ID type=NUMBER code=2 prec=0 scale=-127 class=java.math.BigDecimal disp=22
+meta TZ type=TIMESTAMPTZ code=-101 prec=0 scale=6 class=oracle.sql.TIMESTAMPTZ disp=13
+row 1: [BigDecimal:1] [TIMESTAMPTZ:2024-3-5 13.14.15.123456000 US/Eastern]
+str 1: [1] [2024-3-5 13.14.15.123456000 US/Eastern]
+row 2: [BigDecimal:3] [TIMESTAMPTZ:2024-3-5 13.14.15.123456000 5:30]
+str 2: [3] [2024-3-5 13.14.15.123456000 5:30]
+row 3: [BigDecimal:99] [NULL]
+str 3: [99] [NULL]
+rows 3
+cols ID/NUMBER/0/-127 LTZ/TIMESTAMPLTZ/0/6 D/VARCHAR2/4000/0
+meta ID type=NUMBER code=2 prec=0 scale=-127 class=java.math.BigDecimal disp=22
+meta LTZ type=TIMESTAMPLTZ code=-102 prec=0 scale=6 class=oracle.sql.TIMESTAMPLTZ disp=11
+meta D type=VARCHAR2 code=12 prec=4000 scale=0 class=java.lang.String disp=4000
+row 1: [BigDecimal:1] [TIMESTAMPLTZ:<SQLException>] [String:len=43 head=Typ=231 Len= hash=1276315418]
+str 1: [1] [2024-3-5 18.14.15.123456000] [Typ=231 Len=11: 78,7c,3,5,13,f,10,7,5b,ca,0]
+row 2: [BigDecimal:3] [TIMESTAMPLTZ:<SQLException>] [String:len=43 head=Typ=231 Len= hash=-1390153136]
+str 2: [3] [2024-3-5 7.44.15.123456000] [Typ=231 Len=11: 78,7c,3,5,8,2d,10,7,5b,ca,0]
+row 3: [BigDecimal:99] [NULL] [String:NULL]
+str 3: [99] [NULL] [NULL]
+rows 3
+exit 0

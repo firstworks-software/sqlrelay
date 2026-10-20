@@ -1,0 +1,65 @@
+== prepnchar
+insert 1
+insert 1
+cols A/VARCHAR2/16/0 D/VARCHAR2/4000/0
+meta A type=VARCHAR2 code=12 prec=16 scale=0 class=java.lang.String disp=16
+meta D type=VARCHAR2 code=12 prec=4000 scale=0 class=java.lang.String disp=4000
+row 1: [String:abc] [String:len=50 head=Typ=1 Len=6  hash=-624223863]
+str 1: [abc] [Typ=1 Len=6 CharacterSet=AL16UTF16: 0,61,0,62,0,63]
+rows 1
+insert 1
+insert 1
+cols A/VARCHAR2/16/0 D/VARCHAR2/4000/0
+meta A type=VARCHAR2 code=12 prec=16 scale=0 class=java.lang.String disp=16
+meta D type=VARCHAR2 code=12 prec=4000 scale=0 class=java.lang.String disp=4000
+row 1: [String:café üñ] [String:len=71 head=Typ=1 Len=14 hash=782619240]
+str 1: [café üñ] [Typ=1 Len=14 CharacterSet=AL16UTF16: 0,63,0,61,0,66,0,e9,0,2...len=71]
+rows 1
+insert 1
+insert 1
+cols A/VARCHAR2/16/0 D/VARCHAR2/4000/0
+meta A type=VARCHAR2 code=12 prec=16 scale=0 class=java.lang.String disp=16
+meta D type=VARCHAR2 code=12 prec=4000 scale=0 class=java.lang.String disp=4000
+row 1: [String:日本語] [String:len=53 head=Typ=1 Len=6  hash=-229608481]
+str 1: [日本語] [Typ=1 Len=6 CharacterSet=AL16UTF16: 65,e5,67,2c,8a,9e]
+rows 1
+insert 1
+insert 1
+cols A/VARCHAR2/16/0 D/VARCHAR2/4000/0
+meta A type=VARCHAR2 code=12 prec=16 scale=0 class=java.lang.String disp=16
+meta D type=VARCHAR2 code=12 prec=4000 scale=0 class=java.lang.String disp=4000
+row 1: [String:x] [String:Typ=1 Len=2 CharacterSet=AL16UTF16: 0,78]
+str 1: [x] [Typ=1 Len=2 CharacterSet=AL16UTF16: 0,78]
+rows 1
+insert 1
+cols ID/NUMBER/0/-127
+row 1: [BigDecimal:2]
+row 2: [BigDecimal:11]
+rows 2
+cols ID/NUMBER/0/-127 NC/CHAR/10/0 NV/VARCHAR2/100/0 V/VARCHAR2/100/0 DNC/VARCHAR2/4000/0 DNV/VARCHAR2/4000/0
+meta ID type=NUMBER code=2 prec=0 scale=-127 class=java.math.BigDecimal disp=22
+meta NC type=CHAR code=1 prec=10 scale=0 class=java.lang.String disp=10
+meta NV type=VARCHAR2 code=12 prec=100 scale=0 class=java.lang.String disp=100
+meta V type=VARCHAR2 code=12 prec=100 scale=0 class=java.lang.String disp=100
+meta DNC type=VARCHAR2 code=12 prec=4000 scale=0 class=java.lang.String disp=4000
+meta DNV type=VARCHAR2 code=12 prec=4000 scale=0 class=java.lang.String disp=4000
+row 1: [BigDecimal:1] [String:abc       ] [String:abc] [String:abc] [String:len=87 head=Typ=96 Len=2 hash=-357143065] [String:len=50 head=Typ=1 Len=6  hash=-624223863]
+str 1: [1] [abc       ] [abc] [abc] [Typ=96 Len=20 CharacterSet=AL16UTF16: 0,61,0,62,0,63,0,20,0,...len=87] [Typ=1 Len=6 CharacterSet=AL16UTF16: 0,61,0,62,0,63]
+row 2: [BigDecimal:2] [String:café üñ   ] [String:café üñ] [String:café üñ] [String:len=87 head=Typ=96 Len=2 hash=625250825] [String:len=71 head=Typ=1 Len=14 hash=782619240]
+str 2: [2] [café üñ   ] [café üñ] [café üñ] [Typ=96 Len=20 CharacterSet=AL16UTF16: 0,63,0,61,0,66,0,e9,0,...len=87] [Typ=1 Len=14 CharacterSet=AL16UTF16: 0,63,0,61,0,66,0,e9,0,2...len=71]
+row 3: [BigDecimal:3] [String:日本語       ] [String:日本語] [String:日本語] [String:len=90 head=Typ=96 Len=2 hash=-1354470467] [String:len=53 head=Typ=1 Len=6  hash=-229608481]
+str 3: [3] [日本語       ] [日本語] [日本語] [Typ=96 Len=20 CharacterSet=AL16UTF16: 65,e5,67,2c,8a,9e,0,20...len=90] [Typ=1 Len=6 CharacterSet=AL16UTF16: 65,e5,67,2c,8a,9e]
+row 4: [BigDecimal:4] [String:x         ] [String:x] [String:x] [String:len=87 head=Typ=96 Len=2 hash=-1874636318] [String:Typ=1 Len=2 CharacterSet=AL16UTF16: 0,78]
+str 4: [4] [x         ] [x] [x] [Typ=96 Len=20 CharacterSet=AL16UTF16: 0,78,0,20,0,20,0,20,0,...len=87] [Typ=1 Len=2 CharacterSet=AL16UTF16: 0,78]
+row 5: [BigDecimal:10] [String:abc       ] [String:abc] [String:abc] [String:len=87 head=Typ=96 Len=2 hash=-357143065] [String:len=50 head=Typ=1 Len=6  hash=-624223863]
+str 5: [10] [abc       ] [abc] [abc] [Typ=96 Len=20 CharacterSet=AL16UTF16: 0,61,0,62,0,63,0,20,0,...len=87] [Typ=1 Len=6 CharacterSet=AL16UTF16: 0,61,0,62,0,63]
+row 6: [BigDecimal:11] [String:café üñ   ] [String:café üñ] [String:café üñ] [String:len=87 head=Typ=96 Len=2 hash=625250825] [String:len=71 head=Typ=1 Len=14 hash=782619240]
+str 6: [11] [café üñ   ] [café üñ] [café üñ] [Typ=96 Len=20 CharacterSet=AL16UTF16: 0,63,0,61,0,66,0,e9,0,...len=87] [Typ=1 Len=14 CharacterSet=AL16UTF16: 0,63,0,61,0,66,0,e9,0,2...len=71]
+row 7: [BigDecimal:12] [String:日本語       ] [String:日本語] [String:日本語] [String:len=90 head=Typ=96 Len=2 hash=-1354470467] [String:len=53 head=Typ=1 Len=6  hash=-229608481]
+str 7: [12] [日本語       ] [日本語] [日本語] [Typ=96 Len=20 CharacterSet=AL16UTF16: 65,e5,67,2c,8a,9e,0,20...len=90] [Typ=1 Len=6 CharacterSet=AL16UTF16: 65,e5,67,2c,8a,9e]
+row 8: [BigDecimal:13] [String:x         ] [String:x] [String:x] [String:len=87 head=Typ=96 Len=2 hash=-1874636318] [String:Typ=1 Len=2 CharacterSet=AL16UTF16: 0,78]
+str 8: [13] [x         ] [x] [x] [Typ=96 Len=20 CharacterSet=AL16UTF16: 0,78,0,20,0,20,0,20,0,...len=87] [Typ=1 Len=2 CharacterSet=AL16UTF16: 0,78]
+row 9: [BigDecimal:50] [NULL] [NULL] [NULL] [String:NULL] [String:NULL]
+str 9: [50] [NULL] [NULL] [NULL] [NULL] [NULL]
+rows 9
+exit 0

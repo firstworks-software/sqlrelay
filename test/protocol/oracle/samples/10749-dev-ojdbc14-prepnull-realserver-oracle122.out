@@ -1,0 +1,122 @@
+== prepnull
+cols A/VARCHAR2/2000/0
+meta A type=VARCHAR2 code=12 prec=2000 scale=0 class=java.lang.String disp=2000
+row 1: [NULL]
+str 1: [NULL]
+rows 1
+cols A/NUMBER/0/0
+meta A type=NUMBER code=2 prec=0 scale=0 class=java.math.BigDecimal disp=22
+row 1: [NULL]
+str 1: [NULL]
+rows 1
+cols A/NUMBER/0/0
+meta A type=NUMBER code=2 prec=0 scale=0 class=java.math.BigDecimal disp=22
+row 1: [NULL]
+str 1: [NULL]
+rows 1
+cols A/DATE/0/0
+meta A type=DATE code=91 prec=0 scale=0 class=java.sql.Timestamp disp=7
+row 1: [NULL]
+str 1: [NULL]
+rows 1
+cols A/TIMESTAMP/0/9
+meta A type=TIMESTAMP code=93 prec=0 scale=9 class=oracle.sql.TIMESTAMP disp=11
+row 1: [NULL]
+str 1: [NULL]
+rows 1
+cols A/RAW/0/0
+meta A type=RAW code=-3 prec=0 scale=0 class=byte[] disp=2000
+row 1: [NULL]
+str 1: [NULL]
+rows 1
+cols A/VARCHAR2/2000/0
+meta A type=VARCHAR2 code=12 prec=2000 scale=0 class=java.lang.String disp=2000
+row 1: [NULL]
+str 1: [NULL]
+rows 1
+cols A/NUMBER/0/0
+meta A type=NUMBER code=2 prec=0 scale=0 class=java.math.BigDecimal disp=22
+row 1: [NULL]
+str 1: [NULL]
+rows 1
+cols A/NUMBER/0/0
+meta A type=NUMBER code=2 prec=0 scale=0 class=java.math.BigDecimal disp=22
+row 1: [NULL]
+str 1: [NULL]
+rows 1
+cols A/RAW/0/0
+meta A type=RAW code=-3 prec=0 scale=0 class=byte[] disp=2000
+row 1: [NULL]
+str 1: [NULL]
+rows 1
+cols A/NUMBER/0/0
+meta A type=NUMBER code=2 prec=0 scale=0 class=java.math.BigDecimal disp=22
+row 1: [NULL]
+str 1: [NULL]
+rows 1
+cols A/NUMBER/0/0
+meta A type=NUMBER code=2 prec=0 scale=0 class=java.math.BigDecimal disp=22
+row 1: [NULL]
+str 1: [NULL]
+rows 1
+cols A/NUMBER/0/0
+meta A type=NUMBER code=2 prec=0 scale=0 class=java.math.BigDecimal disp=22
+row 1: [NULL]
+str 1: [NULL]
+rows 1
+cols A/NUMBER/0/0
+meta A type=NUMBER code=2 prec=0 scale=0 class=java.math.BigDecimal disp=22
+row 1: [NULL]
+str 1: [NULL]
+rows 1
+cols A/NUMBER/0/0
+meta A type=NUMBER code=2 prec=0 scale=0 class=java.math.BigDecimal disp=22
+row 1: [NULL]
+str 1: [NULL]
+rows 1
+cols A/VARCHAR2/2000/0
+meta A type=VARCHAR2 code=12 prec=2000 scale=0 class=java.lang.String disp=2000
+row 1: [NULL]
+str 1: [NULL]
+rows 1
+cols A/RAW/0/0
+meta A type=RAW code=-3 prec=0 scale=0 class=byte[] disp=2000
+row 1: [NULL]
+str 1: [NULL]
+rows 1
+cols A/DATE/0/0
+meta A type=DATE code=91 prec=0 scale=0 class=java.sql.Timestamp disp=7
+row 1: [NULL]
+str 1: [NULL]
+rows 1
+cols A/VARCHAR2/2000/0
+meta A type=VARCHAR2 code=12 prec=2000 scale=0 class=java.lang.String disp=2000
+row 1: [NULL]
+str 1: [NULL]
+rows 1
+step select setNull OTHER threw SQLException 17004 Invalid column type
+insert 1
+insert 1
+insert 1
+cols ID/NUMBER/0/-127 V/VARCHAR2/10/0 N/NUMBER/0/-127 I/NUMBER/38/0 D/DATE/0/0 TS/TIMESTAMP/0/6 R/RAW/0/0 C/CHAR/5/0 DB/NUMBER/0/-127 F/NUMBER/0/-127
+meta ID type=NUMBER code=2 prec=0 scale=-127 class=java.math.BigDecimal disp=22
+meta V type=VARCHAR2 code=12 prec=10 scale=0 class=java.lang.String disp=10
+meta N type=NUMBER code=2 prec=0 scale=-127 class=java.math.BigDecimal disp=22
+meta I type=NUMBER code=2 prec=38 scale=0 class=java.math.BigDecimal disp=22
+meta D type=DATE code=91 prec=0 scale=0 class=java.sql.Timestamp disp=7
+meta TS type=TIMESTAMP code=93 prec=0 scale=6 class=oracle.sql.TIMESTAMP disp=11
+meta R type=RAW code=-3 prec=0 scale=0 class=byte[] disp=10
+meta C type=CHAR code=1 prec=5 scale=0 class=java.lang.String disp=5
+meta DB type=NUMBER code=2 prec=0 scale=-127 class=java.math.BigDecimal disp=22
+meta F type=NUMBER code=2 prec=0 scale=-127 class=java.math.BigDecimal disp=22
+row 1: [BigDecimal:1] [NULL] [NULL] [NULL] [NULL] [NULL] [NULL] [NULL] [NULL] [NULL]
+str 1: [1] [NULL] [NULL] [NULL] [NULL] [NULL] [NULL] [NULL] [NULL] [NULL]
+row 2: [BigDecimal:2] [NULL] [NULL] [NULL] [NULL] [NULL] [NULL] [NULL] [NULL] [NULL]
+str 2: [2] [NULL] [NULL] [NULL] [NULL] [NULL] [NULL] [NULL] [NULL] [NULL]
+row 3: [BigDecimal:3] [NULL] [NULL] [NULL] [NULL] [NULL] [NULL] [NULL] [NULL] [NULL]
+str 3: [3] [NULL] [NULL] [NULL] [NULL] [NULL] [NULL] [NULL] [NULL] [NULL]
+row 4: [BigDecimal:4] [String:x] [BigDecimal:5] [NULL] [NULL] [NULL] [NULL] [NULL] [NULL] [NULL]
+str 4: [4] [x] [5] [NULL] [NULL] [NULL] [NULL] [NULL] [NULL] [NULL]
+rows 4
+steps that threw 1
+exit 0

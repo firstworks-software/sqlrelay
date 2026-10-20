@@ -1,0 +1,96 @@
+== prepbytes
+insert 1
+insert 1
+insert 1
+insert 1
+insert 1
+insert 1
+insert 1
+insert 1
+step insert raw setBytes 2001 threw SQLException 22835 ORA-22835: Buffer too small for CLOB to CHAR or BLOB to RAW conversion (actual: 2001, maximum: 2000)
+step insert long raw setBytes 2001 threw SQLException 22835 ORA-22835: Buffer too small for CLOB to CHAR or BLOB to RAW conversion (actual: 2001, maximum: 2000)
+insert 1
+insert 1
+insert 1
+insert 1
+step insert raw setBytes 4000 threw SQLException 22835 ORA-22835: Buffer too small for CLOB to CHAR or BLOB to RAW conversion (actual: 4000, maximum: 2000)
+step insert long raw setBytes 4000 threw SQLException 22835 ORA-22835: Buffer too small for CLOB to CHAR or BLOB to RAW conversion (actual: 4000, maximum: 2000)
+insert 1
+cols ID/NUMBER/0/-127 R/RAW/0/0 LR/NUMBER/0/0
+meta ID type=NUMBER code=2 prec=0 scale=-127 class=java.math.BigDecimal disp=22
+meta R type=RAW code=-3 prec=0 scale=0 class=byte[] disp=2000
+meta LR type=NUMBER code=2 prec=0 scale=0 class=java.math.BigDecimal disp=22
+row 1: [BigDecimal:1] [raw:05121f] [BigDecimal:3]
+str 1: [1] [05121F] [3]
+row 2: [BigDecimal:2] [raw:05121f2c394653606d7a8794a1aebbc8d5e2effc...len=64] [BigDecimal:64]
+str 2: [2] [05121F2C394653606D7A8794A1AEBBC8D5E2EFFC091623303D4A5764717E...len=128] [64]
+row 3: [BigDecimal:3] [raw:05121f2c394653606d7a8794a1aebbc8d5e2effc...len=65] [BigDecimal:65]
+str 3: [3] [05121F2C394653606D7A8794A1AEBBC8D5E2EFFC091623303D4A5764717E...len=130] [65]
+row 4: [BigDecimal:4] [raw:05121f2c394653606d7a8794a1aebbc8d5e2effc...len=2000] [BigDecimal:2000]
+str 4: [4] [05121F2C394653606D7A8794A1AEBBC8D5E2EFFC091623303D4A5764717E...len=4000] [2000]
+row 5: [BigDecimal:6] [NULL] [NULL]
+str 5: [6] [NULL] [NULL]
+row 6: [BigDecimal:7] [raw:05] [BigDecimal:1]
+str 6: [7] [05] [1]
+row 7: [BigDecimal:99] [NULL] [NULL]
+str 7: [99] [NULL] [NULL]
+rows 7
+cols ID/NUMBER/0/-127 L/LONG RAW/2147483647/0
+meta ID type=NUMBER code=2 prec=0 scale=-127 class=java.math.BigDecimal disp=22
+meta L type=LONG RAW code=-4 prec=2147483647 scale=0 class=byte[] disp=0
+row 1: [BigDecimal:1] [raw:05121f]
+str 1: [1]
+row 2: [BigDecimal:2] [raw:05121f2c394653606d7a8794a1aebbc8d5e2effc...len=64]
+str 2: [2]
+row 3: [BigDecimal:3] [raw:05121f2c394653606d7a8794a1aebbc8d5e2effc...len=65]
+str 3: [3]
+row 4: [BigDecimal:4] [raw:05121f2c394653606d7a8794a1aebbc8d5e2effc...len=2000]
+str 4: [4]
+row 5: [BigDecimal:6] [NULL]
+str 5: [6]
+row 6: [BigDecimal:7] [raw:05]
+str 6: [7]
+rows 6
+cols R/VARCHAR2/4000/0 L/NUMBER/0/0
+meta R type=VARCHAR2 code=12 prec=4000 scale=0 class=java.lang.String disp=4000
+meta L type=NUMBER code=2 prec=0 scale=0 class=java.math.BigDecimal disp=22
+row 1: [String:05121F] [BigDecimal:3]
+str 1: [05121F] [3]
+rows 1
+cols R/VARCHAR2/4000/0 L/NUMBER/0/0
+meta R type=VARCHAR2 code=12 prec=4000 scale=0 class=java.lang.String disp=4000
+meta L type=NUMBER code=2 prec=0 scale=0 class=java.math.BigDecimal disp=22
+row 1: [String:len=128 head=05121F2C3946 hash=996808690] [BigDecimal:64]
+str 1: [05121F2C394653606D7A8794A1AEBBC8D5E2EFFC091623303D4A5764717E...len=128] [64]
+rows 1
+cols R/VARCHAR2/4000/0 L/NUMBER/0/0
+meta R type=VARCHAR2 code=12 prec=4000 scale=0 class=java.lang.String disp=4000
+meta L type=NUMBER code=2 prec=0 scale=0 class=java.math.BigDecimal disp=22
+row 1: [String:len=130 head=05121F2C3946 hash=155445747] [BigDecimal:65]
+str 1: [05121F2C394653606D7A8794A1AEBBC8D5E2EFFC091623303D4A5764717E...len=130] [65]
+rows 1
+cols R/VARCHAR2/4000/0 L/NUMBER/0/0
+meta R type=VARCHAR2 code=12 prec=4000 scale=0 class=java.lang.String disp=4000
+meta L type=NUMBER code=2 prec=0 scale=0 class=java.math.BigDecimal disp=22
+row 1: [String:len=4000 head=05121F2C3946 hash=885527201] [BigDecimal:2000]
+str 1: [05121F2C394653606D7A8794A1AEBBC8D5E2EFFC091623303D4A5764717E...len=4000] [2000]
+rows 1
+step select ? from dual 2001 threw SQLException 22835 ORA-22835: Buffer too small for CLOB to CHAR or BLOB to RAW conversion (actual: 2001, maximum: 2000)
+cols R/VARCHAR2/4000/0 L/NUMBER/0/0
+meta R type=VARCHAR2 code=12 prec=4000 scale=0 class=java.lang.String disp=4000
+meta L type=NUMBER code=2 prec=0 scale=0 class=java.math.BigDecimal disp=22
+row 1: [NULL] [NULL]
+str 1: [NULL] [NULL]
+rows 1
+cols R/VARCHAR2/4000/0 L/NUMBER/0/0
+meta R type=VARCHAR2 code=12 prec=4000 scale=0 class=java.lang.String disp=4000
+meta L type=NUMBER code=2 prec=0 scale=0 class=java.math.BigDecimal disp=22
+row 1: [String:05] [BigDecimal:1]
+str 1: [05] [1]
+rows 1
+step select ? from dual 4000 threw SQLException 22835 ORA-22835: Buffer too small for CLOB to CHAR or BLOB to RAW conversion (actual: 4000, maximum: 2000)
+cols ID/NUMBER/0/-127
+row 1: [BigDecimal:2]
+rows 1
+steps that threw 6
+exit 0

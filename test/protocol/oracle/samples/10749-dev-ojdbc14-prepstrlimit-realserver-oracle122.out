@@ -1,0 +1,12 @@
+== prepstrlimit
+insert 1
+insert 1
+cols ID/NUMBER/0/-127 L/LONG/2147483647/0
+meta ID type=NUMBER code=2 prec=0 scale=-127 class=java.math.BigDecimal disp=22
+meta L type=LONG code=-1 prec=2147483647 scale=0 class=java.lang.String disp=0
+row 1: [BigDecimal:1] [String:len=32766 head=abcdefghijkl hash=-1579955617]
+str 1: [1]
+row 2: [BigDecimal:2] [String:len=32767 head=abcdefghijkl hash=-1733983768]
+str 2: [2]
+rows 2
+exit 0

@@ -1,0 +1,161 @@
+== prepbinfloat
+insert 1
+insert 1
+cols F/VARCHAR2/128/0 D/VARCHAR2/128/0 DF/VARCHAR2/4000/0 DD/VARCHAR2/4000/0
+meta F type=VARCHAR2 code=12 prec=128 scale=0 class=java.lang.String disp=128
+meta D type=VARCHAR2 code=12 prec=128 scale=0 class=java.lang.String disp=128
+meta DF type=VARCHAR2 code=12 prec=4000 scale=0 class=java.lang.String disp=4000
+meta DD type=VARCHAR2 code=12 prec=4000 scale=0 class=java.lang.String disp=4000
+row 1: [String:15E-1] [String:15E-1] [String:Typ=1 Len=5: 31,35,45,2d,31] [String:Typ=1 Len=5: 31,35,45,2d,31]
+str 1: [15E-1] [15E-1] [Typ=1 Len=5: 31,35,45,2d,31] [Typ=1 Len=5: 31,35,45,2d,31]
+rows 1
+cols F/VARCHAR2/128/0 D/VARCHAR2/128/0 DF/VARCHAR2/4000/0 DD/VARCHAR2/4000/0
+meta F type=VARCHAR2 code=12 prec=128 scale=0 class=java.lang.String disp=128
+meta D type=VARCHAR2 code=12 prec=128 scale=0 class=java.lang.String disp=128
+meta DF type=VARCHAR2 code=12 prec=4000 scale=0 class=java.lang.String disp=4000
+meta DD type=VARCHAR2 code=12 prec=4000 scale=0 class=java.lang.String disp=4000
+row 1: [String:1.5] [String:1.5] [String:Typ=1 Len=3: 31,2e,35] [String:Typ=1 Len=3: 31,2e,35]
+str 1: [1.5] [1.5] [Typ=1 Len=3: 31,2e,35] [Typ=1 Len=3: 31,2e,35]
+rows 1
+insert 1
+step insert setFloat/Double NaN threw SQLException 0 Overflow Exception trying to bind NaN
+cols F/VARCHAR2/128/0 D/VARCHAR2/128/0 DF/VARCHAR2/4000/0 DD/VARCHAR2/4000/0
+meta F type=VARCHAR2 code=12 prec=128 scale=0 class=java.lang.String disp=128
+meta D type=VARCHAR2 code=12 prec=128 scale=0 class=java.lang.String disp=128
+meta DF type=VARCHAR2 code=12 prec=4000 scale=0 class=java.lang.String disp=4000
+meta DD type=VARCHAR2 code=12 prec=4000 scale=0 class=java.lang.String disp=4000
+row 1: [String:NaN] [String:NaN] [String:Typ=1 Len=3: 4e,61,4e] [String:Typ=1 Len=3: 4e,61,4e]
+str 1: [NaN] [NaN] [Typ=1 Len=3: 4e,61,4e] [Typ=1 Len=3: 4e,61,4e]
+rows 1
+step select ? setFloat/Double NaN threw SQLException 0 Overflow Exception trying to bind NaN
+insert 1
+step insert setFloat/Double Infinity threw SQLException 20009 ORA-20009: Bind variable value could not be decoded.
+cols F/VARCHAR2/128/0 D/VARCHAR2/128/0 DF/VARCHAR2/4000/0 DD/VARCHAR2/4000/0
+meta F type=VARCHAR2 code=12 prec=128 scale=0 class=java.lang.String disp=128
+meta D type=VARCHAR2 code=12 prec=128 scale=0 class=java.lang.String disp=128
+meta DF type=VARCHAR2 code=12 prec=4000 scale=0 class=java.lang.String disp=4000
+meta DD type=VARCHAR2 code=12 prec=4000 scale=0 class=java.lang.String disp=4000
+row 1: [String:INF] [String:INF] [String:Typ=1 Len=3: 49,4e,46] [String:Typ=1 Len=3: 49,4e,46]
+str 1: [INF] [INF] [Typ=1 Len=3: 49,4e,46] [Typ=1 Len=3: 49,4e,46]
+rows 1
+step select ? setFloat/Double Infinity threw SQLException 20009 ORA-20009: Bind variable value could not be decoded.
+insert 1
+step insert setFloat/Double -Infinity threw SQLException 20009 ORA-20009: Bind variable value could not be decoded.
+cols F/VARCHAR2/128/0 D/VARCHAR2/128/0 DF/VARCHAR2/4000/0 DD/VARCHAR2/4000/0
+meta F type=VARCHAR2 code=12 prec=128 scale=0 class=java.lang.String disp=128
+meta D type=VARCHAR2 code=12 prec=128 scale=0 class=java.lang.String disp=128
+meta DF type=VARCHAR2 code=12 prec=4000 scale=0 class=java.lang.String disp=4000
+meta DD type=VARCHAR2 code=12 prec=4000 scale=0 class=java.lang.String disp=4000
+row 1: [String:-INF] [String:-INF] [String:Typ=1 Len=4: 2d,49,4e,46] [String:Typ=1 Len=4: 2d,49,4e,46]
+str 1: [-INF] [-INF] [Typ=1 Len=4: 2d,49,4e,46] [Typ=1 Len=4: 2d,49,4e,46]
+rows 1
+step select ? setFloat/Double -Infinity threw SQLException 20009 ORA-20009: Bind variable value could not be decoded.
+insert 1
+insert 1
+cols F/VARCHAR2/128/0 D/VARCHAR2/128/0 DF/VARCHAR2/4000/0 DD/VARCHAR2/4000/0
+meta F type=VARCHAR2 code=12 prec=128 scale=0 class=java.lang.String disp=128
+meta D type=VARCHAR2 code=12 prec=128 scale=0 class=java.lang.String disp=128
+meta DF type=VARCHAR2 code=12 prec=4000 scale=0 class=java.lang.String disp=4000
+meta DD type=VARCHAR2 code=12 prec=4000 scale=0 class=java.lang.String disp=4000
+row 1: [String:0] [String:0] [String:Typ=1 Len=1: 30] [String:Typ=1 Len=1: 30]
+str 1: [0] [0] [Typ=1 Len=1: 30] [Typ=1 Len=1: 30]
+rows 1
+cols F/VARCHAR2/128/0 D/VARCHAR2/128/0 DF/VARCHAR2/4000/0 DD/VARCHAR2/4000/0
+meta F type=VARCHAR2 code=12 prec=128 scale=0 class=java.lang.String disp=128
+meta D type=VARCHAR2 code=12 prec=128 scale=0 class=java.lang.String disp=128
+meta DF type=VARCHAR2 code=12 prec=4000 scale=0 class=java.lang.String disp=4000
+meta DD type=VARCHAR2 code=12 prec=4000 scale=0 class=java.lang.String disp=4000
+row 1: [String:0] [String:0] [String:Typ=1 Len=1: 30] [String:Typ=1 Len=1: 30]
+str 1: [0] [0] [Typ=1 Len=1: 30] [Typ=1 Len=1: 30]
+rows 1
+insert 1
+step insert setFloat/Double 3.4028235E38 threw SQLException 0 Overflow Exception trying to bind 1.7976931348623157E308
+cols F/VARCHAR2/128/0 D/VARCHAR2/128/0 DF/VARCHAR2/4000/0 DD/VARCHAR2/4000/0
+meta F type=VARCHAR2 code=12 prec=128 scale=0 class=java.lang.String disp=128
+meta D type=VARCHAR2 code=12 prec=128 scale=0 class=java.lang.String disp=128
+meta DF type=VARCHAR2 code=12 prec=4000 scale=0 class=java.lang.String disp=4000
+meta DD type=VARCHAR2 code=12 prec=4000 scale=0 class=java.lang.String disp=4000
+row 1: [String:34028234663852886E22] [String:17976931348623157E292] [String:len=73 head=Typ=1 Len=20 hash=959600861] [String:len=76 head=Typ=1 Len=21 hash=1718140000]
+str 1: [34028234663852886E22] [17976931348623157E292] [Typ=1 Len=20: 33,34,30,32,38,32,33,34,36,36,33,38,35,32,38,3...len=73] [Typ=1 Len=21: 31,37,39,37,36,39,33,31,33,34,38,36,32,33,31,3...len=76]
+rows 1
+step select ? setFloat/Double 3.4028235E38 threw SQLException 0 Overflow Exception trying to bind 1.7976931348623157E308
+insert 1
+step insert setFloat/Double 1.4E-45 threw SQLException 0 Underflow Exception trying to bind 4.9E-324
+cols F/VARCHAR2/128/0 D/VARCHAR2/128/0 DF/VARCHAR2/4000/0 DD/VARCHAR2/4000/0
+meta F type=VARCHAR2 code=12 prec=128 scale=0 class=java.lang.String disp=128
+meta D type=VARCHAR2 code=12 prec=128 scale=0 class=java.lang.String disp=128
+meta DF type=VARCHAR2 code=12 prec=4000 scale=0 class=java.lang.String disp=4000
+meta DD type=VARCHAR2 code=12 prec=4000 scale=0 class=java.lang.String disp=4000
+row 1: [String:1401298464324817E-60] [String:5E-324] [String:len=73 head=Typ=1 Len=20 hash=897953432] [String:Typ=1 Len=6: 35,45,2d,33,32,34]
+str 1: [1401298464324817E-60] [5E-324] [Typ=1 Len=20: 31,34,30,31,32,39,38,34,36,34,33,32,34,38,31,3...len=73] [Typ=1 Len=6: 35,45,2d,33,32,34]
+rows 1
+step select ? setFloat/Double 1.4E-45 threw SQLException 0 Underflow Exception trying to bind 4.9E-324
+insert 1
+step insert setFloat/Double 1.1754944E-38 threw SQLException 0 Underflow Exception trying to bind 2.2250738585072014E-308
+cols F/VARCHAR2/128/0 D/VARCHAR2/128/0 DF/VARCHAR2/4000/0 DD/VARCHAR2/4000/0
+meta F type=VARCHAR2 code=12 prec=128 scale=0 class=java.lang.String disp=128
+meta D type=VARCHAR2 code=12 prec=128 scale=0 class=java.lang.String disp=128
+meta DF type=VARCHAR2 code=12 prec=4000 scale=0 class=java.lang.String disp=4000
+meta DD type=VARCHAR2 code=12 prec=4000 scale=0 class=java.lang.String disp=4000
+row 1: [String:11754943508222875E-54] [String:22250738585072014E-324] [String:len=76 head=Typ=1 Len=21 hash=1523326122] [String:len=79 head=Typ=1 Len=22 hash=1817250262]
+str 1: [11754943508222875E-54] [22250738585072014E-324] [Typ=1 Len=21: 31,31,37,35,34,39,34,33,35,30,38,32,32,32,38,3...len=76] [Typ=1 Len=22: 32,32,32,35,30,37,33,38,35,38,35,30,37,32,30,3...len=79]
+rows 1
+step select ? setFloat/Double 1.1754944E-38 threw SQLException 0 Underflow Exception trying to bind 2.2250738585072014E-308
+insert 1
+insert 1
+cols F/VARCHAR2/128/0 D/VARCHAR2/128/0 DF/VARCHAR2/4000/0 DD/VARCHAR2/4000/0
+meta F type=VARCHAR2 code=12 prec=128 scale=0 class=java.lang.String disp=128
+meta D type=VARCHAR2 code=12 prec=128 scale=0 class=java.lang.String disp=128
+meta DF type=VARCHAR2 code=12 prec=4000 scale=0 class=java.lang.String disp=4000
+meta DD type=VARCHAR2 code=12 prec=4000 scale=0 class=java.lang.String disp=4000
+row 1: [String:0] [String:0] [String:Typ=1 Len=1: 30] [String:Typ=1 Len=1: 30]
+str 1: [0] [0] [Typ=1 Len=1: 30] [Typ=1 Len=1: 30]
+rows 1
+cols F/VARCHAR2/128/0 D/VARCHAR2/128/0 DF/VARCHAR2/4000/0 DD/VARCHAR2/4000/0
+meta F type=VARCHAR2 code=12 prec=128 scale=0 class=java.lang.String disp=128
+meta D type=VARCHAR2 code=12 prec=128 scale=0 class=java.lang.String disp=128
+meta DF type=VARCHAR2 code=12 prec=4000 scale=0 class=java.lang.String disp=4000
+meta DD type=VARCHAR2 code=12 prec=4000 scale=0 class=java.lang.String disp=4000
+row 1: [String:0] [String:0] [String:Typ=1 Len=1: 30] [String:Typ=1 Len=1: 30]
+str 1: [0] [0] [Typ=1 Len=1: 30] [Typ=1 Len=1: 30]
+rows 1
+insert 1
+insert 1
+cols ID/NUMBER/0/-127 F/BINARY_FLOAT/0/0 D/BINARY_DOUBLE/0/0 N/NUMBER/0/-127 DF/VARCHAR2/4000/0 DD/VARCHAR2/4000/0
+meta ID type=NUMBER code=2 prec=0 scale=-127 class=java.math.BigDecimal disp=22
+meta F type=BINARY_FLOAT code=100 prec=0 scale=0 class=null disp=4
+meta D type=BINARY_DOUBLE code=101 prec=0 scale=0 class=null disp=8
+meta N type=NUMBER code=2 prec=0 scale=-127 class=java.math.BigDecimal disp=22
+meta DF type=VARCHAR2 code=12 prec=4000 scale=0 class=java.lang.String disp=4000
+meta DD type=VARCHAR2 code=12 prec=4000 scale=0 class=java.lang.String disp=4000
+row 1: [BigDecimal:1] [Float:1.5] [Double:1.5] [NULL] [String:Typ=100 Len=4: bf,c0,0,0] [String:Typ=101 Len=8: bf,f8,0,0,0,0,0,0]
+str 1: [1] [1.5] [1.5] [NULL] [Typ=100 Len=4: bf,c0,0,0] [Typ=101 Len=8: bf,f8,0,0,0,0,0,0]
+row 2: [BigDecimal:2] [Float:NaN] [Double:NaN] [NULL] [String:Typ=100 Len=4: ff,c0,0,0] [String:Typ=101 Len=8: ff,f8,0,0,0,0,0,0]
+str 2: [2] [NaN] [NaN] [NULL] [Typ=100 Len=4: ff,c0,0,0] [Typ=101 Len=8: ff,f8,0,0,0,0,0,0]
+row 3: [BigDecimal:3] [Float:Infinity] [Double:Infinity] [NULL] [String:Typ=100 Len=4: ff,80,0,0] [String:Typ=101 Len=8: ff,f0,0,0,0,0,0,0]
+str 3: [3] [Infinity] [Infinity] [NULL] [Typ=100 Len=4: ff,80,0,0] [Typ=101 Len=8: ff,f0,0,0,0,0,0,0]
+row 4: [BigDecimal:4] [Float:-Infinity] [Double:-Infinity] [NULL] [String:Typ=100 Len=4: 0,7f,ff,ff] [String:Typ=101 Len=8: 0,f,ff,ff,ff,ff,ff,ff]
+str 4: [4] [-Infinity] [-Infinity] [NULL] [Typ=100 Len=4: 0,7f,ff,ff] [Typ=101 Len=8: 0,f,ff,ff,ff,ff,ff,ff]
+row 5: [BigDecimal:5] [Float:0.0] [Double:0.0] [NULL] [String:Typ=100 Len=4: 80,0,0,0] [String:Typ=101 Len=8: 80,0,0,0,0,0,0,0]
+str 5: [5] [0.0] [0.0] [NULL] [Typ=100 Len=4: 80,0,0,0] [Typ=101 Len=8: 80,0,0,0,0,0,0,0]
+row 6: [BigDecimal:6] [Float:3.4028235E38] [Double:1.7976931348623157E308] [NULL] [String:Typ=100 Len=4: ff,7f,ff,ff] [String:Typ=101 Len=8: ff,ef,ff,ff,ff,ff,ff,ff]
+str 6: [6] [3.4028235E38] [1.7976931348623157E308] [NULL] [Typ=100 Len=4: ff,7f,ff,ff] [Typ=101 Len=8: ff,ef,ff,ff,ff,ff,ff,ff]
+row 7: [BigDecimal:7] [Float:1.4E-45] [Double:4.9E-324] [NULL] [String:Typ=100 Len=4: 80,0,0,1] [String:Typ=101 Len=8: 80,0,0,0,0,0,0,1]
+str 7: [7] [1.4E-45] [4.9E-324] [NULL] [Typ=100 Len=4: 80,0,0,1] [Typ=101 Len=8: 80,0,0,0,0,0,0,1]
+row 8: [BigDecimal:8] [Float:1.1754944E-38] [Double:2.2250738585072014E-308] [NULL] [String:Typ=100 Len=4: 80,80,0,0] [String:Typ=101 Len=8: 80,10,0,0,0,0,0,0]
+str 8: [8] [1.1754944E-38] [2.2250738585072014E-308] [NULL] [Typ=100 Len=4: 80,80,0,0] [Typ=101 Len=8: 80,10,0,0,0,0,0,0]
+row 9: [BigDecimal:9] [Float:0.0] [Double:0.0] [NULL] [String:Typ=100 Len=4: 80,0,0,0] [String:Typ=101 Len=8: 80,0,0,0,0,0,0,0]
+str 9: [9] [0.0] [0.0] [NULL] [Typ=100 Len=4: 80,0,0,0] [Typ=101 Len=8: 80,0,0,0,0,0,0,0]
+row 10: [BigDecimal:100] [Float:1.5] [Double:1.5] [BigDecimal:1.5] [String:Typ=100 Len=4: bf,c0,0,0] [String:Typ=101 Len=8: bf,f8,0,0,0,0,0,0]
+str 10: [100] [1.5] [1.5] [1.5] [Typ=100 Len=4: bf,c0,0,0] [Typ=101 Len=8: bf,f8,0,0,0,0,0,0]
+row 11: [BigDecimal:104] [Float:0.0] [Double:0.0] [BigDecimal:0] [String:Typ=100 Len=4: 80,0,0,0] [String:Typ=101 Len=8: 80,0,0,0,0,0,0,0]
+str 11: [104] [0.0] [0.0] [0] [Typ=100 Len=4: 80,0,0,0] [Typ=101 Len=8: 80,0,0,0,0,0,0,0]
+row 12: [BigDecimal:108] [Float:0.0] [Double:0.0] [BigDecimal:0] [String:Typ=100 Len=4: 80,0,0,0] [String:Typ=101 Len=8: 80,0,0,0,0,0,0,0]
+str 12: [108] [0.0] [0.0] [0] [Typ=100 Len=4: 80,0,0,0] [Typ=101 Len=8: 80,0,0,0,0,0,0,0]
+row 13: [BigDecimal:200] [NULL] [NULL] [NULL] [String:NULL] [String:NULL]
+str 13: [200] [NULL] [NULL] [NULL] [NULL] [NULL]
+row 14: [BigDecimal:201] [NULL] [NULL] [NULL] [String:NULL] [String:NULL]
+str 14: [201] [NULL] [NULL] [NULL] [NULL] [NULL]
+rows 14
+steps that threw 12
+exit 0
