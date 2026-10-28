@@ -3008,7 +3008,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - fixed Oracle 10g OCI client logins, and 10.2 thin JDBC driver logins,
   queries, column and bind types, through the oracle protocol module
 - fixed the c++ api's sqlrscalar and sqlrresultsettable leaving their
-  null pointer uninitialized
+  null pointer uninitialized and sqlrlistnode's cursor constructors
+  being undefined
 
 ### Security
 - fixed an authentication hole in the des password encryption module

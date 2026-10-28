@@ -8,6 +8,14 @@ class sqlrlistnodeprivate {
 	private:
 		friend class sqlrlistnode;
 
+		sqlrlistnodeprivate() {
+			_cursor=NULL;
+			_representsarow=true;
+			_row=0;
+			_col=0;
+			_null=NULL;
+		}
+
 		sqlrcursor	*_cursor;
 		bool		_representsarow;
 		uint64_t	_row;
@@ -18,11 +26,20 @@ class sqlrlistnodeprivate {
 
 sqlrlistnode::sqlrlistnode() : listnode<const char *>() {
 	pvt=new sqlrlistnodeprivate;
-	pvt->_cursor=NULL;
-	pvt->_representsarow=true;
-	pvt->_row=0;
-	pvt->_col=0;
-	pvt->_null=NULL;
+}
+
+sqlrlistnode::sqlrlistnode(sqlrcursor *cursor) :
+					listnode<const char *>() {
+	pvt=new sqlrlistnodeprivate;
+	pvt->_cursor=cursor;
+}
+
+sqlrlistnode::sqlrlistnode(sqlrcursor *cursor, uint64_t row, uint64_t col) :
+					listnode<const char *>() {
+	pvt=new sqlrlistnodeprivate;
+	pvt->_cursor=cursor;
+	pvt->_row=row;
+	pvt->_col=col;
 }
 
 sqlrlistnode::~sqlrlistnode() {
