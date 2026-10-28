@@ -6,14 +6,16 @@
 class sqlrresultsettableprivate {
 	private:
 		friend class sqlrresultsettable;
+		sqlrresultsettableprivate() {
+			_cursor=NULL;
+			_null=NULL;
+		}
 		sqlrcursor	*_cursor;
 		const char	*_null;
 };
 
 sqlrresultsettable::sqlrresultsettable() : tablecollection<const char *>() {
 	pvt=new sqlrresultsettableprivate;
-	pvt->_cursor=NULL;
-	pvt->_null=NULL;
 }
 
 sqlrresultsettable::sqlrresultsettable(sqlrcursor *cursor) :
