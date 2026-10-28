@@ -7,3 +7,7 @@
 
 	private:
 		sqlrresultsettableprivate	*pvt;
+
+		// copying is not allowed (pvt is owned)
+		sqlrresultsettable(const sqlrresultsettable &x);
+		sqlrresultsettable &operator=(const sqlrresultsettable &x);

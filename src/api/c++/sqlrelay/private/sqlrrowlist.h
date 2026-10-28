@@ -27,3 +27,7 @@
 	
 	private:
 		sqlrrowlistprivate	*pvt;
+
+		// copying is not allowed (pvt is owned)
+		sqlrrowlist(const sqlrrowlist &x);
+		sqlrrowlist &operator=(const sqlrrowlist &x);

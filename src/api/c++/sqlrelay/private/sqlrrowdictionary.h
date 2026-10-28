@@ -16,3 +16,7 @@
 
 	private:
 		sqlrrowdictionaryprivate	*pvt;
+
+		// copying is not allowed (pvt is owned)
+		sqlrrowdictionary(const sqlrrowdictionary &x);
+		sqlrrowdictionary &operator=(const sqlrrowdictionary &x);

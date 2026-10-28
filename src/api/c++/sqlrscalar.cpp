@@ -39,6 +39,7 @@ sqlrscalar::sqlrscalar(sqlrcursor *cursor, uint64_t row, uint64_t col) :
 }
 
 sqlrscalar::~sqlrscalar() {
+	delete pvt;
 }
 
 bool sqlrscalar::isReadOnly() {

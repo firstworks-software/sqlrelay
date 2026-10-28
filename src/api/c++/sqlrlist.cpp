@@ -43,6 +43,7 @@ sqlrlistnode::sqlrlistnode(sqlrcursor *cursor, uint64_t row, uint64_t col) :
 }
 
 sqlrlistnode::~sqlrlistnode() {
+	delete pvt;
 }
 
 void sqlrlistnode::setCursor(sqlrcursor *cursor) {
@@ -148,6 +149,7 @@ sqlrrowlist::sqlrrowlist(sqlrcursor *cursor, uint64_t row) :
 }
 
 sqlrrowlist::~sqlrrowlist() {
+	delete pvt;
 }
 
 void sqlrrowlist::setCursor(sqlrcursor *cursor) {
@@ -318,6 +320,7 @@ sqlrresultsetlist::sqlrresultsetlist(sqlrcursor *cursor, uint64_t col) :
 }
 
 sqlrresultsetlist::~sqlrresultsetlist() {
+	delete pvt;
 }
 
 void sqlrresultsetlist::setCursor(sqlrcursor *cursor) {

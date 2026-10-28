@@ -16,3 +16,7 @@
 
 	private:
 		sqlrlistnodeprivate	*pvt;
+
+		// copying is not allowed (pvt is owned)
+		sqlrlistnode(const sqlrlistnode &x);
+		sqlrlistnode &operator=(const sqlrlistnode &x);

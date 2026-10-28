@@ -6,3 +6,7 @@
 
 	private:
 		sqlrscalarprivate	*pvt;
+
+		// copying is not allowed (pvt is owned)
+		sqlrscalar(const sqlrscalar &x);
+		sqlrscalar &operator=(const sqlrscalar &x);

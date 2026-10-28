@@ -27,3 +27,7 @@
 	
 	private:
 		sqlrresultsetlistprivate	*pvt;
+
+		// copying is not allowed (pvt is owned)
+		sqlrresultsetlist(const sqlrresultsetlist &x);
+		sqlrresultsetlist &operator=(const sqlrresultsetlist &x);

@@ -3010,6 +3010,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - fixed the c++ api's sqlrcursor, sqlrscalar and sqlrresultsettable
   leaving members uninitialized and sqlrlistnode's cursor constructors
   being undefined
+- fixed the c++ api's sqlrscalar, sqlrlistnode, sqlrrowlist and
+  sqlrresultsetlist leaking private data, and made all six collection
+  classes non-copyable
 
 ### Security
 - fixed an authentication hole in the des password encryption module
