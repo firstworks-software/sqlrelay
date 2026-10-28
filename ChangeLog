@@ -923,6 +923,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   with timestamp_tz_to_text_format, offset included, when it is set
 - oracle connection module names national character char and varchar2
   columns CHAR(NCHAR) and VARCHAR2(NCHAR) now
+- bumped the libsqlrclient soname version to 9 and the libsqlrserver and
+  libsqlrutil soname version to 15
 
 ### Removed
 - oracle protocol module: deleted cancel() (no wire input can reach it)

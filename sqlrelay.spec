@@ -481,8 +481,8 @@ cp -r %{buildroot}%{_docdir}/%{name}/api/java %{buildroot}%{_javadocdir}/%{name}
 %{_bindir}/sqlr-start
 %{_bindir}/sqlr-stop
 %{_bindir}/sqlr-status
-%{_libdir}/libsqlrserver.so.14
-%{_libdir}/libsqlrserver.so.14.*
+%{_libdir}/libsqlrserver.so.15
+%{_libdir}/libsqlrserver.so.15.*
 %{_libexecdir}/%{name}/sqlrauth_*
 %{_libexecdir}/%{name}/sqlrconfig_*
 %{_libexecdir}/%{name}/sqlrbindvariabletranslation_*
@@ -581,8 +581,8 @@ cp -r %{buildroot}%{_docdir}/%{name}/api/java %{buildroot}%{_javadocdir}/%{name}
 %systemd_preun sqlrcachemanager.service
 
 %files common
-%{_libdir}/libsqlrutil.so.14
-%{_libdir}/libsqlrutil.so.14.*
+%{_libdir}/libsqlrutil.so.15
+%{_libdir}/libsqlrutil.so.15.*
 %dir %{_libexecdir}/%{name}
 %{_libexecdir}/%{name}/sqlrpwdenc_*
 
@@ -598,12 +598,12 @@ cp -r %{buildroot}%{_docdir}/%{name}/api/java %{buildroot}%{_javadocdir}/%{name}
 %{_datadir}/sqlrelay
 
 %files c++
-%{_libdir}/libsqlrclient.so.8
-%{_libdir}/libsqlrclient.so.8.*
+%{_libdir}/libsqlrclient.so.9
+%{_libdir}/libsqlrclient.so.9.*
 
 %files c
-%{_libdir}/libsqlrclientwrapper.so.8
-%{_libdir}/libsqlrclientwrapper.so.8.*
+%{_libdir}/libsqlrclientwrapper.so.9
+%{_libdir}/libsqlrclientwrapper.so.9.*
 
 %files c++-devel
 %{_bindir}/sqlrclient-config
@@ -641,8 +641,8 @@ cp -r %{buildroot}%{_docdir}/%{name}/api/java %{buildroot}%{_javadocdir}/%{name}
 %{_libdir}/pkgconfig/%{name}-c.pc
 
 %files -n odbc-%{name}
-%{_libdir}/libsqlrodbc.so.8
-%{_libdir}/libsqlrodbc.so.8.*
+%{_libdir}/libsqlrodbc.so.9
+%{_libdir}/libsqlrodbc.so.9.*
 %{_libdir}/libsqlrodbc.so
 
 %files -n perl-%{name}
