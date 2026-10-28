@@ -3012,7 +3012,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   constructors being undefined
 - fixed the c++ api's sqlrscalar, sqlrlistnode, sqlrrowlist,
   sqlrresultsetlist and sqlrcrud leaking private data, and made all six
-  collection classes non-copyable
+  collection classes and sqlrcrud non-copyable
 - fixed crashes, duplicate getKeys() keys, and wrong counts, traversal,
   find(), getValue(), getKey(), getBlockSize() and out-of-range column
   results in the c++ api's collection classes

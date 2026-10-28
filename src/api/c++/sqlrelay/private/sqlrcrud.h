@@ -86,3 +86,7 @@
 
 		xmldom	x;
 		jsondom	j;
+
+		// copying is not allowed (tbl, idsequence, primarykey and autoinc are owned)
+		sqlrcrud(const sqlrcrud &x);
+		sqlrcrud &operator=(const sqlrcrud &x);
