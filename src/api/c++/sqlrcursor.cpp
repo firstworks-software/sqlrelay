@@ -379,20 +379,27 @@ void sqlrcursor::init(sqlrconnection *sqlrc, bool copyreferences) {
 	pvt->_next=NULL;
 
 	// session state
+	pvt->_resumed=false;
 	pvt->_cached=false;
 
 	// query
 	pvt->_querybuffer=NULL;
+	pvt->_queryptr=NULL;
+	pvt->_querylen=0;
 	pvt->_fullpath=NULL;
+	pvt->_reexecute=false;
 
 	// result set
 	pvt->_lazyfetch=false;
 	pvt->_rsbuffersize=0;
+	pvt->_suspendresultsetsent=0;
 
 	pvt->_firstrowindex=0;
 	pvt->_resumedlastrowindex=0;
 	pvt->_rowcount=0;
+	pvt->_knowsactualrows=NO_ACTUAL_ROWS;
 	pvt->_actualrows=0;
+	pvt->_knowsaffectedrows=NO_AFFECTED_ROWS;
 	pvt->_affectedrows=0;
 	pvt->_endofresultset=true;
 
@@ -428,6 +435,7 @@ void sqlrcursor::init(sqlrconnection *sqlrc, bool copyreferences) {
 	pvt->_cachedest=NULL;
 	pvt->_cachedestind=NULL;
 	pvt->_cacheon=false;
+	pvt->_cachettl=600;
 
 	// options...
 	pvt->_sendcolumninfo=SEND_COLUMN_INFO;
@@ -459,6 +467,7 @@ void sqlrcursor::init(sqlrconnection *sqlrc, bool copyreferences) {
 					OPTIMISTIC_BIND_COUNT,16);
 	pvt->_inoutbindvars=new dynamicarray<sqlrclientbindvar>(
 					OPTIMISTIC_BIND_COUNT,16);
+	pvt->_validatebinds=false;
 	pvt->_clearbindsduringprepare=true;
 	clearVariables();
 }
