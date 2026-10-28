@@ -3007,12 +3007,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   for Oracle 9i clients of the oracle protocol module
 - fixed Oracle 10g OCI client logins, and 10.2 thin JDBC driver logins,
   queries, column and bind types, through the oracle protocol module
-- fixed the c++ api's sqlrcursor, sqlrscalar and sqlrresultsettable
-  leaving members uninitialized and sqlrlistnode's cursor constructors
-  being undefined
-- fixed the c++ api's sqlrscalar, sqlrlistnode, sqlrrowlist and
-  sqlrresultsetlist leaking private data, and made all six collection
-  classes non-copyable
+- fixed the c++ api's sqlrcursor, sqlrscalar, sqlrresultsettable and
+  sqlrcrud leaving members uninitialized and sqlrlistnode's cursor
+  constructors being undefined
+- fixed the c++ api's sqlrscalar, sqlrlistnode, sqlrrowlist,
+  sqlrresultsetlist and sqlrcrud leaking private data, and made all six
+  collection classes non-copyable
 - fixed crashes, duplicate getKeys() keys, and wrong counts, traversal
   and find() results in the c++ api's collection classes
 

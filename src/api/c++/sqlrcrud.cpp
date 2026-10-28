@@ -5,10 +5,13 @@
 #include <rudiments/memorypool.h>
 
 sqlrcrud::sqlrcrud() {
+	con=NULL;
+	cur=NULL;
 	tbl=NULL;
 	idsequence=NULL;
 	primarykey=NULL;
 	autoinc=NULL;
+	columns=NULL;
 	readcontainspartialwhere=false;
 	readcontainspartialorderby=false;
 	updatecontainspartialwhere=false;
@@ -16,7 +19,9 @@ sqlrcrud::sqlrcrud() {
 }
 
 sqlrcrud::~sqlrcrud() {
+	delete[] autoinc;
 	delete[] primarykey;
+	delete[] idsequence;
 	delete[] tbl;
 }
 
