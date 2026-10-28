@@ -39,7 +39,7 @@ sqlrlistnode::sqlrlistnode(sqlrcursor *cursor, uint64_t row, uint64_t col) :
 	pvt=new sqlrlistnodeprivate;
 	pvt->_cursor=cursor;
 	pvt->_row=row;
-	pvt->_col=col;
+	pvt->_col=(col>0xFFFFFFFF)?0xFFFFFFFF:(uint32_t)col;
 }
 
 sqlrlistnode::~sqlrlistnode() {
@@ -104,7 +104,9 @@ listnode<const char *> *sqlrlistnode::getPrevious() {
 		}
 		pvt->_col--;
 	} else {
-		if (!pvt->_row) {
+		// bail if the previous row was discarded from the buffer
+		if (!pvt->_cursor || !pvt->_row ||
+			pvt->_row-1<pvt->_cursor->firstRowIndex()) {
 			return NULL;
 		}
 		pvt->_row--;
@@ -122,6 +124,10 @@ listnode<const char *> *sqlrlistnode::getNext() {
 		}
 		pvt->_col++;
 	} else {
+		if (pvt->_col>=pvt->_cursor->colCount()) {
+			return NULL;
+		}
+
 		// rowCount() only counts the rows fetched so far, so fetch
 		// the next row before deciding that this is the last one.
 		if (pvt->_row+1>=pvt->_cursor->rowCount()) {
@@ -328,12 +334,14 @@ class sqlrresultsetlistprivate {
 		friend class sqlrresultsetlist;
 
 		sqlrcursor	*_cursor;
+		uint64_t	_col;
 		sqlrlistnode	_node;
 };
 
 sqlrresultsetlist::sqlrresultsetlist() : listcollection<const char *>() {
 	pvt=new sqlrresultsetlistprivate;
 	pvt->_cursor=NULL;
+	pvt->_col=0;
 	pvt->_node.setRepresentsARow(false);
 }
 
@@ -341,6 +349,7 @@ sqlrresultsetlist::sqlrresultsetlist(sqlrcursor *cursor) :
 					listcollection<const char *>() {
 	pvt=new sqlrresultsetlistprivate;
 	pvt->_cursor=cursor;
+	pvt->_col=0;
 	pvt->_node.setCursor(cursor);
 	pvt->_node.setRepresentsARow(false);
 }
@@ -350,8 +359,9 @@ sqlrresultsetlist::sqlrresultsetlist(sqlrcursor *cursor, uint64_t col) :
 	pvt=new sqlrresultsetlistprivate;
 	pvt->_cursor=cursor;
 	pvt->_node.setCursor(cursor);
+	pvt->_col=(col>0xFFFFFFFF)?0xFFFFFFFF:col;
 	pvt->_node.setRepresentsARow(false);
-	pvt->_node.setColumn(col);
+	pvt->_node.setColumn((uint32_t)pvt->_col);
 }
 
 sqlrresultsetlist::~sqlrresultsetlist() {
@@ -359,10 +369,12 @@ sqlrresultsetlist::~sqlrresultsetlist() {
 }
 
 void sqlrresultsetlist::setCursor(sqlrcursor *cursor) {
+	pvt->_col=0;
 	pvt->_node.setCursor(cursor);
 }
 
 void sqlrresultsetlist::setColumn(uint32_t col) {
+	pvt->_col=col;
 	pvt->_node.setColumn(col);
 }
 
@@ -375,7 +387,8 @@ bool sqlrresultsetlist::isBlockBased() {
 }
 
 uint64_t sqlrresultsetlist::getBlockSize() {
-	return 1;
+	sqlrcursor	*cursor=pvt->_node.getCursor();
+	return (cursor)?cursor->getResultSetBufferSize():0;
 }
 
 void sqlrresultsetlist::prepend(const char *value) {
@@ -445,9 +458,9 @@ bool sqlrresultsetlist::remove(listnode<const char *> *node) {
 
 uint64_t sqlrresultsetlist::getCount() {
 
-	// bail if there are no columns
+	// bail if the column doesn't exist
 	sqlrcursor	*cursor=pvt->_node.getCursor();
-	if (!cursor || !cursor->colCount()) {
+	if (!cursor || pvt->_col>=cursor->colCount()) {
 		return 0;
 	}
 
@@ -466,9 +479,9 @@ uint64_t sqlrresultsetlist::getCount() {
 
 listnode<const char *> *sqlrresultsetlist::getFirst() {
 
-	// bail if there are no rows
+	// bail if the column or first row doesn't exist
 	sqlrcursor	*cursor=pvt->_node.getCursor();
-	if (!cursor || !cursor->colCount()) {
+	if (!cursor || pvt->_col>=cursor->colCount()) {
 		return NULL;
 	}
 	cursor->getField(0,(uint32_t)0);
@@ -500,6 +513,10 @@ listnode<const char *> *sqlrresultsetlist::find(
 	// since this implementation is block-based, we can't really start at
 	// a specific node, so we'll just start at the current node and search
 	// from there
+	sqlrcursor	*cursor=pvt->_node.getCursor();
+	if (!cursor || pvt->_col>=cursor->colCount()) {
+		return NULL;
+	}
 	for (listnode<const char *> *n=&pvt->_node; n; n=n->getNext()) {
 		if (!getComparator()->compare(value,n->getValue())) {
 			return n;

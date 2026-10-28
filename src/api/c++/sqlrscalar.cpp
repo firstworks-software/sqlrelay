@@ -35,7 +35,7 @@ sqlrscalar::sqlrscalar(sqlrcursor *cursor, uint64_t row, uint64_t col) :
 	pvt=new sqlrscalarprivate;
 	pvt->_cursor=cursor;
 	pvt->_row=row;
-	pvt->_col=col;
+	pvt->_col=(col>0xFFFFFFFF)?0xFFFFFFFF:(uint32_t)col;
 }
 
 sqlrscalar::~sqlrscalar() {

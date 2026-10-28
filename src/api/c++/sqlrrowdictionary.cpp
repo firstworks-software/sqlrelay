@@ -84,11 +84,26 @@ void sqlrrowdictionary::setValues(const char * const *key,
 	// do nothing
 }
 
+// returns the cursor's name for the first column named key, or NULL
+static const char *findColumnName(sqlrcursor *cursor, const char *key) {
+	if (!cursor) {
+		return NULL;
+	}
+	for (uint32_t i=0; i<cursor->colCount(); i++) {
+		const char	*name=cursor->getColumnName(i);
+		if (name && !charstring::compare(name,key)) {
+			return name;
+		}
+	}
+	return NULL;
+}
+
 bool sqlrrowdictionary::getValue(const char *key, const char **value) {
-	// FIXME: arguably this should check that the key is a legitimate
-	// column name, which could be a bit of a rabbit-hole to do 
-	// efficiently
-	*value=getValue(key);
+	if (!findColumnName(pvt->_cursor,key)) {
+		*value=NULL;
+		return false;
+	}
+	*value=pvt->_cursor->getField(pvt->_row,key);
 	return true;
 }
 
@@ -100,12 +115,12 @@ const char *sqlrrowdictionary::getValue(const char *key) {
 }
 
 bool sqlrrowdictionary::getKey(const char *key, const char **k) {
-	*k=key;
-	return true;
+	*k=findColumnName(pvt->_cursor,key);
+	return (*k!=NULL);
 }
 
 const char *sqlrrowdictionary::getKey(const char *key) {
-	return key;
+	return findColumnName(pvt->_cursor,key);
 }
 
 linkedlist<const char *> *sqlrrowdictionary::getKeys() {
