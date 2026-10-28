@@ -41582,24 +41582,24 @@ printf "%s\n" "#define SQLR_VERSION \"2.3.0\"" >>confdefs.h
 
 
 
-	eval "SRV_SONAME_VERSION_INFO=\"14:0:0\""
+	eval "SRV_SONAME_VERSION_INFO=\"15:0:0\""
 
 	if ( test "SRV_SONAME_VERSION_INFO" != "SONAME_VERSION_INFO" )
 	then
 
-printf "%s\n" "#define SRV_SONAME_VERSION_INFO \"14:0:0\"" >>confdefs.h
+printf "%s\n" "#define SRV_SONAME_VERSION_INFO \"15:0:0\"" >>confdefs.h
 
 	fi
 
 
 
 
-	eval "CLT_SONAME_VERSION_INFO=\"8:0:0\""
+	eval "CLT_SONAME_VERSION_INFO=\"9:0:0\""
 
 	if ( test "CLT_SONAME_VERSION_INFO" != "SONAME_VERSION_INFO" )
 	then
 
-printf "%s\n" "#define CLT_SONAME_VERSION_INFO \"8:0:0\"" >>confdefs.h
+printf "%s\n" "#define CLT_SONAME_VERSION_INFO \"9:0:0\"" >>confdefs.h
 
 	fi
 
