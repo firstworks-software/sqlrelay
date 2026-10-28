@@ -65,6 +65,9 @@ void sqlrscalar::setValue(const char *value) {
 }
 
 const char *sqlrscalar::getValue() {
+	if (!pvt->_cursor) {
+		return NULL;
+	}
 	return pvt->_cursor->getField(pvt->_row,pvt->_col);
 }
 

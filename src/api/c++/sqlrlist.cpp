@@ -79,6 +79,9 @@ void sqlrlistnode::setValue(const char *value) {
 }
 
 const char *sqlrlistnode::getValue() {
+	if (!pvt->_cursor) {
+		return NULL;
+	}
 	return pvt->_cursor->getField(pvt->_row,pvt->_col);
 }
 
@@ -95,29 +98,41 @@ void sqlrlistnode::setPrevious(listnode<const char *> *next) {
 }
 
 listnode<const char *> *sqlrlistnode::getPrevious() {
-	if (!pvt->_col) {
-		return NULL;
-	} else {
-		if (pvt->_representsarow) {
-			pvt->_col--;
-		} else {
-			pvt->_row--;
+	if (pvt->_representsarow) {
+		if (!pvt->_col) {
+			return NULL;
 		}
-		return (listnode<const char *> *)this;
-	} 
+		pvt->_col--;
+	} else {
+		if (!pvt->_row) {
+			return NULL;
+		}
+		pvt->_row--;
+	}
+	return (listnode<const char *> *)this;
 }
 
 listnode<const char *> *sqlrlistnode::getNext() {
-	if (pvt->_col==pvt->_cursor->colCount()-1) {
+	if (!pvt->_cursor) {
 		return NULL;
-	} else {
-		if (pvt->_representsarow) {
-			pvt->_col++;
-		} else {
-			pvt->_row++;
+	}
+	if (pvt->_representsarow) {
+		if ((uint64_t)pvt->_col+1>=pvt->_cursor->colCount()) {
+			return NULL;
 		}
-		return (listnode<const char *> *)this;
-	} 
+		pvt->_col++;
+	} else {
+		// rowCount() only counts the rows fetched so far, so fetch
+		// the next row before deciding that this is the last one.
+		if (pvt->_row+1>=pvt->_cursor->rowCount()) {
+			pvt->_cursor->getField(pvt->_row+1,(uint32_t)0);
+			if (pvt->_row+1>=pvt->_cursor->rowCount()) {
+				return NULL;
+			}
+		}
+		pvt->_row++;
+	}
+	return (listnode<const char *> *)this;
 }
 
 class sqlrrowlistprivate {
@@ -125,18 +140,21 @@ class sqlrrowlistprivate {
 		friend class sqlrrowlist;
 
 		sqlrcursor		*_cursor;
+		uint64_t		_row;
 		sqlrlistnode	_node;
 };
 
 sqlrrowlist::sqlrrowlist() : listcollection<const char *>() {
 	pvt=new sqlrrowlistprivate;
 	pvt->_cursor=NULL;
+	pvt->_row=0;
 }
 
 sqlrrowlist::sqlrrowlist(sqlrcursor *cursor) :
 					listcollection<const char *>() {
 	pvt=new sqlrrowlistprivate;
 	pvt->_cursor=cursor;
+	pvt->_row=0;
 	pvt->_node.setCursor(cursor);
 }
 
@@ -144,6 +162,7 @@ sqlrrowlist::sqlrrowlist(sqlrcursor *cursor, uint64_t row) :
 					listcollection<const char *>() {
 	pvt=new sqlrrowlistprivate;
 	pvt->_cursor=cursor;
+	pvt->_row=row;
 	pvt->_node.setCursor(cursor);
 	pvt->_node.setRow(row);
 }
@@ -153,10 +172,12 @@ sqlrrowlist::~sqlrrowlist() {
 }
 
 void sqlrrowlist::setCursor(sqlrcursor *cursor) {
+	pvt->_row=0;
 	pvt->_node.setCursor(cursor);
 }
 
 void sqlrrowlist::setRow(uint64_t row) {
+	pvt->_row=row;
 	pvt->_node.setRow(row);
 }
 
@@ -238,10 +259,25 @@ bool sqlrrowlist::remove(listnode<const char *> *node) {
 }
 
 uint64_t sqlrrowlist::getCount() {
-	return pvt->_node.getCursor()->colCount();
+	sqlrcursor	*cursor=pvt->_node.getCursor();
+	return (cursor)?cursor->colCount():0;
 }
 
 listnode<const char *> *sqlrrowlist::getFirst() {
+
+	// bail if there are no columns
+	sqlrcursor	*cursor=pvt->_node.getCursor();
+	if (!cursor || !cursor->colCount()) {
+		return NULL;
+	}
+
+	// fetch the row and bail if it doesn't exist
+	cursor->getField(pvt->_row,(uint32_t)0);
+	if (pvt->_row<cursor->firstRowIndex() ||
+			pvt->_row>=cursor->rowCount()) {
+		return NULL;
+	}
+
 	pvt->_node.setColumn(0);
 	return &pvt->_node;
 }
@@ -252,9 +288,8 @@ listnode<const char *> *sqlrrowlist::getNext(
 }
 
 listnode<const char *> *sqlrrowlist::find(const char *value) {
-	pvt->_node.setColumn(0);
-	for (listnode<const char *> *n=&pvt->_node; n; n=n->getNext()) {
-		if (getComparator()->compare(value,n->getValue())) {
+	for (listnode<const char *> *n=getFirst(); n; n=n->getNext()) {
+		if (!getComparator()->compare(value,n->getValue())) {
 			return n;
 		}
 	}
@@ -268,7 +303,7 @@ listnode<const char *> *sqlrrowlist::find(
 	// a specific node, so we'll just start at the current node and search
 	// from there
 	for (listnode<const char *> *n=&pvt->_node; n; n=n->getNext()) {
-		if (getComparator()->compare(value,n->getValue())) {
+		if (!getComparator()->compare(value,n->getValue())) {
 			return n;
 		}
 	}
@@ -409,10 +444,38 @@ bool sqlrresultsetlist::remove(listnode<const char *> *node) {
 }
 
 uint64_t sqlrresultsetlist::getCount() {
-	return pvt->_node.getCursor()->colCount();
+
+	// bail if there are no columns
+	sqlrcursor	*cursor=pvt->_node.getCursor();
+	if (!cursor || !cursor->colCount()) {
+		return 0;
+	}
+
+	// rowCount() only counts the rows fetched so far, so fetch the rest
+	// of the result set first.  With a result set buffer size, this
+	// discards the rows that were already fetched.
+	while (!cursor->endOfResultSet()) {
+		uint64_t	rowcount=cursor->rowCount();
+		cursor->getField(rowcount,(uint32_t)0);
+		if (cursor->rowCount()==rowcount) {
+			break;
+		}
+	}
+	return cursor->rowCount();
 }
 
 listnode<const char *> *sqlrresultsetlist::getFirst() {
+
+	// bail if there are no rows
+	sqlrcursor	*cursor=pvt->_node.getCursor();
+	if (!cursor || !cursor->colCount()) {
+		return NULL;
+	}
+	cursor->getField(0,(uint32_t)0);
+	if (cursor->firstRowIndex() || !cursor->rowCount()) {
+		return NULL;
+	}
+
 	pvt->_node.setRow(0);
 	return &pvt->_node;
 }
@@ -423,9 +486,8 @@ listnode<const char *> *sqlrresultsetlist::getNext(
 }
 
 listnode<const char *> *sqlrresultsetlist::find(const char *value) {
-	pvt->_node.setRow(0);
-	for (listnode<const char *> *n=&pvt->_node; n; n=n->getNext()) {
-		if (getComparator()->compare(value,n->getValue())) {
+	for (listnode<const char *> *n=getFirst(); n; n=n->getNext()) {
+		if (!getComparator()->compare(value,n->getValue())) {
 			return n;
 		}
 	}
@@ -439,7 +501,7 @@ listnode<const char *> *sqlrresultsetlist::find(
 	// a specific node, so we'll just start at the current node and search
 	// from there
 	for (listnode<const char *> *n=&pvt->_node; n; n=n->getNext()) {
-		if (getComparator()->compare(value,n->getValue())) {
+		if (!getComparator()->compare(value,n->getValue())) {
 			return n;
 		}
 	}

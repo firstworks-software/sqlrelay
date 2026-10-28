@@ -93,6 +93,9 @@ bool sqlrrowdictionary::getValue(const char *key, const char **value) {
 }
 
 const char *sqlrrowdictionary::getValue(const char *key) {
+	if (!pvt->_cursor) {
+		return NULL;
+	}
 	return pvt->_cursor->getField(pvt->_row,key);
 }
 
@@ -109,14 +112,20 @@ linkedlist<const char *> *sqlrrowdictionary::getKeys() {
 	if (!pvt->_keys) {
 		pvt->_keys=new linkedlist<const char *>();
 	}
-	for (uint32_t i=0; i<pvt->_cursor->colCount(); i++) {
-		pvt->_keys->append(pvt->_cursor->getColumnName(i));
+
+	// The column names belong to the cursor's current result set, which
+	// can change between calls, so rebuild the list every time.
+	pvt->_keys->clear();
+	if (pvt->_cursor) {
+		for (uint32_t i=0; i<pvt->_cursor->colCount(); i++) {
+			pvt->_keys->append(pvt->_cursor->getColumnName(i));
+		}
 	}
 	return pvt->_keys;
 }
 
 uint64_t sqlrrowdictionary::getCount() {
-	return pvt->_cursor->colCount();
+	return (pvt->_cursor)?pvt->_cursor->colCount():0;
 }
 
 bool sqlrrowdictionary::remove(const char *key) {
