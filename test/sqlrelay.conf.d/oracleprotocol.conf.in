@@ -12,24 +12,26 @@
 	     O5LOGON alone, gets 11g, and a client using the OCI7 calls gets
 	     O3LOGON. -->
 	<!-- HOST=oracle below (used by this instance and by 11g, 12c,
-	     connectstrings, and fetchatonce below) resolves to a real 12.2
-	     backend, which under its default SQLNET.ALLOWED_LOGON_VERSION_SERVER
-	     setting (11) requires the O5LOGON auth exchange, introduced in
-	     Oracle 11.1.  A pre-11g OCI client - eg. solaris8sparc's 9.0.1
-	     install, or redhat9x86's 9.2.0.4 install - has no O5LOGON
-	     support, so its backend connection fails with ORA-28040 "No
-	     matching authentication protocol" (#9796).  On redhat9x86 this
-	     also used to crash sqlr-connection outright rather than fail
-	     cleanly (#9795) - fixed, but note that a host in this state
-	     still can't bring up a live connection to this instance: the
-	     listener won't bind its client port until enough connections
-	     are logged in, and nothing here ever will be.  Lowering
-	     ALLOWED_LOGON_VERSION_SERVER on this shared
-	     backend would let an old client in, but that's a farm-ops call
-	     on a resource other tests also depend on, not a sqlrelay fix -
-	     same reasoning as oracleprotocoloci7's separate backend below
-	     (#9654).  A host that old can only exercise the backend leg of
-	     this module through oracleprotocoloci7. -->
+	     connectstrings, fetchatonce, utf8, and oci7utf8 below) resolves
+	     to a real 12.2 backend, oracle122centos7x64.  At 12.2's default
+	     SQLNET.ALLOWED_LOGON_VERSION_SERVER it would refuse a 9i OCI
+	     client - eg. solaris8sparc's 9.0.1 install, or redhat9x86's
+	     9.2.0.4 install - which lacks the O5LOGON exchange of 10g and
+	     later, so its backend connection would fail with ORA-28040 "No
+	     matching authentication protocol" (#9796, #10545).  But its
+	     sqlnet.ora sets that to 8, and testuser has the 10G verifier an
+	     O3LOGON login needs (#10273), so redhat9x86's 9.2.0.4 client
+	     logs in to it as testuser.  redhat9x86's per-host user, which
+	     all of these but connectstrings log in as (connectstrings uses
+	     testuser), has no 10G verifier, so a live run from redhat9x86 is
+	     untried.  solaris8sparc's 9.0.1 client has logged in to it at
+	     floor 8 through a scratch listener (#10545), but its per-host
+	     user has no 10G verifier either, so a live run from
+	     solaris8sparc is untried too.  A host whose backend login fails
+	     can't bring up a live connection to this instance: the listener
+	     won't bind its client port until enough connections are logged
+	     in.  See "The three real Oracle test servers on this network" in
+	     test/protocol/oracle/README. -->
 	<instance id="oracleprotocol" dbase="oracle" debug="protocols">
 		<listeners>
 			<listener protocol="oracle" port="@ORACLEPROTOCOLPORT1@" sid="ora1"/>
@@ -185,12 +187,14 @@
 	</instance>
 
 	<!-- same as oracleprotocol, for OCI7 clients (#9651, #9653), but
-	     with its own backend, a real 10.2 server, since sqlr-connection
-	     built against an OCI7-era client (redhat9x86's build) can't
-	     log in to the modern backend the other instances above use -
-	     see #9654.  the listener runs at the default serverversion like
-	     the others, which gives an OCI7 client O3LOGON, the only login
-	     it speaks, and uses charset="31" to match that backend's
+	     with its own backend, a real 10.2 server, which sqlr-connection
+	     built against an OCI7-era client (redhat9x86's build) logs in
+	     to with O3LOGON (#9654).  the modern backend the other
+	     instances above use takes an O3LOGON login only for a user with
+	     a 10G verifier, and redhat9x86's per-host user has none - see
+	     the header above.  the listener runs at the default serverversion
+	     like the others, which gives an OCI7 client O3LOGON, the only
+	     login it speaks, and uses charset="31" to match that backend's
 	     WE8ISO8859P1.  the tnsnames.ora alias sqlrelayoci7 points
 	     here. -->
 	<instance id="oracleprotocoloci7" dbase="oracle" debug="protocols">
@@ -220,9 +224,11 @@
 	     this reuses the same modern backend oracleprotocolutf8 does rather
 	     than 10.0.2.3 - oracleprotocoloci7's separate old backend is only
 	     needed when sqlr-connection itself is built against an OCI7-era
-	     client (redhat9x86's build; #9654), which can't O5LOGON to the
-	     modern backend; a host new enough to run this test suite generally
-	     has no such restriction.  charset="873", the default, matches
+	     client (redhat9x86's build; #9654), whose O3LOGON login the
+	     modern backend takes only for a user with a 10G verifier, which
+	     redhat9x86's per-host user lacks (see the header above); a host
+	     new enough to run this test suite generally has no such
+	     restriction.  charset="873", the default, matches
 	     nls_lang, or an OCI7 client converting to its own NLS_LANG would
 	     re-encode the UTF-8 bytes as if they were WE8ISO8859P1 (#10273). -->
 	<instance id="oracleprotocoloci7utf8" dbase="oracle" debug="protocols">
