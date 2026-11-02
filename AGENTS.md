@@ -73,6 +73,8 @@ Most of `src/` is discoverable by listing it (one directory per module type: aut
 
 A single suite is run directly, e.g. from test/: ./test.sh -randomports oracleprotocol
 
+The test harness notes (what test.sh does, staging, -randomports, and so on) are in test/AGENTS.md.
+
 Three things about test.sh that are easy to get wrong, and that make a run prove nothing:
 
 - **Without -buildtree, test.sh runs the INSTALLED server**, not the build tree. So after editing anything under src/, a plain run exercises the old code at $prefix and passes or fails for the wrong reasons. Pass -buildtree, or make install first. When in doubt, check the installed module for a string your change introduced before trusting the result.

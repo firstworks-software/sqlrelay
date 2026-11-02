@@ -60,7 +60,7 @@ usage() {
 	echo
 	echo "    ./test.sh -buildtree -randomports mysqlprotocol"
 	echo
-	echo "  See test/README.md for more."
+	echo "  See test/AGENTS.md for more."
 	echo
 	echo "  TLS protocol instances.  Eight instances put a protocol listener"
 	echo "  behind TLS, and are driven by the database's own native client:"
