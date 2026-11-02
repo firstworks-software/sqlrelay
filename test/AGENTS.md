@@ -111,6 +111,28 @@ back, run configure again, or:
 
     ./config.status
 
+-randomports keeps two runs off each other's ports, but not off each other's
+files.  Every run, with or without -randomports, regenerates the files listed
+above for the instances it tests, and -buildtree empties and refills
+test/stagedmodules (see "Running against a build tree, with no install").  So
+a second run in the same checkout can break a first one that is still running,
+when:
+
+- both test the same instance.
+- both test a tds instance that reads freetds.conf - tdsfreetdsmssqlprotocol,
+  tdsfreetdssapprotocol, tdsprotocoltls or tdsprotocoltlsserverauth.  A run
+  that tests any of them rewrites the whole file.
+- both use -buildtree.
+
+Such runs go one at a time.  Or run the second one from another checkout, or
+outside test.sh, which rewrites these files on every run, even with -n: start
+a private instance with sqlr-start, from a config of its own outside the
+checkout and on ports from test/freeport, then run the test program directly
+with its port variable set, such as ORACLEPROTOCOLPORT1 (see the environment
+bullet above).  An oracle client that reads tnsnames.ora also needs TNS_ADMIN
+pointed at a copy of its own.  Neither way lets two runs that share a backend
+go at once - see "What the harness needs from the host".
+
 ## Both at once
 
 The two options combine, and together they give a protocol suite run that
@@ -119,7 +141,8 @@ touches neither the shared install prefix nor any well known port:
     ./test.sh -buildtree -randomports mysqlprotocol
 
 That is the way to verify a change to a protocol, connection, auth or filter
-module in isolation.
+module in isolation.  It does not keep two runs in one checkout off each
+other's files - see the end of the previous section.
 
 ## Defaults are unchanged
 
@@ -138,3 +161,17 @@ into the config files.
 
 An instance whose connection module was not built, or whose prerequisites are
 missing, is skipped rather than failed.
+
+## Debugging the oracle protocol suite
+
+- When a fix that checked out offline changes nothing live, suspect the
+  theory behind it.  Get a direct look before another live round - strace -f
+  on the client's socket calls shows what it really sent and received, and
+  when it gave up.
+- Once a fix gets a client further, the next bug is usually in the next
+  call - query2, then fetch, then close and disconnect - not a sign that the
+  fix was wrong.
+- protocol/oracle/README covers oraproxy and oradecode - its opening section,
+  "Capturing and decoding real Oracle wire-protocol traffic", and "Running a
+  capture".  Trust oradecode's count of the bytes it accounted for over a
+  compare by hand, which can report a match it never checked.
