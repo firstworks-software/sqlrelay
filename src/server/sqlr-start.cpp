@@ -8,6 +8,7 @@
 	#include <rudiments/inetsocketclient.h>
 	#include <rudiments/unixsocketclient.h>
 	#include <rudiments/snooze.h>
+	#include <rudiments/error.h>
 #endif
 #include <rudiments/stdio.h>
 #include <config.h>
@@ -338,6 +339,58 @@ static bool startScaler(sqlrpaths *sqlrpth,
 }
 
 #ifndef _WIN32
+static bool connectToListener(domnode *ln) {
+
+	// try the unix socket
+	const char	*sock=ln->getAttributeValue("socket");
+	if (!charstring::isNullOrEmpty(sock)) {
+		unixsocketclient	s;
+		s.setFileName(sock);
+		s.setTimeoutSeconds(1);
+		s.setTimeoutMicroseconds(0);
+		if (s.connect()==RESULT_SUCCESS) {
+			return true;
+		}
+	}
+
+	// try each address on the inet port
+	uint16_t	port=charstring::convertToUnsignedInteger(
+					ln->getAttributeValue("port"));
+	if (!port) {
+		return false;
+	}
+	char		**addr=NULL;
+	uint64_t	addrcount=0;
+	charstring::split(ln->getAttributeValue("addresses"),
+					",",true,&addr,&addrcount);
+	bool	connected=false;
+	for (uint64_t i=0; i<addrcount; i++) {
+		if (!connected) {
+
+			// connect to the loopback address for a wildcard,
+			// the listener binds an empty address to all of them
+			charstring::bothTrim(addr[i]);
+			const char	*host=addr[i];
+			if (charstring::isNullOrEmpty(host) ||
+				!charstring::compare(host,"0.0.0.0")) {
+				host="127.0.0.1";
+			} else if (!charstring::compare(host,"::")) {
+				host="::1";
+			}
+
+			inetsocketclient	s;
+			s.setHost(host);
+			s.setPort(port);
+			s.setTimeoutSeconds(1);
+			s.setTimeoutMicroseconds(0);
+			connected=(s.connect()==RESULT_SUCCESS);
+		}
+		delete[] addr[i];
+	}
+	delete[] addr;
+	return connected;
+}
+
 static bool waitForInstance(sqlrpaths *sqlrpth,
 				sqlrconfig *cfg,
 				const char *thisid) {
@@ -345,45 +398,61 @@ static bool waitForInstance(sqlrpaths *sqlrpth,
 	stdoutput.printf("\nWaiting for instance...\n");
 
 	bool	retval=false;
-	for (uint16_t i=0; i<30; i++) {
+	for (uint16_t i=0; !retval && i<30; i++) {
 
-		// try to connect
-		if (cfg->getListenOnUnix()) {
-			unixsocketclient	s;
-			s.setFileName(cfg->getDefaultSocket());
-			s.setTimeoutSeconds(1);
-			s.setTimeoutMicroseconds(0);
-			if (s.connect()==RESULT_SUCCESS) {
-				retval=true;
-				break;
-			}
+		// wait a second and try again
+		if (i) {
+			snooze::macrosnooze(1);
+		}
 
-		} else if (cfg->getListenOnInet()) {
-			inetsocketclient	s;
-			s.setHost("localhost");
-			s.setPort(cfg->getDefaultPort());
-			s.setTimeoutSeconds(1);
-			s.setTimeoutMicroseconds(0);
-			if (s.connect()==RESULT_SUCCESS) {
-				retval=true;
-				break;
+		// try each enabled listener
+		for (domnode *ln=cfg->getListeners()->
+					getFirstTagChild("listener");
+				!retval && !ln->isNullNode();
+				ln=ln->getNextTagSibling("listener")) {
+			if (charstring::isNo(ln->getAttributeValue("enabled"))) {
+				continue;
 			}
+			retval=connectToListener(ln);
 		}
 
 		// FIXME: Ideally, rather than waiting 30 seconds, we'd check
 		// to see if the sqlr-connections are still running and bail if
 		// they aren't.
-
-		// wait a second and try again
-		snooze::macrosnooze(1);
 	}
 
 	if (retval) {
 		stdoutput.printf("Instance is ready.\n");
+		return true;
+	}
+
+	// check for a running listener, a stale pid file doesn't count
+	char	*pidfile=NULL;
+	charstring::printf(&pidfile,"%ssqlr-listener-%s.pid",
+					sqlrpth->getPidDir(),thisid);
+	int64_t	listenerpid=process::checkForPidFile(pidfile);
+	delete[] pidfile;
+	bool	listenerrunning=false;
+	if (listenerpid>0) {
+		listenerrunning=process::sendSignal(listenerpid,0);
+		if (!listenerrunning) {
+			// a process owned by someone else is still running
+			listenerrunning=
+				(error::getErrorNumber()==EPERM);
+		}
+	}
+
+	if (listenerrunning) {
+		stdoutput.printf("Instance is not accepting client "
+				"connections yet.\n"
+				"The %s-listener is running, but it accepts "
+				"client connections only after all of its\n"
+				"%s-connections have logged in to the "
+				"database.\n",SQLR,SQLR);
 	} else {
 		stdoutput.printf("Instance failed to start.\n");
 	}
-	return true;
+	return false;
 }
 #endif
 
