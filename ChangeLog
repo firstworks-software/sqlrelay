@@ -3019,8 +3019,6 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   find(), getValue(), getKey(), getBlockSize() and out-of-range column
   results in the c++ api's collection classes
 - fixed sqlr-start -wait to check all enabled listeners and exit 1 on failure
-- fixed sqlrsh double freeing a bind variable key when a variable is
-  redefined, with newer rudiments
 
 ### Security
 - fixed an authentication hole in the des password encryption module
