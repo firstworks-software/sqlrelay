@@ -5230,11 +5230,13 @@ bool sqlrsh::inputbind(sqlrcursor *sqlrcur,
 	}
 
 	// put the bind variable in the list
-	// (the list keeps the name it already has, so a redefinition has to
-	// free the one it just made)
-	env->inputbinds.setValue(variable,bv);
+	// (the list keeps the name it already has, so a redefinition passes
+	// that name and frees the one it just made)
 	if (predefined) {
+		env->inputbinds.setValue(env->inputbinds.getKey(variable),bv);
 		delete[] variable;
+	} else {
+		env->inputbinds.setValue(variable,bv);
 	}
 
 	return true;
@@ -5329,11 +5331,13 @@ bool sqlrsh::inputbindlob(sqlrcursor *sqlrcur,
 	}
 
 	// put the bind variable in the list
-	// (the list keeps the name it already has, so a redefinition has to
-	// free the one it just made)
-	env->inputbinds.setValue(variable,bv);
+	// (the list keeps the name it already has, so a redefinition passes
+	// that name and frees the one it just made)
 	if (predefined) {
+		env->inputbinds.setValue(env->inputbinds.getKey(variable),bv);
 		delete[] variable;
+	} else {
+		env->inputbinds.setValue(variable,bv);
 	}
 
 	return true;
@@ -5430,8 +5434,15 @@ bool sqlrsh::outputbind(sqlrcursor *sqlrcur,
 		}
 
 		// put the bind variable in the list
+		// (the list keeps the name it already has, so a redefinition
+		// passes that name)
 		if (sane) {
-			env->outputbinds.setValue(parts[1],bv);
+			if (predefined) {
+				env->outputbinds.setValue(
+					env->outputbinds.getKey(parts[1]),bv);
+			} else {
+				env->outputbinds.setValue(parts[1],bv);
+			}
 		}
 
 	} else {
@@ -5566,8 +5577,16 @@ bool sqlrsh::inputoutputbind(sqlrcursor *sqlrcur,
 		}
 
 		// put the bind variable in the list
+		// (the list keeps the name it already has, so a redefinition
+		// passes that name)
 		if (sane) {
-			env->inputoutputbinds.setValue(parts[1],bv);
+			if (predefined) {
+				env->inputoutputbinds.setValue(
+					env->inputoutputbinds.getKey(
+								parts[1]),bv);
+			} else {
+				env->inputoutputbinds.setValue(parts[1],bv);
+			}
 		}
 
 	} else {
