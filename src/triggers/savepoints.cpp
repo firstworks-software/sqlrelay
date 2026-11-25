@@ -298,8 +298,7 @@ bool sqlrtrigger_savepoints::createSavepoint(sqlrservercursor *sqlrcur) {
 	// if this fails, log it but let the user query run anyway
 	if (runQuery(savepointquery,spname.getString())) {
 
-		// setValue() would overwrite, rather than delete, an entry
-		// that's somehow still here
+		// drop any stale entry for this cursor
 		spnames.remove(sqlrcur);
 
 		// the entry takes ownership of the name
